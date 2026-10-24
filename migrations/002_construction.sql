@@ -1,0 +1,24 @@
+-- Additive only. Preserve original SQLite tables and immutable imports.
+CREATE TABLE IF NOT EXISTS atlas_schema_migrations(version INTEGER PRIMARY KEY,applied_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS atlas_sources(id TEXT PRIMARY KEY,specialty TEXT NOT NULL,revision TEXT,sha256 TEXT NOT NULL,filename TEXT NOT NULL,payload TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS atlas_room_observations(id TEXT PRIMARY KEY,official_code TEXT NOT NULL,level TEXT,sector TEXT,source_id TEXT NOT NULL REFERENCES atlas_sources(id),status TEXT NOT NULL,payload TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS atlas_room_code_level ON atlas_room_observations(official_code,level);
+CREATE INDEX IF NOT EXISTS atlas_room_sector_status ON atlas_room_observations(sector,status);
+CREATE TABLE IF NOT EXISTS atlas_materials(id TEXT PRIMARY KEY,payload TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS atlas_transforms(id TEXT PRIMARY KEY,from_source TEXT REFERENCES atlas_sources(id),to_source TEXT REFERENCES atlas_sources(id),revision TEXT NOT NULL,control_points TEXT NOT NULL,matrix TEXT,residual REAL,status TEXT NOT NULL CHECK(status IN ('pending','verified')));
+CREATE TABLE IF NOT EXISTS atlas_zones(id TEXT PRIMARY KEY,room_code TEXT NOT NULL,observation_id TEXT REFERENCES atlas_room_observations(id),specialty TEXT NOT NULL CHECK(specialty IN ('ceilings','floors')),source_id TEXT NOT NULL REFERENCES atlas_sources(id),geometry TEXT NOT NULL,geometry_status TEXT NOT NULL,area_m2 REAL CHECK(area_m2>=0),parent_id TEXT REFERENCES atlas_zones(id),payload TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS atlas_zone_source ON atlas_zones(source_id,specialty);
+CREATE TABLE IF NOT EXISTS atlas_events(id TEXT PRIMARY KEY,zone_id TEXT NOT NULL REFERENCES atlas_zones(id),dimension TEXT NOT NULL,state TEXT NOT NULL,date TEXT NOT NULL,payload TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS atlas_event_zone_date ON atlas_events(zone_id,date);
+CREATE TABLE IF NOT EXISTS atlas_protocols(id TEXT PRIMARY KEY,official_number TEXT NOT NULL,specialty TEXT NOT NULL,technical_state TEXT NOT NULL,administrative_state TEXT NOT NULL,payload TEXT NOT NULL,UNIQUE(official_number,specialty));
+CREATE TABLE IF NOT EXISTS atlas_protocol_elements(protocol_id TEXT REFERENCES atlas_protocols(id),element_id TEXT,kind TEXT,PRIMARY KEY(protocol_id,element_id,kind));
+CREATE TABLE IF NOT EXISTS atlas_doors(id TEXT PRIMARY KEY,source_id TEXT NOT NULL REFERENCES atlas_sources(id),position TEXT NOT NULL,bbox TEXT NOT NULL,confidence REAL CHECK(confidence BETWEEN 0 AND 1),status TEXT NOT NULL,payload TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS atlas_door_source_status ON atlas_doors(source_id,status);
+CREATE TABLE IF NOT EXISTS atlas_door_rooms(door_id TEXT REFERENCES atlas_doors(id),observation_id TEXT REFERENCES atlas_room_observations(id),status TEXT NOT NULL,PRIMARY KEY(door_id,observation_id));
+CREATE TABLE IF NOT EXISTS atlas_mep(id TEXT PRIMARY KEY,official_code TEXT,discipline TEXT NOT NULL,zone_id TEXT REFERENCES atlas_zones(id),observation_id TEXT REFERENCES atlas_room_observations(id),source_id TEXT REFERENCES atlas_sources(id),status TEXT NOT NULL,payload TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS atlas_locks(id TEXT PRIMARY KEY,door_id TEXT REFERENCES atlas_doors(id),source_id TEXT REFERENCES atlas_sources(id),status TEXT NOT NULL,payload TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS atlas_key_authorizations(id TEXT PRIMARY KEY,authorized_reference TEXT NOT NULL,lock_id TEXT REFERENCES atlas_locks(id),status TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS atlas_evidence(id TEXT PRIMARY KEY,source_id TEXT REFERENCES atlas_sources(id),sha256 TEXT NOT NULL,filename TEXT NOT NULL,payload TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS atlas_validations(id TEXT PRIMARY KEY,element_id TEXT NOT NULL,attribute TEXT NOT NULL,status TEXT NOT NULL,source_id TEXT REFERENCES atlas_sources(id),at TEXT NOT NULL,responsible TEXT,reason TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS atlas_history(id TEXT PRIMARY KEY,entity_id TEXT NOT NULL,at TEXT NOT NULL,before_json TEXT,after_json TEXT NOT NULL,reason TEXT NOT NULL);
+INSERT OR IGNORE INTO atlas_schema_migrations VALUES(2,strftime('%Y-%m-%dT%H:%M:%SZ','now'));

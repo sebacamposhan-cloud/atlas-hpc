@@ -1,0 +1,67 @@
+# ATLAS HPC 3 — incremento multiespecialidad
+
+Ver `docs/ATLAS_PROGRESS.md` para alcance probado y limitaciones, y `docs/ATLAS_ROADMAP.md` para continuidad. No se considera completada toda la orden maestra.
+
+# Atlas HPC 2.0
+
+Modernización incremental: cinco módulos, capas documentales, tabla maestra, gráficos vinculados, deshacer/rehacer y recuperación IndexedDB. Auditoría, decisiones y límites en `docs/ATLAS_2_AUDIT.md`. Los límites técnicos pendientes siguen pendientes.
+
+# Atlas HPC · Versión web
+
+Visor web del nivel −1 del Hospital Provincia Cordillera. Se usa desde el navegador sin instalar Python, Node ni otras herramientas. Las nueve fuentes forman un plano continuo recortado al área A–W / 1–12, con búsqueda y ficha por recinto.
+
+## Consulta del plano
+
+- Plano base monocromático, sin marcadores circulares. Pulsar dentro de una superficie abre su ficha; arrastrar mueve el plano.
+- 330 recintos únicos dentro del área solicitada tienen superficies auxiliares de selección. La ficha conserva nombre, código, seis terminaciones, rombo original y referencia documental.
+- Cinco etiquetas cuyo nombre ocupaba varias líneas se recuperaron de las fuentes. El conjunto contiene ahora 443 etiquetas documentales, antes de consolidar solapes y aplicar el recorte.
+- Panel lateral en escritorio y ficha inferior ampliable en móvil. Búsqueda por nombre, código, materiales y consultas compatibles; filtros plegables, aislamiento, documentos, resumen y exportaciones PDF/XLSX.
+
+## Rendimiento
+
+El plano general monocromático de 158 kB aparece desde el HTML inicial, mientras se abren las fichas. Los datos de apertura pasan de 1.896.014 a 378.217 bytes (80 % menos); es una reducción de datos, no una medición de velocidad en iPhone. Una sola descarga compacta conserva la información documental de los 443 registros y las 330 superficies de selección. Los contornos técnicos completos se cargan al editar, desde nueve archivos separados, sin pérdida de coordenadas.
+
+El visor carga únicamente las teselas visibles del nivel de detalle necesario y retira todas las que quedan fuera de pantalla. Reutiliza las imágenes visibles sin buscarlas repetidamente en el documento. El desplazamiento y el gesto de dos dedos calculan la transformación una vez al comenzar; los movimientos usan operaciones aritméticas y se agrupan en un solo cambio por cuadro. Al levantar un dedo se puede seguir desplazando con el otro sin volver a tocar. La navegación no renderiza los PDF ni aplica filtros SVG de escala de grises. Las superficies se consultan mediante un índice espacial. La selección reutiliza las rutas y la lista de recintos; solo actualiza la ficha y el resaltado. Las bibliotecas de exportación se cargan cuando se solicitan. Si falla la carga inicial, aparece Reintentar en lugar de quedar esperando indefinidamente.
+
+## Uso sin conexión
+
+1. Abrir el sitio publicado con conexión en Safari o Chrome. En iPhone/iPad se recomienda Compartir → Añadir a pantalla de inicio y abrir Atlas desde ese icono antes de descargar.
+2. Abrir «Sin conexión» y pulsar «Guardar plano y fichas» (aproximadamente 23,6 MB). Mantener Atlas abierto hasta «Listo para usar sin conexión».
+3. Mover y ampliar el plano, buscar, seleccionar recintos, consultar rombos, editar contornos y exportar fichas/plano/Excel desde la copia local. No hace falta descargar los PDF para la consulta habitual.
+4. Opcionalmente, guardar las nueve láminas PDF originales y su visor (aproximadamente 29,9 MB). Esta descarga también permite recalcular el recorte de un rombo si se cambia su región original.
+
+La descarga muestra progreso, admite pausa y continúa con los archivos faltantes. El estado listo se calcula a partir de los archivos realmente guardados. Las descargas y la caché trabajan en un service worker, con un máximo de tres peticiones simultáneas. El núcleo inicial automático ocupa unos 635 kB; el plano completo se descarga por elección del usuario. Al abrir después, el visor usa primero la copia local y recupera el registro offline existente sin esperar otra petición de registro. Al volver de otra aplicación comprueba de nuevo el estado guardado.
+
+Las nuevas versiones se activan con «Actualizar versión». Si había paquetes completos guardados, se preparan en la versión nueva antes de permitir activarla: los archivos idénticos se reutilizan y solo se descargan los que cambiaron. Una actualización que falla deja la versión anterior y su descarga disponibles. Los paquetes que nunca se descargaron siguen siendo opcionales.
+
+La copia pertenece al navegador o instalación donde se descargó: Safari, el icono de inicio y la vista interna de otra aplicación pueden tener almacenamiento distinto. No se promete conservación indefinida: el navegador puede retirar datos si falta espacio, y borrar los datos del sitio elimina también las correcciones locales. Respaldarlas desde Recintos. El modo offline exige un navegador compatible y el sitio publicado con HTTPS; la vista interna de ChatGPT puede no admitirlo.
+
+## Datos y límites
+
+Las superficies de selección permiten consultar el recinto y no sustituyen los contornos técnicos. Se prepararon con geometría vectorial de las fuentes y 41 delimitaciones auxiliares trazadas sobre el montaje. Se corrigieron solapes con recintos vecinos y se conservaron huecos relevantes. Su revisión visual es parcial; los límites de áreas abiertas pueden requerir ajuste. No sirven para cubicaciones ni certifican delimitación técnica.
+
+Los 158 polígonos técnicos originales y sus estados de revisión siguen conservados, incluidos los dos validados. Las correcciones de contorno guardadas por el usuario tienen prioridad sobre la superficie auxiliar. Las superficies escritas en las fichas proceden del documento, sin recálculo geométrico. Las descripciones de asepsia se refieren a la pintura documentada.
+
+Los PDF originales se mantienen íntegros. ORIGINAL_* registra la validación del paquete previo; este README describe la versión web vigente. dist/atlas.json conserva desplazamientos y recortes: 16 enlaces de alineación comprobados y residuo máximo de 0,181 puntos de las fuentes.
+
+## Guardado
+
+Las correcciones se guardan en localStorage de cada navegador, con historial y comprobación de conflictos. Respaldos exporta y restaura JSON. La publicación conserva correcciones por identificador; no hay sincronización entre dispositivos ni base de datos compartida.
+
+## Verificación
+
+- node test.mjs: datos reales, búsqueda, recursos, materiales, persistencia, historial y conflictos.
+- node runtime-test.mjs: igualdad de los 443 registros documentales, geometría técnica sin pérdida, búsqueda equivalente y conservación de las 330 superficies; reducción medida del tamaño de apertura.
+- node offline-test.mjs: ejecuta los manejadores reales del service worker con adaptadores aislados de caché y red. Comprueba apertura y consulta sin peticiones de red, descargas interrumpidas, pausa/reanudación, falta de espacio, pérdida parcial de caché, actualización con reutilización y PDF opcionales sin conexión. No sustituye una prueba en un dispositivo físico.
+- node interaction-test.mjs: anclaje de zoom, desplazamiento al levantar un dedo, agrupación por cuadro, eliminación de imágenes fuera de pantalla, reutilización y recuperación tras reconectar, con el visor real y un adaptador SVG aislado.
+- node offline-ui-test.mjs: reapertura offline sin registrar ni actualizar por red, regreso desde otra aplicación y reintento tras una preparación inicial fallida. offline-test.mjs también comprueba que las actualizaciones conservan paquetes completos antes de activarse y que un fallo no elimina la copia anterior.
+- node atlas-test.mjs: alineación, cobertura de posiciones y conversión de coordenadas.
+- node selection-test.mjs: los 330 rótulos están en su superficie; 22 comprobaciones interiores y de separación entre vecinos; consulta de 10.000 puntos y existencia de las teselas. El tiempo de Node no mide fluidez móvil.
+- Sintaxis de los módulos de navegador comprobada con node --check.
+- Navegador de escritorio: búsqueda, ficha y selección de Sala Seriógrafo mediante un punto interior alejado del rótulo; plano monocromático sin círculos. También se comprobó la ficha de una etiqueta recuperada, la carga compacta y el panel offline. En esta revisión se comprobó además zoom, arrastre y apertura del Comedor 8.2.1.1.1-1 al tocar su interior, conservando sus seis campos de terminaciones. El servidor de revisión usa HTTP y no permite registrar service workers; la prueba de red cortada se realizó con los adaptadores de Node anteriores. La disposición móvil se revisó a 390 × 844 en una revisión anterior; el gesto de dos dedos, la instalación offline y el rendimiento en iPhone físico siguen sin comprobarse.
+
+## Preparación y publicación
+
+HTML/CSS/JS y datos estáticos en dist; configuración en .openai/hosting.json. Se conserva el acceso público ya configurado del sitio existente. Las bibliotecas se distribuyen localmente con sus licencias, sin CDN externa. Los scripts Python de scripts/ son utilidades de preparación fuera de línea y no forman parte de la ejecución web. scripts/selection/ conserva la evidencia y el ensamblado reproducible de las superficies auxiliares.
+
+Después de cambiar datos, ejecutar `node scripts/prepare-runtime.mjs`. Los iconos PNG se generan con `node scripts/prepare-icons.mjs`. Después de cualquier cambio en dist, ejecutar `node scripts/prepare-offline.mjs` para renovar las huellas y la versión del paquete offline, y después `node offline-test.mjs` para comprobar que el manifiesto coincide con los archivos publicados.

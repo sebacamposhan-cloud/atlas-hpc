@@ -1,0 +1,22 @@
+ATLAS HPC — COPIA COMPLETA DEL CÓDIGO FUENTE
+Versión publicada: 9
+Commit: b590d7b5cf4201c40a6a3c5a2693069eeaa8f72e
+
+CONTENIDO
+Código JavaScript modular, HTML, CSS, configuración .openai/hosting.json, planos PDF originales, imágenes, mosaicos, JSON, geometrías, bases SQLite, migraciones, scripts, pruebas y documentación.
+
+EJECUCIÓN LOCAL
+La aplicación existente es estática y no necesita npm ni compilación.
+Desde esta carpeta: python -m http.server 8000 --directory dist
+Abrir http://localhost:8000
+Para uso PWA fuera de localhost, servir mediante HTTPS.
+Los scripts de ingeniería Python requieren las bibliotecas indicadas por sus imports (por ejemplo PyMuPDF/Pillow/NumPy); el visor web no depende de ellas.
+
+VERIFICACIÓN
+MANIFIESTO_EXPORTACION.json contiene tamaño y SHA-256 de cada archivo original.
+Se conserva la configuración del sitio existente; su identificador no es una credencial.
+No se incluyen historial ni credenciales Git, archivos de entorno privados, contraseñas ni claves API detectadas. Las referencias a variables API en el adaptador deshabilitado no son claves.
+
+ALCANCE DEL RESPALDO
+Las correcciones que solo existan en el navegador del usuario (localStorage/IndexedDB) no están en el repositorio. Exportarlas desde las opciones de respaldo de la aplicación y conservarlas junto a este ZIP.
+Consultar docs/ATLAS_PROGRESS.md para funcionalidades probadas y limitaciones.

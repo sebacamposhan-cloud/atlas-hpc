@@ -1,0 +1,9 @@
+{
+  "reviewedSample": 1,
+  "falsePositivesInSample": 1,
+  "confirmedInSample": 0,
+  "missedDoors": null,
+  "precision": null,
+  "recall": null,
+  "scope": "One rendered source crop inspected; no full reference inventory."
+}

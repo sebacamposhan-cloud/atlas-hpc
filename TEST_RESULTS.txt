@@ -1,0 +1,10 @@
+{
+  "checks": "passed",
+  "documents": 9,
+  "rooms": 438,
+  "polygons": 158,
+  "median_ms": 0.11016600000000665,
+  "max_ms": 0.29403400000001056,
+  "browser_QA": "not available; Node logic and asset checks only"
+}
+Browser-store persistence, history, version conflicts: passed

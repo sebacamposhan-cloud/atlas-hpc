@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="description" content="Planos interactivos del Hospital Provincia Cordillera. Consulta recintos por código, rombos y materiales.">
+<meta name="theme-color" content="#12343a">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Atlas HPC">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/atlas.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/atlas-192.png">
+<link rel="preload" href="map/overview.webp" as="image" fetchpriority="high">
+<link rel="preload" href="runtime.json" as="fetch" crossorigin>
+<link rel="modulepreload" href="runtime-loader.mjs">
+<title>Atlas HPC · Planos inteligentes</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="workspace.css">
+</head>
+<body class="hideLeft hideRight booting" data-module="map">
+<nav class="appSidebar" aria-label="Módulos Atlas"><div class="sideBrand"><span class="brandMark">A</span><span class="navText"><b>ATLAS HPC</b><small>INGENIERÍA DOCUMENTAL</small></span></div><div class="sideProject"><span class="navText">Hospital Provincia Cordillera<br><small>Arquitectura · Nivel −1</small></span></div><div class="navGroup"><button data-module="work" title="Control de obra"><span class="navIcon">▦</span><span class="navText">Control de obra</span></button><button data-module="map" class="active" title="Explorador de planos"><span class="navIcon">▱</span><span class="navText">Explorador de planos</span></button><button data-module="dashboard" class="" title="Dashboard de recintos"><span class="navIcon">▥</span><span class="navText">Dashboard de recintos</span></button><button data-module="layers" class="" title="Capas y terminaciones"><span class="navIcon">▧</span><span class="navText">Capas y terminaciones</span></button><button data-module="rooms" class="" title="Gestión de recintos"><span class="navIcon">☷</span><span class="navText">Gestión de recintos</span></button><button data-module="docs" class="" title="Documentación y fuentes"><span class="navIcon">▤</span><span class="navText">Documentación y fuentes</span></button></div><div class="sideBottom"><small class="navText">ATLAS 3.0 · incremental<br>Datos documentales · Copia local</small><button id="sidebarCollapse" aria-label="Contraer navegación">⇤</button></div></nav><header>
+<button id="navToggle" title="Buscar recintos" aria-label="Buscar recintos">⌕</button>
+<div class="brand">
+<b>ATLAS<span>HPC</span>
+</b>
+<small>EXPLORADOR DE RECINTOS</small>
+</div>
+<div class="project">Hospital Provincia Cordillera <span>Nivel −1 · Arquitectura</span>
+</div>
+<div class="globalSearchWrap"><input id="globalSearch" aria-label="Búsqueda global" placeholder="Buscar código, recinto o terminación…"><kbd>⌘ K</kbd></div><button id="dashboard">Dashboard</button>
+<button id="offlineOpen" class="offlineButton" aria-label="Modo sin conexión"><span id="offlineLabel">Sin conexión</span></button>
+<button id="detailToggle" title="Mostrar u ocultar ficha">Ficha</button>
+</header>
+<div class="workspace">
+<aside class="left">
+<button id="closeSearch" aria-label="Cerrar búsqueda">×</button>
+<div class="section-label">EXPLORAR EL EDIFICIO</div>
+<h2>Encuentra tu recinto</h2>
+<p class="sidebarIntro">Busca, selecciona y consulta sus terminaciones.</p>
+<div hidden>
+<label for="level">Nivel</label>
+<select id="level">
+<option value="-1">Nivel −1</option>
+</select>
+<label for="document">Lámina / sector</label>
+<select id="document">
+</select>
+</div>
+<div class="separator">
+</div>
+<div class="section-label">CONSULTAR RECINTOS</div>
+<label for="search">Buscar en todo el nivel</label>
+<div class="searchbox">
+<input id="search" placeholder="Código, nombre o asepsia…" autocomplete="off">
+<button id="clearSearch" title="Limpiar búsqueda">×</button>
+</div>
+<small>Prueba «recintos con porcelanato» o un código completo.</small>
+<details class="filters">
+<summary>Filtrar recintos</summary>
+<label for="asepsis">Asepsia de las terminaciones</label>
+<select id="asepsis">
+<option value="">Todas / sin filtro</option>
+<option value="baja">Baja · código 11</option>
+<option value="media">Media · código 12</option>
+<option value="alta">Alta · código 13</option>
+</select>
+<label for="material">Terminación documentada</label>
+<select id="material">
+<option value="">Todos los materiales</option>
+</select>
+<label class="check">
+<input type="checkbox" id="pending"> Pendientes de validación</label>
+<label class="check">
+<input type="checkbox" id="geometryOnly"> Con contorno disponible</label>
+</details>
+<div class="separator">
+</div>
+<div class="resulthead">
+<strong id="count">Cargando…</strong>
+<button id="excel" title="Exportar resultados a Excel">↓ Excel</button>
+</div>
+<div id="scopeSummary" class="muted">
+</div>
+<div id="results" class="results">
+</div>
+<div class="leftfooter">
+<button id="import">Respaldos</button>
+<input type="file" id="file" accept="application/json,.json" hidden>
+<span class="muted">Guardado en este dispositivo</span>
+</div>
+</aside>
+<section id="workspacePanel" hidden aria-label="Espacio de trabajo"></section><main>
+<div class="planheader">
+<div>
+<div class="section-label">HOSPITAL PROVINCIA CORDILLERA</div>
+<h1 id="planTitle">Nivel −1</h1>
+</div>
+<div class="modeSwitch">
+<button id="modeOriginal" class="active">Monocromático</button>
+<button id="modeAsepsis">Asepsia</button>
+</div>
+<span class="badge" id="revision">
+Ejes A–W · 1–12
+</span>
+</div>
+<div class="toolbar">
+<button id="fit" aria-label="Ver área completa">⌖</button>
+<button id="zoomIn" aria-label="Acercar">＋</button>
+<button id="zoomOut" aria-label="Alejar">−</button>
+<button id="isolate" disabled>Aislar recinto</button>
+<button id="back" hidden>Volver al plano</button>
+<button id="backResults" hidden>Volver a resultados</button>
+<button id="reset" class="primary">Limpiar</button>
+<button id="fullscreen" title="Pantalla completa">⛶</button>
+</div>
+<div id="viewport">
+<svg id="svg" xmlns="http://www.w3.org/2000/svg" viewBox="1105.62 284.15 5302.3 7630.28" role="img" aria-label="Plano arquitectónico interactivo">
+<g id="background">
+<image href="map/overview.webp" x="1105.62" y="284.15" width="5302.3" height="7630.28"/>
+</g>
+<g id="detailImage" pointer-events="none">
+</g>
+<g id="polygons">
+</g>
+<g id="labels">
+</g>
+<g id="editLayer">
+</g>
+</svg>
+<div id="loading" role="status">Abriendo fichas…</div>
+<div id="emptyState" hidden>No hay recintos que coincidan con estos filtros.</div>
+<div class="canvasHelp" id="canvasHelp">Desliza para mover · Acerca con dos dedos · Toca un recinto</div>
+<div id="activeLegend" hidden></div><div id="asepsisKey" hidden>
+<span>
+<i style="background:#68ce28">
+</i>Baja</span>
+<span>
+<i style="background:#11b9dd">
+</i>Media</span>
+<span>
+<i style="background:#ff921c">
+</i>Alta</span>
+<small>Solo contornos disponibles · según rombo</small>
+</div>
+<div class="layerbox">
+<details>
+<summary>Vista del plano</summary>
+<label class="check">
+<input id="layerOriginal" type="checkbox" checked> Plano monocromático</label>
+<label class="check">
+<input id="layerPolygons" type="checkbox" checked> Resaltar consulta</label>
+<input id="layerMarkers" type="checkbox" hidden>
+<label class="check">
+<input id="layerCodes" type="checkbox"> Códigos</label>
+<label class="check">
+<input id="layerNames" type="checkbox"> Nombres</label>
+<select id="colorBy">
+<option value="none">Color uniforme</option>
+<option value="asepsis">Asepsia documentada</option>
+<option value="PAV">Pavimento</option>
+<option value="walls">Muros / pinturas</option>
+<option value="CIE">Cielo</option>
+<option value="status">Validación</option>
+</select>
+<div id="colorLegend">
+</div>
+</details>
+</div>
+</div>
+<footer>
+<span id="coverage">
+</span>
+<div>
+<button id="legend">Ver simbología</button>
+<button id="original">Documentos fuente</button>
+<button id="exportPlan">Exportar plano</button>
+</div>
+</footer>
+</main>
+<aside class="right">
+<button id="expandDetail" aria-label="Ampliar o reducir ficha">
+<span>
+</span>
+</button>
+<button id="closeDetail" aria-label="Cerrar ficha">×</button>
+<div class="resizeHandle" id="detailResize" role="separator" aria-label="Ajustar ancho de ficha" tabindex="0"></div><div id="detail">
+<div class="intro">
+<span class="largeIcon">⌖</span>
+<div class="section-label">FICHA TÉCNICA</div>
+<h2>Del plano<br>al detalle.</h2>
+<p>Selecciona un recinto o busca su código para consultar el rombo y sus terminaciones.</p>
+<div class="hint">Los contornos automáticos se identifican como pendientes. Toca el interior para abrir su ficha.</div>
+<h3>Fuentes trazables</h3>
+<p>Datos extraídos de las láminas originales. Cada ficha conserva su documento, página y estado de revisión.</p>
+</div>
+</div>
+</aside>
+</div>
+<nav class="bottomNav" aria-label="Navegación del plano">
+<button data-module="work" title="Control de obra"><span>▦</span>Obra</button><button id="bottomMap" class="active">
+<span>⌖</span>Plano</button>
+<button id="bottomSearch">
+<span>☷</span>Recintos</button>
+<button id="bottomOffline" aria-label="Guardar y consultar sin conexión">
+<span aria-hidden="true">↓</span>Sin conexión</button>
+<button id="bottomLayers">
+<span>▱</span>Capas</button>
+<button id="bottomDashboard" data-module="dashboard"><span>▥</span>Dashboard</button><button id="bottomDocs">
+<span>▤</span>Documentos</button>
+</nav>
+<dialog id="modal">
+<button id="closeModal" class="close" aria-label="Cerrar">×</button>
+<div id="modalBody">
+</div>
+</dialog>
+<div id="toast" role="status">
+</div>
+<dialog id="offlineDialog" aria-labelledby="offlineTitle">
+  <button id="offlineClose" class="close" aria-label="Cerrar modo sin conexión">×</button>
+  <div class="section-label">ATLAS EN TU DISPOSITIVO</div>
+  <h2 id="offlineTitle">Tu plano, incluso sin señal</h2>
+  <p>Guarda el nivel −1 para mover y ampliar el plano, buscar recintos y consultar sus fichas sin internet.</p>
+  <div id="offlineStatus" class="offlineStatus" role="status" aria-live="polite">Comprobando almacenamiento…</div>
+  <progress id="offlineProgress" max="100" value="0" hidden aria-label="Progreso de descarga"></progress>
+  <p id="offlineProgressText" class="muted"></p>
+  <div class="offlineActions">
+    <button id="offlineSave" class="primary" disabled>Guardar plano y fichas</button>
+    <button id="offlineCancel" hidden>Pausar descarga</button>
+    <button id="offlineUpdate" hidden>Actualizar versión</button>
+  </div>
+  <div class="offlineDocuments">
+    <h3>PDF originales</h3>
+    <p id="offlineDocumentsInfo">Descarga opcional de los originales de arquitectura, cielos y pavimentos.</p>
+    <button id="offlineSaveDocuments" disabled>Guardar PDF originales</button>
+  </div>
+  <details class="offlineHelp"><summary>Usarlo en iPhone o iPad</summary>
+    <p>Abre este sitio en Safari. En Compartir, elige «Añadir a pantalla de inicio». Abre Atlas desde ese icono y pulsa «Guardar plano y fichas» allí.</p>
+    <p>Mantén Atlas abierto durante la descarga. Espera el mensaje «Listo para usar sin conexión» antes de desconectarte.</p>
+    <p>La copia y tus correcciones quedan en este navegador. Si borras sus datos, se pierden ambas. Respalda tus correcciones desde Recintos antes de borrarlos.</p>
+  </details>
+</dialog>
+<noscript><p>Activa JavaScript para consultar los recintos.</p></noscript>
+<script type="module" src="app.js">
+</script>
+</body>
+</html>

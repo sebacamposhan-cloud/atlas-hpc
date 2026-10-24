@@ -1,0 +1,9 @@
+{
+  "id": "/", "name": "Atlas HPC · Plano nivel −1", "short_name": "Atlas HPC",
+  "lang": "es", "start_url": "/", "scope": "/", "display": "standalone",
+  "background_color": "#fafbfb", "theme_color": "#344b55",
+  "icons": [
+    {"src":"icons/atlas-192.png","sizes":"192x192","type":"image/png","purpose":"any"},
+    {"src":"icons/atlas-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  ]
+}
