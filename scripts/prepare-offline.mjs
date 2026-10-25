@@ -7,7 +7,7 @@ const files=[];
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 const add=(name,pack='plan',core=false)=>{const bytes=fs.readFileSync(path.join(dist,name));files.push({url:'/'+name,bytes:bytes.length,hash:hash(bytes),pack,core});};
 const walk=folder=>fs.readdirSync(path.join(dist,folder),{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(folder+'/'+e.name):[folder+'/'+e.name]);
-for(const name of ['construction-dashboard.mjs','door-pilot.json','disciplines.mjs','construction-store.mjs','disciplines.json','workspace.css','workspace.mjs','layers.mjs','persistence.mjs','index.html','style.css','app.js','engine.mjs','web-store.mjs','viewer.mjs','gestures.mjs','hit-index.mjs','runtime-loader.mjs','offline.mjs','runtime.json','manifest.webmanifest','icons/atlas.svg','icons/atlas-192.png','icons/atlas-512.png','map/overview.webp']) add(name,'plan',true);
+for(const name of ['discipline-model.mjs','construction-dashboard.mjs','door-pilot.json','disciplines.mjs','construction-store.mjs','disciplines.json','workspace.css','workspace.mjs','layers.mjs','persistence.mjs','index.html','style.css','app.js','engine.mjs','web-store.mjs','viewer.mjs','gestures.mjs','hit-index.mjs','runtime-loader.mjs','offline.mjs','runtime.json','manifest.webmanifest','icons/atlas.svg','icons/atlas-192.png','icons/atlas-512.png','map/overview.webp']) add(name,'plan',true);
 for(const name of walk('map')) if(name!=='map/overview.webp') add(name);
 for(const name of walk('disciplines')) add(name);
 for(const name of walk('geometry')) add(name);

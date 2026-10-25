@@ -50,6 +50,8 @@ Las correcciones se guardan en localStorage de cada navegador, con historial y c
 
 ## Verificación
 
+El incremento de navegación y asociación CIE se describe en `docs/CIELOS_INCREMENT.md`. Prueba del modelo: `node discipline-model-test.mjs`; recorrido Chromium: `node cielos-browser-test.mjs` con las dependencias de prueba indicadas allí.
+
 - node test.mjs: datos reales, búsqueda, recursos, materiales, persistencia, historial y conflictos.
 - node runtime-test.mjs: igualdad de los 443 registros documentales, geometría técnica sin pérdida, búsqueda equivalente y conservación de las 330 superficies; reducción medida del tamaño de apertura.
 - node offline-test.mjs: ejecuta los manejadores reales del service worker con adaptadores aislados de caché y red. Comprueba apertura y consulta sin peticiones de red, descargas interrumpidas, pausa/reanudación, falta de espacio, pérdida parcial de caché, actualización con reutilización y PDF opcionales sin conexión. No sustituye una prueba en un dispositivo físico.

@@ -1,5 +1,17 @@
 # Estado del incremento — 24 octubre 2026
 
+## Incremento Cielos: navegación y ficha documental
+
+El incremento conserva los ocho originales CIE, sus 329 observaciones (277 códigos), los datos ARQ y las tres bases SQLite. No añade atributos extraídos ni valida geometrías nuevas.
+
+- Búsqueda CIE por código, texto fuente y nombres documentados en Arquitectura, sin distinguir tildes o mayúsculas.
+- Navegación entre láminas y retorno al recinto de Arquitectura por código. Se conserva la observación elegida al pasar por Pavimentos o Arquitectura.
+- Las coincidencias múltiples se presentan para elección explícita por lámina/etiqueta; no se mezclan sus superficies, NCT ni materiales. Una lámina sin observación para el código muestra atributos pendientes.
+- La ficha muestra superficie declarada, NCT, códigos documentados de cielo y luminaria, PDF/revisión/página, texto original, caja de extracción y SHA256. Cada código de material consulta su propia descripción del catálogo ARQ.
+- Se corrige el retorno a una selección ARQ antigua cuando el código CIE no tiene correspondencia. Una respuesta de carga atrasada ya no reemplaza el modo activo; los errores de carga permiten reintentar.
+
+Línea base previa: nueve suites Node aprobadas y tres SQLite con integridad correcta y cero errores de claves externas. Pruebas del incremento y reproducción en `docs/CIELOS_INCREMENT.md`.
+
 ## Implementado
 
 - Selector Arquitectura / Pavimentos / Cielos en el proyecto existente.
