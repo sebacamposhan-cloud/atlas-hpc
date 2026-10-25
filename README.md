@@ -50,6 +50,8 @@ Las correcciones se guardan en localStorage de cada navegador, con historial y c
 
 ## Verificación
 
+La auditoría estructural, las causas por recinto y el alcance del incremento actual están en `docs/REENGINEERING_AUDIT.md`. Pruebas adicionales: `node documentary-evidence-test.mjs`, `node geometry-authority-test.mjs`, `node review-observations-test.mjs` y `node quality-browser-test.mjs` (mismo entorno Chromium que `cielos-browser-test.mjs`).
+
 El incremento de navegación y asociación CIE se describe en `docs/CIELOS_INCREMENT.md`. Prueba del modelo: `node discipline-model-test.mjs`; recorrido Chromium: `node cielos-browser-test.mjs` con las dependencias de prueba indicadas allí.
 
 - node test.mjs: datos reales, búsqueda, recursos, materiales, persistencia, historial y conflictos.

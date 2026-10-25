@@ -1,5 +1,7 @@
 # Continuidad ATLAS 3
 
+Prioridad vigente: matriz y criterios de `REENGINEERING_AUDIT.md`. Resolver asociaciones pendientes y casos geométricos piloto antes de calibrar el montaje CIE. Los 75 candidatos recuperados son extracción pendiente de revisión, no nuevos recintos maestros. Dejar actualización de liberaciones MEP/clearance al final, según instrucción del usuario.
+
 A. Auditoría y respaldo: ejecutados; SQLite y datos web son snapshots distintos preservados.
 B. Multiespecialidad: primer incremento operativo; completar validación gráfica de alineación y contornos.
 C. Avance: registro local por zonas y dimensiones operativo; completar edición de vértices, superficies calibradas y pruebas móviles.

@@ -1,5 +1,7 @@
 # Cielos: navegación documental por recinto
 
+Actualización posterior: `REENGINEERING_AUDIT.md` documenta 75 candidatos CIE recuperados y nuevas reglas de trazabilidad/autoridad geométrica. Se mantienen las 329 observaciones base descritas a continuación; el visor consulta además esos candidatos pendientes.
+
 Sobre la implementación existente de Atlas HPC 3.0, este incremento completa la consulta entre Arquitectura, las ocho láminas ARQ-CIE y Pavimentos. No genera recintos ni atributos nuevos.
 
 ## Recorrido

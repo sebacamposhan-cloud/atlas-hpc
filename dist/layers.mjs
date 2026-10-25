@@ -1,9 +1,10 @@
+import {deriveAsepsis} from './documentary-evidence.mjs';
 // Shared documentary categories. Empty fields never acquire a fabricated finish.
 export const UNKNOWN='Pendiente de identificación';
 export const layerNames={asepsis:'Asepsia',PAV:'Pavimentos',paint:'Pinturas',CIE:'Cielos',walls:'Muros',status:'Validación',sector:'Sectores',selected:'Selección'};
 export function categories(r,type){
  let values=[];
- if(type==='asepsis')values=r.asepsis||[];
+ if(type==='asepsis')values=deriveAsepsis(r.finishes);
  else if(type==='status')values=[r.status];
  else if(type==='sector')values=[r.sector];
  else if(type==='selected')values=[r.id];

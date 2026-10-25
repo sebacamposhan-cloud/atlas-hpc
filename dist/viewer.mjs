@@ -1,21 +1,21 @@
+import {resolveFootprints} from './geometry-authority.mjs';
 import {buildHitIndex} from './hit-index.mjs';
 const ns='http://www.w3.org/2000/svg';
 let map,atlas,svg,tiles,overview,requestedView,frame=0,tileTimer,geometry=new Map(),hit=()=>null;
 const paths=new Map(),activeTiles=new Map();
+let currentRooms,currentAliases,currentSelection;
 export async function prepareViewer(a,rooms,aliases,runtime){
  atlas=a;svg=document.getElementById('svg');
  const m=runtime.map,s=runtime.selection;map=m;paths.clear();activeTiles.clear();
- geometry=new Map();const canonical=new Map(rooms.map(r=>[r.id,r]));
- for(const entry of s.rooms){const id=aliases.get(entry.id)||entry.id;if(!canonical.has(id))continue;const old=geometry.get(id);if(!old||entry.score>old.score)geometry.set(id,{...entry,id});}
- for(const r of rooms){if(!geometry.has(r.id)&&r.polygon){const t=a.tiles.find(t=>t.id===r.document_id),shift=p=>[p[0]+t.offset[0],p[1]+t.offset[1]];geometry.set(r.id,{id:r.id,rings:[{polygon:r.polygon.map(shift),holes:(r.holes||[]).map(h=>h.map(shift))}],score:0,method:'source'});}}
- for(const r of rooms)if(r.version>1&&r.polygon&&r.geometry_method==='Edición manual en navegador'){const t=a.tiles.find(t=>t.id===r.document_id),shift=p=>[p[0]+t.offset[0],p[1]+t.offset[1]];geometry.set(r.id,{id:r.id,rings:[{polygon:r.polygon.map(shift),holes:(r.holes||[]).map(h=>h.map(shift))}],score:2,method:'manual'});}
+ currentRooms=new Map(rooms.map(r=>[r.id,r]));currentAliases=aliases;currentSelection=s;
+ geometry=resolveFootprints(a,rooms,aliases,s);
  hit=buildHitIndex(geometry.values());
  const bg=document.getElementById('background');bg.replaceChildren();overview=document.createElementNS(ns,'image');overview.setAttribute('href',m.overview);overview.setAttribute('x',m.origin[0]);overview.setAttribute('y',m.origin[1]);overview.setAttribute('width',m.width);overview.setAttribute('height',m.height);bg.append(overview);tiles=document.getElementById('detailImage');tiles.replaceChildren();
  return {coverage:geometry.size,method:s.method};
 }
 export function footprint(id){return geometry.get(id);}
 export function hitRoom(p){return hit(p);}
-export function updateFootprint(r){if(!r.polygon)return;const t=atlas.tiles.find(t=>t.id===r.document_id),shift=p=>[p[0]+t.offset[0],p[1]+t.offset[1]];geometry.set(r.id,{id:r.id,rings:[{polygon:r.polygon.map(shift),holes:(r.holes||[]).map(h=>h.map(shift))}],score:2,method:'manual'});paths.delete(r.id);hit=buildHitIndex(geometry.values());}
+export function updateFootprint(r){currentRooms.set(r.id,r);geometry=resolveFootprints(atlas,[...currentRooms.values()],currentAliases,currentSelection);paths.clear();hit=buildHitIndex(geometry.values());}
 export function footprintPath(id){if(paths.has(id))return paths.get(id);const e=geometry.get(id);if(!e)return '';const ring=pts=>'M'+pts.map(p=>p.join(',')).join('L')+'Z';const d=e.rings.map(p=>ring(p.polygon)+p.holes.map(ring).join('')).join('');paths.set(id,d);return d;}
 export function flushView(){if(frame){cancelAnimationFrame(frame);frame=0;}if(svg&&requestedView)svg.setAttribute('viewBox',requestedView.join(' '));}
 export function mapView(v){requestedView=v;if(!svg)return;if(!frame)frame=requestAnimationFrame(()=>{frame=0;svg.setAttribute('viewBox',requestedView.join(' '));});clearTimeout(tileTimer);tileTimer=setTimeout(updateTiles,80);}

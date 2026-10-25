@@ -22,3 +22,9 @@ body>header{margin-left:var(--sidebar);height:64px;padding:0 22px;gap:15px;backg
 #specialtyResults{grid-column:1;grid-row:2;top:0;max-width:calc(100% - 20px)}
 #disciplinePanel.fichaClosed{grid-template-columns:minmax(0,1fr)}
 @media(max-width:700px){#disciplinePanel{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,2fr) minmax(0,1fr)}#specialtyDetail{grid-column:1;grid-row:3}.specialtyCanvas{inset:auto}#disciplinePanel.fichaClosed{grid-template-rows:auto minmax(0,1fr)}}
+/* Documentary confidence is separate from selection and category colour. */
+.roomshape[data-geometry-quality$="pending"]{stroke-dasharray:5 3}
+.documentaryState{display:block;color:#596875;margin:4px 0 10px;line-height:1.5}
+#asepsisEvidence{border-left:3px solid #b18a51;padding:8px 10px;background:#f7f9fa;margin:12px 0;font-size:12px}
+#activeLegend{width:220px;padding:10px;max-height:35%}#activeLegend.minimized{width:185px}.legendActions{display:flex;gap:4px;flex-wrap:wrap}.legendActions button{font-size:10px}#activeFilterCount{display:block;line-height:1.5;margin-top:5px}.documentGrid small{overflow-wrap:anywhere}
+@media(max-width:700px){#activeLegend{max-width:190px;max-height:30%;bottom:14px}#activeLegend.minimized{width:175px}}
