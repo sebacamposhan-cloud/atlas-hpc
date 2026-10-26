@@ -1,0 +1,17 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import {resolveFootprints} from './dist/geometry-authority.mjs';
+import {buildHitIndex} from './dist/hit-index.mjs';
+const memory=new Map();globalThis.localStorage={getItem:k=>memory.get(k)||null,setItem:(k,v)=>memory.set(k,v)};globalThis.location={origin:'https://example.test'};
+globalThis.fetch=async url=>({ok:true,json:async()=>JSON.parse(fs.readFileSync('dist/'+String(url).replace(/^\.\//,'')))});
+const {localAPI}=await import('./dist/web-store.mjs');const base=JSON.parse(fs.readFileSync('dist/data.json')),atlas=JSON.parse(fs.readFileSync('dist/atlas.json'));
+const original=base.rooms.find(r=>r.code==='RT.(-1)-1'&&r.geometry_status==='Validado'),r=await localAPI('/api/rooms/'+original.id),[x,y]=r.position;
+const square=(a,b,size)=>[[a,b],[a+size,b],[a+size,b+size],[a,b+size]];
+const parts=[{polygon:square(x-10,y-10,20),holes:[square(x-8,y-8,2)]},{polygon:square(x+24,y-10,4),holes:[]}];
+let saved=await localAPI('/api/rooms/'+r.id,{method:'PATCH',body:JSON.stringify({version:r.version,code:r.code,name:r.name,finishes:r.finishes,diamond_bbox:r.diamond_bbox,geometry_parts:parts,responsible:'Isolated QA',reason:'Multipart persistence regression'})});
+assert.equal(saved.polygon,null);assert.deepEqual(saved.geometry_parts,parts);assert.equal(saved.geometry_status,'Pendiente de revisión');assert.equal(saved.history.length,original.history.length+1);
+const map=resolveFootprints(atlas,[saved],new Map(),{rooms:[]});assert.equal(map.get(saved.id).rings.length,2);assert.equal(map.get(saved.id).method,'manual');
+const t=atlas.tiles.find(t=>t.id===r.document_id),hit=buildHitIndex(map.values());assert.equal(hit({x:x-7+t.offset[0],y:y-7+t.offset[1]}),null,'hole preserved in actual hit index');assert.equal(hit({x:x+25+t.offset[0],y:y-9+t.offset[1]}),r.id);
+saved=await localAPI('/api/rooms/'+r.id,{method:'PATCH',body:JSON.stringify({version:saved.version,code:r.code,name:r.name,finishes:r.finishes,diamond_bbox:r.diamond_bbox,geometry_parts:null,polygon:original.polygon,holes:original.holes,responsible:'Isolated QA',reason:'Revert multipart correction'})});
+assert(!saved.geometry_parts);assert.deepEqual(saved.polygon,original.polygon);assert.equal(saved.history.length,original.history.length+2);
+console.log('Local API: multipart/hole save, source identity, pending status, active hit geometry, complete history and reversal passed');

@@ -1,0 +1,1 @@
+{"name":"atlas-contour-editor-build","private":true,"type":"module","scripts":{"build":"node build.mjs"},"dependencies":{"leaflet":"1.9.4","@geoman-io/leaflet-geoman-free":"2.20.4","@turf/boolean-valid":"7.3.4","@turf/kinks":"7.3.4"},"devDependencies":{"esbuild":"0.27.4"}}

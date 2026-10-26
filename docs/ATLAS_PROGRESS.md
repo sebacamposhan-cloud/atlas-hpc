@@ -77,3 +77,9 @@ Ver `DIAMOND_RECOGNITION.md`. Detector independiente de seis campos en las nueve
 Comparativa concreta en `VIEWER_ENGINES.md`: That Open/web-ifc para futura vista BIM con IFC, Leaflet/Geoman para piloto de edición 2D y OpenSeadragon como alternativa de zoom de teselas. No se incorporaron dependencias ni se sustituyó el visor. La relación rombo/código/fuente/revisión se mantiene como contrato de datos.
 
 Nueva prueba `deployment-assets-test.mjs`: 1.171 imágenes comprobadas mediante HTTP autenticado contra el backend real local, con MIME, tamaño y hash; incluye los 443 rombos. Corrige MIME JPG/JPEG. `deployment-browser-test.mjs` prueba el rombo 8.2.4.2.16-1, plano y teselas con contraseña y service worker activo, online y tras recarga offline. Ambas pasan. La causa del fallo de PNG/plano en Render sigue sin establecerse; no se declara corregida a partir de pruebas locales. El comando build propuesto añade el control de imágenes y requiere aplicarse en el alojamiento para ejecutarse allí.
+
+## Editor de contornos 2D y recuperación de rombos
+
+Integración real de Leaflet + Geoman Free y validadores Turf locales, sin reconstruir el visor. Edición sobre PDF original, huecos/partes, deshacer/rehacer, historial y exportación; correcciones pendientes y locales. Consolidación opcional en SQLite derivada con respaldo y revisiones inmutables, sin modificar las bases originales. Ficha y catálogo recuperan la región original del PDF si falla el PNG. Alcance, límites y publicación en `CONTOUR_EDITOR.md`.
+
+El usuario confirmó que Groq funciona en Render; se conserva su configuración manual. La persistencia compartida, el conteo independiente de todos los rombos y la revisión técnica de todos los límites siguen pendientes. La PR anterior fue fusionada externamente; este incremento se presenta en una rama y PR nuevas.

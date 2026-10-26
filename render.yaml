@@ -3,7 +3,7 @@ services:
     name: atlas-hpc
     runtime: node
     plan: free
-    branch: feat/cielos-navigation-association
+    branch: feat/2d-contour-review
     autoDeploy: false
     buildCommand: node groq-test.mjs && node offline-test.mjs && node deployment-assets-test.mjs
     startCommand: node server/groq-server.mjs
@@ -20,7 +20,7 @@ services:
       - key: GROQ_API_KEY
         sync: false
       - key: GROQ_MODEL
-        value: llama-3.3-70b-versatile
+        sync: false
       - key: GROQ_MAX_REQUESTS
         value: "60"
       - key: GROQ_MAX_TOKENS

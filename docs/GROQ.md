@@ -53,7 +53,7 @@ El adaptador Groq es independiente del adaptador IA opcional anterior, que conti
 
 1. Crear una cuenta en Render y conectar GitHub con acceso al repositorio privado `sebacamposhan-cloud/atlas-hpc`.
 2. Crear un Blueprint desde ese repositorio, seleccionando la rama `feat/cielos-navigation-association` y el archivo `render.yaml`.
-3. Introducir `GROQ_API_KEY` en el campo secreto solicitado por Render y revisar el servicio antes de iniciar el despliegue. No copiar la clave a Git ni al chat.
+3. Introducir `GROQ_API_KEY` y un `GROQ_MODEL` de chat habilitado para la cuenta en los campos solicitados por Render y revisar el servicio antes de iniciar el despliegue. No copiar la clave a Git ni al chat.
 4. Render genera `ATLAS_ACCESS_PASSWORD`; consultarla en sus variables de entorno. El usuario de acceso a Atlas es `atlas`. La contraseña es distinta de la API key.
 5. Abrir la dirección que proporcione Render, entrar con esas credenciales y probar «Asistente». Si Groq rechaza el modelo, ejecutar `server/groq-check.mjs` en un entorno con la clave inyectada y actualizar `GROQ_MODEL` con un ID habilitado.
 
@@ -74,3 +74,5 @@ Con esta versión desplegada, abrir `/api/groq/models` en el mismo dominio de At
 - `models`: IDs accesibles. La lista puede incluir modelos de otras funciones; escoger uno compatible con chat/completions.
 
 El listado no consume el contador local de consultas de chat ni genera una respuesta. Si `listed` es falso, configurar GROQ_MODEL en Render con un modelo de chat habilitado. Si es verdadero y el chat aún falla, registrar el nuevo error antes de cambiar claves o modelos arbitrariamente. El diagnóstico real requiere ejecutarse en el servicio que tiene el secreto; las pruebas locales usan respuestas simuladas.
+
+El Blueprint deja `GROQ_MODEL` como configuración manual (`sync: false`) para conservar el modelo funcional de cada cuenta, en lugar de restaurar un ID de modelo no disponible. No cambiar la clave ni el modelo durante el despliegue del editor.
