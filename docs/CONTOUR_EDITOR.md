@@ -41,7 +41,7 @@ Los tests de navegador usan `PLAYWRIGHT_MODULE` y `CHROMIUM_PATH` para instalaci
 
 ## Publicación para probar hoy
 
-1. En Render → atlas-hpc → Settings, seleccionar la rama `fix/source-room-contours` para probar este incremento antes de fusionarlo.
+1. En Render → atlas-hpc → Settings, seleccionar `main` para las versiones revisadas y fusionadas en GitHub. Para probar el incremento de colores/selección antes de fusionarlo, seleccionar temporalmente `fix/layer-colors-selection`.
 2. Mantener las credenciales y el modelo Groq que ya funcionan. El Blueprint ya no impone el modelo antiguo.
 3. Manual Deploy → Deploy latest commit. Esperar **Live** y abrir https://atlas-hpc.onrender.com.
 4. Exportar respaldo local antes de probar correcciones. Abrir un recinto → Editar contorno → guardar y exportar; comprobar historial y recarga. Si se usa la copia offline, actualizar el paquete del plano con conexión.
