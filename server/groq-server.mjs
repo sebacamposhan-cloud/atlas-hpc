@@ -5,7 +5,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createGroq} from './groq.mjs';
 const root=fileURLToPath(new URL('../dist/',import.meta.url));
-const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.json':'application/json','.webmanifest':'application/manifest+json','.svg':'image/svg+xml','.png':'image/png','.webp':'image/webp','.pdf':'application/pdf','.woff2':'font/woff2'};
+const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.json':'application/json','.webmanifest':'application/manifest+json','.svg':'image/svg+xml','.jpg':'image/jpeg','.jpeg':'image/jpeg','.png':'image/png','.webp':'image/webp','.pdf':'application/pdf','.woff2':'font/woff2'};
 export async function createAtlasServer({env=process.env,fetchImpl=fetch}={}){
  const password=env.ATLAS_ACCESS_PASSWORD,username=env.ATLAS_ACCESS_USER||'atlas';
  if(!['127.0.0.1','localhost','::1'].includes(env.ATLAS_HOST||'127.0.0.1')&&!password)throw Error('Configura ATLAS_ACCESS_PASSWORD antes de exponer Atlas fuera de loopback.');

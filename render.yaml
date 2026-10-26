@@ -5,7 +5,7 @@ services:
     plan: free
     branch: feat/cielos-navigation-association
     autoDeploy: false
-    buildCommand: node groq-test.mjs && node offline-test.mjs
+    buildCommand: node groq-test.mjs && node offline-test.mjs && node deployment-assets-test.mjs
     startCommand: node server/groq-server.mjs
     healthCheckPath: /healthz
     envVars:

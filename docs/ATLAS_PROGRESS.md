@@ -71,3 +71,9 @@ Despliegue Groq preparado: `render.yaml` entrega sitio y backend en un servicio,
 ## Reconocimiento de rombos
 
 Ver `DIAMOND_RECOGNITION.md`. Detector independiente de seis campos en las nueve fuentes ARQ: 443 símbolos reconocidos, 443 observaciones cotejadas y 2.658 códigos coincidentes, incluyendo N/A/S/E. Catálogo completo con fuente y búsqueda fuera del recorte del plano, y marcas de rombo seleccionables por clic/teclado sin depender de contornos. No se modifican geometrías ni bases. La plantilla no se declara OCR universal ni se aplica sin revisión a otras disciplinas.
+
+## Evaluación de motores abiertos y entrega de imágenes
+
+Comparativa concreta en `VIEWER_ENGINES.md`: That Open/web-ifc para futura vista BIM con IFC, Leaflet/Geoman para piloto de edición 2D y OpenSeadragon como alternativa de zoom de teselas. No se incorporaron dependencias ni se sustituyó el visor. La relación rombo/código/fuente/revisión se mantiene como contrato de datos.
+
+Nueva prueba `deployment-assets-test.mjs`: 1.171 imágenes comprobadas mediante HTTP autenticado contra el backend real local, con MIME, tamaño y hash; incluye los 443 rombos. Corrige MIME JPG/JPEG. `deployment-browser-test.mjs` prueba el rombo 8.2.4.2.16-1, plano y teselas con contraseña y service worker activo, online y tras recarga offline. Ambas pasan. La causa del fallo de PNG/plano en Render sigue sin establecerse; no se declara corregida a partir de pruebas locales. El comando build propuesto añade el control de imágenes y requiere aplicarse en el alojamiento para ejecutarse allí.
