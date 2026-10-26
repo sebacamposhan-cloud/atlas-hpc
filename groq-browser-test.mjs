@@ -17,6 +17,9 @@ try{
   assert.equal(await page.locator('#assistantMessages img').count(),0);assert((await page.locator('#assistantMessages').innerText()).includes('<img'));
   await page.locator('#assistantClear').click();assert.equal(await page.locator('#assistantMessages p').count(),0);
   await page.locator('#assistantQuestion').fill('falla');await page.locator('#assistantSend').click();await page.locator('#assistantMessages .error').waitFor();assert.match(await page.locator('#assistantMessages .error').innerText(),/límite/);
+  await page.route('**/api/groq/chat',route=>route.fulfill({status:503,contentType:'text/html',body:'Temporary server startup'}));
+  await page.locator('#assistantQuestion').fill('Otra consulta');await page.locator('#assistantSend').click();await page.waitForFunction(()=>document.querySelector('#assistantMessages .error:last-child')?.textContent.includes('HTTP 503'));
+  await page.unroute('**/api/groq/chat');await page.locator('#assistantQuestion').fill('Reintento');await page.locator('#assistantSend').click();await page.waitForFunction(()=>document.querySelector('#assistantMessages p:last-child')?.className==='assistant');
   const bounds=await page.locator('#assistantDialog').boundingBox();assert(bounds.width<=viewport.width);assert(bounds.x>=0);
   await page.locator('#assistantClose').click();assert(!(await page.locator('#assistantDialog').isVisible()));assert.deepEqual(errors,[]);await context.close();
  }

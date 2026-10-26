@@ -8,9 +8,10 @@ Introducir `GROQ_API_KEY` como secreto del **backend**, nunca en `dist/`, Git o 
 
 Variables opcionales:
 
-- `GROQ_MODEL`: modelo habilitado en tu cuenta. Valor inicial `llama-3.3-70b-versatile`; verificar disponibilidad con el comando siguiente antes de usarlo.
+- `GROQ_MODEL`: modelo habilitado en tu cuenta. Valor predeterminado si falta la variable: `openai/gpt-oss-20b`; verificar disponibilidad con el comando siguiente antes de usarlo.
 - `GROQ_MAX_TOKENS`: máximo por respuesta; 1024 por defecto, hasta 8192.
-- `GROQ_MAX_REQUESTS`: máximo de intentos por proceso; 60 por defecto. Se reinicia al reiniciar Node y no es contabilidad de facturación.
+- `GROQ_MAX_REQUESTS`: máximo de intentos dentro de una ventana móvil; 60 por defecto. Se recupera automáticamente al vencer la ventana, sin reiniciar Node. No es contabilidad de facturación.
+- `GROQ_WINDOW_SECONDS`: duración de la ventana, 60 segundos por defecto (1–86400).
 - `ATLAS_PORT`: puerto local, 8000 por defecto.
 
 Con el secreto ya inyectado, comprobar autenticación y modelos sin generar una respuesta de pago:
@@ -76,3 +77,11 @@ Con esta versión desplegada, abrir `/api/groq/models` en el mismo dominio de At
 El listado no consume el contador local de consultas de chat ni genera una respuesta. Si `listed` es falso, configurar GROQ_MODEL en Render con un modelo de chat habilitado. Si es verdadero y el chat aún falla, registrar el nuevo error antes de cambiar claves o modelos arbitrariamente. El diagnóstico real requiere ejecutarse en el servicio que tiene el secreto; las pruebas locales usan respuestas simuladas.
 
 El Blueprint deja `GROQ_MODEL` como configuración manual (`sync: false`) para conservar el modelo funcional de cada cuenta, en lugar de restaurar un ID de modelo no disponible. No cambiar la clave ni el modelo durante el despliegue del editor.
+
+## Recuperación del bloqueo del asistente
+
+La implementación anterior detenía el chat después de 60 intentos durante toda la vida del proceso, incluidos intentos fallidos. Ahora se limita por ventana móvil y se informa el tiempo de espera mediante `Retry-After`, `retryAfterSeconds` y un código que distingue límite local de límite del proveedor. No se reenvían automáticamente consultas que podrían duplicarse.
+
+`GET /api/groq/status` está protegido por la misma autenticación de Atlas. Sin llamar al proveedor ni consumir consultas, informa presencia de configuración, modelo, ventana y capacidad restante. `configured` solo indica presencia de clave, no autenticación real ni disponibilidad del modelo; para ello se conserva `/api/groq/models`. Ninguna ruta devuelve la credencial. Las claves y modelos explícitos de Render se conservan, eliminando espacios exteriores; el predeterminado cambia únicamente si no se especifica modelo.
+
+El navegador explica mejor una sesión vencida, fallo de conexión y respuestas no JSON de una instancia que está arrancando. Pruebas `groq-test.mjs`, `groq-recovery-test.mjs` y `groq-browser-test.mjs` usan proveedor simulado y HTTP real local; no verifican la credencial de producción. El acceso de este entorno a onrender.com devuelve un bloqueo de proxy 403, por lo que no se atribuye el incidente de producción a una causa confirmada sin su mensaje de error.

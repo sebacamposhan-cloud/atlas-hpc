@@ -21,6 +21,7 @@ export async function createAtlasServer({env=process.env,fetchImpl=fetch}={}){
    const url=new URL(req.url,'http://localhost');
    if(url.pathname==='/healthz'&&req.method==='GET')return send(res,200,{status:'ok'});
    if(!authorized(req)){res.setHeader('WWW-Authenticate','Basic realm="Atlas HPC", charset="UTF-8"');return send(res,401,{error:'Acceso protegido. Introduce el usuario y contraseña de Atlas.'});}
+   if(url.pathname==='/api/groq/status'&&req.method==='GET')return send(res,200,groq.status());
    if(url.pathname==='/api/groq/models'&&req.method==='GET')return send(res,200,await groq.models());
    if(url.pathname.startsWith('/api/')){
     if(url.pathname!=='/api/groq/chat'||req.method!=='POST')return send(res,404,{error:'Ruta no disponible.'});
@@ -38,7 +39,7 @@ export async function createAtlasServer({env=process.env,fetchImpl=fetch}={}){
    const name=decodeURIComponent(url.pathname.endsWith('/')?url.pathname+'index.html':url.pathname),candidate=path.resolve(root,'.'+name),resolved=await realpath(candidate);
    if(!resolved.startsWith(path.resolve(root)+path.sep))return send(res,403,{error:'Ruta no permitida.'});
    const bytes=await readFile(resolved);res.writeHead(200,{'Content-Type':mime[path.extname(resolved)]||'application/octet-stream'});res.end(req.method==='HEAD'?undefined:bytes);
-  }catch(e){if(e.code==='EISDIR'){const url=new URL(req.url,'http://localhost');res.writeHead(301,{Location:url.pathname+'/'+url.search});return res.end();}if(e.code==='ENOENT')return send(res,404,{error:'Archivo no encontrado.'});send(res,e.status||500,{error:e.status?e.message:'No se pudo procesar la consulta.'});}
+  }catch(e){if(e.code==='EISDIR'){const url=new URL(req.url,'http://localhost');res.writeHead(301,{Location:url.pathname+'/'+url.search});return res.end();}if(e.code==='ENOENT')return send(res,404,{error:'Archivo no encontrado.'});if(e.retryAfterSeconds)res.setHeader('Retry-After',String(e.retryAfterSeconds));send(res,e.status||500,{error:e.status?e.message:'No se pudo procesar la consulta.',...(e.code&&e.status?{code:e.code}:{}),...(e.retryAfterSeconds?{retryAfterSeconds:e.retryAfterSeconds}:{})});}
  });
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){

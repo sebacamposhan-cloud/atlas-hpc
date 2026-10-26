@@ -11,10 +11,11 @@ export function createAssistant(ctx){
   controller=new AbortController();const timer=setTimeout(()=>controller.abort(),40000);
   const pending=[...messages,{role:'user',content:text}].slice(-15);
   try{const res=await fetch('/api/groq/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:pending,roomId:ctx.selected()?.id||null}),signal:controller.signal});
+   if(res.status===401)throw Error('La sesión de Atlas venció. Recarga la página e inicia sesión.');
    if(res.status===404||res.status===405)throw Error('El asistente requiere el backend Atlas con Groq. Configura e inicia server/groq-server.mjs.');
-   const value=await res.json();if(!res.ok)throw Error(value.error||'No se pudo consultar al asistente.');
-   if(typeof value.answer!=='string')throw Error('Respuesta no compatible.');
+   let value;try{value=await res.json();}catch{throw Error(res.status===401?'La sesión de Atlas venció. Recarga la página e inicia sesión.':'El servidor del asistente no respondió correctamente (HTTP '+res.status+'). Reintenta cuando el servicio esté disponible.');}if(!res.ok)throw Error((value?.error||'No se pudo consultar al asistente.')+(value?.retryAfterSeconds&&value.code!=='atlas_rate_limit'?' Reintenta en '+value.retryAfterSeconds+' segundos.':''));
+   if(typeof value?.answer!=='string')throw Error('Respuesta no compatible.');
    messages=[...pending,{role:'assistant',content:value.answer}];append('assistant',value.answer);$('assistantQuestion').value='';
-  }catch(e){append('error',e.name==='AbortError'?'La consulta tardó demasiado. Puedes reintentar.':e.message);}finally{clearTimeout(timer);busy=false;$('assistantSend').disabled=false;$('assistantClear').disabled=false;}
+  }catch(e){append('error',e.name==='AbortError'?'La consulta tardó demasiado. Puedes reintentar.':e instanceof TypeError?'No se pudo conectar con el asistente. Comprueba la conexión y reintenta.':e.message);}finally{clearTimeout(timer);busy=false;$('assistantSend').disabled=false;$('assistantClear').disabled=false;}
  };
 }
