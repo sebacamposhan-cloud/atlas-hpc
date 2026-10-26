@@ -62,3 +62,15 @@ El servidor admite el `PORT` asignado por el alojamiento y `ATLAS_HOST=0.0.0.0`.
 **Antes de cambiar de dirección de Atlas, exportar los respaldos de recintos y de obra del sitio actual.** LocalStorage, IndexedDB y las descargas offline pertenecen a cada origen/navegador: no se trasladan automáticamente al dominio nuevo. Importar los respaldos en el nuevo sitio y verificar su contenido antes de abandonar el anterior.
 
 Pruebas locales no equivalen a un despliegue Render validado. La disponibilidad del plan/modelo, autenticación real de Groq y funcionamiento en el dominio final se comprobarán después de conectar la cuenta y desplegar. El plan gratuito puede suspender el servicio durante inactividad y tardar en el primer acceso.
+
+## Diagnóstico de HTTP 404
+
+Un HTTP 404 del proveedor no demuestra que la API key sea válida ni que el modelo configurado esté habilitado. El backend conserva el endpoint oficial y ahora identifica códigos de error de modelo no encontrado/no disponible/retirado sin exponer mensajes crudos del proveedor.
+
+Con esta versión desplegada, abrir `/api/groq/models` en el mismo dominio de Atlas. Está protegido por el mismo usuario y contraseña, usa la clave ya configurada en Render y devuelve:
+
+- `configuredModel`: ID configurado (se eliminan espacios al principio/final).
+- `listed`: si aparece en el listado devuelto por Groq.
+- `models`: IDs accesibles. La lista puede incluir modelos de otras funciones; escoger uno compatible con chat/completions.
+
+El listado no consume el contador local de consultas de chat ni genera una respuesta. Si `listed` es falso, configurar GROQ_MODEL en Render con un modelo de chat habilitado. Si es verdadero y el chat aún falla, registrar el nuevo error antes de cambiar claves o modelos arbitrariamente. El diagnóstico real requiere ejecutarse en el servicio que tiene el secreto; las pruebas locales usan respuestas simuladas.

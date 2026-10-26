@@ -32,3 +32,15 @@ try{
  const response=await fetch(protectedBase+'/',{headers:{Authorization:'Basic '+Buffer.from('atlas:isolated-password').toString('base64')}});assert.equal(response.status,200);
 }finally{protectedServer.closeAllConnections();await new Promise(resolve=>protectedServer.close(resolve));}
 console.log('Deployment: public binding requires a password, health check exposes no documents, static/API access protected');
+
+const diagnostic=createGroq({GROQ_API_KEY:testKey,GROQ_MODEL:' unavailable-model '},async(url)=>url.endsWith('/models')?{ok:true,json:async()=>({data:[{id:'enabled-model'}]})}:{ok:false,status:404,json:async()=>({error:{code:'model_not_found',message:'untrusted provider detail '+testKey}})});
+assert.deepEqual(await diagnostic.models(),{configuredModel:'unavailable-model',listed:false,models:['enabled-model']});
+await assert.rejects(diagnostic.chat([{role:'user',content:'test'}]),e=>e.message.includes('GROQ_MODEL')&&!e.message.includes(testKey));
+assert.equal(diagnostic.usage().requests,1,'model listing must not consume the chat allowance');
+const diagnosticsServer=await createAtlasServer({env:{ATLAS_ACCESS_PASSWORD:'test-password',GROQ_API_KEY:testKey},fetchImpl:async()=>({ok:true,json:async()=>({data:[{id:'enabled-model'}]})})});
+await new Promise(resolve=>diagnosticsServer.listen(0,'127.0.0.1',resolve));
+try{
+ const url='http://127.0.0.1:'+diagnosticsServer.address().port+'/api/groq/models';assert.equal((await fetch(url)).status,401);
+ const response=await fetch(url,{headers:{Authorization:'Basic '+Buffer.from('atlas:test-password').toString('base64')}});assert.equal(response.status,200);const text=await response.text();assert(!text.includes(testKey));assert.deepEqual(JSON.parse(text).models,['enabled-model']);
+}finally{diagnosticsServer.closeAllConnections();await new Promise(resolve=>diagnosticsServer.close(resolve));}
+console.log('Groq model diagnostics: authenticated listing, sanitized provider errors and trimmed model configuration passed');

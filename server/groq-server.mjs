@@ -17,6 +17,7 @@ export async function createAtlasServer({env=process.env,fetchImpl=fetch}={}){
    const url=new URL(req.url,'http://localhost');
    if(url.pathname==='/healthz'&&req.method==='GET')return send(res,200,{status:'ok'});
    if(!authorized(req)){res.setHeader('WWW-Authenticate','Basic realm="Atlas HPC", charset="UTF-8"');return send(res,401,{error:'Acceso protegido. Introduce el usuario y contraseña de Atlas.'});}
+   if(url.pathname==='/api/groq/models'&&req.method==='GET')return send(res,200,await groq.models());
    if(url.pathname.startsWith('/api/')){
     if(url.pathname!=='/api/groq/chat'||req.method!=='POST')return send(res,404,{error:'Ruta no disponible.'});
     if(req.headers.origin&&new URL(req.headers.origin).host!==req.headers.host)return send(res,403,{error:'Origen no autorizado.'});
