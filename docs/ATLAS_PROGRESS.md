@@ -67,3 +67,7 @@ El selector principal de capas se reduce a Cielos, Pavimentos y Muros. Asepsia p
 Chat para consultas generales y resumen de fichas originales con contexto de recinto y referencias documentales, mediante backend Node. Clave solo en servidor; límite de intentos/tokens y errores explícitos. La configuración de producción y prueba real requieren credencial, modelo habilitado y servicio backend, ya que el hosting actual es estático. Ver `GROQ.md`.
 
 Despliegue Groq preparado: `render.yaml` entrega sitio y backend en un servicio, sin despliegue automático. Contraseña generada por Render protege documentos/API y el servidor exige esa protección al enlazar fuera de loopback. Pendiente conectar cuenta, introducir clave y validar el despliegue real. Respaldar datos locales antes de cambiar de dominio.
+
+## Reconocimiento de rombos
+
+Ver `DIAMOND_RECOGNITION.md`. Detector independiente de seis campos en las nueve fuentes ARQ: 443 símbolos reconocidos, 443 observaciones cotejadas y 2.658 códigos coincidentes, incluyendo N/A/S/E. Catálogo completo con fuente y búsqueda fuera del recorte del plano, y marcas de rombo seleccionables por clic/teclado sin depender de contornos. No se modifican geometrías ni bases. La plantilla no se declara OCR universal ni se aplica sin revisión a otras disciplinas.
