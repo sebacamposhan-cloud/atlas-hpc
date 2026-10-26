@@ -125,7 +125,7 @@ async function initialize(){
   await prepareViewer(atlas,uniqueRooms(data.rooms),aliases,runtime);
   document.querySelector('header .project span').textContent=nivel.nombre+' · Arquitectura';document.querySelector('.sideProject small').textContent='Arquitectura · '+nivel.nombre;
   const layerList=$('layerOriginal').closest('label');layerList.parentElement.querySelectorAll('[data-overlay-toggle]').forEach(e=>e.closest('label').remove());
-  for(const o of [...overlays()].reverse())layerList.insertAdjacentHTML('afterend',`<label class="check"><input type="checkbox" data-overlay-toggle="${esc(o.id)}" checked> ${esc(o.nombre)}</label>`);
+  for(const o of [...overlays()].reverse())layerList.insertAdjacentHTML('afterend',`<label class="check"><input type="checkbox" data-overlay-toggle="${esc(o.id)}" ${o.visible===false?'':'checked'}> ${esc(o.nombre)}</label>`);
   layerList.parentElement.querySelectorAll('[data-overlay-toggle]').forEach(e=>e.onchange=()=>showOverlay(e.dataset.overlayToggle,e.checked));
   liberacion ||= createLiberacion({esc,rooms:()=>uniqueRooms(data.rooms),toast,changed:()=>{ui?.refresh();runSearch();if(selected)renderDetail();},paint:state=>ui?.apply('liberacion',state),select:selectRoom,show:name=>ui?.show(name)});
   ui ||= createWorkspace({esc,rooms:()=>uniqueRooms(data.rooms),results:()=>results,data:()=>data,selected:()=>selected,editing:()=>!!edit,toast,modal,hasGeometry:id=>!!footprint(id),footprint,redraw:render,refresh:runSearch,search:()=>{clearTimeout(searchTimer);searchTimer=setTimeout(runSearch,160);},reset,select:selectRoom,excel,download:downloadBlob,scope:()=>atlas.scope,liberacion});

@@ -1,0 +1,61 @@
+<!doctype html><meta charset="utf-8"><title>Plano monocromático · nivel 2</title>
+<style>body{margin:0;font:14px sans-serif}canvas{display:block;max-width:100%}</style>
+<pre id="out">Cargando PDF…</pre>
+<script type="module">
+// Paso 3: renderiza el PDF en el marco de Atlas como mosaicos monocromáticos (mismo formato que dist/map del nivel −1).
+// render.html genera todo en dist/n02/map; render.html?x=..&y=..&w=..&h=..&s=.. solo muestra una zona de prueba.
+import * as pdfjs from '/repo/dist/vendor/pdf.mjs';
+pdfjs.GlobalWorkerOptions.workerSrc = '/repo/dist/vendor/pdf.worker.mjs';
+const q = new URLSearchParams(location.search);
+const log = s => { document.getElementById('out').textContent = s; fetch('/save?name=dist/n02/map/estado.txt', {method: 'POST', body: s}); };
+addEventListener('error', e => log('ERROR ' + e.message));
+addEventListener('unhandledrejection', e => log('ERROR ' + (e.reason?.message || e.reason)));
+const T = await (await fetch('/repo/data/n02/pdf-a-plano.json')).json(), A = T.pdfToWorld;
+const doc = await pdfjs.getDocument({url: '/repo/dist/source/n02-planta-arquitectura.pdf', standardFontDataUrl: '/repo/dist/vendor/standard_fonts/'}).promise;
+const page = await doc.getPage(1), vp = page.getViewport({scale: 1});
+
+// Monocromático. El canal más claro de cada píxel mide la «tinta»: un relleno de color es claro en algún canal,
+// una línea o un texto es oscuro en todos. Así los rellenos de zona se aclaran y el texto sobre ellos conserva contraste.
+function mono(ctx, w, h) {
+  const img = ctx.getImageData(0, 0, w, h), d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const m = Math.max(d[i], d[i + 1], d[i + 2]), f = m < 170 ? 1 : m > 235 ? .4 : 1 - .6 * (m - 170) / 65, v = 255 - (255 - m) * f;
+    d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+}
+async function region(x, y, w, h, s) {
+  const c = document.createElement('canvas'); c.width = Math.round(w * s); c.height = Math.round(h * s);
+  const ctx = c.getContext('2d', {willReadFrequently: true}); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+  await page.render({canvasContext: ctx, viewport: vp, background: 'white',
+    transform: [s * A[0][0], s * A[1][0], s * A[0][1], s * A[1][1], s * (A[0][2] - x), s * (A[1][2] - y)]}).promise;
+  mono(ctx, c.width, c.height); return c;
+}
+const save = async (name, c, type = 'image/webp', quality = .82) => fetch('/save?name=dist/n02/map/' + name, {method: 'POST', body: await new Promise(r => c.toBlob(r, type, quality))});
+
+if (q.has('x')) {
+  document.body.append(await region(+q.get('x'), +q.get('y'), +q.get('w'), +q.get('h'), +(q.get('s') || 1)));
+  log('Zona de prueba lista.');
+} else {
+  const tile = 768, CH = 4, levels = [{z: 0, scale: .5}, {z: 1, scale: 1}, {z: 2, scale: 2}], t0 = performance.now();
+  for (const L of levels) {
+    L.columns = Math.ceil(T.width * L.scale / tile); L.rows = Math.ceil(T.height * L.scale / tile);
+    const span = tile / L.scale;
+    // Bloques de 4×4 teselas por render: el PDF se procesa menos veces.
+    for (let by = 0; by < L.rows; by += CH) for (let bx = 0; bx < L.columns; bx += CH) {
+      const big = await region(bx * span, by * span, Math.min(CH, L.columns - bx) * span, Math.min(CH, L.rows - by) * span, L.scale);
+      for (let j = 0; j * tile < big.height; j++) for (let i = 0; i * tile < big.width; i++) {
+        const w = Math.min(tile, big.width - i * tile), h = Math.min(tile, big.height - j * tile), t = document.createElement('canvas');
+        t.width = w; t.height = h; t.getContext('2d').drawImage(big, i * tile, j * tile, w, h, 0, 0, w, h);
+        await save(`${L.z}/${bx + i}_${by + j}.webp`, t);
+      }
+      log(`Nivel ${L.z}: bloque ${bx},${by} · ${((performance.now() - t0) / 1000).toFixed(0)} s`);
+    }
+  }
+  await save('overview.webp', await region(0, 0, T.width, T.height, .3), 'image/webp', .8);
+  await save('export.jpg', await region(0, 0, T.width, T.height, .5), 'image/jpeg', .85);
+  await fetch('/save?name=dist/n02/map/index.json', {method: 'POST', body: JSON.stringify({origin: [0, 0], width: T.width, height: T.height, tileSize: tile,
+    overview: 'n02/map/overview.webp', export: 'n02/map/export.jpg', tilePath: 'n02/map/', levels: levels.map(({z, scale, columns, rows}) => ({z, scale, columns, rows}))})});
+  log('TERMINADO en ' + ((performance.now() - t0) / 1000).toFixed(0) + ' s. Ahora ejecuta: node scripts/import-n02.mjs');
+}
+</script>

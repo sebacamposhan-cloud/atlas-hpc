@@ -10,7 +10,7 @@ const walk=folder=>fs.readdirSync(path.join(dist,folder),{withFileTypes:true}).f
 for(const name of ['vendor/contour/validation.mjs','contour-geometry.mjs','source-image.mjs','diamonds.mjs','assistant.mjs','review-observations.mjs','cie-review-observations.json','geometry-authority.mjs','room-contour-repairs.mjs','documentary-evidence.mjs','supplemental-sources.mjs','discipline-model.mjs','construction-dashboard.mjs','door-pilot.json','disciplines.mjs','construction-store.mjs','disciplines.json','workspace.css','workspace.mjs','layers.mjs','documented-layer-colors.mjs','assets/layer-colors/cie-214.png','persistence.mjs','index.html','style.css','app.js','engine.mjs','web-store.mjs','viewer.mjs','gestures.mjs','hit-index.mjs','runtime-loader.mjs','offline.mjs','runtime.json','manifest.webmanifest','icons/atlas.svg','icons/atlas-192.png','icons/atlas-512.png','map/overview.webp','pisos.js','level.mjs','liberacion.mjs']) add(name,'plan',true);
 add('contour-editor.mjs');
 // Pisos adicionales y ejemplo de liberación. La página de redirección n02/index.html no se guarda (solo la portada es HTML).
-for(const name of [...walk('n02'),...walk('liberacion')]) if(!name.endsWith('.html')) add(name);
+for(const name of [...walk('n02'),...walk('liberacion')]) if(!/\.(html|txt)$/.test(name)) add(name);
 for(const name of walk('map')) if(name!=='map/overview.webp') add(name);
 for(const name of walk('disciplines')) add(name);
 for(const name of walk('geometry')) add(name);

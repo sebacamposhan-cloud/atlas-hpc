@@ -65,6 +65,10 @@ const rows = rooms.map(source => {
   r.finishes = r.finishes.map(({bbox, ...d}) => { const key = JSON.stringify(d); if (!finishIndex.has(key)) { finishIndex.set(key, finishes.length); finishes.push(d); } return [finishIndex.get(key), bbox]; });
   return fields.map(key => r[key]);
 });
+const indice = path.join(out, 'map', 'index.json');
+if (!fs.existsSync(indice)) throw Error('Falta dist/n02/map/index.json: genera primero el plano con scripts/n02-plano (ver LEEME.md).');
+const mosaicos = JSON.parse(fs.readFileSync(indice, 'utf8'));
+if (Math.abs(mosaicos.width - W) > .5 || Math.abs(mosaicos.height - H) > .5) throw Error('El plano de dist/n02/map no corresponde al marco actual: vuelve a generarlo.');
 // La vista completa coincide con el plano de fondo: la exportación PDF/PNG lo supone.
 const ambito = caja(plano.bounds), vista = [0, 0, W, H];
 const bundle = {
@@ -72,36 +76,23 @@ const bundle = {
   catalog: {fields, pooledFields, strings, finishes, rows, base: {project: base.project, documents, materials: base.materials, expected_documents: documents.length}},
   atlas: {width: W, height: H, tiles: documents.map((d, i) => ({id: d.id, offset: [0, 0], clip: caja(plano.sectores[i].r)})),
     alignment: 'Coordenadas comunes de la planta DWG del nivel 2', scope: {name: 'Sectores A–H · 8 láminas', sourceLabels: 'A-501 a A-508', bounds: ambito, view: vista}},
-  map: {origin: [0, 0], width: W, height: H, tileSize: 768, overview: 'n02/plano.svg', export: 'n02/plano.svg', levels: [],
-    overlays: [{id: 'ejes', nombre: 'Ejes', href: 'n02/ejes.svg'}, {id: 'sectores', nombre: 'Bordes de sectores', href: 'n02/sectores.svg'}]},
+  // Plano de fondo: mosaicos monocromáticos de la planta PDF (scripts/n02-plano). Bordes de sectores como capa opcional.
+  map: {...mosaicos, overlays: [{id: 'sectores', nombre: 'Bordes de sectores', href: 'n02/sectores.svg', visible: false}]},
   selection: {schema: 1, rooms: []}
 };
 
-// Planos de fondo en SVG: monocromáticos, como el plano del nivel −1.
+// Bordes de sectores (capa opcional sobre el plano monocromático).
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
-const trazo = (lista, cerrar = false) => lista.map(arr => { const p = pares(arr); return 'M' + p.map(v => v.join(' ')).join('L') + (cerrar ? 'Z' : ''); }).join('');
-const svg = (contenido, fondo = false) => `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${fondo ? `<rect width="${W}" height="${H}" fill="#fff"/>` : ''}${contenido}</svg>`;
-const linea = (lista, color, ancho) => `<path d="${trazo(lista)}" fill="none" stroke="${color}" stroke-width="${ancho}" stroke-linejoin="round" stroke-linecap="round"/>`;
-const c = plano.capas;
-const nombres = plano.recintos.map(rec => { const [x, y] = pt(rec.p[0], rec.p[1]); return `<text x="${x}" y="${y}">${esc(rec.nombre)}<tspan x="${x}" dy="9" class="c">${esc(rec.codigo)}</tspan></text>`; }).join('');
-const fondo = svg([
-  linea(c.losa, '#b9bec4', .6), linea(c.escaleras, '#8a9199', .6), linea(c.ascensores, '#8a9199', .6),
-  linea(c.puertas, '#6f7780', .6), linea(c.ventanas, '#59626b', .8), linea(c.muros, '#22272d', 1.2),
-  `<path d="${trazo(c.pilares, true)}${trazo(plano.pilares, true)}" fill="#22272d"/>`,
-  `<g font-family="Arial,Helvetica,sans-serif" font-size="7" fill="#4a535b" text-anchor="middle"><style>.c{font-size:5.5px;fill:#7a838b}</style>${nombres}</g>`
-].join(''), true);
-const m = 250;
-const ejes = svg(`<g stroke="#9aa3ad" stroke-width=".7" stroke-dasharray="8 4 2 4">${plano.ejes.map(e => { const [a, z] = e.o === 'h' ? [pt(bx0 - m, e.c), pt(bx1 + m, e.c)] : [pt(e.c, by0 - m), pt(e.c, by1 + m)]; return `<line x1="${a[0]}" y1="${a[1]}" x2="${z[0]}" y2="${z[1]}"/>`; }).join('')}</g><g font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="700" fill="#4a535b" text-anchor="middle" dominant-baseline="central">${plano.ejes.flatMap(e => { const [a, z] = e.o === 'h' ? [pt(bx0 - m, e.c), pt(bx1 + m, e.c)] : [pt(e.c, by0 - m), pt(e.c, by1 + m)]; return [a, z].map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="11" fill="#fff" stroke="#9aa3ad"/><text x="${p[0]}" y="${p[1]}">${esc(e.t)}</text>`); }).join('')}</g>`);
-const sectores = svg(plano.sectores.map(s => { const [x, y, w, h] = caja(s.r); return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="#386c84" stroke-width="2" stroke-dasharray="10 6"/><text x="${x + 8}" y="${y + 20}" font-family="Arial,Helvetica,sans-serif" font-size="16" font-weight="700" fill="#386c84">${esc(s.nombre)} · ${esc(s.id)}</text>`; }).join(''));
+const sectores = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${plano.sectores.map(s => { const [x, y, w, h] = caja(s.r); return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="#386c84" stroke-width="2" stroke-dasharray="10 6"/><text x="${x + 8}" y="${y + 20}" font-family="Arial,Helvetica,sans-serif" font-size="16" font-weight="700" fill="#386c84">${esc(s.nombre)} · ${esc(s.id)}</text>`; }).join('')}</svg>`;
 
 fs.mkdirSync(path.join(out, 'geometry'), {recursive: true});
 fs.writeFileSync(path.join(out, 'runtime.json'), JSON.stringify(bundle));
-fs.writeFileSync(path.join(out, 'plano.svg'), fondo);
-fs.writeFileSync(path.join(out, 'ejes.svg'), ejes);
 fs.writeFileSync(path.join(out, 'sectores.svg'), sectores);
+// El dibujo simplificado anterior se reemplazó por los mosaicos del PDF.
+for (const viejo of ['plano.svg', 'ejes.svg']) fs.rmSync(path.join(out, viejo), {force: true});
 for (const doc of documents) fs.writeFileSync(path.join(out, 'geometry', doc.id + '.json'), JSON.stringify({rooms: rooms.filter(r => r.document_id === doc.id).map(({id, polygon, holes}) => ({id, polygon, holes}))}));
 const original = path.join(root, '..', 'Planos N02', pdf?.archivo || '');
 if (pdf && fs.existsSync(original)) fs.copyFileSync(original, path.join(dist, 'source', PDF));
 console.log(JSON.stringify({rooms: rooms.length, documents: documents.length, width: W, height: H,
-  runtimeBytes: fs.statSync(path.join(out, 'runtime.json')).size, planoBytes: fs.statSync(path.join(out, 'plano.svg')).size,
+  runtimeBytes: fs.statSync(path.join(out, 'runtime.json')).size, mosaicos: mosaicos.levels.map(l => l.columns * l.rows).reduce((a, b) => a + b),
   pdf: fs.existsSync(path.join(dist, 'source', PDF)) ? PDF : 'no copiado (falta la carpeta Planos N02)'}));

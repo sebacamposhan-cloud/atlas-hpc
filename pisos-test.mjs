@@ -27,6 +27,8 @@ for (const piso of pisos) {
   for (const d of data.documents) assert(atlas.tiles.some(t => t.id === d.id), piso.id + ': lámina sin transformación ' + d.id);
   assert(fs.existsSync('dist/' + map.overview), piso.id + ': falta el plano de fondo');
   for (const o of map.overlays || []) assert(fs.existsSync('dist/' + o.href), piso.id + ': falta la capa ' + o.id);
+  assert(map.levels.length && fs.existsSync('dist/' + map.export), piso.id + ': el plano debe tener mosaicos y exportación');
+  for (const l of map.levels) for (let y = 0; y < l.rows; y++) for (let x = 0; x < l.columns; x++) assert(fs.existsSync(`dist/${map.tilePath || 'map/'}${l.z}/${x}_${y}.webp`), `${piso.id}: falta la tesela ${l.z}/${x}_${y}`);
   if (piso.datos) {
     // Pisos importados desde DWG: geometría completa, dentro del plano y por lámina.
     const inside = p => p[0] >= 0 && p[1] >= 0 && p[0] <= map.width && p[1] <= map.height;
@@ -66,6 +68,6 @@ try {
   const sinBarra = await fetch(base + '/n02?x=1', {headers, redirect: 'manual'});
   assert.equal(sinBarra.status, 301);
   assert.equal(sinBarra.headers.get('location'), '/n02/?x=1');
-  for (const file of ['/pisos.js', '/level.mjs', '/liberacion.mjs', '/n02/runtime.json', '/n02/plano.svg', '/liberacion/datos-ejemplo.xlsx']) assert.equal((await fetch(base + file, {headers})).status, 200, file);
+  for (const file of ['/pisos.js', '/level.mjs', '/liberacion.mjs', '/n02/runtime.json', '/n02/map/overview.webp', '/n02/map/2/8_10.webp', '/liberacion/datos-ejemplo.xlsx']) assert.equal((await fetch(base + file, {headers})).status, 200, file);
   console.log(JSON.stringify({checks: 'passed', recintosPorPiso: resumen, semaforoEjemploN02: estados, scope: 'Datos de cada piso, plano y capas, geometrías, misma portada, redirección /n02/, contraseña, paquete sin conexión y semáforo de liberación.'}));
 } finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }

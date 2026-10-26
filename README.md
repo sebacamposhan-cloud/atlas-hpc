@@ -5,11 +5,12 @@ Todos los pisos usan la misma interfaz de Atlas: explorador de planos, dashboard
 | Piso | Dirección | Datos | Fuente |
 |---|---|---|---|
 | Nivel −1 | `/` | `dist/runtime.json` | 9 láminas PDF; rombos, Cielos y Pavimentos |
-| Nivel 2 | `/?nivel=N02` | `dist/n02/` | Planta DWG (8 láminas) convertida con `scripts/import-n02.mjs` |
+| Nivel 2 | `/?nivel=N02` | `dist/n02/` | Recintos y monografía de la planta DWG (8 láminas, `scripts/import-n02.mjs`); plano monocromático de la planta PDF vectorial (`scripts/n02-plano/`) |
 
 - La lista de pisos vive en `dist/pisos.js`; `dist/level.mjs` expone el piso activo a los módulos.
 - Las correcciones y respaldos se guardan por piso. El nivel −1 conserva las claves originales.
 - El nivel 2 usa la misma escala que el −1 (puntos PDF 1:50). Sus contornos vienen del DWG; no tiene rombos dibujados ni láminas de especialidad, así que esas funciones no aparecen en ese piso.
+- El plano de fondo del nivel 2 son mosaicos monocromáticos de `dist/source/n02-planta-arquitectura.pdf`, alineados con los recintos del DWG por sus códigos (error mediano ≈ 4 cm; ver `data/n02/pdf-a-plano.json`). Para regenerarlo: `scripts/n02-plano/LEEME.md`.
 - `/n02/` redirige a `/?nivel=N02` y conserva el enlace a un recinto (`/n02/#código`).
 - Enlaces directos: `/?nivel=N02#4.4.1.3.1-10` abre la ficha de un recinto.
 
