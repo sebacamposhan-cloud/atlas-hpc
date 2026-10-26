@@ -20,4 +20,4 @@ for repair in repairs:
   assert g.intersection(neighbor).area<.05,('Overlap introduced',repair['id'],other)
 baseline=json.loads((root/'docs/audit/baseline-hashes.json').read_text())
 for name,digest in baseline.items():assert hashlib.sha256((root/name).read_bytes()).hexdigest()==digest,name
-print('14 derived shapes valid, no neighbor overlap above 0.05 PDF point², 36 original hashes preserved')
+print(f'{len(repairs)} derived shapes valid, no neighbor overlap above 0.05 PDF point², 36 original hashes preserved')

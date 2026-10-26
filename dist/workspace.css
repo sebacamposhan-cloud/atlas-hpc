@@ -41,3 +41,11 @@ body>header{margin-left:var(--sidebar);height:64px;padding:0 22px;gap:15px;backg
 .legendItems i{box-sizing:border-box;border:1px solid #596c7a55}
 
 #polygons{mix-blend-mode:multiply}
+
+@media(max-width:700px){
+ .right{height:145px;max-height:25dvh;overflow:hidden}.sheetExpanded .right{height:65dvh;max-height:65dvh;overflow:auto}
+ #expandDetail{height:32px;min-height:32px;padding:6px;display:flex;align-items:center;justify-content:center;gap:8px}#expandDetail span{margin:0;width:28px;height:4px}.detailToggleLabel{font-size:11px;color:#005fcc;font-weight:600}
+ body:not(.sheetExpanded) .right #detail{padding:0 42px 8px 16px}body:not(.sheetExpanded) .right #detail>:not(.detailCode):not(.detailName){display:none}
+ body:not(.sheetExpanded) .right .detailCode{font-size:17px;margin:0 0 3px;padding:0}body:not(.sheetExpanded) .right .detailName{font-size:14px;line-height:1.3;margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+ .planheader{padding:8px 10px;max-width:185px}.planheader h1{font-size:12px}#selectedRoomBadge{font-size:10px!important;margin-top:3px;max-width:165px}
+}

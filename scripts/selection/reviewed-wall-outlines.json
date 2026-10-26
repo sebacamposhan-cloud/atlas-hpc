@@ -1,0 +1,262 @@
+[
+  {
+    "id": "505-49eb24e4:r0004",
+    "code": "8.1.7.1.6-1",
+    "sourceSha256": "49eb24e4877d73d8b1e6ae2747ad86748c81765e966e5db6e66ef7211f63f280",
+    "rings": [
+      {
+        "polygon": [
+          [
+            495.36,
+            388.68
+          ],
+          [
+            736.08,
+            388.68
+          ],
+          [
+            736.08,
+            426.12
+          ],
+          [
+            784.92,
+            426.12
+          ],
+          [
+            784.92,
+            388.68
+          ],
+          [
+            1200.96,
+            388.68
+          ],
+          [
+            1200.96,
+            426.12
+          ],
+          [
+            1249.8,
+            426.12
+          ],
+          [
+            1249.8,
+            388.68
+          ],
+          [
+            1665.84,
+            388.68
+          ],
+          [
+            1665.84,
+            426.12
+          ],
+          [
+            1714.68,
+            426.12
+          ],
+          [
+            1714.68,
+            388.68
+          ],
+          [
+            2130.72,
+            388.68
+          ],
+          [
+            2130.72,
+            426.12
+          ],
+          [
+            2171.52,
+            426.12
+          ],
+          [
+            2171.52,
+            845.64
+          ],
+          [
+            2130.72,
+            845.64
+          ],
+          [
+            2130.72,
+            892.68
+          ],
+          [
+            2171.52,
+            892.68
+          ],
+          [
+            2171.52,
+            1187.52
+          ],
+          [
+            417.6,
+            1187.52
+          ],
+          [
+            417.6,
+            892.68
+          ],
+          [
+            495.36,
+            892.68
+          ]
+        ],
+        "holes": [
+          [
+            [
+              736.08,
+              845.64
+            ],
+            [
+              784.9200000000001,
+              845.64
+            ],
+            [
+              784.9200000000001,
+              892.68
+            ],
+            [
+              736.08,
+              892.68
+            ]
+          ],
+          [
+            [
+              1200.96,
+              845.64
+            ],
+            [
+              1249.8,
+              845.64
+            ],
+            [
+              1249.8,
+              892.68
+            ],
+            [
+              1200.96,
+              892.68
+            ]
+          ],
+          [
+            [
+              1665.84,
+              845.64
+            ],
+            [
+              1714.6799999999998,
+              845.64
+            ],
+            [
+              1714.6799999999998,
+              892.68
+            ],
+            [
+              1665.84,
+              892.68
+            ]
+          ]
+        ]
+      }
+    ],
+    "evidence_paths": [
+      6047,
+      6121,
+      6359,
+      6367,
+      6792,
+      7228,
+      7238
+    ],
+    "review": "Traced and visually checked against source wall faces; pending technical approval. Bodega door closure follows wall plane; source white/blue floor transition defines open southern edge."
+  },
+  {
+    "id": "508-88399997:r0018",
+    "code": "3.2.4.3.1-1",
+    "sourceSha256": "88399997fbaf50ad2c8885b0025de0648c1b6ccb858fff075fbae09c4978027d",
+    "rings": [
+      {
+        "polygon": [
+          [
+            854.64,
+            1539.84
+          ],
+          [
+            1034.04,
+            1539.84
+          ],
+          [
+            1034.04,
+            1690.92
+          ],
+          [
+            974.16,
+            1681.56
+          ],
+          [
+            914.4,
+            1671.84
+          ],
+          [
+            854.64,
+            1661.88
+          ]
+        ],
+        "holes": []
+      }
+    ],
+    "evidence_paths": [
+      117738,
+      117739,
+      117740
+    ],
+    "review": "Traced and visually checked against source wall faces; pending technical approval. Bodega door closure follows wall plane; source white/blue floor transition defines open southern edge."
+  },
+  {
+    "id": "508-88399997:r0019",
+    "code": "3.2.4.3.5-1",
+    "sourceSha256": "88399997fbaf50ad2c8885b0025de0648c1b6ccb858fff075fbae09c4978027d",
+    "rings": [
+      {
+        "polygon": [
+          [
+            732.48,
+            1397.88
+          ],
+          [
+            846.72,
+            1397.88
+          ],
+          [
+            846.72,
+            1660.56
+          ],
+          [
+            810,
+            1654.2
+          ],
+          [
+            773.28,
+            1647.84
+          ],
+          [
+            773.28,
+            1597.88
+          ],
+          [
+            732.48,
+            1597.88
+          ]
+        ],
+        "holes": []
+      }
+    ],
+    "evidence_paths": [
+      117741,
+      117742
+    ],
+    "review": "Traced and visually checked against source wall faces; pending technical approval. Bodega door closure follows wall plane; source white/blue floor transition defines open southern edge."
+  }
+]

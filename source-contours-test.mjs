@@ -8,7 +8,7 @@ import {validateParts} from './dist/contour-geometry.mjs';
 const bundle=decodeRuntime(JSON.parse(fs.readFileSync('dist/runtime.json'))),before=JSON.stringify(bundle);
 const rows=bundle.data.rooms.filter(r=>bundle.selection.rooms.some(e=>e.id===r.id));
 const resolved=resolveFootprints(bundle.atlas,rows,new Map(),bundle.selection),hit=buildHitIndex(resolved.values());
-assert.equal(roomContourRepairs.filter(r=>r.kind==='source_outline').length,13);
+assert.equal(roomContourRepairs.filter(r=>r.kind==='source_outline').length,16);
 for(const repair of roomContourRepairs){
  const source=bundle.data.documents.find(d=>d.id===repair.sourceId),r=rows.find(r=>r.id===repair.id);
  assert.equal(source.sha256,repair.sourceSha256);
@@ -31,9 +31,14 @@ for(const [id,p] of [[serio,[1550,695]],[prep,[1450,425]]]){
  const [x,y]=roomContourRepairs.find(r=>r.id===id).offset;
  assert.notEqual(originalAux({x:x+p[0],y:y+p[1]}),id,'old data must reproduce the omitted screenshot area');
 }
+assert.equal(localHit('505-49eb24e4:r0004',[1800,600]),'505-49eb24e4:r0004','full warehouse extends beyond old artificial division');
+assert.notEqual(localHit('505-49eb24e4:r0004',[760,860]),'505-49eb24e4:r0004','warehouse column is excluded');
+assert.equal(localHit('508-88399997:r0018',[900,1550]),'508-88399997:r0018','dirty-room sink strip restored');
+assert.notEqual(localHit('508-88399997:r0018',[900,1685]),'508-88399997:r0018','outside sloping wall excluded');
+assert.notEqual(localHit('508-88399997:r0019',[800,1658]),'508-88399997:r0019','outside sloping storage wall excluded');
 const old=rows.find(r=>r.id===office),manual={...old,version:2,geometry_method:'Edición manual en navegador',geometry_status:'Pendiente de revisión',polygon:[[800,2020],[810,2020],[810,2030],[800,2030]],holes:[]};
 assert.equal(resolveFootprints(bundle.atlas,rows.map(r=>r.id===office?manual:r),new Map(),bundle.selection).get(office).method,'manual');
 const shifted=structuredClone(bundle.atlas);shifted.tiles.find(t=>t.id===old.document_id).offset[0]+=1;
 assert.notEqual(resolveFootprints(shifted,rows,new Map(),bundle.selection).get(office).method,'source_repair','changed registration must reject stale repairs');
 assert.equal(JSON.stringify(bundle),before);
-console.log('Source contours: 13 outlines, matching source hashes, valid geometry, restored screenshot strips, column/bathroom exclusions, manual precedence and unchanged originals passed');
+console.log('Source contours: 16 outlines, matching source hashes, valid geometry, restored screenshot strips, column/bathroom exclusions, manual precedence and unchanged originals passed');
