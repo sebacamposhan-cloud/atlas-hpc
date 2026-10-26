@@ -1,0 +1,122 @@
+{
+  "scope": "13 visually inspected source outlines; one neighboring auxiliary trimmed. Not global technical certification.",
+  "repairs": [
+    {
+      "id": "501-5016771b:r0012",
+      "code": "3.1.4.3.12-1",
+      "white_path": 5768,
+      "source_sha256": "5016771b32891f3fef6df9ed64be306f9ce1696232ac4bbfdb1c23a04ec8fcdf",
+      "vertices": 4,
+      "area_pdf_points2": 17080.50448867415,
+      "status": "pending technical review"
+    },
+    {
+      "id": "502-41a89a7c:r0016",
+      "code": "8.2.4.1.3-1",
+      "white_path": 7015,
+      "source_sha256": "41a89a7c53daf208886ee6bc20b91be18d6c5715ad3c0242d07b12bbcb69ec0b",
+      "vertices": 6,
+      "area_pdf_points2": 50947.96772206103,
+      "status": "pending technical review"
+    },
+    {
+      "id": "504-58899dd9:r0019",
+      "code": "3.1.1.6.8-1",
+      "white_path": 4703,
+      "source_sha256": "58899dd9a6404400d9a9060ce45ed11b5a84a33c23eef88a4afef60b4b527545",
+      "vertices": 6,
+      "area_pdf_points2": 43204.78596117993,
+      "status": "pending technical review"
+    },
+    {
+      "id": "505-49eb24e4:r0033",
+      "code": "8.2.4.2.15-1",
+      "white_path": 6972,
+      "source_sha256": "49eb24e4877d73d8b1e6ae2747ad86748c81765e966e5db6e66ef7211f63f280",
+      "vertices": 4,
+      "area_pdf_points2": 19375.03988805333,
+      "status": "pending technical review"
+    },
+    {
+      "id": "507-aa38cf6c:r0035",
+      "code": "3.1.1.2.2-1",
+      "white_path": 11514,
+      "source_sha256": "aa38cf6cf2cd894283963c399e176bffc54318192f0136acb730051e2b3e3174",
+      "vertices": 6,
+      "area_pdf_points2": 34330.716661993225,
+      "status": "pending technical review"
+    },
+    {
+      "id": "508-88399997:r0035",
+      "code": "3.1.1.5.5-1",
+      "white_path": 8908,
+      "source_sha256": "88399997fbaf50ad2c8885b0025de0648c1b6ccb858fff075fbae09c4978027d",
+      "vertices": 4,
+      "area_pdf_points2": 90631.09203725551,
+      "status": "pending technical review"
+    },
+    {
+      "id": "508-88399997:r0004",
+      "code": "2.1.4.1.3-2",
+      "white_path": 8933,
+      "source_sha256": "88399997fbaf50ad2c8885b0025de0648c1b6ccb858fff075fbae09c4978027d",
+      "vertices": 10,
+      "area_pdf_points2": 26906.61579301911,
+      "status": "pending technical review"
+    },
+    {
+      "id": "508-88399997:r0006",
+      "code": "2.1.4.3.4-1",
+      "white_path": 8936,
+      "source_sha256": "88399997fbaf50ad2c8885b0025de0648c1b6ccb858fff075fbae09c4978027d",
+      "vertices": 6,
+      "area_pdf_points2": 36198.85441804429,
+      "status": "pending technical review"
+    },
+    {
+      "id": "508-88399997:r0047",
+      "code": "3.1.1.6.14-1",
+      "white_path": 5291,
+      "source_sha256": "88399997fbaf50ad2c8885b0025de0648c1b6ccb858fff075fbae09c4978027d",
+      "vertices": 6,
+      "area_pdf_points2": 11125.790454394228,
+      "status": "pending technical review"
+    },
+    {
+      "id": "508-88399997:r0023",
+      "code": "3.1.1.6.2-1",
+      "white_path": 8923,
+      "source_sha256": "88399997fbaf50ad2c8885b0025de0648c1b6ccb858fff075fbae09c4978027d",
+      "vertices": 8,
+      "area_pdf_points2": 64635.89135898071,
+      "status": "pending technical review"
+    },
+    {
+      "id": "508-88399997:r0032",
+      "code": "3.1.1.5.1-1",
+      "white_path": 8912,
+      "source_sha256": "88399997fbaf50ad2c8885b0025de0648c1b6ccb858fff075fbae09c4978027d",
+      "vertices": 10,
+      "area_pdf_points2": 102977.56201040186,
+      "status": "pending technical review"
+    },
+    {
+      "id": "508-88399997:r0033",
+      "code": "3.1.1.5.2-1",
+      "white_path": 8913,
+      "source_sha256": "88399997fbaf50ad2c8885b0025de0648c1b6ccb858fff075fbae09c4978027d",
+      "vertices": 6,
+      "area_pdf_points2": 27726.947173489083,
+      "status": "pending technical review"
+    },
+    {
+      "id": "508-88399997:r0043",
+      "code": "3.1.1.6.17-1",
+      "white_path": 8916,
+      "source_sha256": "88399997fbaf50ad2c8885b0025de0648c1b6ccb858fff075fbae09c4978027d",
+      "vertices": 6,
+      "area_pdf_points2": 20199.26393613492,
+      "status": "pending technical review"
+    }
+  ]
+}
