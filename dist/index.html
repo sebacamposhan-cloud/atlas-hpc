@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="workspace.css">
 </head>
 <body class="hideLeft hideRight booting" data-module="map">
-<nav class="appSidebar" aria-label="Módulos Atlas"><div class="sideBrand"><span class="brandMark">A</span><span class="navText"><b>ATLAS HPC</b><small>INGENIERÍA DOCUMENTAL</small></span></div><div class="sideProject"><span class="navText">Hospital Provincia Cordillera<br><small>Arquitectura · Nivel −1</small></span></div><div class="navGroup"><button data-module="work" title="Control de obra"><span class="navIcon">▦</span><span class="navText">Control de obra</span></button><button data-module="map" class="active" title="Explorador de planos"><span class="navIcon">▱</span><span class="navText">Explorador de planos</span></button><button data-module="dashboard" class="" title="Dashboard de recintos"><span class="navIcon">▥</span><span class="navText">Dashboard de recintos</span></button><button data-module="layers" class="" title="Capas y terminaciones"><span class="navIcon">▧</span><span class="navText">Capas y terminaciones</span></button><button data-module="rooms" class="" title="Gestión de recintos"><span class="navIcon">☷</span><span class="navText">Gestión de recintos</span></button><button data-module="docs" class="" title="Documentación y fuentes"><span class="navIcon">▤</span><span class="navText">Documentación y fuentes</span></button></div><div class="sideBottom"><small class="navText">ATLAS 3.0 · incremental<br>Datos documentales · Copia local</small><button id="sidebarCollapse" aria-label="Contraer navegación">⇤</button></div></nav><header>
+<nav class="appSidebar" aria-label="Módulos Atlas"><div class="sideBrand"><span class="brandMark">A</span><span class="navText"><b>ATLAS HPC</b><small>INGENIERÍA DOCUMENTAL</small></span></div><div class="sideProject"><span class="navText">Hospital Provincia Cordillera<br><small>Arquitectura · Nivel −1</small></span></div><div class="navGroup"><button data-module="work" title="Control de obra"><span class="navIcon">▦</span><span class="navText">Control de obra</span></button><button data-module="map" class="active" title="Explorador de planos"><span class="navIcon">▱</span><span class="navText">Explorador de planos</span></button><button data-module="dashboard" class="" title="Dashboard de recintos"><span class="navIcon">▥</span><span class="navText">Dashboard de recintos</span></button><button data-module="liberacion" class="" title="Liberación de frentes"><span class="navIcon">◐</span><span class="navText">Liberación de frentes</span></button><button data-module="layers" class="" title="Capas y terminaciones"><span class="navIcon">▧</span><span class="navText">Capas y terminaciones</span></button><button data-module="rooms" class="" title="Gestión de recintos"><span class="navIcon">☷</span><span class="navText">Gestión de recintos</span></button><button data-module="docs" class="" title="Documentación y fuentes"><span class="navIcon">▤</span><span class="navText">Documentación y fuentes</span></button></div><div class="sideBottom"><small class="navText">ATLAS 3.0 · incremental<br>Datos documentales · Copia local</small><button id="sidebarCollapse" aria-label="Contraer navegación">⇤</button></div></nav><header>
 <button id="navToggle" title="Buscar recintos" aria-label="Buscar recintos">⌕</button>
 <div class="brand">
 <b>ATLAS<span>HPC</span>
@@ -27,7 +27,7 @@
 </div>
 <div class="project">Hospital Provincia Cordillera <span>Nivel −1 · Arquitectura</span>
 </div>
-<span data-selector-piso="N-1"></span>
+<span data-selector-piso></span>
 <div class="globalSearchWrap"><input id="globalSearch" aria-label="Búsqueda global" placeholder="Buscar código, recinto o terminación…"><kbd>⌘ K</kbd></div><button id="dashboard">Dashboard</button>
 <button id="offlineOpen" class="offlineButton" aria-label="Modo sin conexión"><span id="offlineLabel">Sin conexión</span></button>
 <button id="detailToggle" title="Mostrar u ocultar ficha">Ficha</button>
@@ -208,7 +208,7 @@ Ejes A–W · 1–12
 <span aria-hidden="true">↓</span>Sin conexión</button>
 <button id="bottomLayers">
 <span>▱</span>Capas</button>
-<button id="bottomDashboard" data-module="dashboard"><span>▥</span>Dashboard</button><button id="bottomDocs">
+<button id="bottomDashboard" data-module="dashboard"><span>▥</span>Dashboard</button><button id="bottomLiberacion" data-module="liberacion"><span>◐</span>Liberación</button><button id="bottomDocs">
 <span>▤</span>Documentos</button>
 </nav>
 <dialog id="modal">
@@ -222,7 +222,7 @@ Ejes A–W · 1–12
   <button id="offlineClose" class="close" aria-label="Cerrar modo sin conexión">×</button>
   <div class="section-label">ATLAS EN TU DISPOSITIVO</div>
   <h2 id="offlineTitle">Tu plano, incluso sin señal</h2>
-  <p>Guarda el nivel −1 para mover y ampliar el plano, buscar recintos y consultar sus fichas sin internet.</p>
+  <p>Guarda los planos de todos los pisos para moverlos y ampliarlos, buscar recintos y consultar sus fichas sin internet.</p>
   <div id="offlineStatus" class="offlineStatus" role="status" aria-live="polite">Comprobando almacenamiento…</div>
   <progress id="offlineProgress" max="100" value="0" hidden aria-label="Progreso de descarga"></progress>
   <p id="offlineProgressText" class="muted"></p>

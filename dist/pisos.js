@@ -1,14 +1,21 @@
-/* Selector de piso compartido por todas las vistas de Atlas.
-   Para sumar un piso: agrega una línea a PISOS y publica su vista en dist/<ruta>.
-   Cada vista marca dónde va el selector con <span data-selector-piso="ID"></span>. */
+/* Pisos de Atlas y selector de piso. Todos los pisos usan la misma interfaz; cambia solo el conjunto de datos.
+   Para sumar un piso: genera sus datos en dist/<datos> (ver scripts/import-n02.mjs) y agrega una línea a PISOS.
+   - datos: carpeta con runtime.json y geometry/ ('' para la raíz).
+   - especialidades: tiene láminas de Cielos y Pavimentos (disciplines.json).
+   El selector se coloca donde la página tenga <span data-selector-piso></span>. */
 (function () {
   'use strict';
   var PISOS = [
-    {id: 'N-1', nombre: 'Nivel −1', ruta: ''},
-    {id: 'N02', nombre: 'Nivel 2', ruta: 'n02/'}
+    {id: 'N-1', nombre: 'Nivel −1', corto: '−1', datos: '', especialidades: true},
+    {id: 'N02', nombre: 'Nivel 2', corto: '2', datos: 'n02/', especialidades: false}
   ];
-  // Raíz del sitio calculada desde este archivo, para que funcione igual desde / y desde /n02/.
+  var pedido = new URLSearchParams(location.search).get('nivel');
+  var actual = PISOS.find(function (piso) { return piso.id === pedido; }) || PISOS[0];
+  // Raíz del sitio calculada desde este archivo, para que funcione desde cualquier ruta.
   var raiz = document.currentScript.src.replace(/pisos\.js(?:[?#].*)?$/, '');
+  function direccion(piso, modulo) {
+    return raiz + (piso === PISOS[0] ? '' : '?nivel=' + encodeURIComponent(piso.id)) + (modulo && modulo !== 'map' ? '#modulo=' + encodeURIComponent(modulo) : '');
+  }
   document.querySelectorAll('[data-selector-piso]').forEach(function (marca) {
     var select = document.createElement('select');
     select.className = 'selectorPiso';
@@ -20,12 +27,14 @@
       opcion.textContent = piso.nombre;
       select.appendChild(opcion);
     });
-    select.value = marca.getAttribute('data-selector-piso');
+    select.value = actual.id;
     select.addEventListener('change', function () {
       var destino = PISOS.find(function (piso) { return piso.id === select.value; });
-      if (destino) location.href = raiz + destino.ruta;
+      // Se conserva el módulo abierto (dashboard, capas, etc.) al cambiar de piso.
+      if (destino) location.href = direccion(destino, document.body.dataset.module);
     });
     marca.replaceWith(select);
   });
   window.ATLAS_PISOS = PISOS;
+  window.ATLAS_PISO = actual;
 })();

@@ -4,6 +4,9 @@ import {readFile,realpath} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createGroq} from './groq.mjs';
+import {decodeRuntime} from '../dist/runtime-loader.mjs';
+// Fichas de los pisos adicionales (formato runtime), para que el asistente reconozca sus recintos.
+const otherLevels=['n02/runtime.json'];
 const root=fileURLToPath(new URL('../dist/',import.meta.url));
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.json':'application/json','.webmanifest':'application/manifest+json','.svg':'image/svg+xml','.jpg':'image/jpeg','.jpeg':'image/jpeg','.png':'image/png','.webp':'image/webp','.pdf':'application/pdf','.woff2':'font/woff2'};
 export async function createAtlasServer({env=process.env,fetchImpl=fetch}={}){
@@ -11,6 +14,7 @@ export async function createAtlasServer({env=process.env,fetchImpl=fetch}={}){
  if(!['127.0.0.1','localhost','::1'].includes(env.ATLAS_HOST||'127.0.0.1')&&!password)throw Error('Configura ATLAS_ACCESS_PASSWORD antes de exponer Atlas fuera de loopback.');
  const authorized=req=>{if(!password)return true;const expected=Buffer.from(username+':'+password).toString('base64'),actual=(req.headers.authorization||'').replace(/^Basic /,'');const hash=value=>createHash('sha256').update(value).digest();return timingSafeEqual(hash(actual),hash(expected));};
  const groq=createGroq(env,fetchImpl),data=JSON.parse(await readFile(path.join(root,'data.json')));
+ for(const file of otherLevels){const extra=decodeRuntime(JSON.parse(await readFile(path.join(root,file)))).data;data.rooms.push(...extra.rooms);data.documents.push(...extra.documents);}
  const send=(res,status,value)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(value));};
  return http.createServer(async(req,res)=>{
   try{

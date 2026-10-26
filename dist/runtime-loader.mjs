@@ -1,4 +1,5 @@
-// One compact request supplies everything needed to browse the plan.
+// One compact request supplies everything needed to browse the plan of the active level.
+import {datos} from './level.mjs';
 let pending;
 export function decodeRuntime(bundle) {
   if (bundle.schema !== 1) throw new Error('Versión de datos no compatible. Recarga Atlas.');
@@ -17,7 +18,7 @@ export function loadRuntime() {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 15000);
     try {
-      const response = await fetch('./runtime.json', {signal: controller.signal});
+      const response = await fetch(datos('runtime.json'), {signal: controller.signal});
       if (!response.ok) throw new Error('No se pudieron cargar las fichas. Reintenta con conexión.');
       return decodeRuntime(await response.json());
     } catch (error) {

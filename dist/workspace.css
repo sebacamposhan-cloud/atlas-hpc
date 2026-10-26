@@ -46,3 +46,13 @@ body>header{margin-left:var(--sidebar);height:64px;padding:0 22px;gap:15px;backg
 .selectorPiso{flex:0 0 auto;width:auto;margin:0;font:inherit;font-size:12px;font-weight:600;color:#263f50;background:#fff;border:1px solid var(--line);border-radius:8px;min-height:36px;padding:0 8px;cursor:pointer}
 .selectorPiso:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
 @media(max-width:700px){.selectorPiso{font-size:11px;min-height:32px;padding:0 4px;max-width:92px}}
+
+/* Liberación de frentes (liberacion.mjs) */
+.libDot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px;flex:none}
+.libState{display:flex;align-items:center;font-size:15px;margin:6px 0 10px}
+.libSolicitud{border:1px solid var(--line);border-left:4px solid #9aa3ad;border-radius:8px;padding:8px 10px;margin:6px 0;font-size:12px}
+.libSolicitud.bloqueado{border-left-color:#d64545}.libSolicitud.restriccion{border-left-color:#e5a800}.libSolicitud.liberado{border-left-color:#2e9e5b;opacity:.75}
+.libSolicitud>div{display:flex;justify-content:space-between;gap:8px}.libSolicitud p{margin:4px 0}.libSolicitud small{color:var(--muted)}
+.libAviso{background:#fff2cc;color:#7a5a00;border:1px solid #f0d78a;border-radius:8px;padding:8px 12px;margin-bottom:14px;font-size:12px}
+.libKpi{text-align:left;cursor:pointer;font:inherit}.libKpi span{display:flex;align-items:center}
+.libUpload{display:inline-flex;align-items:center;cursor:pointer;border-radius:8px;padding:8px 12px;background:#263f50;color:#fff;margin:4px 6px 4px 0}

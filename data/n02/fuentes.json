@@ -1,0 +1,60 @@
+{
+ "nota": "Originales en la carpeta «Planos N02» del proyecto. Las huellas permiten comprobar que no cambiaron.",
+ "fuentes": [
+  {
+   "archivo": "HPC-ARQ-PLA-N02-A-501-Rev01_V1.dwg",
+   "bytes": 3274515,
+   "sha256": "0b38c9b6a9735ebd23180828ec3bc1c393b2582afcb4b2da279883c56b914289"
+  },
+  {
+   "archivo": "HPC-ARQ-PLA-N02-A-502-Rev01_V1.dwg",
+   "bytes": 3269372,
+   "sha256": "3d8c9f6ece53fb38b424a0cec5932f77d544101f09da2e94e98859930ff06536"
+  },
+  {
+   "archivo": "HPC-ARQ-PLA-N02-A-503-Rev01_V1.dwg",
+   "bytes": 2414294,
+   "sha256": "7490d580607aa3508bdbf31228e2698499cf486ca377eab8e3f5c46d63a04d73"
+  },
+  {
+   "archivo": "HPC-ARQ-PLA-N02-A-504-Rev01_V1.dwg",
+   "bytes": 2213327,
+   "sha256": "fe18388211031332937cd7c4b5ac9f2953e98e4a7aacff877f4f5ba59770a670"
+  },
+  {
+   "archivo": "HPC-ARQ-PLA-N02-A-505-Rev01_V1.dwg",
+   "bytes": 2794899,
+   "sha256": "ea94f65c8557f17a46519272ec4bfc82fe3fb370737e97a7d0acd0d889aa2dcd"
+  },
+  {
+   "archivo": "HPC-ARQ-PLA-N02-A-506-Rev01_V1.dwg",
+   "bytes": 1828862,
+   "sha256": "669d76b50de244ade4eb3b31bf3e72d5c05d6bf15d316489ed4d5276d3131ee4"
+  },
+  {
+   "archivo": "HPC-ARQ-PLA-N02-A-507-Rev01_V1.dwg",
+   "bytes": 2279899,
+   "sha256": "00b4558d412e53c541c0e87a283643ef5abfd73032d72e2b145a5aa813547428"
+  },
+  {
+   "archivo": "HPC-ARQ-PLA-N02-A-508-Rev01_V1.dwg",
+   "bytes": 2870028,
+   "sha256": "c45fa2f4841ce2e192b4aa8c6696e92986ac1d98e828971da9bdaa7b910c9e54"
+  },
+  {
+   "archivo": "planta arquitectura N02.pdf",
+   "bytes": 1654057,
+   "sha256": "2749f8ca61680b8b48eba3a3e47dfb9d80662dff06b6ec407069100519ef5351"
+  },
+  {
+   "archivo": "Planta N02.dwg",
+   "bytes": 16294829,
+   "sha256": "64497d860939285bfb4987b98eca6b5031b09374fec2e446df1d7ba3ba39a500"
+  },
+  {
+   "archivo": "Viñeta.dwg",
+   "bytes": 2356205,
+   "sha256": "66458395d17a34bf4fdb92059331fad918e35632f44fc07e747e7f79d738cb57"
+  }
+ ]
+}
