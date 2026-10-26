@@ -31,10 +31,10 @@ export async function createAtlasServer({env=process.env,fetchImpl=fetch}={}){
     return send(res,200,await groq.chat([{role:'system',content:system},...messages]));
    }
    if(!['GET','HEAD'].includes(req.method))return send(res,405,{error:'Método no permitido.'});
-   const name=decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname),candidate=path.resolve(root,'.'+name),resolved=await realpath(candidate);
+   const name=decodeURIComponent(url.pathname.endsWith('/')?url.pathname+'index.html':url.pathname),candidate=path.resolve(root,'.'+name),resolved=await realpath(candidate);
    if(!resolved.startsWith(path.resolve(root)+path.sep))return send(res,403,{error:'Ruta no permitida.'});
    const bytes=await readFile(resolved);res.writeHead(200,{'Content-Type':mime[path.extname(resolved)]||'application/octet-stream'});res.end(req.method==='HEAD'?undefined:bytes);
-  }catch(e){if(e.code==='ENOENT')return send(res,404,{error:'Archivo no encontrado.'});send(res,e.status||500,{error:e.status?e.message:'No se pudo procesar la consulta.'});}
+  }catch(e){if(e.code==='EISDIR'){const url=new URL(req.url,'http://localhost');res.writeHead(301,{Location:url.pathname+'/'+url.search});return res.end();}if(e.code==='ENOENT')return send(res,404,{error:'Archivo no encontrado.'});send(res,e.status||500,{error:e.status?e.message:'No se pudo procesar la consulta.'});}
  });
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){

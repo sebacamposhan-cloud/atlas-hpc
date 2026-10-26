@@ -1,3 +1,14 @@
+# Pisos
+
+Atlas reúne varios pisos en un mismo sitio, con la misma contraseña. El selector de piso del encabezado se define una sola vez en `dist/pisos.js`; cada piso tiene su propia dirección y puede compartirse por separado.
+
+| Piso | Dirección | Vista |
+|---|---|---|
+| Nivel −1 | `/` | Visor Atlas (arquitectura, cielos, pavimentos) |
+| Nivel 2 | `/n02/` | Recintos HPC: semáforo de liberación con Excel |
+
+Para sumar un piso: publicar su vista en `dist/<carpeta>/index.html` con `<span data-selector-piso="ID"></span>` y `<script src="../pisos.js"></script>`, agregar una línea en `dist/pisos.js` y ejecutar `node scripts/prepare-offline.mjs` y `node pisos-test.mjs`. El paquete sin conexión cubre solo el nivel −1; el nivel 2 necesita conexión.
+
 # ATLAS HPC 3 — incremento multiespecialidad
 
 Edición 2D sobre PDF original con Leaflet + Geoman Free: uso, pruebas y despliegue en [docs/CONTOUR_EDITOR.md](docs/CONTOUR_EDITOR.md).

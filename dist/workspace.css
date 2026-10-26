@@ -41,3 +41,8 @@ body>header{margin-left:var(--sidebar);height:64px;padding:0 22px;gap:15px;backg
 .legendItems i{box-sizing:border-box;border:1px solid #596c7a55}
 
 #polygons{mix-blend-mode:multiply}
+
+/* Selector de piso (pisos.js) */
+.selectorPiso{flex:0 0 auto;width:auto;margin:0;font:inherit;font-size:12px;font-weight:600;color:#263f50;background:#fff;border:1px solid var(--line);border-radius:8px;min-height:36px;padding:0 8px;cursor:pointer}
+.selectorPiso:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
+@media(max-width:700px){.selectorPiso{font-size:11px;min-height:32px;padding:0 4px;max-width:92px}}
