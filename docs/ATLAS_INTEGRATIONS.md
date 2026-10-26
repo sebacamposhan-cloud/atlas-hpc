@@ -7,3 +7,7 @@ El visor, búsquedas, avances y protocolos no llaman proveedores de IA. Dalux no
 SQLite es local de ingeniería. Importar el respaldo de obra con `python3 scripts/import-work-backup.py respaldo.json`; conserva registros existentes y crea copia previa. No hay sincronización automática entre usuarios/dispositivos. Las tablas de cerraduras y referencias autorizadas de llaves están fuera del contenido servido; no publicar combinaciones de fabricación o corte.
 
 No se añadieron bibliotecas frontend ni se copiaron repositorios de referencia en este incremento. Se conserva el enfoque visual de la versión2 y el stack existente. PyMuPDF y NumPy se usan en scripts offline del entorno, no en el cliente; revisar sus condiciones de distribución antes de empaquetar un ejecutable externo. No se ha realizado benchmark Konva: su incorporación no está justificada todavía.
+
+## Groq: asistente conversacional
+
+Implementación y configuración en `GROQ.md`. `server/groq-server.mjs` entrega el visor y el endpoint del chat con contexto documental original del recinto seleccionado. `GROQ_API_KEY` solo se utiliza en backend. La publicación estática existente no ejecuta este servicio: producción necesita backend y proxy autenticado. Integración probada con proveedor simulado; pendiente credencial y modelo reales.

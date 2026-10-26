@@ -1,0 +1,138 @@
+[
+  {
+    "source": "cie-501.pdf",
+    "pages": 1,
+    "rotation": 90,
+    "size": [
+      0.0,
+      0.0,
+      3971.0,
+      2384.0
+    ],
+    "words": 2631,
+    "drawings": 66139,
+    "numeric_grid_words": 50,
+    "alpha_grid_words": 7,
+    "has_clearance": false,
+    "has_C_prefix": false
+  },
+  {
+    "source": "cie-502.pdf",
+    "pages": 1,
+    "rotation": 90,
+    "size": [
+      0.0,
+      0.0,
+      3971.0,
+      2384.0
+    ],
+    "words": 2565,
+    "drawings": 70639,
+    "numeric_grid_words": 41,
+    "alpha_grid_words": 7,
+    "has_clearance": false,
+    "has_C_prefix": false
+  },
+  {
+    "source": "cie-503.pdf",
+    "pages": 1,
+    "rotation": 0,
+    "size": [
+      0.0,
+      0.0,
+      3972.719970703125,
+      2383.919921875
+    ],
+    "words": 2863,
+    "drawings": 43897,
+    "numeric_grid_words": 47,
+    "alpha_grid_words": 64,
+    "has_clearance": false,
+    "has_C_prefix": false
+  },
+  {
+    "source": "cie-504.pdf",
+    "pages": 1,
+    "rotation": 0,
+    "size": [
+      0.0,
+      0.0,
+      3972.719970703125,
+      2383.919921875
+    ],
+    "words": 2333,
+    "drawings": 38013,
+    "numeric_grid_words": 36,
+    "alpha_grid_words": 39,
+    "has_clearance": false,
+    "has_C_prefix": false
+  },
+  {
+    "source": "cie-505.pdf",
+    "pages": 1,
+    "rotation": 90,
+    "size": [
+      0.0,
+      0.0,
+      3971.0,
+      2384.0
+    ],
+    "words": 2630,
+    "drawings": 65596,
+    "numeric_grid_words": 38,
+    "alpha_grid_words": 7,
+    "has_clearance": false,
+    "has_C_prefix": false
+  },
+  {
+    "source": "cie-506.pdf",
+    "pages": 1,
+    "rotation": 90,
+    "size": [
+      0.0,
+      0.0,
+      3971.0,
+      2384.0
+    ],
+    "words": 3626,
+    "drawings": 88656,
+    "numeric_grid_words": 54,
+    "alpha_grid_words": 7,
+    "has_clearance": false,
+    "has_C_prefix": false
+  },
+  {
+    "source": "cie-507.pdf",
+    "pages": 1,
+    "rotation": 90,
+    "size": [
+      0.0,
+      0.0,
+      3971.0,
+      2384.0
+    ],
+    "words": 3422,
+    "drawings": 106098,
+    "numeric_grid_words": 42,
+    "alpha_grid_words": 12,
+    "has_clearance": false,
+    "has_C_prefix": false
+  },
+  {
+    "source": "cie-508.pdf",
+    "pages": 1,
+    "rotation": 0,
+    "size": [
+      0.0,
+      0.0,
+      3972.719970703125,
+      2383.919921875
+    ],
+    "words": 3294,
+    "drawings": 64455,
+    "numeric_grid_words": 46,
+    "alpha_grid_words": 8,
+    "has_clearance": false,
+    "has_C_prefix": false
+  }
+]
