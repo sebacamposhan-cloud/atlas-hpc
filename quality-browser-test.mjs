@@ -33,8 +33,8 @@ try {
   const context=await browser.newContext({viewport,serviceWorkers:'block'}),page=await context.newPage(),errors=[];page.setDefaultTimeout(10000);
   page.on('pageerror',e=>errors.push(e.message));await page.goto(base);await page.locator('#discipline').waitFor();
   assert.equal(await page.locator('.roomshape[data-geometry-quality="validated"]').count(),2);
-  assert.equal(await page.locator('.roomshape[data-geometry-quality="auxiliary_pending"]').count(),315);
-  assert.equal(await page.locator('.roomshape[data-geometry-quality="source_pending"]').count(),13);
+  assert.equal(await page.locator('.roomshape[data-geometry-quality="auxiliary_pending"]').count(),312);
+  assert.equal(await page.locator('.roomshape[data-geometry-quality="source_pending"]').count(),16);
   assert.equal(await page.evaluate(async()=>{const {hitRoom}=await import('./viewer.mjs');return hitRoom({x:3339.3995,y:2543.3195});}),'502-41a89a7c:r0013');
   const clickPoint=await page.locator('#svg').evaluate(svg=>{const p=new DOMPoint(3339.3995,2543.3195).matrixTransform(svg.getScreenCTM());return {x:p.x,y:p.y};});
   await page.mouse.click(clickPoint.x,clickPoint.y);

@@ -31,7 +31,7 @@ try{
  for(const viewport of [{width:1440,height:1000},{width:390,height:844}]){
   const context=await browser.newContext({viewport,serviceWorkers:'block'}),page=await context.newPage(),errors=[];page.setDefaultTimeout(30000);page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base);await page.locator('#globalSearch').waitFor();await page.locator('#globalSearch').fill('RT.(-1)-1');
-  await page.waitForFunction(()=>document.querySelector('#detail .detailCode')?.textContent==='RT.(-1)-1');await page.locator('#editGeometry').click();
+  await page.waitForFunction(()=>document.querySelector('#detail .detailCode')?.textContent==='RT.(-1)-1');if(viewport.width<700)await page.locator('#expandDetail').click();await page.locator('#editGeometry').click();
   await page.waitForFunction(()=>document.querySelector('#contourStatus')?.textContent.includes('PDF original cargado'));
   assert(await page.locator('.leaflet-pane img.leaflet-image-layer').count());assert(await page.locator('.leaflet-pm-toolbar').count());
   await page.locator('.leaflet-pm-icon-edit').click();
@@ -42,7 +42,7 @@ try{
   const records=await page.evaluate(()=>JSON.parse(localStorage.getItem('atlas-hpc-web-v1')));const row=Object.values(records).find(r=>r.code==='RT.(-1)-1');assert(row.geometry_parts.length);assert.equal(row.geometry_status,'Pendiente de revisión');assert.equal(row.history.length,data.rooms.find(r=>r.id===row.id).history.length+1);assert.equal(row.geometry_method,'Edición manual en navegador');
   const download=page.waitForEvent('download');await page.locator('#contourExport').click();const file=await download;assert(file.suggestedFilename().endsWith('.json'));assert.equal(JSON.parse(await readFile(await file.path(),'utf8')).record.observation_id,row.id);
   await page.locator('#contourClose').click();await page.reload();await page.locator('#globalSearch').waitFor();await page.locator('#globalSearch').fill('RT.(-1)-1');await page.waitForFunction(()=>document.querySelector('#detail .detailCode')?.textContent==='RT.(-1)-1');
-  assert.match(await page.locator('#geometryAuthority').innerText(),/Corrección manual/);await page.locator('#history').click();assert.match(await page.locator('#modalBody').innerText(),/Browser QA/);
+  assert.match(await page.locator('#geometryAuthority').innerText(),/Corrección manual/);if(viewport.width<700)await page.locator('#expandDetail').click();await page.locator('#history').click();assert.match(await page.locator('#modalBody').innerText(),/Browser QA/);
   assert.deepEqual(errors,[]);console.log('Contour viewport passed',viewport.width);await context.close();
  }
  console.log('Leaflet + Geoman real browser: source PDF render, external toolbar, saved geometry parts/history/export/reload, desktop/mobile passed');

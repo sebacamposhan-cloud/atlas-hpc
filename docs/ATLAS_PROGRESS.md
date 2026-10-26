@@ -101,3 +101,13 @@ Se sustituyen los colores por hash de CIE por 20 muestras de su leyenda: 152 ext
 Selección independiente con borde azul, halo blanco y código visible aunque se cierre la ficha; no depende de oscurecer el mismo relleno. Contornos generales más finos con estado pendiente conservado. La nitidez vectorial no cambia el límite de resolución de las teselas ni certifica la geometría. Pruebas de imagen verifican color real y conservación de texto/lineado. Detalle y límites en `LAYER_COLORS.md`.
 
 Pendiente: revisar los contornos adicionales de la captura de Box Consulta Médica 7.1.2.1.2-2 (504) y del borde inclinado sur. Este incremento no declara corregidas esas geometrías. Para publicación estable, Render puede usar main tras revisión/fusión de la PR por el usuario; no hay merge ni despliegue automáticos.
+
+## Ficha móvil compacta y contornos de las nuevas capturas
+
+Al tocar un recinto, la ficha móvil abre contraída a 145 px (como máximo 25% de la altura), con código y nombre. «Ver ficha completa» amplía al 65%; el mismo botón permite volver al plano. Cambiar de recinto por toque conserva el encuadre y vuelve al estado compacto. La etiqueta de selección del plano también ocupa menos espacio en móvil. El escritorio conserva su ficha completa.
+
+Se corrige Bodega General Insumos No Clínicos 8.1.7.1.6-1 (505): el auxiliar anterior terminaba artificialmente en medio de las estanterías. El trazado derivado llega al límite derecho del recinto, conserva entrantes y excluye tres pilares interiores. El cierre de puerta sigue el plano del muro y el borde abierto inferior sigue la transición de suelo de la fuente. Se recorta el auxiliar de circulación vecino para quitar el solape introducido por la ampliación.
+
+En el sector sur se corrigen Área Sucia 3.2.4.3.1-1 y Bodega de Insumos Clínicos 3.2.4.3.5-1 (508): se siguen los segmentos inclinados del muro, se recupera la franja de lavamanos y se excluye el pilar. Los índices de trazos y las coordenadas inspeccionadas se conservan en `scripts/selection/reviewed-wall-outlines.json`. Se reproducen con `scripts/selection/build-source-repairs.py`; la capa derivada suma 16 perímetros y dos recortes auxiliares. No se modifican ni certifican las geometrías originales.
+
+Evidencia: [Bodega](audit/images/warehouse-outline.png), [Área Sucia](audit/images/south-dirty-room-outline.png), [Bodega Insumos Clínicos](audit/images/south-clinical-store-outline.png). Prueba táctil real en Chromium: `mobile-room-navigation-test.mjs`, con dos recintos consecutivos sin cerrar ficha, encuadre estable y expansión/reducción. El resto del sector, incluyendo otras salas de la captura, sigue pendiente de revisión individual; no se declara resuelto todo el mapa.
