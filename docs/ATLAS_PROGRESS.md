@@ -57,3 +57,7 @@ Pruebas offline ejecutan los manejadores del Service Worker con red simulada des
 7. Prueba móvil física, modo avión real, descarga/restauración por navegador y comparación completa de rendimiento pendientes.
 
 Una limpieza automática retiró el checkout no sincronizado durante el desarrollo. Se recuperó la versión8 desde Git, se conservaron los PDF y se reconstruyó el incremento. Punto de recuperación sincronizado e75ce294ab8a137d179e7198eef88126003fecea. No se sustituyeron datos de producción por los ensayos del navegador local.
+
+## Correcciones del informe visual — familias
+
+El selector principal de capas se reduce a Cielos, Pavimentos y Muros. Asepsia pasa a filtro independiente de atributo de pintura; HPL permanece en Muros. Se conservan las categorías documentales internas y los colores personalizados. Prueba quality-browser-test en 1440 y 390 px verifica las tres opciones y persistencia del filtro de 72 recintos, junto con geometría y trazabilidad. Pasan layers-test y offline-test. El montaje continuo CIE y la corrección integral de circulación siguen pendientes; este incremento no los declara resueltos.
