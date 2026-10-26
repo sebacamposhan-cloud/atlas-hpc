@@ -1,3 +1,4 @@
+import {createHash,timingSafeEqual} from 'node:crypto';
 import http from 'node:http';
 import {readFile,realpath} from 'node:fs/promises';
 import path from 'node:path';
@@ -6,11 +7,16 @@ import {createGroq} from './groq.mjs';
 const root=fileURLToPath(new URL('../dist/',import.meta.url));
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.json':'application/json','.webmanifest':'application/manifest+json','.svg':'image/svg+xml','.png':'image/png','.webp':'image/webp','.pdf':'application/pdf','.woff2':'font/woff2'};
 export async function createAtlasServer({env=process.env,fetchImpl=fetch}={}){
+ const password=env.ATLAS_ACCESS_PASSWORD,username=env.ATLAS_ACCESS_USER||'atlas';
+ if(!['127.0.0.1','localhost','::1'].includes(env.ATLAS_HOST||'127.0.0.1')&&!password)throw Error('Configura ATLAS_ACCESS_PASSWORD antes de exponer Atlas fuera de loopback.');
+ const authorized=req=>{if(!password)return true;const expected=Buffer.from(username+':'+password).toString('base64'),actual=(req.headers.authorization||'').replace(/^Basic /,'');const hash=value=>createHash('sha256').update(value).digest();return timingSafeEqual(hash(actual),hash(expected));};
  const groq=createGroq(env,fetchImpl),data=JSON.parse(await readFile(path.join(root,'data.json')));
  const send=(res,status,value)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(value));};
  return http.createServer(async(req,res)=>{
   try{
    const url=new URL(req.url,'http://localhost');
+   if(url.pathname==='/healthz'&&req.method==='GET')return send(res,200,{status:'ok'});
+   if(!authorized(req)){res.setHeader('WWW-Authenticate','Basic realm="Atlas HPC", charset="UTF-8"');return send(res,401,{error:'Acceso protegido. Introduce el usuario y contraseña de Atlas.'});}
    if(url.pathname.startsWith('/api/')){
     if(url.pathname!=='/api/groq/chat'||req.method!=='POST')return send(res,404,{error:'Ruta no disponible.'});
     if(req.headers.origin&&new URL(req.headers.origin).host!==req.headers.host)return send(res,403,{error:'Origen no autorizado.'});
@@ -31,5 +37,5 @@ export async function createAtlasServer({env=process.env,fetchImpl=fetch}={}){
  });
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
- const server=await createAtlasServer();server.listen(Number(process.env.ATLAS_PORT||8000),'127.0.0.1',()=>console.log('Atlas con backend Groq iniciado en puerto '+server.address().port));
+ const server=await createAtlasServer();server.listen(Number(process.env.ATLAS_PORT||process.env.PORT||8000),process.env.ATLAS_HOST||'127.0.0.1',()=>console.log('Atlas con backend Groq iniciado en puerto '+server.address().port));
 }

@@ -65,3 +65,5 @@ El selector principal de capas se reduce a Cielos, Pavimentos y Muros. Asepsia p
 ## Asistente Groq
 
 Chat para consultas generales y resumen de fichas originales con contexto de recinto y referencias documentales, mediante backend Node. Clave solo en servidor; límite de intentos/tokens y errores explícitos. La configuración de producción y prueba real requieren credencial, modelo habilitado y servicio backend, ya que el hosting actual es estático. Ver `GROQ.md`.
+
+Despliegue Groq preparado: `render.yaml` entrega sitio y backend en un servicio, sin despliegue automático. Contraseña generada por Render protege documentos/API y el servidor exige esa protección al enlazar fuera de loopback. Pendiente conectar cuenta, introducir clave y validar el despliegue real. Respaldar datos locales antes de cambiar de dominio.

@@ -20,3 +20,15 @@ try{
 await assert.rejects(createGroq({GROQ_API_KEY:testKey},async()=>({ok:false,status:401})).chat([]),/credencial/);
 await assert.rejects(createGroq({GROQ_API_KEY:testKey},async()=>({ok:true,json:async()=>({})})).chat([]),/vacía/);
 console.log('Groq backend: server-only key, real HTTP routing, trusted room context, validation, origin, usage limit and provider errors passed (mock provider, no live request)');
+
+await assert.rejects(createAtlasServer({env:{ATLAS_HOST:'0.0.0.0'}}),/ATLAS_ACCESS_PASSWORD/);
+const protectedServer=await createAtlasServer({env:{ATLAS_HOST:'0.0.0.0',ATLAS_ACCESS_PASSWORD:'isolated-password'},fetchImpl:mock});
+await new Promise(resolve=>protectedServer.listen(0,'127.0.0.1',resolve));
+const protectedBase='http://127.0.0.1:'+protectedServer.address().port;
+try{
+ assert.equal((await fetch(protectedBase+'/healthz')).status,200);
+ for(const url of ['/','/api/groq/chat','/runtime.json'])assert.equal((await fetch(protectedBase+url)).status,401);
+ assert.equal((await fetch(protectedBase+'/',{headers:{Authorization:'Basic '+Buffer.from('atlas:wrong').toString('base64')}})).status,401);
+ const response=await fetch(protectedBase+'/',{headers:{Authorization:'Basic '+Buffer.from('atlas:isolated-password').toString('base64')}});assert.equal(response.status,200);
+}finally{protectedServer.closeAllConnections();await new Promise(resolve=>protectedServer.close(resolve));}
+console.log('Deployment: public binding requires a password, health check exposes no documents, static/API access protected');

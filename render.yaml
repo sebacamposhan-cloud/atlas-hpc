@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: atlas-hpc
+    runtime: node
+    plan: free
+    branch: feat/cielos-navigation-association
+    autoDeploy: false
+    buildCommand: node groq-test.mjs && node offline-test.mjs
+    startCommand: node server/groq-server.mjs
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: ATLAS_HOST
+        value: 0.0.0.0
+      - key: ATLAS_ACCESS_USER
+        value: atlas
+      - key: ATLAS_ACCESS_PASSWORD
+        generateValue: true
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+      - key: GROQ_MAX_REQUESTS
+        value: "60"
+      - key: GROQ_MAX_TOKENS
+        value: "1024"
