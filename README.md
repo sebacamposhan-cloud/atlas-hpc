@@ -1,13 +1,23 @@
 # Pisos
 
-Atlas reúne varios pisos en un mismo sitio, con la misma contraseña. El selector de piso del encabezado se define una sola vez en `dist/pisos.js`; cada piso tiene su propia dirección y puede compartirse por separado.
+Todos los pisos usan la misma interfaz de Atlas: explorador de planos, dashboard, capas, liberación de frentes, tabla maestra, fichas, búsqueda, exportaciones, respaldos y modo sin conexión. El selector del encabezado cambia el conjunto de datos y conserva el módulo abierto.
 
-| Piso | Dirección | Vista |
-|---|---|---|
-| Nivel −1 | `/` | Visor Atlas (arquitectura, cielos, pavimentos) |
-| Nivel 2 | `/n02/` | Recintos HPC: semáforo de liberación con Excel |
+| Piso | Dirección | Datos | Fuente |
+|---|---|---|---|
+| Nivel −1 | `/` | `dist/runtime.json` | 9 láminas PDF; rombos, Cielos y Pavimentos |
+| Nivel 2 | `/?nivel=N02` | `dist/n02/` | Planta DWG (8 láminas) convertida con `scripts/import-n02.mjs` |
 
-Para sumar un piso: publicar su vista en `dist/<carpeta>/index.html` con `<span data-selector-piso="ID"></span>` y `<script src="../pisos.js"></script>`, agregar una línea en `dist/pisos.js` y ejecutar `node scripts/prepare-offline.mjs` y `node pisos-test.mjs`. El paquete sin conexión cubre solo el nivel −1; el nivel 2 necesita conexión.
+- La lista de pisos vive en `dist/pisos.js`; `dist/level.mjs` expone el piso activo a los módulos.
+- Las correcciones y respaldos se guardan por piso. El nivel −1 conserva las claves originales.
+- El nivel 2 usa la misma escala que el −1 (puntos PDF 1:50). Sus contornos vienen del DWG; no tiene rombos dibujados ni láminas de especialidad, así que esas funciones no aparecen en ese piso.
+- `/n02/` redirige a `/?nivel=N02` y conserva el enlace a un recinto (`/n02/#código`).
+- Enlaces directos: `/?nivel=N02#4.4.1.3.1-10` abre la ficha de un recinto.
+
+Para sumar un piso: extraer su plano a `data/<piso>/`, generar `dist/<piso>/` con un importador como `scripts/import-n02.mjs`, agregar una línea en `dist/pisos.js` y en `otherLevels` de `server/groq-server.mjs`, y ejecutar `node scripts/prepare-offline.mjs` y `node pisos-test.mjs`.
+
+## Liberación de frentes
+
+Módulo de la barra lateral, capa en «Capas y terminaciones», gráfico del dashboard y sección de cada ficha. Calcula un semáforo por recinto (Bloqueado, Con restricción, Liberado, Sin datos) a partir de un Excel con las hojas Parámetros, Recintos, Solicitudes y Programa. Un mismo Excel sirve para todo el edificio; los recintos que no figuran en su hoja Recintos quedan «Sin datos». El Excel se guarda en el navegador (`atlas-liberacion-v1`). `dist/liberacion/datos-ejemplo.xlsx` contiene datos de prueba del nivel 2.
 
 # ATLAS HPC 3 — incremento multiespecialidad
 

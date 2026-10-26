@@ -1,35 +1,71 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import {createRequire} from 'node:module';
 import {createAtlasServer} from './server/groq-server.mjs';
+import {decodeRuntime} from './dist/runtime-loader.mjs';
+import {leerLibro,calcular} from './dist/liberacion.mjs';
 
-// Cada piso declarado en pisos.js debe tener su vista publicada y su marca de selector.
-const sandbox = {window: {}, location: {}, document: {currentScript: {src: 'http://x/pisos.js'}, querySelectorAll: () => []}};
+// Cada piso de pisos.js debe traer datos completos en el formato de Atlas.
+const sandbox = {window: {}, location: {search: ''}, URLSearchParams, document: {currentScript: {src: 'http://x/pisos.js'}, querySelectorAll: () => []}};
 vm.runInNewContext(fs.readFileSync('dist/pisos.js', 'utf8'), sandbox);
 const pisos = sandbox.window.ATLAS_PISOS;
 assert(pisos.length >= 2, 'pisos.js debe declarar al menos dos pisos');
+assert.equal(sandbox.window.ATLAS_PISO.id, pisos[0].id, 'sin ?nivel= se abre el primer piso');
+const index = fs.readFileSync('dist/index.html', 'utf8');
+assert(index.includes('data-selector-piso') && index.includes('src="pisos.js"'), 'index.html debe cargar el selector de piso');
+const resumen = {};
 for (const piso of pisos) {
-  const html = fs.readFileSync('dist/' + piso.ruta + 'index.html', 'utf8');
-  assert(html.includes('data-selector-piso="' + piso.id + '"'), piso.id + ': falta la marca del selector');
-  assert(html.includes(piso.ruta ? '../pisos.js' : 'src="pisos.js"'), piso.id + ': no carga pisos.js');
+  const {data, atlas, map} = decodeRuntime(JSON.parse(fs.readFileSync('dist/' + piso.datos + 'runtime.json', 'utf8')));
+  assert(data.rooms.length > 0 && data.documents.length > 0, piso.id + ': sin recintos o láminas');
+  const docs = new Set(data.documents.map(d => d.id)), materiales = new Set(data.materials.map(m => m.code));
+  for (const r of data.rooms) {
+    assert(docs.has(r.document_id), piso.id + ': lámina desconocida en ' + r.id);
+    assert.equal(r.finishes.length, 6, piso.id + ': rombo incompleto en ' + r.id);
+    assert(r.finishes.every(f => materiales.has(f.code) || f.description), piso.id + ': terminación sin catálogo en ' + r.id);
+  }
+  for (const d of data.documents) assert(atlas.tiles.some(t => t.id === d.id), piso.id + ': lámina sin transformación ' + d.id);
+  assert(fs.existsSync('dist/' + map.overview), piso.id + ': falta el plano de fondo');
+  for (const o of map.overlays || []) assert(fs.existsSync('dist/' + o.href), piso.id + ': falta la capa ' + o.id);
+  if (piso.datos) {
+    // Pisos importados desde DWG: geometría completa, dentro del plano y por lámina.
+    const inside = p => p[0] >= 0 && p[1] >= 0 && p[0] <= map.width && p[1] <= map.height;
+    for (const r of data.rooms) assert(r.polygon?.length >= 3 && r.polygon.every(inside) && inside(r.position), piso.id + ': contorno fuera del plano en ' + r.id);
+    for (const d of data.documents) assert(fs.existsSync('dist/' + piso.datos + 'geometry/' + d.id + '.json'), piso.id + ': falta geometry/' + d.id);
+    assert(new Set(data.rooms.map(r => r.code)).size === data.rooms.length, piso.id + ': códigos repetidos');
+  }
+  resumen[piso.id] = data.rooms.length;
 }
 const offline = JSON.parse(fs.readFileSync('dist/sw.js', 'utf8').match(/self\.ATLAS_OFFLINE = (.*);\n/)[1]);
-assert(offline.files.some(f => f.url === '/pisos.js' && f.core), 'pisos.js debe estar en el núcleo sin conexión');
+for (const core of ['/pisos.js', '/level.mjs', '/liberacion.mjs']) assert(offline.files.some(f => f.url === core && f.core), core + ' debe estar en el núcleo sin conexión');
+for (const piso of pisos.filter(p => p.datos)) assert(offline.files.some(f => f.url === '/' + piso.datos + 'runtime.json'), piso.id + ': sus datos deben poder guardarse sin conexión');
+assert(!offline.files.some(f => f.url !== '/index.html' && f.url.endsWith('.html')), 'el service worker solo guarda la portada como HTML');
+
+// Semáforo de liberación con el Excel de ejemplo.
+const XLSX = createRequire(import.meta.url)('./dist/vendor/xlsx.full.min.js');
+const ejemplo = leerLibro(XLSX.read(fs.readFileSync('dist/liberacion/datos-ejemplo.xlsx'), {type: 'buffer', cellDates: true}), XLSX);
+assert(ejemplo.solicitudes.length > 0 && Object.keys(ejemplo.recintos).length > 0, 'el ejemplo debe traer solicitudes y recintos');
+const n02 = decodeRuntime(JSON.parse(fs.readFileSync('dist/n02/runtime.json', 'utf8'))).data.rooms;
+const estados = {}; for (const [, c] of calcular(ejemplo, n02)) estados[c.estado] = (estados[c.estado] || 0) + 1;
+assert(estados.bloqueado > 0 && estados.restriccion > 0 && estados.liberado > 0, 'el ejemplo debe producir los tres estados: ' + JSON.stringify(estados));
+// El ejemplo solo lista recintos del nivel 2: el nivel −1 queda sin datos aunque comparta terminaciones.
+const n1 = decodeRuntime(JSON.parse(fs.readFileSync('dist/runtime.json', 'utf8'))).data.rooms;
+assert([...calcular(ejemplo, n1).values()].every(c => c.estado === 'sin-dato'), 'recintos fuera del Excel deben quedar «Sin datos»');
 
 const server = await createAtlasServer({env: {ATLAS_ACCESS_PASSWORD: 'isolated-test-password'}});
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const base = 'http://127.0.0.1:' + server.address().port;
 const headers = {Authorization: 'Basic ' + Buffer.from('atlas:isolated-test-password').toString('base64')};
 try {
-  for (const piso of pisos.filter(p => p.ruta)) {
-    assert.equal((await fetch(base + '/' + piso.ruta)).status, 401, piso.id + ': debe pedir contraseña');
-    const res = await fetch(base + '/' + piso.ruta, {headers});
-    assert.equal(res.status, 200, piso.id);
-    assert(res.headers.get('content-type').startsWith('text/html'), piso.id);
-    const sinBarra = await fetch(base + '/' + piso.ruta.replace(/\/$/, '') + '?r=1', {headers, redirect: 'manual'});
-    assert.equal(sinBarra.status, 301, piso.id + ': debe redirigir a la ruta con barra');
-    assert.equal(sinBarra.headers.get('location'), '/' + piso.ruta + '?r=1');
-  }
-  assert.equal((await fetch(base + '/pisos.js', {headers})).status, 200);
-  console.log(JSON.stringify({checks: 'passed', pisos: pisos.map(p => p.id), scope: 'Vistas publicadas, selector en cada vista, contraseña, redirección de carpeta y pisos.js en el núcleo sin conexión.'}));
+  assert.equal((await fetch(base + '/?nivel=N02')).status, 401, 'debe pedir contraseña');
+  const portada = await fetch(base + '/?nivel=N02', {headers});
+  assert.equal(portada.status, 200);
+  assert((await portada.text()).includes('data-selector-piso'), 'todos los pisos usan la misma portada');
+  const antigua = await (await fetch(base + '/n02/', {headers})).text();
+  assert(antigua.includes("location.replace('../?nivel=N02' + location.hash)"), 'la dirección antigua del nivel 2 redirige conservando el recinto');
+  const sinBarra = await fetch(base + '/n02?x=1', {headers, redirect: 'manual'});
+  assert.equal(sinBarra.status, 301);
+  assert.equal(sinBarra.headers.get('location'), '/n02/?x=1');
+  for (const file of ['/pisos.js', '/level.mjs', '/liberacion.mjs', '/n02/runtime.json', '/n02/plano.svg', '/liberacion/datos-ejemplo.xlsx']) assert.equal((await fetch(base + file, {headers})).status, 200, file);
+  console.log(JSON.stringify({checks: 'passed', recintosPorPiso: resumen, semaforoEjemploN02: estados, scope: 'Datos de cada piso, plano y capas, geometrías, misma portada, redirección /n02/, contraseña, paquete sin conexión y semáforo de liberación.'}));
 } finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
