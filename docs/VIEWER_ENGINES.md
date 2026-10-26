@@ -1,6 +1,6 @@
-# Motores abiertos para una experiencia de planos/BIM similar a Dalux
+# Motores abiertos para planos 2D
 
-Se consultaron los metadatos, licencias declaradas y README de los repositorios enlazados. No se copiaron fuentes de Dalux ni se incorporó una dependencia nueva a producción. Esto es una evaluación de encaje, no un benchmark de rendimiento.
+Se consultaron los metadatos, licencias declaradas y README de los repositorios enlazados. No se copiaron fuentes de Dalux. El incremento de edición incorpora Leaflet, Geoman Free y validadores Turf locales; ver `CONTOUR_EDITOR.md`. La tabla conserva alternativas evaluadas, sin constituir un benchmark.
 
 ## Opciones verificadas en GitHub
 
@@ -16,9 +16,9 @@ Se consultaron los metadatos, licencias declaradas y README de los repositorios 
 
 Los repositorios consultados no aparecían archivados. Su actividad reciente por sí sola no demuestra estabilidad ni rendimiento en nuestros planos.
 
-## Recomendación concreta
+## Decisión para los PDF disponibles
 
-Para los archivos disponibles hoy (PDF 2D), evaluar **Leaflet + Geoman** en un piloto acotado de edición y **OpenSeadragon** si el cuello medido es navegación/nitidez de teselas. Comparar ambos con el visor actual antes de elegir uno: no instalar los tres motores en la misma vista por defecto.
+Para los archivos disponibles hoy (PDF 2D), se integró **Leaflet + Geoman Free** en el editor de contornos y **OpenSeadragon** si el cuello medido es navegación/nitidez de teselas. Comparar ambos con el visor actual antes de elegir uno: no instalar los tres motores en la misma vista por defecto.
 
 Para una experiencia BIM real, el candidato inicial es **That Open Components + web-ifc**. Requiere archivos IFC de proyecto y correspondencias verificadas con los códigos de recinto; los PDF actuales no aportan por sí solos objetos BIM, GUID, niveles ni relaciones espaciales. El flujo de Dalux puede servir como referencia de producto, pero no sustituye esos datos.
 

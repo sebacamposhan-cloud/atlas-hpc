@@ -15,4 +15,11 @@ try{
  await page.waitForFunction(async()=>{for(const name of await caches.keys())if((await caches.open(name)).match&&await (await caches.open(name)).match(location.origin+'/assets/501-5016771b/r0037.png'))return true;return false;});
  await context.setOffline(true);await page.reload();await page.locator('#globalSearch').waitFor();await inspect();assert.deepEqual(errors,[]);
  console.log('Actual Node server + password + controlling service worker: screenshot room PNG, overview and visible tiles decoded online and after offline reload; no page errors. Local reproduction, not a remote Render claim.');await context.close();
+ const recovery=await browser.newContext({serviceWorkers:'block',httpCredentials:{username:'atlas',password:'isolated-test-password'}}),recoveryPage=await recovery.newPage();
+ await recoveryPage.route('**/assets/501-5016771b/r0037.png',route=>route.fulfill({status:404,body:'isolated missing image fixture'}));
+ await recoveryPage.goto(base);await recoveryPage.locator('#globalSearch').fill('8.2.4.2.16-1');
+ await recoveryPage.waitForFunction(()=>document.querySelector('#rombo')?.src.startsWith('data:image/png')&&document.querySelector('#rombo').naturalWidth>0,{},{timeout:60000});
+ await recoveryPage.locator('#diamondCatalogOpen').click();await recoveryPage.locator('#diamondSearch').fill('8.2.4.2.16-1');await recoveryPage.locator('[data-diamond-open="501-5016771b:r0037"]').click();
+ await recoveryPage.waitForFunction(()=>document.querySelector('#diamondDetail img')?.src.startsWith('data:image/png')&&document.querySelector('#diamondDetail img').naturalWidth>0,{},{timeout:60000});
+ console.log('Missing generated PNG: exact source PDF region recovered and decoded in room detail and diamond catalogue.');await recovery.close();
 }finally{await browser?.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}

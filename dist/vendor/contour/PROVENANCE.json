@@ -1,0 +1,52 @@
+{
+  "dependencies": [
+    {
+      "name": "leaflet",
+      "version": "1.9.4",
+      "license": "BSD-2-Clause",
+      "repository": {
+        "type": "git",
+        "url": "git://github.com/Leaflet/Leaflet.git"
+      },
+      "integrity": "sha512-nxS1ynzJOmOlHp+iL3FyWqK89GtNL8U8rvlMOsQdTTssxZwCXh8N2NB3GDQOL+YR3XnWyZAxwQixURb+FA74PA=="
+    },
+    {
+      "name": "@geoman-io/leaflet-geoman-free",
+      "version": "2.20.4",
+      "license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git://github.com/geoman-io/leaflet-geoman.git"
+      },
+      "integrity": "sha512-f47wwSZAz6W01FnBTbDbeNgjhDuGFYvzQG2t91YljRWU45MAAzLayfy8JIC7GIRd6wohLKB3LZUkR3vgv6qMqg=="
+    },
+    {
+      "name": "@turf/boolean-valid",
+      "version": "7.3.4",
+      "license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git://github.com/Turfjs/turf.git"
+      },
+      "integrity": "sha512-P6M9BtRvzFF2N5g+1/DTIbYGpEbwQ2sv/Pw+uj11P3NYAA9VE8mvrxFYf+CowFdSfY6bY4ejhuqKhrTmAMv7wA=="
+    },
+    {
+      "name": "@turf/kinks",
+      "version": "7.3.4",
+      "license": "MIT",
+      "repository": {
+        "type": "git",
+        "url": "git://github.com/Turfjs/turf.git"
+      },
+      "integrity": "sha512-LZTKELWxvXl0vc9ZxVgi0v07fO9+2FrZOam2B10fz/eGjy3oKNazU5gjggbnc499wEIcJS4hN+VyjQZrmsJAdQ=="
+    }
+  ],
+  "files": {
+    "THIRD_PARTY_LICENSES.txt": "6ad8a107d586c7bb6ec7c20d15124fe67fb47ee1cf43e3ad6edf9f49af545e45",
+    "geoman.css": "a0df8e0f6301f9f71d772b2c61913bb9094ae0735fd2223ccd1aecd871ea250c",
+    "geoman.js": "467413c3d98ccb0a558ed1e262d7d4c737a575c8dae61adc09afcfc4a6879eb8",
+    "leaflet.css": "a7837102824184820dfa198d1ebcd109ff6d0ff9a2672a074b9a1b4d147d04c6",
+    "leaflet.js": "db49d009c841f5ca34a888c96511ae936fd9f5533e90d8b2c4d57596f4e5641a",
+    "validation.mjs": "e3fda3768c400942acc0ccbdcaca65f11711dd483d818fbaf864428ad7172a55"
+  }
+}

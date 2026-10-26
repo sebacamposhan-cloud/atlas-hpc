@@ -1,5 +1,7 @@
 # ATLAS HPC 3 — incremento multiespecialidad
 
+Edición 2D sobre PDF original con Leaflet + Geoman Free: uso, pruebas y despliegue en [docs/CONTOUR_EDITOR.md](docs/CONTOUR_EDITOR.md).
+
 Ver `docs/ATLAS_PROGRESS.md` para alcance probado y limitaciones, y `docs/ATLAS_ROADMAP.md` para continuidad. No se considera completada toda la orden maestra.
 
 # Atlas HPC 2.0
