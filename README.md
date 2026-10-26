@@ -2,6 +2,8 @@
 
 Edición 2D sobre PDF original con Leaflet + Geoman Free: uso, pruebas y despliegue en [docs/CONTOUR_EDITOR.md](docs/CONTOUR_EDITOR.md).
 
+Colores de leyenda y selección visible: [docs/LAYER_COLORS.md](docs/LAYER_COLORS.md).
+
 Ver `docs/ATLAS_PROGRESS.md` para alcance probado y limitaciones, y `docs/ATLAS_ROADMAP.md` para continuidad. No se considera completada toda la orden maestra.
 
 # Atlas HPC 2.0
