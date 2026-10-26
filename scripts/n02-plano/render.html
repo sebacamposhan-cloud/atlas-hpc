@@ -15,40 +15,78 @@ const doc = await pdfjs.getDocument({url: '/repo/dist/source/n02-planta-arquitec
 const page = await doc.getPage(1), vp = page.getViewport({scale: 1});
 
 // Rombos de terminación leídos de los DWG (data/n02/rombos-dwg.json, ver dwg-rombos.mjs). La planta PDF no los trae.
-// Se dibujan a la escala de anotación del PDF (k) y centrados sobre el rótulo del recinto; sin rótulo en el PDF, en su posición del DWG.
+// Cada rombo va dentro del contorno de su recinto (dist/n02/runtime.json), sin que el contorno lo cruce y sin tapar el rótulo
+// (nombre, código y superficie del PDF). Se busca la posición válida más cercana a «sobre el rótulo», a la escala de anotación
+// del PDF (K); si no cabe, se achica hasta un 45 %. Sin contorno conocido (circulaciones), va sobre su rótulo.
 const E = 72 / 2.54 / 50, R = await (await fetch('/repo/data/n02/rombos-dwg.json')).json(), TX = await (await fetch('/repo/data/n02/textos-pdf.json')).json();
 const plano = await (await fetch('/repo/data/n02/plano.json')).json(), M = 500, ox = plano.bounds[0] - M, oy = plano.bounds[3] + M;
+const {decodeRuntime} = await import('/repo/dist/runtime-loader.mjs');
+const rt = decodeRuntime(await (await fetch('/repo/dist/n02/runtime.json')).json()), auxiliares = new Map(rt.selection.rooms.map(s => [s.id, s.rings[0].polygon]));
+const contornos = new Map(rt.data.rooms.map(r => [r.code, r.polygon || auxiliares.get(r.id)]));
 const mundo = ([x, y]) => [(x - ox) * E, (oy - y) * E], ptMundo = (x, y) => [A[0][0] * x + A[0][1] * y + A[0][2], A[1][0] * x + A[1][1] * y + A[1][2]];
 const upt = Math.hypot(A[0][0], A[1][0]), enPdf = new Map();
 for (const t of TX.items) enPdf.set(t.s.trim(), [...(enPdf.get(t.s.trim()) || []), t]);
 const alturas = R.rombos.map(r => enPdf.get(r.etiqueta)).filter(v => v?.length === 1).map(v => v[0].h * upt).sort((a, b) => a - b);
 // Alto del código en el PDF / en la lámina 1:50 (≈4), reducido un 25 % para no tapar recintos chicos.
 const K = .75 * alturas[alturas.length >> 1] / (5.5 * E);
+const dentro = (p, ring) => { let c = false; for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) { const a = ring[i], b = ring[j]; if ((a[1] > p[1]) !== (b[1] > p[1]) && p[0] < (b[0] - a[0]) * (p[1] - a[1]) / (b[1] - a[1]) + a[0]) c = !c; } return c; };
+const cruz = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+const cortan = (a, b, c, d) => cruz(a, b, c) * cruz(a, b, d) < 0 && cruz(c, d, a) * cruz(c, d, b) < 0;
+// ¿Cabe un rombo (cuadrado girado 45°) de alto S centrado en c dentro del contorno, sin cruces ni esquinas del contorno adentro?
+function cabe(c, S, ring) {
+  const h = S / 2 * 1.08, v = [[c[0], c[1] - h], [c[0] + h, c[1]], [c[0], c[1] + h], [c[0] - h, c[1]]];
+  if (!v.every(p => dentro(p, ring))) return false;
+  for (let i = 0; i < ring.length; i++) {
+    const a = ring[i], b = ring[(i + 1) % ring.length];
+    if (Math.abs(a[0] - c[0]) + Math.abs(a[1] - c[1]) < h) return false;
+    for (let k = 0; k < 4; k++) if (cortan(a, b, v[k], v[(k + 1) % 4])) return false;
+  }
+  return true;
+}
 const unicos = new Map(); for (const r of R.rombos) if (!unicos.has(r.etiqueta)) unicos.set(r.etiqueta, r);
+const ubicacion = {dentro: 0, achicados: 0, sinLugar: 0, sinContorno: 0};
 const rombos = [...unicos.values()].map(r => {
   const lineas = R.bloques[r.bloque], f = r.escala * E * K; // unidades del bloque -> unidades del plano
-  let base;
-  const t = enPdf.get(r.etiqueta);
-  if (t?.length === 1) {
-    // Rótulo del PDF: textos alineados sobre el código (nombre en una o más líneas). El rombo va encima, con un margen.
-    const c = t[0], cx = c.x + c.w / 2, grupo = TX.items.filter(o => Math.abs(o.x + o.w / 2 - cx) < Math.max(c.w, o.w) * .75 && o.y <= c.y + .1 && o.y >= c.y - 3.8 * c.h);
-    const arriba = Math.min(...grupo.map(o => o.y - o.h));
-    const [bx, by] = ptMundo(cx, arriba); base = [bx, by - c.h * upt * .25];
-  } else base = mundo(r.p);
-  const xs = lineas.flatMap(l => [l[0], l[2]]), ys = lineas.flatMap(l => [l[1], l[3]]);
-  const caja = [base[0] + Math.min(...xs) * f, base[1] - Math.max(...ys) * f, base[0] + Math.max(...xs) * f, base[1] - Math.min(...ys) * f];
+  const ys = lineas.flatMap(l => [l[1], l[3]]), S0 = (Math.max(...ys) - Math.min(...ys)) * f;
+  // Rótulo del PDF: nombre (una o más líneas) sobre el código y superficie debajo.
+  const t = enPdf.get(r.etiqueta)?.length === 1 ? enPdf.get(r.etiqueta)[0] : null;
+  let rotulo = null, preferido;
+  if (t) {
+    const cx = t.x + t.w / 2, grupo = TX.items.filter(o => Math.abs(o.x + o.w / 2 - cx) < Math.max(t.w, o.w) * .75 && o.y <= t.y + 2.6 * t.h && o.y >= t.y - 3.8 * t.h);
+    const a = ptMundo(Math.min(...grupo.map(o => o.x)), Math.min(...grupo.map(o => o.y - o.h))), b = ptMundo(Math.max(...grupo.map(o => o.x + o.w)), Math.max(...grupo.map(o => o.y + .25 * o.h)));
+    rotulo = [a[0], a[1], b[0], b[1]]; preferido = [(a[0] + b[0]) / 2, a[1] - .25 * t.h * upt - S0 / 2];
+  } else { const p = mundo(r.p); preferido = [p[0], p[1] - S0 / 2]; }
+  const ring = r.codigo && contornos.get(r.codigo);
+  let centro = preferido, q = 1;
+  if (ring) {
+    const xs = ring.map(p => p[0]), yy = ring.map(p => p[1]), libre = (c, S) => !rotulo || c[0] + S / 2 < rotulo[0] - .1 * S || c[0] - S / 2 > rotulo[2] + .1 * S || c[1] + S / 2 < rotulo[1] - .1 * S || c[1] - S / 2 > rotulo[3] + .1 * S;
+    // Primero sin tapar el rótulo (hasta el tamaño real de la lámina 1:50, ≈33 %); en recintos muy chicos se permite que lo toque.
+    let mejor = null;
+    for (const [escala, respetaRotulo] of [[1, 1], [.85, 1], [.72, 1], [.61, 1], [.52, 1], [.45, 1], [.38, 1], [.33, 1], [.45, 0], [.38, 0], [.33, 0]]) {
+      const S = S0 * escala, paso = S / 6;
+      for (let y = Math.min(...yy); y <= Math.max(...yy); y += paso) for (let x = Math.min(...xs); x <= Math.max(...xs); x += paso) {
+        const c = [x, y], d = Math.hypot(x - preferido[0], y - preferido[1]);
+        if ((!mejor || d < mejor.d) && (!respetaRotulo || libre(c, S)) && cabe(c, S, ring)) mejor = {c, d};
+      }
+      if (mejor) { centro = mejor.c; q = escala; mejor.respeta = respetaRotulo; break; }
+    }
+    if (!mejor) { ubicacion.sinLugar++; q = .33; }
+    else ubicacion[!mejor.respeta ? 'junto al rótulo' : q < 1 ? 'achicados' : 'dentro'] = (ubicacion[!mejor.respeta ? 'junto al rótulo' : q < 1 ? 'achicados' : 'dentro'] || 0) + 1;
+  } else ubicacion.sinContorno++;
+  const base = [centro[0], centro[1] + S0 * q / 2], xs2 = lineas.flatMap(l => [l[0], l[2]]);
+  const caja = [base[0] + Math.min(...xs2) * f * q, base[1] - Math.max(...ys) * f * q, base[0] + Math.max(...xs2) * f * q, base[1] - Math.min(...ys) * f * q];
   const textos = r.textos.map(o => ({texto: o.texto, dx: (o.p[0] - r.p[0]) * E * K, dy: -(o.p[1] - r.p[1]) * E * K, h: o.h * E * K}));
-  return {codigo: r.codigo, etiqueta: r.etiqueta, base, f, lineas, textos, caja};
+  return {codigo: r.codigo, etiqueta: r.etiqueta, base, f, q, lineas, textos, caja};
 });
 function dibujarRombo(ctx, r) {
-  ctx.save(); ctx.translate(r.base[0], r.base[1]);
+  ctx.save(); ctx.translate(r.base[0], r.base[1]); ctx.scale(r.q, r.q);
   ctx.strokeStyle = '#000'; ctx.lineWidth = .3 * K; ctx.lineCap = 'round'; ctx.beginPath();
   for (const [x1, y1, x2, y2] of r.lineas) { ctx.moveTo(x1 * r.f, -y1 * r.f); ctx.lineTo(x2 * r.f, -y2 * r.f); }
   ctx.stroke(); ctx.fillStyle = '#000'; ctx.textBaseline = 'top'; ctx.textAlign = 'left';
   for (const t of r.textos) { ctx.font = `${t.h}px Arial, Helvetica, sans-serif`; ctx.fillText(t.texto, t.dx, t.dy); }
   ctx.restore();
 }
-window.ROMBOS = rombos;
+window.ROMBOS = rombos; window.UBICACION = ubicacion;
 
 // Monocromático. El canal más claro de cada píxel mide la «tinta»: un relleno de color es claro en algún canal,
 // una línea o un texto es oscuro en todos. Así los rellenos de zona se aclaran y el texto sobre ellos conserva contraste.
@@ -78,7 +116,7 @@ if (q.has('x')) {
   const c = await region(+q.get('x'), +q.get('y'), +q.get('w'), +q.get('h'), +(q.get('s') || 1), q.has('color'));
   document.body.append(c);
   if (q.has('guardar')) await fetch('/save?name=scripts/n02-plano/revision/' + encodeURIComponent(q.get('guardar')) + '.png', {method: 'POST', body: await new Promise(r => c.toBlob(r, 'image/png'))});
-  log('Zona de prueba lista.');
+  log('Zona de prueba lista. Rombos: ' + JSON.stringify(ubicacion));
 } else {
   const tile = 768, CH = 4, levels = [{z: 0, scale: .5}, {z: 1, scale: 1}, {z: 2, scale: 2}], t0 = performance.now();
   for (const L of levels) {
@@ -106,7 +144,8 @@ if (q.has('x')) {
     cajas[r.codigo] = r.caja.map(v => +v.toFixed(2));
   }
   await fetch('/save?name=data/n02/rombos-plano.json', {method: 'POST', body: JSON.stringify(cajas)});
-  log('Rombos: ' + Object.keys(cajas).length + ' imágenes · ' + ((performance.now() - t0) / 1000).toFixed(0) + ' s');
+  await fetch('/save?name=data/n02/rombos-ubicacion.json', {method: 'POST', body: JSON.stringify(ubicacion)});
+  log('Rombos: ' + Object.keys(cajas).length + ' imágenes · ' + JSON.stringify(ubicacion) + ' · ' + ((performance.now() - t0) / 1000).toFixed(0) + ' s');
   await save('overview.webp', await region(0, 0, T.width, T.height, .3), 'image/webp', .8);
   await save('export.jpg', await region(0, 0, T.width, T.height, .5), 'image/jpeg', .85);
   await fetch('/save?name=dist/n02/map/index.json', {method: 'POST', body: JSON.stringify({origin: [0, 0], width: T.width, height: T.height, tileSize: tile,
