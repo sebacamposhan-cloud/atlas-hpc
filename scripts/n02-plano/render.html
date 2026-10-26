@@ -14,6 +14,42 @@ const T = await (await fetch('/repo/data/n02/pdf-a-plano.json')).json(), A = T.p
 const doc = await pdfjs.getDocument({url: '/repo/dist/source/n02-planta-arquitectura.pdf', standardFontDataUrl: '/repo/dist/vendor/standard_fonts/'}).promise;
 const page = await doc.getPage(1), vp = page.getViewport({scale: 1});
 
+// Rombos de terminación leídos de los DWG (data/n02/rombos-dwg.json, ver dwg-rombos.mjs). La planta PDF no los trae.
+// Se dibujan a la escala de anotación del PDF (k) y centrados sobre el rótulo del recinto; sin rótulo en el PDF, en su posición del DWG.
+const E = 72 / 2.54 / 50, R = await (await fetch('/repo/data/n02/rombos-dwg.json')).json(), TX = await (await fetch('/repo/data/n02/textos-pdf.json')).json();
+const plano = await (await fetch('/repo/data/n02/plano.json')).json(), M = 500, ox = plano.bounds[0] - M, oy = plano.bounds[3] + M;
+const mundo = ([x, y]) => [(x - ox) * E, (oy - y) * E], ptMundo = (x, y) => [A[0][0] * x + A[0][1] * y + A[0][2], A[1][0] * x + A[1][1] * y + A[1][2]];
+const upt = Math.hypot(A[0][0], A[1][0]), enPdf = new Map();
+for (const t of TX.items) enPdf.set(t.s.trim(), [...(enPdf.get(t.s.trim()) || []), t]);
+const alturas = R.rombos.map(r => enPdf.get(r.etiqueta)).filter(v => v?.length === 1).map(v => v[0].h * upt).sort((a, b) => a - b);
+// Alto del código en el PDF / en la lámina 1:50 (≈4), reducido un 25 % para no tapar recintos chicos.
+const K = .75 * alturas[alturas.length >> 1] / (5.5 * E);
+const unicos = new Map(); for (const r of R.rombos) if (!unicos.has(r.etiqueta)) unicos.set(r.etiqueta, r);
+const rombos = [...unicos.values()].map(r => {
+  const lineas = R.bloques[r.bloque], f = r.escala * E * K; // unidades del bloque -> unidades del plano
+  let base;
+  const t = enPdf.get(r.etiqueta);
+  if (t?.length === 1) {
+    // Rótulo del PDF: textos alineados sobre el código (nombre en una o más líneas). El rombo va encima, con un margen.
+    const c = t[0], cx = c.x + c.w / 2, grupo = TX.items.filter(o => Math.abs(o.x + o.w / 2 - cx) < Math.max(c.w, o.w) * .75 && o.y <= c.y + .1 && o.y >= c.y - 3.8 * c.h);
+    const arriba = Math.min(...grupo.map(o => o.y - o.h));
+    const [bx, by] = ptMundo(cx, arriba); base = [bx, by - c.h * upt * .25];
+  } else base = mundo(r.p);
+  const xs = lineas.flatMap(l => [l[0], l[2]]), ys = lineas.flatMap(l => [l[1], l[3]]);
+  const caja = [base[0] + Math.min(...xs) * f, base[1] - Math.max(...ys) * f, base[0] + Math.max(...xs) * f, base[1] - Math.min(...ys) * f];
+  const textos = r.textos.map(o => ({texto: o.texto, dx: (o.p[0] - r.p[0]) * E * K, dy: -(o.p[1] - r.p[1]) * E * K, h: o.h * E * K}));
+  return {codigo: r.codigo, etiqueta: r.etiqueta, base, f, lineas, textos, caja};
+});
+function dibujarRombo(ctx, r) {
+  ctx.save(); ctx.translate(r.base[0], r.base[1]);
+  ctx.strokeStyle = '#000'; ctx.lineWidth = .3 * K; ctx.lineCap = 'round'; ctx.beginPath();
+  for (const [x1, y1, x2, y2] of r.lineas) { ctx.moveTo(x1 * r.f, -y1 * r.f); ctx.lineTo(x2 * r.f, -y2 * r.f); }
+  ctx.stroke(); ctx.fillStyle = '#000'; ctx.textBaseline = 'top'; ctx.textAlign = 'left';
+  for (const t of r.textos) { ctx.font = `${t.h}px Arial, Helvetica, sans-serif`; ctx.fillText(t.texto, t.dx, t.dy); }
+  ctx.restore();
+}
+window.ROMBOS = rombos;
+
 // Monocromático. El canal más claro de cada píxel mide la «tinta»: un relleno de color es claro en algún canal,
 // una línea o un texto es oscuro en todos. Así los rellenos de zona se aclaran y el texto sobre ellos conserva contraste.
 function mono(ctx, w, h) {
@@ -24,17 +60,24 @@ function mono(ctx, w, h) {
   }
   ctx.putImageData(img, 0, 0);
 }
-async function region(x, y, w, h, s) {
+async function region(x, y, w, h, s, color = false) {
   const c = document.createElement('canvas'); c.width = Math.round(w * s); c.height = Math.round(h * s);
   const ctx = c.getContext('2d', {willReadFrequently: true}); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
   await page.render({canvasContext: ctx, viewport: vp, background: 'white',
     transform: [s * A[0][0], s * A[1][0], s * A[0][1], s * A[1][1], s * (A[0][2] - x), s * (A[1][2] - y)]}).promise;
-  mono(ctx, c.width, c.height); return c;
+  ctx.setTransform(s, 0, 0, s, -x * s, -y * s);
+  for (const r of rombos) if (r.caja[2] > x && r.caja[0] < x + w && r.caja[3] > y && r.caja[1] < y + h) dibujarRombo(ctx, r);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  if (!color) mono(ctx, c.width, c.height);
+  return c;
 }
 const save = async (name, c, type = 'image/webp', quality = .82) => fetch('/save?name=dist/n02/map/' + name, {method: 'POST', body: await new Promise(r => c.toBlob(r, type, quality))});
 
 if (q.has('x')) {
-  document.body.append(await region(+q.get('x'), +q.get('y'), +q.get('w'), +q.get('h'), +(q.get('s') || 1)));
+  // Zona de revisión: &color=1 muestra el PDF original sin monocromático; &guardar=nombre la deja en scripts/n02-plano/revision/.
+  const c = await region(+q.get('x'), +q.get('y'), +q.get('w'), +q.get('h'), +(q.get('s') || 1), q.has('color'));
+  document.body.append(c);
+  if (q.has('guardar')) await fetch('/save?name=scripts/n02-plano/revision/' + encodeURIComponent(q.get('guardar')) + '.png', {method: 'POST', body: await new Promise(r => c.toBlob(r, 'image/png'))});
   log('Zona de prueba lista.');
 } else {
   const tile = 768, CH = 4, levels = [{z: 0, scale: .5}, {z: 1, scale: 1}, {z: 2, scale: 2}], t0 = performance.now();
@@ -52,6 +95,18 @@ if (q.has('x')) {
       log(`Nivel ${L.z}: bloque ${bx},${by} · ${((performance.now() - t0) / 1000).toFixed(0)} s`);
     }
   }
+  // Imagen del rombo de cada recinto para la ficha (dist/n02/rombos/<código>.png) y su caja en el plano (data/n02/rombos-plano.json).
+  const cajas = {};
+  for (const r of rombos.filter(r => r.codigo)) {
+    const [x0, y0, x1, y1] = r.caja, S = 300 / (y1 - y0), pad = 10, c = document.createElement('canvas');
+    c.width = Math.ceil((x1 - x0) * S + 2 * pad); c.height = Math.ceil((y1 - y0) * S + 2 * pad);
+    const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.setTransform(S, 0, 0, S, pad - x0 * S, pad - y0 * S); dibujarRombo(ctx, r);
+    await fetch('/save?name=dist/n02/rombos/' + encodeURIComponent(r.codigo) + '.png', {method: 'POST', body: await new Promise(res => c.toBlob(res, 'image/png'))});
+    cajas[r.codigo] = r.caja.map(v => +v.toFixed(2));
+  }
+  await fetch('/save?name=data/n02/rombos-plano.json', {method: 'POST', body: JSON.stringify(cajas)});
+  log('Rombos: ' + Object.keys(cajas).length + ' imágenes · ' + ((performance.now() - t0) / 1000).toFixed(0) + ' s');
   await save('overview.webp', await region(0, 0, T.width, T.height, .3), 'image/webp', .8);
   await save('export.jpg', await region(0, 0, T.width, T.height, .5), 'image/jpeg', .85);
   await fetch('/save?name=dist/n02/map/index.json', {method: 'POST', body: JSON.stringify({origin: [0, 0], width: T.width, height: T.height, tileSize: tile,

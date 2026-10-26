@@ -8,7 +8,7 @@ import {fileURLToPath} from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url)), repo = path.resolve(here, '../..');
 const ROOTS = {'/repo/': repo, '/tool/': here};
 // Solo se escribe dentro de estas carpetas.
-const WRITABLE = [path.join(repo, 'dist', 'n02', 'map'), path.join(repo, 'data', 'n02')];
+const WRITABLE = [path.join(repo, 'dist', 'n02', 'map'), path.join(repo, 'dist', 'n02', 'rombos'), path.join(repo, 'data', 'n02'), path.join(here, 'revision')];
 const mime = {'.html': 'text/html; charset=utf-8', '.mjs': 'text/javascript', '.js': 'text/javascript', '.pdf': 'application/pdf', '.json': 'application/json', '.ttf': 'font/ttf'};
 http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');

@@ -1,0 +1,159 @@
+{
+ "8.2.3.2.4-1": {
+  "lamina": "A-501",
+  "estado": "rechazado",
+  "motivo": "sin espacio libre junto al rótulo"
+ },
+ "8.2.3.2.7-1": {
+  "lamina": "A-501",
+  "estado": "rechazado",
+  "motivo": "sin espacio libre junto al rótulo"
+ },
+ "4.4.1.4.1-1": {
+  "lamina": "A-503",
+  "estado": "rechazado",
+  "motivo": "el relleno se escapa (abertura sin cerrar en el DWG)",
+  "areaM2": 67.66,
+  "declarada": 28.53
+ },
+ "4.4.1.4.4-1": {
+  "lamina": "A-503",
+  "estado": "rechazado",
+  "motivo": "el relleno se escapa (abertura sin cerrar en el DWG)",
+  "areaM2": 56.2,
+  "declarada": 16.23
+ },
+ "4.4.1.4.19-1": {
+  "lamina": "A-504",
+  "estado": "rechazado",
+  "motivo": "el relleno se escapa (abertura sin cerrar en el DWG)",
+  "areaM2": 18.18,
+  "declarada": 4.31
+ },
+ "4.4.1.4.2-1": {
+  "lamina": "A-504",
+  "estado": "rechazado",
+  "motivo": "el relleno se escapa (abertura sin cerrar en el DWG)",
+  "areaM2": 68.83,
+  "declarada": 21.64
+ },
+ "4.4.1.4.4-3": {
+  "lamina": "A-504",
+  "estado": "rechazado",
+  "motivo": "el relleno se escapa (abertura sin cerrar en el DWG)",
+  "areaM2": 54.17,
+  "declarada": 16.21
+ },
+ "4.4.2.2.5-1": {
+  "lamina": "A-505",
+  "estado": "rechazado",
+  "motivo": "el relleno se escapa (abertura sin cerrar en el DWG)",
+  "areaM2": 58.95,
+  "declarada": 22.33
+ },
+ "4.4.2.4.1-1": {
+  "lamina": "A-505",
+  "estado": "rechazado",
+  "motivo": "el relleno se escapa (abertura sin cerrar en el DWG)",
+  "areaM2": 65.06,
+  "declarada": 33.84
+ },
+ "4.4.2.4.2-1": {
+  "lamina": "A-505",
+  "estado": "rechazado",
+  "motivo": "el relleno se escapa (abertura sin cerrar en el DWG)",
+  "areaM2": 60.11,
+  "declarada": 20.74
+ },
+ "4.4.2.4.2-2": {
+  "lamina": "A-505",
+  "estado": "rechazado",
+  "motivo": "el relleno se escapa (abertura sin cerrar en el DWG)",
+  "areaM2": 47.43,
+  "declarada": 17.66
+ },
+ "4.1.1.1.6-1": {
+  "lamina": "A-506",
+  "estado": "rechazado",
+  "motivo": "el relleno se escapa (abertura sin cerrar en el DWG)",
+  "areaM2": 103.72,
+  "declarada": 71.77
+ },
+ "4.1.1.2.6-1": {
+  "lamina": "A-506",
+  "estado": "rechazado",
+  "motivo": "el relleno se escapa (abertura sin cerrar en el DWG)",
+  "areaM2": 61.65,
+  "declarada": 40.4
+ },
+ "4.4.2.1.1-1": {
+  "lamina": "A-506",
+  "estado": "rechazado",
+  "motivo": "el relleno se escapa (abertura sin cerrar en el DWG)",
+  "areaM2": 92.68,
+  "declarada": 44.3
+ },
+ "4.1.1.1.7-1": {
+  "lamina": "A-507",
+  "estado": "rechazado",
+  "motivo": "el relleno se escapa (abertura sin cerrar en el DWG)",
+  "areaM2": 140.73,
+  "declarada": 99.6
+ },
+ "4.4.1.4.1-2": {
+  "lamina": "A-507",
+  "estado": "rechazado",
+  "motivo": "el relleno se escapa (abertura sin cerrar en el DWG)",
+  "areaM2": 68.25,
+  "declarada": 25.94
+ },
+ "4.4.1.4.3-2": {
+  "lamina": "A-507",
+  "estado": "rechazado",
+  "motivo": "el relleno se escapa (abertura sin cerrar en el DWG)",
+  "areaM2": 65.57,
+  "declarada": 29.21
+ },
+ "4.4.1.4.4-2": {
+  "lamina": "A-507",
+  "estado": "rechazado",
+  "motivo": "el relleno se escapa (abertura sin cerrar en el DWG)",
+  "areaM2": 44.52,
+  "declarada": 13.91
+ },
+ "4.1.1.1.1-1": {
+  "lamina": "A-508",
+  "estado": "rechazado",
+  "motivo": "el relleno se escapa (abertura sin cerrar en el DWG)",
+  "areaM2": 481.74,
+  "declarada": 573.95
+ },
+ "4.4.1.1.1-1": {
+  "lamina": "A-508",
+  "estado": "rechazado",
+  "motivo": "el relleno se escapa (abertura sin cerrar en el DWG)",
+  "areaM2": 61.8,
+  "declarada": 32.15
+ },
+ "4.4.1.1.2-1": {
+  "lamina": "A-508",
+  "estado": "rechazado",
+  "motivo": "el relleno se escapa (abertura sin cerrar en el DWG)",
+  "areaM2": 33.75,
+  "declarada": 13.34
+ },
+ "4.4.1.4.2-2": {
+  "lamina": "A-508",
+  "estado": "rechazado",
+  "motivo": "el relleno se escapa (abertura sin cerrar en el DWG)",
+  "areaM2": 61.07,
+  "declarada": 19
+ },
+ "4.4.1.4.4-4": {
+  "lamina": "A-508",
+  "estado": "rechazado",
+  "motivo": "el relleno se escapa (abertura sin cerrar en el DWG)",
+  "areaM2": 49.75,
+  "declarada": 14.86
+ }
+}

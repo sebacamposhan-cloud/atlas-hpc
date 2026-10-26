@@ -16,7 +16,7 @@ const index = fs.readFileSync('dist/index.html', 'utf8');
 assert(index.includes('data-selector-piso') && index.includes('src="pisos.js"'), 'index.html debe cargar el selector de piso');
 const resumen = {};
 for (const piso of pisos) {
-  const {data, atlas, map} = decodeRuntime(JSON.parse(fs.readFileSync('dist/' + piso.datos + 'runtime.json', 'utf8')));
+  const {data, atlas, map, selection} = decodeRuntime(JSON.parse(fs.readFileSync('dist/' + piso.datos + 'runtime.json', 'utf8')));
   assert(data.rooms.length > 0 && data.documents.length > 0, piso.id + ': sin recintos o láminas');
   const docs = new Set(data.documents.map(d => d.id)), materiales = new Set(data.materials.map(m => m.code));
   for (const r of data.rooms) {
@@ -32,7 +32,11 @@ for (const piso of pisos) {
   if (piso.datos) {
     // Pisos importados desde DWG: geometría completa, dentro del plano y por lámina.
     const inside = p => p[0] >= 0 && p[1] >= 0 && p[0] <= map.width && p[1] <= map.height;
-    for (const r of data.rooms) assert(r.polygon?.length >= 3 && r.polygon.every(inside) && inside(r.position), piso.id + ': contorno fuera del plano en ' + r.id);
+    // Cada recinto tiene contorno o superficie auxiliar de selección (recintos abiertos sin límites en el DWG), dentro del plano.
+    const auxiliar = new Map(selection.rooms.map(s => [s.id, s.rings[0].polygon]));
+    for (const r of data.rooms) { const anillo = r.polygon || auxiliar.get(r.id); assert(anillo?.length >= 3 && anillo.every(inside) && inside(r.position), piso.id + ': contorno fuera del plano en ' + r.id); }
+    // Sin arcos inventados: ningún contorno con tramos curvos largos (muchos segmentos cortos con giro suave seguidos).
+    for (const r of data.rooms.filter(r => r.polygon)) { const p = r.polygon, n = p.length; let seguidos = 0, max = 0; for (let i = 0; i < n; i++) { const a = p[(i - 1 + n) % n], b = p[i], c = p[(i + 1) % n], u = [b[0] - a[0], b[1] - a[1]], v = [c[0] - b[0], c[1] - b[1]], g = Math.abs(Math.atan2(u[0] * v[1] - u[1] * v[0], u[0] * v[0] + u[1] * v[1])); seguidos = Math.hypot(...u) < 50 && Math.hypot(...v) < 50 && g > .03 && g < .7 ? seguidos + 1 : 0; max = Math.max(max, seguidos); } assert(max < 5, piso.id + ': contorno con arco en ' + r.id); }
     for (const d of data.documents) assert(fs.existsSync('dist/' + piso.datos + 'geometry/' + d.id + '.json'), piso.id + ': falta geometry/' + d.id);
     assert(new Set(data.rooms.map(r => r.code)).size === data.rooms.length, piso.id + ': códigos repetidos');
   }

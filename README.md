@@ -11,6 +11,8 @@ Todos los pisos usan la misma interfaz de Atlas: explorador de planos, dashboard
 - Las correcciones y respaldos se guardan por piso. El nivel −1 conserva las claves originales.
 - El nivel 2 usa la misma escala que el −1 (puntos PDF 1:50). Sus contornos vienen del DWG; no tiene rombos dibujados ni láminas de especialidad, así que esas funciones no aparecen en ese piso.
 - El plano de fondo del nivel 2 son mosaicos monocromáticos de `dist/source/n02-planta-arquitectura.pdf`, alineados con los recintos del DWG por sus códigos (error mediano ≈ 4 cm; ver `data/n02/pdf-a-plano.json`). Para regenerarlo: `scripts/n02-plano/LEEME.md`.
+- Los rombos del nivel 2 se leen de las 8 láminas DWG 1:50 (286 recintos; la zona 8.2.3 de A-501 no los dibuja) y se dibujan sobre el rótulo de cada recinto; la monografía de la ficha sale de esos rombos.
+- 23 recintos abiertos no tienen todos sus lados dibujados en las fuentes: su contorno se cierra con tramos rectos (o una superficie auxiliar de selección) y queda marcado como aproximado.
 - `/n02/` redirige a `/?nivel=N02` y conserva el enlace a un recinto (`/n02/#código`).
 - Enlaces directos: `/?nivel=N02#4.4.1.3.1-10` abre la ficha de un recinto.
 

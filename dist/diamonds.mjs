@@ -3,7 +3,7 @@ export const diamondFields=['M1','M2','M3','M4','CIE','PAV'];
 const normalize=value=>String(value??'').normalize('NFD').replace(/\p{M}/gu,'').toLowerCase();
 export function findDiamonds(rooms,{query='',documentId=''}={}){
  const q=normalize(query).trim();
- return rooms.filter(r=>(!documentId||r.document_id===documentId)&&(!q||normalize([r.code,r.name,...(r.finishes||[]).map(f=>f.code+' '+f.description)].join(' ')).includes(q)));
+ return rooms.filter(r=>(r.diamond_bbox||r.diamond_url)&&(!documentId||r.document_id===documentId)&&(!q||normalize([r.code,r.name,...(r.finishes||[]).map(f=>f.code+' '+f.description)].join(' ')).includes(q)));
 }
 export function diamondBox(room,atlas){
  const box=room.diamond_bbox,tile=atlas.tiles.find(t=>t.id===room.document_id);
@@ -13,7 +13,7 @@ export function diamondBox(room,atlas){
 export function createDiamondCatalog(ctx){
  const esc=ctx.esc,button=document.createElement('button');button.id='diamondCatalogOpen';button.textContent='Rombos';button.type='button';document.querySelector('body>header').append(button);
  const dialog=document.createElement('dialog');dialog.id='diamondCatalog';dialog.setAttribute('aria-label','Catálogo documental de rombos');
- dialog.innerHTML='<div class="diamondHead"><h2>Rombos documentales</h2><button id="diamondClose" aria-label="Cerrar catálogo">×</button></div><section id="diamondListPanel"><p>Observaciones de las nueve láminas de Arquitectura, incluidas las que quedan fuera del recorte del plano. No equivalen a recintos físicos únicos.</p><div class="diamondFilters"><label>Buscar código, nombre o terminación<input id="diamondSearch" type="search"></label><label>Lámina<select id="diamondDocument"><option value="">Todas las láminas</option></select></label></div><button id="diamondMapToggle" type="button">Mostrar rombos en el plano</button><p id="diamondCount" aria-live="polite"></p><div id="diamondRows"></div><div class="diamondPagination"><button id="diamondPrev">Anterior</button><span id="diamondPage"></span><button id="diamondNext">Siguiente</button></div></section><section id="diamondDetail" hidden></section>';
+ dialog.innerHTML='<div class="diamondHead"><h2>Rombos documentales</h2><button id="diamondClose" aria-label="Cerrar catálogo">×</button></div><section id="diamondListPanel"><p>Observaciones de las láminas de Arquitectura de este piso, incluidas las que quedan fuera del recorte del plano. No equivalen a recintos físicos únicos.</p><div class="diamondFilters"><label>Buscar código, nombre o terminación<input id="diamondSearch" type="search"></label><label>Lámina<select id="diamondDocument"><option value="">Todas las láminas</option></select></label></div><button id="diamondMapToggle" type="button">Mostrar rombos en el plano</button><p id="diamondCount" aria-live="polite"></p><div id="diamondRows"></div><div class="diamondPagination"><button id="diamondPrev">Anterior</button><span id="diamondPage"></span><button id="diamondNext">Siguiente</button></div></section><section id="diamondDetail" hidden></section>';
  document.body.append(dialog);const $=id=>dialog.querySelector('#'+id);let page=0;
  function list(){
   $('diamondListPanel').hidden=false;$('diamondDetail').hidden=true;
