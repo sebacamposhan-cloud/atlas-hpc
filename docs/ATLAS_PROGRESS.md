@@ -61,3 +61,7 @@ Una limpieza automática retiró el checkout no sincronizado durante el desarrol
 ## Correcciones del informe visual — familias
 
 El selector principal de capas se reduce a Cielos, Pavimentos y Muros. Asepsia pasa a filtro independiente de atributo de pintura; HPL permanece en Muros. Se conservan las categorías documentales internas y los colores personalizados. Prueba quality-browser-test en 1440 y 390 px verifica las tres opciones y persistencia del filtro de 72 recintos, junto con geometría y trazabilidad. Pasan layers-test y offline-test. El montaje continuo CIE y la corrección integral de circulación siguen pendientes; este incremento no los declara resueltos.
+
+## Asistente Groq
+
+Chat para consultas generales y resumen de fichas originales con contexto de recinto y referencias documentales, mediante backend Node. Clave solo en servidor; límite de intentos/tokens y errores explícitos. La configuración de producción y prueba real requieren credencial, modelo habilitado y servicio backend, ya que el hosting actual es estático. Ver `GROQ.md`.

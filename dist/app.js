@@ -1,3 +1,4 @@
+import {createAssistant} from './assistant.mjs';
 import {asepsisEvidence} from './documentary-evidence.mjs';
 import {geometryLabels} from './geometry-authority.mjs';
 import {createDisciplines} from './disciplines.mjs';
@@ -10,7 +11,7 @@ import {startPan,panView,startPinch,pinchView} from './gestures.mjs';
 import './offline.mjs';
 'use strict';
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let ui,disciplines;let undoGeometry=[],redoGeometry=[];
+let ui,disciplines,assistant;let undoGeometry=[],redoGeometry=[];
 function rememberGeometry(){undoGeometry.push(structuredClone(edit));if(undoGeometry.length>100)undoGeometry.shift();redoGeometry=[];}
 
 let atlas,aliases=new Map(),data,doc,selected=null,results=[],filtered=false,view=[0,0,3971,2384],previousView=null,isolation=false,edit=null,drag=null,searchTimer,querySerial=0;
@@ -102,6 +103,7 @@ async function initialize(){
   $('material').innerHTML='<option value="">Todos los materiales</option>'+data.materials.map(m=>`<option value="${esc(m.code)}">${esc(m.code+' · '+m.description)}</option>`).join('');
   await prepareViewer(atlas,uniqueRooms(data.rooms),aliases,runtime);
   ui ||= createWorkspace({esc,rooms:()=>uniqueRooms(data.rooms),results:()=>results,data:()=>data,selected:()=>selected,editing:()=>!!edit,toast,modal,hasGeometry:id=>!!footprint(id),footprint,redraw:render,refresh:runSearch,search:()=>{clearTimeout(searchTimer);searchTimer=setTimeout(runSearch,160);},reset,select:selectRoom,excel,download:downloadBlob});
+  if(!assistant){createAssistant({selected:()=>selected});assistant=true;}
   disciplines ||= createDisciplines({esc,editing:()=>!!edit,selected:()=>selected,enterSpecialty:()=>{querySerial++;clearTimeout(searchTimer);document.body.classList.add('hideRight','hideLeft');},toast,download:downloadBlob,rooms:()=>uniqueRooms(data.rooms),material:code=>data.materials.find(m=>m.code===code),returnArchitecture:(code,id)=>{const matches=uniqueRooms(data.rooms).filter(r=>r.code===code),target=id?matches.find(r=>r.id===id):matches.length===1?matches[0]:null;if(target){selectRoom(target.id);}else{clearArchitectureSelection(code);if(code)toast(matches.length?'Varias coincidencias en Arquitectura: selecciona el recinto.':'Sin correspondencia en Arquitectura para '+code);}},syncCode:code=>{const matches=uniqueRooms(data.rooms).filter(r=>r.code===code);selected=matches.length===1?matches[0]:null;if(selected)selectRoom(selected.id,false);else{clearArchitectureSelection(code);}document.body.classList.add('hideRight');}});
   $('asepsis').innerHTML='<option value="">Todas / sin filtro</option>'+[...new Set(data.rooms.flatMap(r=>r.asepsis))].sort().map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join('');
   results=uniqueRooms(data.rooms);changeDoc(data.documents[0].id);listResults();$('loading').hidden=true;document.body.classList.remove('booting');window.dispatchEvent(new Event('atlas-ready'));
