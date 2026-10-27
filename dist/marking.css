@@ -1,0 +1,72 @@
+/* Space for the list is reserved outside the drawing, including on small screens. */
+#markingPanel {
+  position: absolute; inset: 44px 0 0 auto; width: 320px; z-index: 12;
+  display: flex; flex-direction: column; overflow: hidden; background: white; border-left: 1px solid var(--line);
+}
+#markingPanel[hidden] { display: none; }
+.markingHead { display: flex; justify-content: space-between; align-items: start; gap: 10px; padding: 16px 16px 8px; }
+.markingHead > div { min-width: 0; flex: 1; }
+.markingHead > button { flex-shrink: 0; }
+.markingHead h2 { margin: 4px 0; font-size: 17px; overflow-wrap: anywhere; }
+.markingHead small { font-size: 9px; }
+.markingHead > button { border: 0; font-size: 22px; }
+.markingActions { display: flex; gap: 8px; padding: 0 16px; }
+.markingActions button { font-size: 11px; }
+.markingInstruction { color: #386c84; font-size: 11px; margin: 10px 16px; }
+.markingScroll { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 0 16px; }
+.markingMetadata { font-size: 11px; overflow-wrap: anywhere; }
+.markedRooms { list-style: none; padding: 0; margin: 0; }
+.markedRooms li { display: flex; align-items: center; gap: 4px; border-bottom: 1px solid var(--line); }
+.markedRooms li.focused { background: #eaf2fb; }
+.markedRooms button { border: 0; text-align: left; white-space: normal; padding: 10px 4px; }
+.markedRooms [data-marked-room] { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.markedRooms b, .markedRooms span { display: block; font-size: 12px; }
+.markedRooms span { color: var(--muted); font-size: 10px; }
+.markedRooms [data-remove-mark] { font-size: 22px; min-width: 40px; min-height: 44px; text-align: center; }
+.markingFooter { border-top: 1px solid var(--line); padding: 10px 16px; }
+.markingFooter > span { display: block; color: #386c84; font-size: 10px; }
+.markingFooter > div { display: flex; gap: 6px; margin: 6px 0; }
+.markingFooter button { font-size: 11px; }
+.markingFooter small { display: block; font-size: 9px; }
+.markingOpen #activeLegend, .markingOpen .canvasHelp { display: none; }
+.markingOpen .right, .markingOpen .left { display: none !important; }
+body.markingOpen #viewport { right: 320px; bottom: 0; }
+body.markingOpen .toolbar, body.markingOpen main > footer { right: 332px; }
+#markingOpen[aria-expanded=true] { background: #dfeafa; color: #245b95; }
+#markingDialog { max-width: 620px; }
+.markingLibrary { display: grid; gap: 10px; margin: 20px 0; max-height: 40vh; overflow: auto; }
+.markingLibrary > button { padding: 12px; text-align: left; white-space: normal; overflow-wrap: anywhere; }
+.markingLibrary b, .markingLibrary span, .markingLibrary small { display: block; }
+.markingLibrary small { margin-top: 5px; }
+#markingForm input:not([type=color]), #markingForm textarea { display: block; width: 100%; font-size: 16px; }
+#markingForm button { margin-top: 14px; }
+#markingError { color: #a32626; }
+@media(max-width:700px) {
+  #markingPanel {
+    top: auto; width: 100%; height: clamp(170px,33dvh,260px); border-left: 0; border-top: 1px solid var(--line);
+    display: grid; grid-template-columns: minmax(0,1fr) auto; grid-template-rows: auto auto minmax(0,1fr) auto;
+  }
+  .markingHead { padding: 7px 10px; grid-column: 1; min-width: 0; }
+  .markingHead h2 { font-size: 13px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 47vw; }
+  .markingHead small { font-size: 8px; }
+  .markingActions { grid-column: 2; grid-row: 1; padding: 6px; gap: 4px; align-items: center; }
+  .markingActions button { font-size: 9px; padding: 5px; }
+  .markingInstruction { grid-column: 1/-1; margin: 0 10px 4px; font-size: 10px; }
+  .markingScroll { grid-column: 1/-1; padding: 0 10px; }
+  .markingScroll h3 { font-size: 10px; margin: 5px 0; }
+  .markingMetadata { font-size: 10px; }
+  .markingFooter { grid-column: 1/-1; display: flex; align-items: center; justify-content: space-between; padding: 4px 10px; gap: 6px; }
+  .markingFooter small { display: none; }
+  .markingFooter > div { margin: 0; }
+  .markingFooter button { font-size: 9px; padding: 6px; }
+  .markingFooter > span { font-size: 9px; }
+  body.markingOpen #viewport { right: 0; bottom: clamp(170px,33dvh,260px); }
+  body.markingOpen .toolbar { right: 10px; top: 52px; padding: 4px; }
+  .markingOpen .toolbar button { min-height: 28px; height: 28px; padding: 3px; font-size: 10px; }
+  .markingOpen .toolbar #planSettingsOpen { height: 32px; }
+  .markingOpen .toolbar #planSettingsOpen svg { display: none; }
+  body.markingOpen main > footer { display: none; }
+  .markingOpen .planheader { padding: 6px 10px; top: 51px; left: 10px; }
+  .markingOpen .planheader h1 { font-size: 12px; }
+  .markingOpen .planheader .badge { display: none; }
+}

@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {newMarking,validateMarking,addMarkedRoom,removeMarkedRoom} from './dist/marking-model.mjs';
+const fields={name:' Revisión A ',author:'Responsable QA',purpose:'Verificar terminaciones',color:'#2874c7'},source={code:'ARQ-501',revision:'Rev01'};
+const d=newMarking(fields,'N-1','qa-doc');assert.equal(d.name,'Revisión A');
+for(const field of ['name','author','purpose'])assert.throws(()=>newMarking({...fields,[field]:'  '},'N-1','qa'));
+const room={id:'room-a',code:'3.1.4-1',name:'Recinto QA'},r2={...room,id:'room-b',code:'3.1.5-1'};
+const a=addMarkedRoom(d,room,source);assert.equal(d.rooms.length,0);assert.equal(a.rooms[0].number,1);assert.equal(addMarkedRoom(a,room,source),a,'clicking a marked room must not remove or duplicate it');
+const b=addMarkedRoom(a,r2,source),c=removeMarkedRoom(b,room.id),e=addMarkedRoom(c,room,source);assert.deepEqual(e.rooms.map(r=>r.number),[2,3]);assert.equal(e.nextNumber,4);
+assert.throws(()=>validateMarking({...e,rooms:[e.rooms[0],e.rooms[0]]}));assert.throws(()=>validateMarking({...d,specialty:'ceilings'}));assert.throws(()=>validateMarking({...d,color:'url(evil)'}));assert.throws(()=>validateMarking({...d,version:0}));
+console.log('Marking documents: mandatory metadata, immutable room references, duplicate taps, stable numbering after removal, and validation passed');
