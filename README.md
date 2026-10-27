@@ -158,3 +158,8 @@ El incremento de navegación y asociación CIE se describe en `docs/CIELOS_INCRE
 HTML/CSS/JS y datos estáticos en dist; configuración en .openai/hosting.json. Se conserva el acceso público ya configurado del sitio existente. Las bibliotecas se distribuyen localmente con sus licencias, sin CDN externa. Los scripts Python de scripts/ son utilidades de preparación fuera de línea y no forman parte de la ejecución web. scripts/selection/ conserva la evidencia y el ensamblado reproducible de las superficies auxiliares.
 
 Después de cambiar datos, ejecutar `node scripts/prepare-runtime.mjs`. Los iconos PNG se generan con `node scripts/prepare-icons.mjs`. Después de cualquier cambio en dist, ejecutar `node scripts/prepare-offline.mjs` para renovar las huellas y la versión del paquete offline, y después `node offline-test.mjs` para comprobar que el manifiesto coincide con los archivos publicados.
+
+
+### Documentos de marcado en Arquitectura
+
+En el visor, **Marcados → Nuevo documento** exige nombre, autor y propósito. Tocar un recinto lo pinta y añade su número y código a la lista exterior al plano (derecha en escritorio, debajo en móvil). Los números se conservan al quitar recintos. Documentos independientes por piso, color editable, PDF con plano/listado/metadatos y respaldo JSON. Guardado local en IndexedDB; no hay sincronización entre dispositivos. Buscar un código acerca el plano sin marcarlo. Detalles y pruebas: [docs/MARKING_DOCUMENTS.md](docs/MARKING_DOCUMENTS.md).

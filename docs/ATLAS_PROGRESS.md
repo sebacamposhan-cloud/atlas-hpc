@@ -179,3 +179,11 @@ Control de obra prioriza Avance por recinto. Los 330 recintos visibles del plano
 Torta de instalación, seis barras de instaladas/conformes/total, revisión de lo instalado y pendientes por sector. Indicadores por partidas y recintos, con denominador explícito no ponderado por m² o costo; filtros por asepsia, sector, partida, nombre/código y estado. Sin curvas temporales ficticias.
 
 IndexedDB independiente, guardado atómico con historial/control de versión, borradores de pestaña recuperables, respaldo/importación con rechazo de conflictos y consulta offline. No hay sincronización compartida; fuentes SQLite, PMA, geometrías y registros de protocolos se conservan. Detalles y pruebas en docs/ROOM_PROGRESS.md. Publicación por PR a main; sin merge/despliegue automático.
+
+## Documentos de marcado de Arquitectura
+
+Nuevo acceso Marcados en el visor: documentos con nombre, autor y propósito obligatorios, color, pintado por toque sobre recintos existentes y lista numerada exterior al plano. Buscar un recinto solo acerca la vista; no añade marcados. Cada documento conserva sus recintos por piso, sin duplicarlos al repetir el toque ni renumerar los demás al retirar uno.
+
+Guardado automático local en IndexedDB con transacciones y control de versión, respaldo/restauración JSON sin sobrescribir conflictos, PDF con plano coloreado/numerado y relación de recintos/metadatos. Instantánea del documento durante la exportación; módulos incluidos en el núcleo offline. La lista reserva una columna derecha en escritorio y una franja inferior en móvil. No modifica bases SQLite, PMA, originales, geometrías ni avance registrado. No hay sincronización compartida. Uso, límites y pruebas en docs/MARKING_DOCUMENTS.md.
+
+Verificado: comando completo de build de Render, pruebas de dominio, Chromium 1440/390 con clics reales y PDF extraído, duplicados, eliminación, persistencia, conflictos, restauración en otro navegador, aislamiento por piso y recarga offline; regresiones de selección/colores, pisos, gestos y recursos protegidos. Publicación por PR a main, sin merge ni despliegue automáticos.
