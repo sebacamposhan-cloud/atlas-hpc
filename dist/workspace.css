@@ -99,3 +99,22 @@ body.floorHome .bottomNav button:not(#bottomMap):not(#bottomOffline){display:non
 .progressFamily{display:grid;grid-template-columns:1fr auto;gap:6px;margin:15px 0;font-size:12px}.progressFamily progress{grid-column:1/-1;width:100%;height:12px;accent-color:#357d9a}
 
 .progressFilters{margin:15px 0}.progressFilters>summary{cursor:pointer;font-size:12px;padding:10px;border:1px solid var(--line);border-radius:7px;background:white}.progressFilters .pmaFilters{margin-top:8px}.progressImportLabel{font-size:11px}.progressImportLabel input{max-width:210px;font-size:11px}.progressFilters~.kpiGrid .kpi b{font-size:26px}
+
+/* Avance valorizado por partida (avance.mjs) */
+.avanceResumen{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:12px;margin:6px 0}
+.avanceChip{display:inline-flex;align-items:center;gap:6px;font-weight:650}.avanceChip::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--c)}
+.avanceMontos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:8px 0 10px}.avanceMontos div{background:#f3f6f8;border-radius:7px;padding:7px 9px}.avanceMontos small{display:block;font-size:9px;letter-spacing:.06em;color:#74818b}.avanceMontos b{font-size:13px}
+.avanceCabecera{display:grid;grid-template-columns:2fr 1fr;gap:8px}
+.avanceForm h4{margin:14px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#56636d}
+.avanceProtocolo{display:flex;justify-content:space-between;gap:10px;align-items:center;border:1px solid var(--line);border-radius:7px;padding:7px 9px;margin:5px 0;font-size:12px}.avanceProtocolo small{display:block;color:#74818b;font-size:10px}
+.avancePartida{border:1px solid var(--line);border-radius:7px;margin:5px 0;padding:0 9px}.avancePartida summary{display:flex;gap:7px;align-items:center;padding:8px 0;font-size:12px;cursor:pointer}.avancePartida summary i{width:9px;height:9px;border-radius:50%;flex:none}.avancePartida summary span{margin-left:auto;color:#56636d;white-space:nowrap}
+.avanceDato,.avancePrevio{font-size:11px;color:#56636d;margin:3px 0}.avancePrevio.bloquea{color:#8a5309;background:#fff2d9;padding:4px 6px;border-radius:4px}
+.avanceCampos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.avanceObs{font-size:11px;padding-left:16px;margin:6px 0}.avanceMensaje{color:#8a3b2f;font-size:12px}
+.avanceGrafico .chartSubtitle{margin-bottom:10px}
+.avanceBarra{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;margin:7px 0;font-size:11px}.avanceBarra span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.avanceBarra em{grid-column:1/-1;display:flex;height:7px;background:#f1f4f6;border-radius:3px;overflow:hidden}.avanceBarra em i{display:block;height:100%}
+.avanceTabla{width:100%;border-collapse:collapse;font-size:11px}.avanceTabla th,.avanceTabla td{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line)}.avanceTabla tr.alerta td{background:#fff2d9}
+.avanceFuente p{margin:4px 0;font-size:12px}.avanceCarga{display:inline-flex;cursor:pointer;border-radius:8px;padding:8px 12px;background:#263f50;color:#fff;margin:6px 6px 0 0;font-size:12px}
+.avanceRevision{margin-top:18px;font-size:12px}.avanceRevision ul{padding-left:18px;max-height:260px;overflow:auto}
+.progressRoomList button i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+@media(max-width:700px){.avanceMontos,.avanceCampos{grid-template-columns:1fr 1fr}.avanceCabecera{grid-template-columns:1fr}}
