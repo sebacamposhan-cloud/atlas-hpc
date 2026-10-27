@@ -67,9 +67,10 @@ def import_matrix(source,output):
             group=specialties.setdefault(sid,{'id':sid,'name':specialty.strip() if specialty and specialty.strip() else 'Sin especialidad documentada','variants':set(),'typeIds':set(),'count':0})
             if specialty:group['variants'].add(specialty)
             group['count']+=1
-            entry=types.setdefault(code,{'id':ident('protocol',code),'code':code,'names':set(),'rawCodes':set(),'specialtyIds':set(),'count':0,'states':collections.Counter(),'levels':collections.Counter(),'rows':[]})
+            entry=types.setdefault(code,{'id':ident('protocol',code),'code':code,'names':set(),'rawCodes':set(),'specialtyIds':set(),'count':0,'states':collections.Counter(),'levels':collections.Counter(),'facets':collections.Counter(),'rows':[]})
             entry['names'].add(process.strip());entry['rawCodes'].add(values[3]);entry['specialtyIds'].add(sid);entry['count']+=1;group['typeIds'].add(entry['id'])
             state_key=(state or '').strip() or 'Sin estado documentado';entry['states'][state_key]+=1;entry['levels'][(level or '').strip()]+=1
+            entry['facets'][((level or '').strip(),state_key,sid)]+=1
             entry['rows'].append([row,*values]);raw_states[state or '']+=1;clean_states[state_key]+=1
             if state is not None and state!=state.strip():whitespace.append({'row':row,'raw':state,'display':state_key})
             folio_rows[(code,(folio or '').strip())].append(row)
@@ -88,7 +89,7 @@ def import_matrix(source,output):
             packed=[[row[0],*[intern(v) for v in row[1:]]] for row in entry.pop('rows')]
             path='registers/'+entry['id']+'.json'
             write(output/path,{'schema':1,'sourceSha256':digest,'typeId':entry['id'],'fields':fields,'strings':pool,'rows':packed})
-            protocols.append({'id':entry['id'],'code':code,'name':names[0],'names':names,'rawCodes':sorted(entry['rawCodes']),'specialtyIds':sorted(entry['specialtyIds']),'count':entry['count'],'states':dict(sorted(entry['states'].items())),'levels':dict(sorted(entry['levels'].items())),'file':path})
+            protocols.append({'id':entry['id'],'code':code,'name':names[0],'names':names,'rawCodes':sorted(entry['rawCodes']),'specialtyIds':sorted(entry['specialtyIds']),'count':entry['count'],'states':dict(sorted(entry['states'].items())),'levels':dict(sorted(entry['levels'].items())),'facets':[[level,state,sid,count] for (level,state,sid),count in sorted(entry['facets'].items())],'file':path})
         groups=[{**g,'variants':sorted(g['variants']),'typeIds':sorted(g['typeIds'])} for g in specialties.values()];groups.sort(key=lambda g:normalized(g['name']))
         audit={'statusWhitespace':whitespace,'duplicateFolios':duplicates,'missingSpecialtyRows':[row for row,v in data if not (v[1] or '').strip()],'missingIssueDate':sum(not v[9] for row,v in data),'missingCloseDate':sum(not v[12] for row,v in data),'rawStates':dict(sorted(raw_states.items())),'declaredStates':declared,'declaredTotal':declared_total,'calculatedStates':dict(sorted(clean_states.items())),'differences':{state:clean_states[state]-declared.get(state,0) for state in sorted(set(clean_states)|set(declared)) if clean_states[state]!=declared.get(state,0)}}
         aging_fields=['sourceRow','typeId','code','folio','level','receiver','issued','closedDate','state']
