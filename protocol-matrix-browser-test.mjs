@@ -11,7 +11,7 @@ let browser;
 try{
  browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,args:['--no-sandbox']});
  const create=async(viewport={width:1440,height:1000},offline=false)=>{const context=await browser.newContext({viewport,httpCredentials:{username:'atlas',password:'isolated-protocol-browser'},...(offline?{}:{serviceWorkers:'block'})}),page=await context.newPage(),errors=[],requests=[];page.setDefaultTimeout(15000);page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>requests.push(new URL(r.url()).pathname));return {context,page,errors,requests};};
- const open=async(page,mobile=false)=>{await page.goto(base+'/?nivel=N-1');await page.locator('#assistantOpen').waitFor();await page.locator(mobile?'.bottomNav [data-module="work"]':'.navGroup [data-module="work"]').click();};
+ const open=async(page,mobile=false)=>{await page.goto(base+'/?nivel=N-1');await page.locator('#assistantOpen').waitFor();await page.locator(mobile?'.bottomNav [data-module="work"]':'.navGroup [data-module="work"]').click();await page.locator('[data-work-tab="matrix"]').click();};
  for(const viewport of [{width:1440,height:1000},{width:390,height:844}]){
   const {context,page,errors,requests}=await create(viewport);await open(page,viewport.width<700);await page.locator('#matrixType').waitFor();
   assert.equal(await page.locator('[data-work-tab="matrix"]').getAttribute('aria-pressed'),'true');assert.equal(requests.filter(p=>p.startsWith('/protocols/registers/')).length,0,'opening Control must not load the twenty thousand records');assert(!requests.some(p=>p.endsWith('.xlsx')),'opening Control must not parse/download the workbook');

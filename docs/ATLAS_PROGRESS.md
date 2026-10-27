@@ -170,3 +170,12 @@ Se conserva el Excel original con SHA256 0c9b9e20a2c1257b2390ce1cba74dc756f0e45e
 Control de obra añade PMA de terminaciones con filtros, torta/barras, paginación, 57 campos fuente y enlaces a recintos del piso activo. Desplegable compacto PMA en ficha coteja códigos y muestra superficie/asepsia/revisión documental, sin sustituir los rombos ni certificar ejecución. Cuatro discrepancias internas de eliminación se pueden filtrar. Cuatro códigos del plano N02 que el PMA sitúa en N01 quedan señalados sin reasignarse. Groq recibe la evidencia PMA y sus leyendas desde el servidor al consultar un recinto.
 
 Se incorpora data/pma-revb.sqlite como instantánea derivada independiente; las tres SQLite originales, geometrías, runtime y matriz de protocolos se conservan. Consulta diferida y catálogo en paquete offline; original opcional con acceso protegido. Importador reproducible y protegido ante esquema incompatible. Validación: 177.099 campos contrastados con SheetJS, 9.321 observaciones SQLite con integridad/claves/payload, filtros/relaciones/conflictos y contexto de IA simulado; Chromium escritorio/móvil, reintento, respuesta tardía y consulta real sin red. Detalles en docs/PMA_REVB.md. Publicación mediante PR a main, sin merge ni despliegue automáticos.
+
+
+## Piloto de avance por recinto en nivel −1
+
+Control de obra prioriza Avance por recinto. Los 330 recintos visibles del plano generan 1.940 partidas PMA aplicables (pavimento, cielo y cuatro orientaciones de muro). Instalación y condición independientes, faltantes/observaciones de partida y generales, responsable, fecha e historial desde Control y ficha. El dato inicial es Sin registrar; N/A queda fuera del cálculo; Conforme requiere instalado y sin faltantes. Los conflictos de fuentes exigen cotejo explícito sin reescribir documentos.
+
+Torta de instalación, seis barras de instaladas/conformes/total, revisión de lo instalado y pendientes por sector. Indicadores por partidas y recintos, con denominador explícito no ponderado por m² o costo; filtros por asepsia, sector, partida, nombre/código y estado. Sin curvas temporales ficticias.
+
+IndexedDB independiente, guardado atómico con historial/control de versión, borradores de pestaña recuperables, respaldo/importación con rechazo de conflictos y consulta offline. No hay sincronización compartida; fuentes SQLite, PMA, geometrías y registros de protocolos se conservan. Detalles y pruebas en docs/ROOM_PROGRESS.md. Publicación por PR a main; sin merge/despliegue automático.

@@ -24,6 +24,10 @@ Validación de navegación: `PLAYWRIGHT_MODULE=<ruta-a-playwright-core> node flo
 
 Para sumar un piso: extraer su plano a `data/<piso>/`, generar `dist/<piso>/` con un importador como `scripts/import-n02.mjs`, agregar una línea en `dist/pisos.js` y en `otherLevels` de `server/groq-server.mjs`, y ejecutar `node scripts/prepare-offline.mjs` y `node pisos-test.mjs`.
 
+## Avance por recinto · piloto nivel −1
+
+Control de obra abre el seguimiento de 330 recintos y 1.940 partidas PMA aplicables: instalación, condición, faltantes, observaciones, responsable, fecha e historial. Se registra desde Control o la ficha del plano. Gráficos de instalación, conformidad, avance por partida y pendientes por sector; filtros por asepsia, sector y estado. Datos locales al dispositivo con respaldo/importación y funcionamiento offline. [Alcance y validación](docs/ROOM_PROGRESS.md).
+
 ## PMA de terminaciones RevB
 
 Control de obra → **PMA de terminaciones** incorpora los 3.107 registros del Excel, sus revisiones de pavimentos/cielos/muros, filtros, gráficos y detalle con hoja/fila. Las fichas del plano muestran un desplegable PMA para cotejar terminaciones y superficies declaradas. Los conflictos de nivel/eliminación se señalan sin sobrescribir rombos ni contornos. Original intacto, catálogo offline y SQLite documental independiente: [alcance, datos y verificación](docs/PMA_REVB.md).

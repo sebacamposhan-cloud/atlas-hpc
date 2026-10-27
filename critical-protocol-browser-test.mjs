@@ -10,7 +10,7 @@ let browser;
 try{
  browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,args:['--no-sandbox']});
  const setup=async(viewport={width:1440,height:1000},sw=false)=>{const context=await browser.newContext({viewport,locale:'es-CL',httpCredentials:{username:'atlas',password:'isolated-critical-protocols'},...(sw?{}:{serviceWorkers:'block'})}),page=await context.newPage(),errors=[],requests=[];page.setDefaultTimeout(15000);page.on('pageerror',error=>errors.push(error.message));page.on('request',r=>requests.push(new URL(r.url()).pathname));return {context,page,errors,requests};};
- const work=async(page,mobile=false)=>{await page.goto(base+'/?nivel=N-1');await page.locator('#assistantOpen').waitFor();await page.locator(mobile?'.bottomNav [data-module="work"]':'.navGroup [data-module="work"]').click();await page.locator('#matrixType').waitFor();};
+ const work=async(page,mobile=false)=>{await page.goto(base+'/?nivel=N-1');await page.locator('#assistantOpen').waitFor();await page.locator(mobile?'.bottomNav [data-module="work"]':'.navGroup [data-module="work"]').click();await page.locator('[data-work-tab="matrix"]').click();await page.locator('#matrixType').waitFor();};
  const critical=async page=>{await page.locator('[data-work-tab="critical"]').click();await page.locator('#criticalAsOf').fill('2026-10-27');await page.locator('#criticalAsOf').dispatchEvent('change');await page.waitForFunction(()=>document.querySelector('#criticalTotal')?.textContent==='2.045');};
  for(const viewport of [{width:1440,height:1000},{width:390,height:844}]){
   const {context,page,errors,requests}=await setup(viewport);await work(page,viewport.width<700);await critical(page);

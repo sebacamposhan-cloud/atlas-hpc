@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {decodePma} from './dist/pma-model.mjs';
+import {decodeRuntime} from './dist/runtime-loader.mjs';
+import {tasksFor,reportProgress,validateRecord,keyFor} from './dist/room-progress-model.mjs';
+const model=decodePma(JSON.parse(fs.readFileSync('dist/pma/catalog.json'))),rooms=decodeRuntime(JSON.parse(fs.readFileSync('dist/runtime.json'))).data.rooms;
+const room=rooms.find(r=>tasksFor(model,r).filter(t=>t.applicable).length===6&&tasksFor(model,r).every(t=>t.documented)),tasks=tasksFor(model,room);
+const record={key:keyFor(room.code),code:room.code,level:'N-1',version:1,sourceSha:model.source.sha256,date:'2026-10-27',at:'2026-10-27T12:00:00Z',responsible:'QA isolated',notes:'',fields:Object.fromEntries(tasks.map(t=>[t.field,{code:t.code,installation:'Instalado',quality:'Conforme',missing:'',notes:''}]))};
+validateRecord(record);let r=reportProgress(model,[room],[]);assert.equal(r.installed,0);assert.equal(r.accepted,0);assert.equal(r.complete,0);assert(r.tasks.every(t=>t.installation==='Sin registrar'));
+r=reportProgress(model,[room],[record]);assert.equal(r.installed,6);assert.equal(r.accepted,6);assert.equal(r.complete,1);
+const partial=structuredClone(record);partial.fields.PAV.installation='En proceso';partial.fields.PAV.quality='Sin revisar';r=reportProgress(model,[room],[partial]);assert.equal(r.installed,5);assert.equal(r.accepted,5);assert.equal(r.complete,0);
+assert.throws(()=>validateRecord({...record,level:'N02'}));assert.throws(()=>validateRecord({...record,date:'2026-02-30'}));const invalid=structuredClone(partial);invalid.fields.PAV.quality='Conforme';assert.throws(()=>validateRecord(invalid));invalid.fields.PAV.quality='Con observaciones';assert.throws(()=>validateRecord(invalid));invalid.fields.PAV.notes='Falta remate';validateRecord(invalid);
+r=reportProgress(model,[room],[{...record,sourceSha:'a'.repeat(64)}]);assert.equal(r.installed,0);assert(r.tasks.every(t=>t.stale));
+const na=rooms.find(r=>tasksFor(model,r).some(t=>!t.applicable));assert(na);assert.equal(reportProgress(model,[na],[]).total,tasksFor(model,na).filter(t=>t.applicable&&t.documented).length);
+const fake={...room,code:'nonexistent'};assert.equal(reportProgress(model,[fake],[]).complete,0);assert.equal(reportProgress(model,[fake],[]).total,0);
+console.log('Room progress: actual PMA requirements, unregistered baseline, installation/quality separation, strict completeness, partial no arbitrary percent, N/A exclusions, source changes and input validation passed');
