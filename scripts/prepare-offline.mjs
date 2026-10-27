@@ -12,8 +12,8 @@ add('contour-editor.mjs');
 add('protocols/open-aging.json');
 add('pma/catalog.json');
 for(const name of walk('protocols/registers'))add(name);
-// Pisos adicionales y ejemplo de liberación. La página de redirección n02/index.html no se guarda (solo la portada es HTML).
-for(const name of [...walk('n02'),...walk('liberacion')]) if(!/\.(html|txt)$/.test(name)) add(name);
+// Pisos adicionales y ejemplo de liberación. Las páginas de redirección n0x/index.html no se guardan (solo la portada es HTML).
+for(const name of [...walk('n01'),...walk('n02'),...walk('n03'),...walk('liberacion')]) if(!/\.(html|txt)$/.test(name)) add(name);
 for(const name of walk('map')) if(name!=='map/overview.webp') add(name);
 for(const name of walk('disciplines')) add(name);
 for(const name of walk('geometry')) add(name);

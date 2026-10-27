@@ -1,5 +1,7 @@
 # Plano monocromático, rombos y contornos del nivel 2
 
+> Desde la incorporación de los niveles 1 y 3, el plano de fondo y las imágenes de rombo del nivel 2 se dibujan desde sus láminas DWG, separados en capas, con `scripts/dwg-plano` (ver su LEEME). Los contornos y la monografía siguen saliendo de aquí (`plano.json`, `dwg-rombos.mjs`, `dwg-contornos.mjs`). Los pasos de PDF (3 a 5) quedan como referencia.
+
 Fuentes (carpeta «Planos N02», fuera del repo):
 - `planta arquitectura N02.pdf` (copiada como `dist/source/n02-planta-arquitectura.pdf`): planta vectorial completa con muros, mobiliario y rótulos. No trae rombos.
 - `HPC-ARQ-PLA-N02-A-501…508-Rev01_V1.dwg`: láminas 1:50. Traen los rombos de terminación (bloque `ARQ_GEN_RomboTerminación1_50`) y las líneas de límite de recintos (capa `A-AREA`).

@@ -1,6 +1,6 @@
 // PMA is documentary evidence, separate from drawing observations and executed work.
 export const pmaFields=['code','roomType','category','unit','name','area','level','change','PAV','CIE','M1','M2','M3','M4','asepsis','wallType','projected','reference','comparison','comments','observation','response'];
-export const pmaLevels={'N-1':'A-S01','N02':'A-N02'};
+export const pmaLevels={'N-1':'A-S01','N01':'A-N01','N02':'A-N02','N03':'A-N03'};
 export const pmaNormalize=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
 const code=v=>String(v??'').trim();
 export function decodePma(bundle){

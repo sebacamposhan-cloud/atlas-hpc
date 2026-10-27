@@ -2,3 +2,8 @@ __pycache__/
 # Avance de scripts/n02-plano/render.html
 dist/n02/map/estado.txt
 scripts/n02-plano/revision/
+# Datos intermedios grandes de scripts/dwg-plano (se regeneran desde los DWG)
+data/*/dibujo.json
+data/*/barreras.json
+data/*/revision/
+dist/*/map/estado.txt

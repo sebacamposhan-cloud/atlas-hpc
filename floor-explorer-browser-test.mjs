@@ -20,7 +20,7 @@ try{
   assert.equal(requests.filter(p=>/runtime\.json|\/map\/\d+\//.test(p)).length,0,'entry must not initialize either heavy viewer');
   assert(!requests.includes('/app.js'),'viewer code is deferred until floor choice');
   await page.locator('.floorPreview img').evaluateAll(images=>Promise.all(images.map(img=>img.decode())));
-  assert.equal(await page.locator('[data-floor="N01"] img,[data-floor="N03"] img').count(),0,'unavailable floors must not borrow another plan');
+  assert.deepEqual(await page.locator('.floorPreview img').evaluateAll(images=>images.map(img=>img.getAttribute('src'))),['map/overview.webp','n01/map/overview.webp','n02/map/overview.webp','n03/map/overview.webp'],'each floor shows its own plan');
   if(process.env.ATLAS_SCREENSHOT_DIR)await page.screenshot({path:process.env.ATLAS_SCREENSHOT_DIR+'/floor-cards-'+viewport.width+'.png'});
   await page.locator('[data-floor="N-1"] a').click();await page.locator('#assistantOpen').waitFor();
   await page.waitForFunction(()=>document.querySelectorAll('.roomshape').length===330);

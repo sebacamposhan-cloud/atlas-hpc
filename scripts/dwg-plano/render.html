@@ -1,0 +1,145 @@
+<!doctype html><meta charset="utf-8"><title>Plano por capas · DWG</title>
+<style>body{margin:0;font:14px sans-serif}canvas{display:block;max-width:100%}</style>
+<pre id="out">Cargando…</pre>
+<script type="module">
+// Dibuja el plano de un nivel desde data/<nivel>/dibujo.json (extraer.mjs) en mosaicos con el formato de dist/map del nivel −1:
+// la base opaca va en dist/<nivel>/map/<z>/ y cada capa que se puede apagar (relleno, mobiliario, ejes) en teselas transparentes
+// en dist/<nivel>/map/<capa>/<z>/, solo donde tiene dibujo. Genera también la imagen del rombo de cada recinto para su ficha.
+// render.html?nivel=n01 genera todo; &x=..&y=..&w=..&h=..&s=.. muestra una zona de prueba (coordenadas de Atlas) y &guardar=nombre
+// la deja en data/<nivel>/revision/ (no se publica).
+const q = new URLSearchParams(location.search), nivel = q.get('nivel');
+const log = s => { document.getElementById('out').textContent = s; fetch(`/save?name=dist/${nivel}/map/estado.txt`, {method: 'POST', body: s}); };
+addEventListener('error', e => log('ERROR ' + e.message));
+addEventListener('unhandledrejection', e => log('ERROR ' + (e.reason?.message || e.reason)));
+const leer = async f => (await fetch(`/repo/data/${nivel}/${f}`)).json();
+const marco = await leer('marco.json'), dibujo = await leer('dibujo.json'), laminas = await leer('laminas.json');
+const E = marco.escala, X = x => (x - marco.ox) * E, Y = y => (marco.oy - y) * E;
+const CAPAS = [{id: 'relleno', nombre: 'Relleno de pasillos y zonas'}, {id: 'mobiliario', nombre: 'Mobiliario y equipos'}, {id: 'ejes', nombre: 'Ejes de grilla'}];
+
+// Primitivas en unidades de Atlas, con su caja, e índice espacial por celdas.
+const CELDA = 256, clave = (cx, cy) => (cx + 1000) * 100000 + cy + 1000;
+function preparar(prims) {
+  const out = [], celdas = new Map();
+  for (const p of prims) {
+    let o;
+    if (p[0] === 'l') { const v = p[4], pts = new Float32Array(v.length); for (let i = 0; i < v.length; i += 2) { pts[i] = X(v[i]); pts[i + 1] = Y(v[i + 1]); } o = {k: 'l', g: p[1], w: p[2] * E, raya: p[3], pts}; }
+    else if (p[0] === 'f') o = {k: 'f', g: p[1], solido: p[2], rings: p[3].map(v => { const r = new Float32Array(v.length); for (let i = 0; i < v.length; i += 2) { r[i] = X(v[i]); r[i + 1] = Y(v[i + 1]); } return r; })};
+    else { const h = p[4] * E, lineas = String(p[7]).split('\n'), largo = Math.max(...lineas.map(s => s.length)) * h * .8 + h; o = {k: 't', g: p[1], x: X(p[2]), y: Y(p[3]), h, giro: -p[5], anclaje: p[6], lineas, r: largo + lineas.length * h * 1.6}; }
+    let x0, y0, x1, y1;
+    if (o.k === 't') { x0 = o.x - o.r; x1 = o.x + o.r; y0 = o.y - o.r; y1 = o.y + o.r; }
+    else { x0 = y0 = Infinity; x1 = y1 = -Infinity; for (const a of o.k === 'l' ? [o.pts] : o.rings) for (let i = 0; i < a.length; i += 2) { if (a[i] < x0) x0 = a[i]; if (a[i] > x1) x1 = a[i]; if (a[i + 1] < y0) y0 = a[i + 1]; if (a[i + 1] > y1) y1 = a[i + 1]; } }
+    o.bb = [x0, y0, x1, y1]; const id = out.length; out.push(o);
+    for (let cx = Math.floor(x0 / CELDA); cx <= Math.floor(x1 / CELDA); cx++) for (let cy = Math.floor(y0 / CELDA); cy <= Math.floor(y1 / CELDA); cy++) { const k = clave(cx, cy); let c = celdas.get(k); if (!c) celdas.set(k, c = []); c.push(id); }
+  }
+  return {prims: out, celdas};
+}
+const DATOS = Object.fromEntries(Object.entries(dibujo.capas).map(([k, v]) => [k, preparar(v)]));
+function consulta(C, x, y, w, h) {
+  const vistos = new Set(), res = [];
+  for (let cx = Math.floor(x / CELDA); cx <= Math.floor((x + w) / CELDA); cx++) for (let cy = Math.floor(y / CELDA); cy <= Math.floor((y + h) / CELDA); cy++)
+    for (const id of C.celdas.get(clave(cx, cy)) || []) if (!vistos.has(id)) { vistos.add(id); const b = C.prims[id].bb; if (b[2] >= x && b[0] <= x + w && b[3] >= y && b[1] <= y + h) res.push(id); }
+  return res.sort((a, b) => a - b);
+}
+
+// Tonos en gris por capa. «g» es la tinta del DWG (0 negro … 255 blanco, ver extraer.mjs).
+const gris = v => { v = Math.round(v); return `rgb(${v},${v},${v})`; }, aclarar = (g, f) => 255 - (255 - g) * f;
+const TONO = {
+  base: {l: g => Math.min(g, 165), f: (g, s) => s ? Math.min(g, 190) : aclarar(g, .45), t: g => Math.min(g, 110)},
+  mobiliario: {l: g => aclarar(Math.min(g, 165), .55), f: g => aclarar(g, .3), t: g => aclarar(Math.min(g, 110), .6)},
+  ejes: {l: () => 150, f: () => 205, t: () => 120},
+  relleno: {l: g => aclarar(g, .5), f: g => aclarar(g, .5), t: g => aclarar(g, .5)}
+};
+function texto(ctx, o, v) {
+  const col = (o.anclaje - 1) % 3, fila = Math.floor((o.anclaje - 1) / 3), lh = o.h * 1.55, n = o.lineas.length;
+  ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(o.giro); ctx.fillStyle = gris(v); ctx.font = `${o.h / .72}px Arial, Helvetica, sans-serif`;
+  ctx.textAlign = ['left', 'center', 'right'][col]; ctx.textBaseline = fila === 0 ? 'top' : fila === 1 ? 'middle' : 'alphabetic';
+  const y0 = fila === 0 ? 0 : fila === 1 ? -(n - 1) * lh / 2 : -(n - 1) * lh;
+  o.lineas.forEach((s, i) => ctx.fillText(s, 0, y0 + i * lh));
+  ctx.restore();
+}
+// Dibuja una capa en la zona (x, y, w, h) a s píxeles por unidad. Devuelve cuántas primitivas tocó.
+function dibujar(ctx, capa, x, y, w, h, s) {
+  const C = DATOS[capa], T = TONO[capa], ids = consulta(C, x, y, w, h), minimo = .6 / s;
+  ctx.save(); ctx.setTransform(s, 0, 0, s, -x * s, -y * s); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  for (const pase of ['f', 'l', 't']) for (const id of ids) {
+    const o = C.prims[id]; if (o.k !== pase) continue;
+    if (o.k === 'f') { ctx.fillStyle = gris(T.f(o.g, o.solido)); ctx.beginPath(); for (const r of o.rings) { ctx.moveTo(r[0], r[1]); for (let i = 2; i < r.length; i += 2) ctx.lineTo(r[i], r[i + 1]); ctx.closePath(); } ctx.fill('evenodd'); }
+    else if (o.k === 'l') { ctx.strokeStyle = gris(T.l(o.g)); ctx.lineWidth = Math.max(o.w, minimo); ctx.setLineDash(o.raya ? [20 * E, 12 * E] : []); ctx.beginPath(); ctx.moveTo(o.pts[0], o.pts[1]); for (let i = 2; i < o.pts.length; i += 2) ctx.lineTo(o.pts[i], o.pts[i + 1]); ctx.stroke(); }
+    else if (o.h * s >= 1.2) texto(ctx, o, T.t(o.g));
+  }
+  ctx.restore();
+  return ids.length;
+}
+// Plano completo con todas las capas visibles: relleno debajo, luego base, mobiliario y ejes.
+function compuesto(x, y, w, h, s) {
+  const c = document.createElement('canvas'); c.width = Math.round(w * s); c.height = Math.round(h * s);
+  const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+  for (const capa of ['relleno', 'base', 'mobiliario', 'ejes']) dibujar(ctx, capa, x, y, w, h, s);
+  return c;
+}
+const enviar = async (name, c, type = 'image/webp', quality = .82) => fetch('/save?name=' + name, {method: 'POST', body: await new Promise(r => c.toBlob(r, type, quality))});
+const save = (name, c, type, quality) => enviar(`dist/${nivel}/map/${name}`, c, type, quality);
+
+if (q.has('x')) {
+  const c = compuesto(+q.get('x'), +q.get('y'), +q.get('w'), +q.get('h'), +(q.get('s') || 1));
+  document.body.append(c);
+  if (q.has('guardar')) await enviar(`data/${nivel}/revision/${encodeURIComponent(q.get('guardar'))}.png`, c, 'image/png');
+  log('Zona de prueba lista.');
+} else {
+  const tile = 768, CH = 4, levels = [{z: 0, scale: .5}, {z: 1, scale: 1}, {z: 2, scale: 2}], t0 = performance.now();
+  const presentes = Object.fromEntries(CAPAS.map(c => [c.id, {}]));
+  for (const L of levels) {
+    L.columns = Math.ceil(marco.width * L.scale / tile); L.rows = Math.ceil(marco.height * L.scale / tile);
+    const span = tile / L.scale;
+    for (let by = 0; by < L.rows; by += CH) for (let bx = 0; bx < L.columns; bx += CH) {
+      const x = bx * span, y = by * span, w = Math.min(CH, L.columns - bx) * span, h = Math.min(CH, L.rows - by) * span;
+      for (const capa of ['base', ...CAPAS.map(c => c.id)]) {
+        const c = document.createElement('canvas'); c.width = Math.round(w * L.scale); c.height = Math.round(h * L.scale);
+        const ctx = c.getContext('2d'); if (capa === 'base') { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height); }
+        if (!dibujar(ctx, capa, x, y, w, h, L.scale) && capa !== 'base') continue;
+        for (let j = 0; j * tile < c.height; j++) for (let i = 0; i * tile < c.width; i++) {
+          const tx = bx + i, ty = by + j;
+          if (capa !== 'base' && !consulta(DATOS[capa], tx * span, ty * span, span, span).length) continue;
+          const tw = Math.min(tile, c.width - i * tile), th = Math.min(tile, c.height - j * tile), t = document.createElement('canvas');
+          t.width = tw; t.height = th; t.getContext('2d').drawImage(c, i * tile, j * tile, tw, th, 0, 0, tw, th);
+          await save(`${capa === 'base' ? '' : capa + '/'}${L.z}/${tx}_${ty}.webp`, t, 'image/webp', capa === 'base' ? .82 : .85);
+          if (capa !== 'base') (presentes[capa][L.z] ||= []).push(tx + '_' + ty);
+        }
+      }
+      log(`Nivel ${L.z}: bloque ${bx},${by} · ${((performance.now() - t0) / 1000).toFixed(0)} s`);
+    }
+  }
+  // Vista general por capa (la base opaca y cada capa transparente) y exportación con todo visible.
+  for (const capa of ['base', ...CAPAS.map(c => c.id)]) {
+    const c = document.createElement('canvas'); c.width = Math.round(marco.width * .3); c.height = Math.round(marco.height * .3);
+    const ctx = c.getContext('2d'); if (capa === 'base') { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height); }
+    dibujar(ctx, capa, 0, 0, marco.width, marco.height, .3);
+    await save(capa === 'base' ? 'overview.webp' : capa + '/overview.webp', c, 'image/webp', .8);
+  }
+  await save('export.jpg', compuesto(0, 0, marco.width, marco.height, .5), 'image/jpeg', .85);
+  // Imagen del rombo de cada recinto para su ficha (dist/<nivel>/rombos/<código>.png): el dibujo base recortado al rombo.
+  const cajas = {}, unicos = new Map(); for (const r of laminas.rombos) if (r.codigo && !unicos.has(r.codigo)) unicos.set(r.codigo, r);
+  for (const [codigo, r] of unicos) {
+    const lineas = laminas.bloques[r.bloque]; if (!lineas?.length) continue;
+    const co = Math.cos(r.giro), si = Math.sin(r.giro), P = ([u, v]) => [X(r.p[0] + r.escala * (co * u - si * v)), Y(r.p[1] + r.escala * (si * u + co * v))];
+    const pts = lineas.flatMap(([x1, y1, x2, y2]) => [P([x1, y1]), P([x2, y2])]);
+    const x0 = Math.min(...pts.map(p => p[0])), y0 = Math.min(...pts.map(p => p[1])), x1 = Math.max(...pts.map(p => p[0])), y1 = Math.max(...pts.map(p => p[1]));
+    const S = 300 / (y1 - y0), pad = 10 / S, c = document.createElement('canvas'); c.width = Math.ceil((x1 - x0) * S + 20); c.height = Math.ceil((y1 - y0) * S + 20);
+    const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+    // Recorte al contorno del rombo (envolvente convexa de sus líneas) para no arrastrar muros vecinos.
+    const ordenados = [...pts].sort((a, b) => a[0] - b[0] || a[1] - b[1]), cruz = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]), abajo = [], arriba = [];
+    for (const p of ordenados) { while (abajo.length > 1 && cruz(abajo.at(-2), abajo.at(-1), p) <= 0) abajo.pop(); abajo.push(p); }
+    for (const p of ordenados.reverse()) { while (arriba.length > 1 && cruz(arriba.at(-2), arriba.at(-1), p) <= 0) arriba.pop(); arriba.push(p); }
+    const casco = [...abajo.slice(0, -1), ...arriba.slice(0, -1)];
+    ctx.save(); ctx.beginPath(); casco.forEach(([px, py], i) => ctx[i ? 'lineTo' : 'moveTo']((px - x0 + pad) * S, (py - y0 + pad) * S)); ctx.closePath(); ctx.clip();
+    dibujar(ctx, 'base', x0 - pad, y0 - pad, x1 - x0 + 2 * pad, y1 - y0 + 2 * pad, S); ctx.restore();
+    await enviar(`dist/${nivel}/rombos/${encodeURIComponent(codigo)}.png`, c, 'image/png');
+    cajas[codigo] = [x0, y0, x1, y1].map(v => +v.toFixed(2));
+  }
+  await fetch(`/save?name=data/${nivel}/rombos-plano.json`, {method: 'POST', body: JSON.stringify(cajas)});
+  await fetch(`/save?name=dist/${nivel}/map/index.json`, {method: 'POST', body: JSON.stringify({origin: [0, 0], width: marco.width, height: marco.height, tileSize: tile,
+    overview: `${nivel}/map/overview.webp`, export: `${nivel}/map/export.jpg`, tilePath: `${nivel}/map/`, levels: levels.map(({z, scale, columns, rows}) => ({z, scale, columns, rows})),
+    capas: CAPAS.map(c => ({...c, tilePath: `${nivel}/map/${c.id}/`, overview: `${nivel}/map/${c.id}/overview.webp`, teselas: presentes[c.id]}))})});
+  log('TERMINADO en ' + ((performance.now() - t0) / 1000).toFixed(0) + ' s · rombos ' + Object.keys(cajas).length);
+}
+</script>

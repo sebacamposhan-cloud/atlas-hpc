@@ -1,28 +1,37 @@
 # Pisos
 
-Todos los pisos comparten visor, fichas, búsqueda, edición, exportaciones, respaldos y modo sin conexión. La navegación principal tiene tres apartados: Control de obra, Explorador de planos y Liberación de frentes. La raíz `/` abre cuatro tarjetas en una cuadrícula de 2 × 2: pisos −1, 1, 2 y 3. Solo −1 y 2 tienen documentación cargada; 1 y 3 se muestran pendientes, sin miniaturas ni datos sustituidos. El botón «Pisos» y la navegación «Explorador de planos» permiten regresar a las tarjetas.
+Todos los pisos comparten visor, fichas, búsqueda, edición, exportaciones, respaldos y modo sin conexión. La navegación principal tiene tres apartados: Control de obra, Explorador de planos y Liberación de frentes. La raíz `/` abre cuatro tarjetas en una cuadrícula de 2 × 2: pisos −1, 1, 2 y 3, cada uno con su propio plano. El botón «Pisos» y la navegación «Explorador de planos» permiten regresar a las tarjetas.
 
 | Piso | Dirección | Datos | Fuente |
 |---|---|---|---|
 | Nivel −1 | `/?nivel=N-1` | `dist/runtime.json` | 9 láminas PDF; rombos, Cielos y Pavimentos |
-| Nivel 2 | `/?nivel=N02` | `dist/n02/` | Recintos y monografía de la planta DWG (8 láminas, `scripts/import-n02.mjs`); plano monocromático de la planta PDF vectorial (`scripts/n02-plano/`) |
+| Nivel 1 | `/?nivel=N01` | `dist/n01/` | 9 láminas DWG (A-501 a A-508 y A-510; falta A-509): plano por capas, rombos y contornos (`scripts/dwg-plano/`, `scripts/import-dwg.mjs`) |
+| Nivel 2 | `/?nivel=N02` | `dist/n02/` | Recintos y monografía de la planta DWG (8 láminas, `scripts/import-n02.mjs`); plano por capas dibujado desde esas láminas (`scripts/dwg-plano/`) |
+| Nivel 3 | `/?nivel=N03` | `dist/n03/` | 7 láminas DWG (A-502 a A-508; falta A-501): plano por capas, rombos y contornos (`scripts/dwg-plano/`, `scripts/import-dwg.mjs`) |
+
+- **Capas del dibujo.** En los niveles 1, 2 y 3, el botón «Capas» de la barra del plano apaga el relleno de pasillos y zonas, el mobiliario y los equipos, y los ejes de grilla. La elección se guarda en el equipo y vale para todos los pisos. El nivel −1 viene de PDF sin capas: lo indica en el mismo botón hasta que se carguen sus láminas DWG.
+- **Recintos de los niveles 1 y 3.** El contorno se obtiene rellenando desde el rótulo entre muros, puertas, ventanas y pilares, y se valida contra la superficie del PMA:
+  - Nivel 1: 286 contornos, 9 parciales y 64 superficies auxiliares de 359 recintos.
+  - Nivel 3: 233 contornos, 4 parciales y 71 superficies auxiliares de 308 recintos.
+  - Las superficies auxiliares corresponden a recintos abiertos, como circulaciones, estaciones o halls.
+  - La monografía sale del rombo de la lámina; si la lámina no trae rombo, sale del PMA.
 
 - La lista de pisos vive en `dist/pisos.js`; `dist/level.mjs` expone el piso activo a los módulos.
 - Las correcciones y respaldos se guardan por piso. El nivel −1 conserva las claves originales.
 - El nivel 2 usa la misma escala que el −1 (puntos PDF 1:50). Sus contornos vienen del DWG; tiene rombos reconstruidos desde sus bloques documentales, pero no láminas de Cielos/Pavimentos cargadas. Esas dos pestañas indican «Sin lámina».
-- El plano de fondo del nivel 2 son mosaicos monocromáticos de `dist/source/n02-planta-arquitectura.pdf`, alineados con los recintos del DWG por sus códigos (error mediano ≈ 4 cm; ver `data/n02/pdf-a-plano.json`). Para regenerarlo: `scripts/n02-plano/LEEME.md`.
-- Los rombos del nivel 2 se leen de las 8 láminas DWG 1:50 (286 recintos; la zona 8.2.3 de A-501 no los dibuja) y se dibujan sobre el rótulo de cada recinto; la monografía de la ficha sale de esos rombos.
+- El plano de fondo del nivel 2 se dibuja desde sus 8 láminas DWG en el marco de sus recintos (`scripts/dwg-plano/LEEME.md`). La planta PDF (`dist/source/n02-planta-arquitectura.pdf`) se conserva como documento.
+- Los rombos del nivel 2 se leen de las 8 láminas DWG 1:50 (286 recintos; la zona 8.2.3 de A-501 no los dibuja) y se ven en el plano donde los dibuja la lámina; la monografía de la ficha sale de esos rombos.
 - 23 recintos abiertos no tienen todos sus lados dibujados en las fuentes: su contorno se cierra con tramos rectos (o una superficie auxiliar de selección) y queda marcado como aproximado.
 - `/n02/` redirige a `/?nivel=N02` y conserva el enlace a un recinto (`/n02/#código`).
 - Enlaces directos: `/?nivel=N02#4.4.1.3.1-10` abre la ficha de un recinto.
 
-La entrada `dist/floor-explorer.mjs` carga las dos vistas generales existentes y pospone `app.js` hasta seleccionar un nivel. Volver a las tarjetas y reabrir el mismo nivel conserva zoom, selección y datos en memoria. Cambiar a otro nivel sigue abriendo el visor existente mediante su URL: no se mantienen varios visores ni se cargan todas las teselas en segundo plano. Los enlaces anteriores por código y módulo siguen funcionando. La búsqueda queda deshabilitada hasta terminar la inicialización para no perder consultas durante la carga.
+La entrada `dist/floor-explorer.mjs` carga las cuatro vistas generales y pospone `app.js` hasta seleccionar un nivel. Volver a las tarjetas y reabrir el mismo nivel conserva zoom, selección y datos en memoria. Cambiar a otro nivel sigue abriendo el visor existente mediante su URL: no se mantienen varios visores ni se cargan todas las teselas en segundo plano. Los enlaces anteriores por código y módulo siguen funcionando. La búsqueda queda deshabilitada hasta terminar la inicialización para no perder consultas durante la carga.
 
-Dentro del visor, los accesos horizontales abren Arquitectura, Cielos y Pavimentos con sus controles originales. Muros activa las terminaciones sobre Arquitectura: no representa una lámina nueva. Los filtros se abren desde el botón a la derecha del plano, sin una pantalla separada de Capas. Los gráficos están dentro de Control de obra, que abre con una tarjeta por panel (mismo formato que los pisos); dentro de un panel, «Todos los paneles» vuelve a las tarjetas y la fila superior cambia de panel. Seleccionar una categoría documental destaca sus recintos reales. La navegación bloquea la salida si hay edición pendiente; los formularios de especialidad permiten descartar cambios explícitamente.
+Dentro del visor, los accesos horizontales abren Arquitectura, Cielos y Pavimentos con sus controles originales. Muros activa las terminaciones sobre Arquitectura: no representa una lámina nueva. Los filtros se abren desde el botón a la derecha del plano; el botón «Capas» solo enciende o apaga capas del dibujo. Los gráficos están dentro de Control de obra, que abre con una tarjeta por panel (mismo formato que los pisos); dentro de un panel, «Todos los paneles» vuelve a las tarjetas y la fila superior cambia de panel. Seleccionar una categoría documental destaca sus recintos reales. La navegación bloquea la salida si hay edición pendiente; los formularios de especialidad permiten descartar cambios explícitamente.
 
 Validación de navegación: `PLAYWRIGHT_MODULE=<ruta-a-playwright-core> node floor-explorer-browser-test.mjs`. Cubre 1440/390/320 px, ausencia de carga del visor en portada, niveles reales, reutilización del mismo piso, historial, enlaces de recinto, pestañas, filtros desde gráfico y formularios pendientes. `node pisos-test.mjs` valida el catálogo y los archivos offline. El manifiesto se regenera con `node scripts/prepare-offline.mjs`; Render también lo regenera al construir, porque en Windows los saltos de línea cambian el tamaño de los archivos y el manifiesto dejaría de calzar.
 
-Para sumar un piso: extraer su plano a `data/<piso>/`, generar `dist/<piso>/` con un importador como `scripts/import-n02.mjs`, agregar una línea en `dist/pisos.js` y en `otherLevels` de `server/groq-server.mjs`, y ejecutar `node scripts/prepare-offline.mjs` y `node pisos-test.mjs`.
+Para sumar un piso desde sus láminas DWG, sigue `scripts/dwg-plano/LEEME.md` (extraer, recintos, mosaicos e `scripts/import-dwg.mjs`). Después agrega una línea en `dist/pisos.js`, en `otherLevels` de `server/groq-server.mjs` y en `pmaLevels` de `dist/pma-model.mjs`, y ejecuta `node scripts/prepare-offline.mjs` y `node pisos-test.mjs`.
 
 ## Avance por recinto · piloto nivel −1
 

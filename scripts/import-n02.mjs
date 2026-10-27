@@ -40,7 +40,7 @@ function terminacion(field, valor) {
   const code = valor == null || valor === '' ? 'N/A' : String(valor), m = materials.get(code);
   return {field, code, bbox: null, description: m?.description || 'Sin descripción documentada', category: m?.category || 'Sin identificar', asepsis: m?.asepsis || null};
 }
-// Rombos leídos de las láminas DWG 1:50 (scripts/n02-plano/dwg-rombos.mjs) y su imagen y caja en el plano (render.html).
+// Rombos leídos de las láminas DWG 1:50 (scripts/n02-plano/dwg-rombos.mjs) y su imagen y caja en el plano (scripts/dwg-plano/render.html).
 const leer = f => fs.existsSync(path.join(root, f)) ? JSON.parse(fs.readFileSync(path.join(root, f), 'utf8')) : null;
 const rombosDwg = new Map(); for (const r of leer('data/n02/rombos-dwg.json')?.rombos || []) if (r.codigo && !rombosDwg.has(r.codigo)) rombosDwg.set(r.codigo, r);
 const rombosPlano = leer('data/n02/rombos-plano.json') || {};
@@ -65,6 +65,7 @@ function sinArcos(ring) {
   }
   return out;
 }
+const dentroDe = (p, ring) => { let c = false; for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) { const a = ring[i], b = ring[j]; if ((a[1] > p[1]) !== (b[1] > p[1]) && p[0] < (b[0] - a[0]) * (p[1] - a[1]) / (b[1] - a[1]) + a[0]) c = !c; } return c; };
 const areaM2 = ring => { let a = 0; for (let i = 0; i < ring.length; i++) { const [x1, y1] = ring[i], [x2, y2] = ring[(i + 1) % ring.length]; a += x1 * y2 - x2 * y1; } return Math.abs(a) / 2e4; };
 const sinCruces = p => { const x = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]); for (let i = 0; i < p.length; i++) for (let j = i + 2; j < p.length; j++) { if (i === 0 && j === p.length - 1) continue; const a = p[i], b = p[(i + 1) % p.length], c = p[j], d = p[(j + 1) % p.length]; if (x(a, b, c) * x(a, b, d) < 0 && x(c, d, a) * x(c, d, b) < 0) return false; } return true; };
 // Si el contorno era casi todo arco (no queda forma válida), se usa una superficie auxiliar de selección: un cuadrado
@@ -84,8 +85,11 @@ const rooms = plano.recintos.map(rec => {
   const finishes = CAMPOS.map(k => terminacion(k, valores[k]));
   if (abierto?.auxiliar) seleccion.push({id: doc.id + ':' + rec.codigo, rings: [{polygon, holes: []}], score: 1});
   const imagen = caja && fs.existsSync(path.join(out, 'rombos', rec.codigo + '.png')) ? 'n02/rombos/' + encodeURIComponent(rec.codigo) + '.png' : null;
+  // El plano se dibuja desde los DWG (scripts/dwg-plano): la caja del rombo solo se declara si el rombo de la lámina cae dentro del contorno.
+  const anillo = abierto?.auxiliar ? seleccion.at(-1).rings[0].polygon : polygon;
+  const enContorno = caja && [[(caja[0] + caja[2]) / 2, caja[1]], [caja[2], (caja[1] + caja[3]) / 2], [(caja[0] + caja[2]) / 2, caja[3]], [caja[0], (caja[1] + caja[3]) / 2]].every(p => dentroDe(p, anillo));
   return {id: doc.id + ':' + rec.codigo, code: rec.codigo, name: rec.nombre, document_id: doc.id, position: pt(rec.p[0], rec.p[1]),
-    label_bbox: null, diamond_bbox: imagen ? caja : null, finishes, declared_area: rec.superficie, polygon: abierto?.auxiliar ? null : polygon,
+    label_bbox: null, diamond_bbox: imagen && enContorno ? caja : null, finishes, declared_area: rec.superficie, polygon: abierto?.auxiliar ? null : polygon,
     geometry_status: 'Pendiente de revisión',
     geometry_method: abierto?.auxiliar ? 'Superficie auxiliar de selección: contorno no delimitado en los DWG' : rec.aprox ? 'Contorno aproximado: lados abiertos cerrados con tramos rectos' : 'Contorno vectorial del DWG',
     status: 'Pendiente de revisión',
@@ -118,7 +122,7 @@ const bundle = {
   catalog: {fields, pooledFields, strings, finishes, rows, base: {project: base.project, documents, materials: base.materials, expected_documents: documents.length}},
   atlas: {width: W, height: H, tiles: documents.map((d, i) => ({id: d.id, offset: [0, 0], clip: caja(plano.sectores[i].r)})),
     alignment: 'Coordenadas comunes de la planta DWG del nivel 2', scope: {name: 'Sectores A–H · 8 láminas', sourceLabels: 'A-501 a A-508', bounds: ambito, view: vista}},
-  // Plano de fondo: mosaicos monocromáticos de la planta PDF (scripts/n02-plano). Bordes de sectores como capa opcional.
+  // Plano de fondo: mosaicos por capas dibujados desde las láminas DWG (scripts/dwg-plano). Bordes de sectores como capa opcional.
   map: {...mosaicos, overlays: [{id: 'sectores', nombre: 'Bordes de sectores', href: 'n02/sectores.svg', visible: false}]},
   selection: {schema: 1, rooms: seleccion}
 };
