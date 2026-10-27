@@ -37,9 +37,9 @@ try{
    await page.locator('#closeDetail').click();
    // Render the same documentary Muros layer as the user's screenshots.
    if(target.id.startsWith('507')){
-    await page.locator(viewport.width<700?'#bottomLayers':'button[data-module="layers"]:visible').first().click();
+    await page.locator('#planSettingsOpen').click();
     await page.locator('#activeLayer').selectOption('walls');await page.locator('#paintEnabled').check();
-    await page.locator('[data-go-map]').first().click();
+    await page.locator('#applyPlanFilters').click();
    }
    await page.evaluate(async target=>{const viewer=await import('./viewer.mjs');const {roomContourRepairs}=await import('./room-contour-repairs.mjs');const [ox,oy]=roomContourRepairs.find(r=>r.id===target.id).offset;viewer.mapView([target.view[0]+ox,target.view[1]+oy,target.view[2],target.view[3]]);viewer.flushView();viewer.updateTiles();},target);
    const painted=page.locator(`.roomshape[data-id="${target.id}"]`);assert(Number(await painted.getAttribute('fill-opacity'))>0);assert.notEqual(await painted.getAttribute('fill'),'#425158');

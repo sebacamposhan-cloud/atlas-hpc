@@ -41,7 +41,7 @@ try{
   assert.equal(await page.locator('#discipline').inputValue(),'architecture');
   if(viewport.width===1440){
    await page.locator('#reset').click();
-   await page.locator('.navGroup button[data-module="dashboard"]').click();
+   await page.locator('.navGroup button[data-module="work"]').click();await page.locator('[data-work-tab="documentary"]').click();
    const chart=page.locator('[data-kind="PAV"]').first(),count=Number(await chart.locator('b').innerText());await chart.click();
    await page.waitForFunction(n=>document.querySelector('#activeFilterCount')?.textContent.startsWith(n+' recintos'),count);
    assert.equal(await page.locator('#polygons path[fill]:not([fill="#425158"])').count(),count,'graph category highlights its real matching rooms');

@@ -15,10 +15,10 @@ try{
  for(const viewport of [{width:1440,height:1000},{width:390,height:844}]){
   const context=await browser.newContext({viewport,serviceWorkers:'block',httpCredentials:{username:'atlas',password:'isolated-layer-test'}}),page=await context.newPage(),errors=[];
   page.on('pageerror',e=>errors.push(e.message));await page.goto('http://127.0.0.1:'+server.address().port+'/?nivel=N-1');await page.locator('#assistantOpen').waitFor();
-  const layers=()=>page.locator(viewport.width<700?'#bottomLayers':'button[data-module="layers"]:visible').first().click();
+  const layers=()=>page.locator('#planSettingsOpen').click();
   await layers();await page.locator('#activeLayer').selectOption('CIE');
-  assert.equal(await page.locator('[data-color="201"]').inputValue(),'#ffcccc');assert.match(await page.locator('#layerColorNote').innerText(),/ocho leyendas/);
-  await page.locator('[data-go-map]').first().click();
+  assert.equal(await page.locator('[data-color="201"]').inputValue(),'#ffcccc');await page.locator('.filterMore').last().locator('summary').click();assert.match(await page.locator('#layerColorNote').innerText(),/ocho leyendas/);
+  await page.locator('#applyPlanFilters').click();
   const select=async room=>{await page.locator('#globalSearch').fill(room.code);await page.waitForFunction(code=>document.querySelector('#detail .detailCode')?.textContent===code,room.code);};
   // Select directly on the fully colored map, without a search dimming neighbors.
   await page.locator('#minimizeLegend').click();
@@ -47,9 +47,9 @@ try{
   await select(other);assert.notEqual(await outline.getAttribute('d'),firstPath);assert.match(await page.locator('#selectedRoomBadge').innerText(),/Seleccionado/);
   await layers();await page.locator('[data-color="201"]').evaluate(e=>{e.value='#123456';e.dispatchEvent(new Event('input',{bubbles:true}));});
   assert.match(await page.locator('[data-color="201"]').locator('..').innerText(),/Personalizado/);
-  await page.locator('[data-go-map]').first().click();const otherShape=page.locator(`.roomshape[data-id="${other.id}"]`);assert.equal(await otherShape.getAttribute('fill'),'#123456');assert.equal(await otherShape.getAttribute('fill-opacity'),'0.32');
-  await layers();await page.locator('#resetLayerColors').click();assert.equal(await page.locator('[data-color="201"]').inputValue(),'#ffcccc');
-  await page.locator('#activeLayer').selectOption('walls');assert.match(await page.locator('#layerColorNote').innerText(),/no asigna colores/);
+  await page.locator('#applyPlanFilters').click();const otherShape=page.locator(`.roomshape[data-id="${other.id}"]`);assert.equal(await otherShape.getAttribute('fill'),'#123456');assert.equal(await otherShape.getAttribute('fill-opacity'),'0.32');
+  await layers();await page.locator('.filterMore').last().locator('summary').click();await page.locator('#resetLayerColors').click();assert.equal(await page.locator('[data-color="201"]').inputValue(),'#ffcccc');
+  await page.locator('#activeLayer').selectOption('walls');await page.locator('.filterMore').last().locator('summary').click();assert.match(await page.locator('#layerColorNote').innerText(),/no asigna colores/);
   assert.deepEqual(errors,[]);await context.close();console.log('Source palette and independent selection passed',viewport.width);
  }
 }finally{await browser?.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}

@@ -1,0 +1,51 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {createAtlasServer} from './server/groq-server.mjs';
+import {decodeRuntime} from './dist/runtime-loader.mjs';
+import {matchesLayers} from './dist/layers.mjs';
+const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright-core');
+const n02Room=decodeRuntime(JSON.parse(fs.readFileSync('dist/n02/runtime.json'))).data.rooms[0].code;
+const data=JSON.parse(fs.readFileSync('dist/data.json')),ids=new Set(JSON.parse(fs.readFileSync('dist/selection.json')).rooms.map(r=>r.id)),rooms=data.rooms.filter(r=>ids.has(r.id));
+const server=await createAtlasServer({env:{ATLAS_ACCESS_PASSWORD:'isolated-plan-filters'}});await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port;
+let browser;
+try{
+ browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,args:['--no-sandbox']});
+ for(const viewport of [{width:1440,height:1000},{width:390,height:844}]){
+  const context=await browser.newContext({viewport,serviceWorkers:'block',httpCredentials:{username:'atlas',password:'isolated-plan-filters'}}),page=await context.newPage(),errors=[];page.setDefaultTimeout(15000);page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(base+'/?nivel=N-1');await page.waitForFunction(()=>document.querySelectorAll('.roomshape').length===330);
+  assert.deepEqual(await page.locator('.navGroup button').evaluateAll(nodes=>nodes.map(n=>n.dataset.module)),['work','map','liberacion']);
+  assert.equal(await page.locator('.navGroup [data-module="layers"],.navGroup [data-module="rooms"],.navGroup [data-module="docs"],.navGroup [data-module="dashboard"]').count(),0);
+  const work=()=>page.locator(viewport.width<700?'.bottomNav [data-module="work"]':'.navGroup [data-module="work"]').click();
+  await work();await page.locator('.workChart').first().waitFor();assert.equal(await page.locator('.workChart svg').count(),0);assert.equal(await page.locator('.chartEmpty').count(),3);if(process.env.ATLAS_SCREENSHOT_DIR)await page.screenshot({path:process.env.ATLAS_SCREENSHOT_DIR+'/work-control-empty-'+viewport.width+'.png'});
+  await page.evaluate(async code=>{const {persist}=await import('./construction-store.mjs');const points=[[0,0],[20,0],[20,20],[0,20]],at='2026-10-27T10:00:00Z';for(const z of [{id:'qa-c1',specialty:'ceilings'},{id:'qa-c2',specialty:'ceilings'},{id:'qa-f1',specialty:'floors'}])await persist('zones',{...z,points,roomCode:code,name:'Isolated QA zone',sheetId:'cie-501',at});for(const p of [{id:'qa-p1',technical:'Aprobado',administrative:'Cerrado'},{id:'qa-p2',technical:'Observado',administrative:'Abierto'},{id:'qa-p3',technical:'Aprobado',administrative:'Abierto'}])await persist('protocols',{...p,number:p.id,specialty:'Cielos',elements:[code],at});await persist('events',{id:'qa-e1',zoneId:'qa-c1',dimension:'structure',state:'En ejecución',date:'2026-10-27',at});},rooms[0].code);
+  await work();await page.locator('button[data-work-filter="protocol"][data-work-state="Aprobado"]').waitFor();assert.equal(await page.locator('.workPie').count(),2);
+  await page.locator('button[data-work-filter="protocol"][data-work-state="Aprobado"]').click();assert.equal(await page.locator('[data-protocol]').count(),2);
+  await page.locator('button[data-work-filter="admin"][data-work-state="Cerrado"]').click();assert.equal(await page.locator('[data-protocol]').count(),1);
+  await page.locator('button[data-work-filter="zone:structure"][data-work-state="En ejecución"]').click();assert.equal(await page.locator('[data-zone-record]').count(),1);
+  await page.locator('#workspacePanel').evaluate(e=>{e.scrollTop=0;const p=document.createElement('p');p.id='qaEvidenceBanner';p.textContent='PRUEBA AUTOMATIZADA · DATOS AISLADOS · NO SON DATOS DE OBRA';p.style.cssText='padding:12px;background:#fff2ca;color:#664b16;font-weight:600;font-size:11px;border:1px solid #ead08b;border-radius:7px';e.prepend(p);});if(process.env.ATLAS_SCREENSHOT_DIR)await page.screenshot({path:process.env.ATLAS_SCREENSHOT_DIR+'/work-control-fixture-'+viewport.width+'.png'});await page.locator('#qaEvidenceBanner').evaluate(e=>e.remove());
+  await page.locator('[data-go-map]').first().click();await page.locator('#planSettingsOpen').click();assert(await page.locator('#planFilters').isVisible());assert.equal(await page.locator('body').getAttribute('data-module'),'map');
+  const count=async n=>page.waitForFunction(n=>document.querySelector('#planFilterCount')?.textContent===n+' de 330 recintos',n);
+  await page.locator('#planFilterSearch').fill('7.1.2.1.2-2');await count(1);assert(await page.locator('#planFilters').isVisible(),'single match should not close filters or force a room card');assert.equal(await page.locator('#globalSearch').inputValue(),'7.1.2.1.2-2');
+  await page.locator('#planFilterSearch').fill('');await count(330);
+  await page.locator('#toggleCategorySearch').click();await page.locator('#filterCategorySearch').fill('porcelanato');assert(await page.locator('.categoryControl:visible').count()>0);assert((await page.locator('.categoryControl:visible').count())<(await page.locator('.categoryControl').count()));
+  await page.locator('#activeLayer').selectOption('CIE');const view=await page.locator('#svg').getAttribute('viewBox');await page.locator('[data-filter="201"]').check();await page.locator('[data-filter="202"]').check();
+  const expected=rooms.filter(r=>matchesLayers(r,{CIE:['201','202']})).length;await count(expected);assert.equal(await page.locator('#svg').getAttribute('viewBox'),view,'filtering preserves pan and zoom');
+  const more=page.locator('.filterMore').first();if(!await more.evaluate(e=>e.open))await more.locator('summary').click();
+  await page.locator('#asepsisAttribute').selectOption('media');const intersection=rooms.filter(r=>matchesLayers(r,{CIE:['201','202'],asepsis:['media']})).length;await count(intersection);
+  await page.locator('#paintEnabled').uncheck();assert.equal(await page.locator('#polygons path[fill]:not([fill="#425158"])').count(),0);await count(intersection);
+  await page.locator('#paintEnabled').check();await page.locator('#applyPlanFilters').click();assert(await page.locator('#planFilters').isHidden());
+  await page.locator('#planSettingsOpen').click();assert(await page.locator('[data-filter="201"]').isChecked());assert(await page.locator('[data-filter="202"]').isChecked());
+  if(process.env.ATLAS_SCREENSHOT_DIR)await page.screenshot({path:process.env.ATLAS_SCREENSHOT_DIR+'/plan-filters-'+viewport.width+'.png'});
+  await page.locator('#clearPlanFilters').click();await count(330);assert.equal(await page.locator('.filterChips button').count(),0);await page.locator('#closePlanFilters').click();
+  await work();await page.locator('[data-work-tab="documentary"]').click();await page.locator('[data-kind="PAV"]').first().click();assert.equal(await page.locator('body').getAttribute('data-module'),'map');assert(await page.locator('#activeLegend').isVisible());
+  await page.locator('[data-plan-type="ceilings"]').click();await page.locator('#specialtySheet').waitFor();await work();await page.locator('[data-work-tab="documentary"]').click();await page.locator('[data-kind="sector"]').first().click();assert.equal(await page.locator('main').getAttribute('data-discipline'),'architecture');await page.locator('#planSettingsOpen').click();assert.equal(await page.locator('#activeLayer').inputValue(),'sector');await page.locator('#closePlanFilters').click();
+  await page.locator('#floorHomeButton').click();await page.locator('[data-floor="N02"] a').click();await page.waitForFunction(()=>document.querySelectorAll('.roomshape').length===311);
+  await page.locator('#planSettingsOpen').click();const roomN02=n02Room;await page.locator('#planFilterSearch').fill(roomN02);await page.waitForFunction(()=>document.querySelector('#planFilterCount')?.textContent==='1 de 311 recintos');
+  assert.deepEqual(errors,[]);await context.close();
+ }
+ const offline=await browser.newContext({viewport:{width:1280,height:900},httpCredentials:{username:'atlas',password:'isolated-plan-filters'}}),offlinePage=await offline.newPage(),offlineErrors=[];offlinePage.on('pageerror',e=>offlineErrors.push(e.message));
+ await offlinePage.goto(base+'/?nivel=N-1');await offlinePage.waitForFunction(()=>document.querySelectorAll('.roomshape').length===330);await offlinePage.evaluate(()=>navigator.serviceWorker.ready);await offlinePage.reload();await offlinePage.waitForFunction(()=>document.querySelectorAll('.roomshape').length===330&&!!navigator.serviceWorker.controller);
+ await offline.setOffline(true);await offlinePage.reload();await offlinePage.waitForFunction(()=>document.querySelectorAll('.roomshape').length===330);await offlinePage.locator('#planSettingsOpen').click();await offlinePage.locator('#activeLayer').selectOption('PAV');await offlinePage.locator('[data-filter]').first().check();await offlinePage.waitForFunction(()=>!document.querySelector('#planFilterCount').textContent.startsWith('330 '));
+ await offlinePage.locator('.navGroup [data-module="work"]').click();await offlinePage.locator('.workChart').first().waitFor();assert.equal(await offlinePage.locator('.chartEmpty').count(),3);assert.deepEqual(offlineErrors,[]);await offline.close();
+ console.log('Plan filters and control: three main modules; work pies/bars with real stored fixtures; chart-to-record actions; right drawer, query sync, category search, union/intersection, color toggle, camera/state preservation and documentary chart-to-map at 1440/390px, N02 query isolation and offline reload/filter/control passed');
+}finally{await browser?.close();server.closeAllConnections();await new Promise(r=>server.close(r));}

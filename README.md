@@ -1,6 +1,6 @@
 # Pisos
 
-Todos los pisos usan la misma interfaz de Atlas: explorador de planos, dashboard, capas, liberación de frentes, tabla maestra, fichas, búsqueda, exportaciones, respaldos y modo sin conexión. La raíz `/` abre cuatro tarjetas en una cuadrícula de 2 × 2: pisos −1, 1, 2 y 3. Solo −1 y 2 tienen documentación cargada; 1 y 3 se muestran pendientes, sin miniaturas ni datos sustituidos. El botón «Pisos» y la navegación «Explorador de planos» permiten regresar a las tarjetas.
+Todos los pisos comparten visor, fichas, búsqueda, edición, exportaciones, respaldos y modo sin conexión. La navegación principal tiene tres apartados: Control de obra, Explorador de planos y Liberación de frentes. La raíz `/` abre cuatro tarjetas en una cuadrícula de 2 × 2: pisos −1, 1, 2 y 3. Solo −1 y 2 tienen documentación cargada; 1 y 3 se muestran pendientes, sin miniaturas ni datos sustituidos. El botón «Pisos» y la navegación «Explorador de planos» permiten regresar a las tarjetas.
 
 | Piso | Dirección | Datos | Fuente |
 |---|---|---|---|
@@ -18,11 +18,21 @@ Todos los pisos usan la misma interfaz de Atlas: explorador de planos, dashboard
 
 La entrada `dist/floor-explorer.mjs` carga las dos vistas generales existentes y pospone `app.js` hasta seleccionar un nivel. Volver a las tarjetas y reabrir el mismo nivel conserva zoom, selección y datos en memoria. Cambiar a otro nivel sigue abriendo el visor existente mediante su URL: no se mantienen varios visores ni se cargan todas las teselas en segundo plano. Los enlaces anteriores por código y módulo siguen funcionando. La búsqueda queda deshabilitada hasta terminar la inicialización para no perder consultas durante la carga.
 
-Dentro del visor, los accesos horizontales abren Arquitectura, Cielos y Pavimentos con sus controles originales. Muros activa las terminaciones sobre Arquitectura: no representa una lámina nueva. Los paneles de capas y los gráficos existentes se conservan; seleccionar una categoría del dashboard destaca sus recintos reales. La navegación bloquea la salida si hay edición pendiente; los formularios de especialidad permiten descartar cambios explícitamente.
+Dentro del visor, los accesos horizontales abren Arquitectura, Cielos y Pavimentos con sus controles originales. Muros activa las terminaciones sobre Arquitectura: no representa una lámina nueva. Los filtros se abren desde el botón a la derecha del plano, sin una pantalla separada de Capas. Los gráficos están dentro de Control de obra; seleccionar una categoría documental destaca sus recintos reales. La navegación bloquea la salida si hay edición pendiente; los formularios de especialidad permiten descartar cambios explícitamente.
 
 Validación de navegación: `PLAYWRIGHT_MODULE=<ruta-a-playwright-core> node floor-explorer-browser-test.mjs`. Cubre 1440/390/320 px, ausencia de carga del visor en portada, niveles reales, reutilización del mismo piso, historial, enlaces de recinto, pestañas, filtros desde gráfico y formularios pendientes. `node pisos-test.mjs` valida el catálogo y los archivos offline. El manifiesto se regenera con `node scripts/prepare-offline.mjs`.
 
 Para sumar un piso: extraer su plano a `data/<piso>/`, generar `dist/<piso>/` con un importador como `scripts/import-n02.mjs`, agregar una línea en `dist/pisos.js` y en `otherLevels` de `server/groq-server.mjs`, y ejecutar `node scripts/prepare-offline.mjs` y `node pisos-test.mjs`.
+
+## Control de obra y filtros del plano
+
+- **Control de obra** reúne dos vistas internas: Avances y protocolos (registros locales del proyecto completo) y Características del piso (atributos documentales del nivel activo). El antiguo Dashboard deja de ser un apartado principal.
+- Los gráficos de torta muestran estados técnicos y cierres administrativos de los protocolos registrados. Las barras muestran zonas y su último estado por dimensión. Seleccionar un estado consulta sus registros. Sin datos se muestra «Sin registros»; no se calcula avance de producción ni cumplimiento contra un total no documentado.
+- **Filtros**, en la barra derecha del visor, permite buscar recintos y categorías, sumar categorías dentro de una familia y cruzarlas con otras familias, asepsia, sector o revisión. Se mantiene el zoom mientras se ajustan filtros; el panel conserva la selección al cerrarlo y abrirlo de nuevo. En móvil se adapta a un panel compacto.
+- Gestión de recintos y Documentación y fuentes dejan de aparecer en la navegación. Las fichas conservan sus referencias; los respaldos están disponibles desde Filtros → Colores y respaldo. Los enlaces anteriores por módulo siguen siendo compatibles.
+- Los colores y la procedencia de las leyendas siguen usando el modelo anterior. No se modifican datos fuente, SQLite ni geometrías.
+
+Detalles, capturas y validación en [PLAN_FILTERS_CONTROL.md](docs/PLAN_FILTERS_CONTROL.md). Pruebas nuevas: `node work-charts-test.mjs` y `PLAYWRIGHT_MODULE=<ruta-a-playwright-core> node plan-filters-browser-test.mjs` (incluye recarga y uso sin conexión).
 
 ## Liberación de frentes
 

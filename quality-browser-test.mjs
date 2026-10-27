@@ -47,18 +47,18 @@ try {
   assert.match(await page.locator('#geometryAuthority').innerText(),/auxiliar/);
   // Clear the text query before the independent map category filter.
   await page.locator('#reset').click();
-  await page.locator(viewport.width<700?'#bottomLayers':'button[data-module="layers"]:visible').first().click();
-  assert.deepEqual(await page.locator('#activeLayer option').evaluateAll(nodes=>nodes.map(n=>n.value)),['CIE','PAV','walls','liberacion']);
+  await page.locator('#planSettingsOpen').click();
+  assert.deepEqual(await page.locator('#activeLayer option').evaluateAll(nodes=>nodes.map(n=>n.value)),['walls','PAV','CIE','liberacion','asepsis','paint','sector','status']);
   await page.locator('#paintEnabled').check();
-  await page.locator('#asepsisAttribute').selectOption('media');
-  await page.locator('[data-go-map]').first().click();
+  await page.locator('.filterMore').first().locator('summary').click();await page.locator('#asepsisAttribute').selectOption('media');
+  await page.locator('#applyPlanFilters').click();
   await page.waitForFunction(()=>document.querySelectorAll('#polygons path[fill]:not([fill="#425158"])').length===72);
   assert.match(await page.locator('#activeFilterCount').innerText(),/72 recintos/);
   await page.locator('#minimizeLegend').click();
   assert(await page.locator('#activeLegend').evaluate(el=>el.classList.contains('minimized')));
   assert.equal(await page.locator('#polygons path[fill]:not([fill="#425158"])').count(),72);
   await page.locator('#zoomIn').click();
-  await page.locator(viewport.width<700?'#bottomSearch':'button[data-module="rooms"]:visible').first().click();
+  await page.locator(viewport.width<700?'.bottomNav [data-module="work"]':'.navGroup [data-module="work"]').click();
   await page.locator('[data-go-map]').first().click();
   assert.equal(await page.locator('#polygons path[fill]:not([fill="#425158"])').count(),72);
   assert.match(await page.locator('#activeFilterCount').innerText(),/72 recintos/);
@@ -81,7 +81,7 @@ try {
   assert.equal(await page.locator('#specialtySheet').inputValue(),'cie-504');
   assert.match(await page.locator('#specialtyDetail').innerText(),/Extraído; asociación pendiente de revisión/);
   assert.match(await page.locator('#specialtyDetail').innerText(),/Fuente disponible, dato aún no extraído/);
-  await page.locator(viewport.width<700?'#bottomDocs':'button[data-module="docs"]:visible').first().click();
+  await page.evaluate(()=>location.hash='modulo=docs');
   const pdf=page.locator('a[href="source/cielos-s01-clearance.pdf"]');await pdf.waitFor();
   assert.equal((await page.request.get(base+'/source/cielos-s01-clearance.pdf')).status(),200);
   assert.match(await page.locator('#workspacePanel').innerText(),/No son identificadores ARQ/);
