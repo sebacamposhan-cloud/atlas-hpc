@@ -98,4 +98,5 @@ window.addEventListener('online', () => {paint();if(registration?.active){refres
 window.addEventListener('offline', paint);
 document.addEventListener('visibilitychange', () => {if(!document.hidden && registration?.active) refresh().catch(() => {});});
 window.addEventListener('atlas-ready', () => setup(), {once:true});
+window.addEventListener('atlas-shell-ready', () => setup(), {once:true});
 paint();

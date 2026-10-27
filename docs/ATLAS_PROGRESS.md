@@ -111,3 +111,16 @@ Se añade aviso persistente, búsqueda manual de actualizaciones, progreso de pr
 `/actualizar.html` es una página de recuperación independiente, deliberadamente fuera del manifiesto offline. Un worker antiguo deja pasar esa ruta al servidor; desde allí se registra el mismo worker con updateViaCache:none y se aplica la versión preparada sin borrar localStorage, IndexedDB ni CacheStorage. La página necesita conexión y solo estará disponible después de desplegar este incremento. Index y scripts del worker se entregan con Cache-Control:no-cache.
 
 Pruebas: `offline-update-browser-test.mjs` reproduce la portada anterior y verifica selector nuevo tras activar, conservación de una corrección local, un registro IndexedDB y la caché anterior; `offline-ui-test.mjs` cubre aviso, activación y carrera installed/waiting. `offline-test.mjs` conserva las pruebas de paquetes completos, fallos, pausa y reutilización. No se afirma haber intervenido en el navegador o Render del usuario.
+
+
+## Explorador visual por pisos y accesos a especialidades
+
+Se incorpora una portada de cuatro tarjetas, dos columnas en escritorio y móvil, con miniaturas de las vistas generales reales de −1 y 2. Pisos 1/3 quedan explícitamente pendientes de documentación. Se retira el desplegable superior de pisos y se añade «Pisos» para regresar. La entrada carga el visor existente bajo demanda; no modifica runtime, SQLite, geometrías, fuentes originales ni claves de almacenamiento. Reabrir el mismo piso conserva zoom/selección sin nuevas solicitudes de runtime. El cambio entre niveles distintos conserva la navegación documental por URL y requiere inicializar el visor del destino; no se promete un cambio instantáneo ni se crean visores paralelos.
+
+Se añaden botones de Arquitectura/Cielos/Pavimentos/Muros. Muros reutiliza la capa de terminaciones en arquitectura; Cielos y Pavimentos sin láminas se indican deshabilitados. Se mantienen los paneles plegables, filtros y gráficos existentes conectados con recintos reales. No se añaden mediciones ni indicadores ficticios.
+
+Se protegen formularios/contornos pendientes al salir del piso o aplicar una actualización. En especialidades, «Descartar cambios» restablece el formulario antes de navegar. La búsqueda se habilita al terminar el arranque del visor; se corrigió una carrera detectada al probar la restauración de geometría tras recargar.
+
+Pruebas del incremento: `floor-explorer-browser-test.mjs` (1440/390/320 px, proporciones 2 × 2, datos diferidos, retorno al mismo piso, historial, enlaces, Muros, gráfico a filtro y protección de formularios), suites existentes de Cielos, calidad, colores/selección, catálogo de rombos, contornos, editor, Groq, despliegue y recuperación offline. Los tests de visor usan ahora `?nivel=N-1` porque `/` tiene otra función. La expectativa antigua de tres familias en `quality-browser-test.mjs` se actualiza para incluir Liberación, que ya estaba en main.
+
+Este incremento incluye la recuperación de caché pendiente del incremento anterior. Publicación prevista: revisar/fusionar la PR a main y desplegar main en Render; sin merge ni despliegue automáticos. El navegador con portada antigua puede aplicar la actualización desde `/actualizar.html` después del despliegue.

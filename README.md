@@ -1,20 +1,26 @@
 # Pisos
 
-Todos los pisos usan la misma interfaz de Atlas: explorador de planos, dashboard, capas, liberación de frentes, tabla maestra, fichas, búsqueda, exportaciones, respaldos y modo sin conexión. El selector del encabezado cambia el conjunto de datos y conserva el módulo abierto.
+Todos los pisos usan la misma interfaz de Atlas: explorador de planos, dashboard, capas, liberación de frentes, tabla maestra, fichas, búsqueda, exportaciones, respaldos y modo sin conexión. La raíz `/` abre cuatro tarjetas en una cuadrícula de 2 × 2: pisos −1, 1, 2 y 3. Solo −1 y 2 tienen documentación cargada; 1 y 3 se muestran pendientes, sin miniaturas ni datos sustituidos. El botón «Pisos» y la navegación «Explorador de planos» permiten regresar a las tarjetas.
 
 | Piso | Dirección | Datos | Fuente |
 |---|---|---|---|
-| Nivel −1 | `/` | `dist/runtime.json` | 9 láminas PDF; rombos, Cielos y Pavimentos |
+| Nivel −1 | `/?nivel=N-1` | `dist/runtime.json` | 9 láminas PDF; rombos, Cielos y Pavimentos |
 | Nivel 2 | `/?nivel=N02` | `dist/n02/` | Recintos y monografía de la planta DWG (8 láminas, `scripts/import-n02.mjs`); plano monocromático de la planta PDF vectorial (`scripts/n02-plano/`) |
 
 - La lista de pisos vive en `dist/pisos.js`; `dist/level.mjs` expone el piso activo a los módulos.
 - Las correcciones y respaldos se guardan por piso. El nivel −1 conserva las claves originales.
-- El nivel 2 usa la misma escala que el −1 (puntos PDF 1:50). Sus contornos vienen del DWG; no tiene rombos dibujados ni láminas de especialidad, así que esas funciones no aparecen en ese piso.
+- El nivel 2 usa la misma escala que el −1 (puntos PDF 1:50). Sus contornos vienen del DWG; tiene rombos reconstruidos desde sus bloques documentales, pero no láminas de Cielos/Pavimentos cargadas. Esas dos pestañas indican «Sin lámina».
 - El plano de fondo del nivel 2 son mosaicos monocromáticos de `dist/source/n02-planta-arquitectura.pdf`, alineados con los recintos del DWG por sus códigos (error mediano ≈ 4 cm; ver `data/n02/pdf-a-plano.json`). Para regenerarlo: `scripts/n02-plano/LEEME.md`.
 - Los rombos del nivel 2 se leen de las 8 láminas DWG 1:50 (286 recintos; la zona 8.2.3 de A-501 no los dibuja) y se dibujan sobre el rótulo de cada recinto; la monografía de la ficha sale de esos rombos.
 - 23 recintos abiertos no tienen todos sus lados dibujados en las fuentes: su contorno se cierra con tramos rectos (o una superficie auxiliar de selección) y queda marcado como aproximado.
 - `/n02/` redirige a `/?nivel=N02` y conserva el enlace a un recinto (`/n02/#código`).
 - Enlaces directos: `/?nivel=N02#4.4.1.3.1-10` abre la ficha de un recinto.
+
+La entrada `dist/floor-explorer.mjs` carga las dos vistas generales existentes y pospone `app.js` hasta seleccionar un nivel. Volver a las tarjetas y reabrir el mismo nivel conserva zoom, selección y datos en memoria. Cambiar a otro nivel sigue abriendo el visor existente mediante su URL: no se mantienen varios visores ni se cargan todas las teselas en segundo plano. Los enlaces anteriores por código y módulo siguen funcionando. La búsqueda queda deshabilitada hasta terminar la inicialización para no perder consultas durante la carga.
+
+Dentro del visor, los accesos horizontales abren Arquitectura, Cielos y Pavimentos con sus controles originales. Muros activa las terminaciones sobre Arquitectura: no representa una lámina nueva. Los paneles de capas y los gráficos existentes se conservan; seleccionar una categoría del dashboard destaca sus recintos reales. La navegación bloquea la salida si hay edición pendiente; los formularios de especialidad permiten descartar cambios explícitamente.
+
+Validación de navegación: `PLAYWRIGHT_MODULE=<ruta-a-playwright-core> node floor-explorer-browser-test.mjs`. Cubre 1440/390/320 px, ausencia de carga del visor en portada, niveles reales, reutilización del mismo piso, historial, enlaces de recinto, pestañas, filtros desde gráfico y formularios pendientes. `node pisos-test.mjs` valida el catálogo y los archivos offline. El manifiesto se regenera con `node scripts/prepare-offline.mjs`.
 
 Para sumar un piso: extraer su plano a `data/<piso>/`, generar `dist/<piso>/` con un importador como `scripts/import-n02.mjs`, agregar una línea en `dist/pisos.js` y en `otherLevels` de `server/groq-server.mjs`, y ejecutar `node scripts/prepare-offline.mjs` y `node pisos-test.mjs`.
 
