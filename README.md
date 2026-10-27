@@ -26,13 +26,23 @@ Para sumar un piso: extraer su plano a `data/<piso>/`, generar `dist/<piso>/` co
 
 ## Control de obra y filtros del plano
 
-- **Control de obra** reúne dos vistas internas: Avances y protocolos (registros locales del proyecto completo) y Características del piso (atributos documentales del nivel activo). El antiguo Dashboard deja de ser un apartado principal.
+- **Control de obra** abre por defecto Protocolos de la matriz, con la matriz Excel incorporada. También mantiene Avances y protocolos (registros locales del proyecto completo) y Características del piso (atributos documentales del nivel activo). El antiguo Dashboard deja de ser un apartado principal.
 - Los gráficos de torta muestran estados técnicos y cierres administrativos de los protocolos registrados. Las barras muestran zonas y su último estado por dimensión. Seleccionar un estado consulta sus registros. Sin datos se muestra «Sin registros»; no se calcula avance de producción ni cumplimiento contra un total no documentado.
 - **Filtros**, en la barra derecha del visor, permite buscar recintos y categorías, sumar categorías dentro de una familia y cruzarlas con otras familias, asepsia, sector o revisión. Se mantiene el zoom mientras se ajustan filtros; el panel conserva la selección al cerrarlo y abrirlo de nuevo. En móvil se adapta a un panel compacto.
 - Gestión de recintos y Documentación y fuentes dejan de aparecer en la navegación. Las fichas conservan sus referencias; los respaldos están disponibles desde Filtros → Colores y respaldo. Los enlaces anteriores por módulo siguen siendo compatibles.
 - Los colores y la procedencia de las leyendas siguen usando el modelo anterior. No se modifican datos fuente, SQLite ni geometrías.
 
 Detalles, capturas y validación en [PLAN_FILTERS_CONTROL.md](docs/PLAN_FILTERS_CONTROL.md). Pruebas nuevas: `node work-charts-test.mjs` y `PLAYWRIGHT_MODULE=<ruta-a-playwright-core> node plan-filters-browser-test.mjs` (incluye recarga y uso sin conexión).
+
+## Protocolos de la matriz REV1
+
+Control de obra → **Protocolos de la matriz** permite desplegar especialidades, buscar y seleccionar un proceso, consultar folios y abrir su ficha documental. Incluye los **20.233 registros, 154 códigos y 38 agrupaciones textuales de especialidad** de la hoja principal, con corte del Excel al 26-10-2026. Pintura de asepsia baja/media y planchas XR-RH se encuentran por sus nombres y códigos originales.
+
+El detalle se carga por código bajo demanda y se pagina en 25 filas. Estado, nivel, persona que recibe y búsqueda filtran el proceso seleccionado. La selección y los filtros se recuerdan en este navegador; los registros locales de obra se conservan aparte. El original puede descargarse íntegro y forma parte de la descarga opcional de originales offline.
+
+El recuento normalizado da 5.678 abiertos, frente a 5.675 del resumen: tres estados tienen espacios finales. Se conservan esos valores originales y las 17 combinaciones repetidas de código/folio; cada fila mantiene su identidad y procedencia. No se asignan las letras de RECINTOS a geometrías ni se transforma CERRADO en aprobación técnica.
+
+Fuente: `dist/source/matriz-control-protocolos-rev1-hpc.xlsx`. Para regenerar los derivados, ejecutar `python scripts/import-protocol-matrix.py`, `node scripts/prepare-offline.mjs` y `node protocol-matrix-test.mjs`. Detalle de esquema, actualización y pruebas en [PROTOCOL_MATRIX.md](docs/PROTOCOL_MATRIX.md).
 
 ## Liberación de frentes
 

@@ -6,12 +6,12 @@ function paint() {
   $('offlineLabel').textContent = busy ? 'Guardando…' : !online ? 'Sin señal' : status?.plan.ready ? 'Disponible offline' : 'Sin conexión';
   $('offlineOpen').classList.toggle('ready', !!status?.plan.ready);
   $('offlineStatus').classList.toggle('ready', !!status?.plan.ready && !failure && !busy);
-  $('offlineStatus').textContent = failure || (busy ? 'Guardando '+(status.downloading === 'documents' ? 'PDF originales' : 'plano y fichas')+'… Mantén Atlas abierto.' : status?.plan.ready ? 'Listo para usar sin conexión' : status ? (online ? 'Guarda el plano una vez y consúltalo aquí sin internet.' : 'La descarga del plano está incompleta. Conéctate para continuar.') : 'Preparando el modo sin conexión…');
+  $('offlineStatus').textContent = failure || (busy ? 'Guardando '+(status.downloading === 'documents' ? 'documentos originales' : 'plano y fichas')+'… Mantén Atlas abierto.' : status?.plan.ready ? 'Listo para usar sin conexión' : status ? (online ? 'Guarda el plano una vez y consúltalo aquí sin internet.' : 'La descarga del plano está incompleta. Conéctate para continuar.') : 'Preparando el modo sin conexión…');
   $('offlineSave').disabled = !status || busy || status.plan.ready || !online;
   $('offlineSave').textContent = status?.plan.ready ? 'Plano y fichas guardados' : (status?.plan.count > 20 ? 'Continuar descarga' : 'Guardar plano y fichas')+(status ? ' · '+mb(status.plan.bytes) : '');
   $('offlineSaveDocuments').disabled = !status?.plan.ready || busy || !!status?.documents.ready || !online;
-  $('offlineSaveDocuments').textContent = status?.documents.ready ? 'PDF originales guardados' : 'Guardar PDF originales'+(status ? ' · '+mb(status.documents.bytes) : '');
-  $('offlineDocumentsInfo').textContent = status?.documents.ready ? 'Las nueve láminas fuente están disponibles sin internet.' : 'Opcional. Las fichas y el plano funcionan sin esta descarga.';
+  $('offlineSaveDocuments').textContent = status?.documents.ready ? 'Originales guardados' : 'Guardar originales'+(status ? ' · '+mb(status.documents.bytes) : '');
+  $('offlineDocumentsInfo').textContent = status?.documents.ready ? 'Los documentos originales están disponibles sin internet.' : 'Opcional. Las fichas y el plano funcionan sin esta descarga.';
   $('offlineCancel').hidden = !busy;
   $('offlineProgress').hidden = !busy;
   if (busy && progress) {
