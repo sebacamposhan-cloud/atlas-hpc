@@ -44,6 +44,18 @@ El recuento normalizado da 5.678 abiertos, frente a 5.675 del resumen: tres esta
 
 Fuente: `dist/source/matriz-control-protocolos-rev1-hpc.xlsx`. Para regenerar los derivados, ejecutar `python scripts/import-protocol-matrix.py`, `node scripts/prepare-offline.mjs` y `node protocol-matrix-test.mjs`. Detalle de esquema, actualización y pruebas en [PROTOCOL_MATRIX.md](docs/PROTOCOL_MATRIX.md).
 
+## Fechas y protocolos críticos
+
+En Protocolos de la matriz se puede filtrar por elaboración o cierre con límites Desde/Hasta inclusivos. «Pendiente de cierre (abiertos)» es una vista de ABIERTO, ya que la fuente no contiene un estado PENDIENTE. «Cerrados (incluye autocontrol)» agrupa ambos estados de cierre sin modificar las filas originales.
+
+Control de obra → **Protocolos críticos** muestra abiertos con fecha de elaboración válida, sin dato de cierre y con más de un año calendario a la fecha de evaluación. El aniversario exacto no es crítico. El análisis usa Hoy en America/Santiago por defecto; permite una fecha personalizada y distingue el estado de la matriz al corte de la antigüedad calculada.
+
+Incluye barras por proceso, torta por tramos y listado paginado con acceso al folio/fila original. Filtros de especialidad, nivel, recibe y elaboración acotan el análisis. Pulsar un proceso o registro abre la consulta de la matriz con el mismo criterio de criticidad, fechas y alcance. Los abiertos sin fecha válida se cuentan aparte.
+
+Con la fuente actual y evaluación al **27-10-2026**: **2.045 registros críticos**, 5.678 abiertos y **1.495 abiertos sin elaboración válida**. El gráfico cuenta filas y conserva folios repetidos. No se infieren fechas ni se escriben estados críticos en Excel.
+
+Detalles y capturas: [CRITICAL_PROTOCOLS.md](docs/CRITICAL_PROTOCOLS.md). Tests: `node critical-protocol-test.mjs` y `PLAYWRIGHT_MODULE=<ruta-a-playwright-core> node critical-protocol-browser-test.mjs`.
+
 ## Liberación de frentes
 
 Módulo de la barra lateral, capa en «Capas y terminaciones», gráfico del dashboard y sección de cada ficha. Calcula un semáforo por recinto (Bloqueado, Con restricción, Liberado, Sin datos) a partir de un Excel con las hojas Parámetros, Recintos, Solicitudes y Programa. Un mismo Excel sirve para todo el edificio; los recintos que no figuran en su hoja Recintos quedan «Sin datos». El Excel se guarda en el navegador (`atlas-liberacion-v1`). `dist/liberacion/datos-ejemplo.xlsx` contiene datos de prueba del nivel 2.
