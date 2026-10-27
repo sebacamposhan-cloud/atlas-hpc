@@ -14,7 +14,7 @@ try{
  for(const viewport of [{width:1440,height:1000},{width:390,height:844}]){
   const context=await browser.newContext({viewport,serviceWorkers:'block',httpCredentials:{username:'atlas',password:'isolated-source-test'}});
   const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.goto(base);await page.locator('#globalSearch').waitFor();
+  await page.goto(base+'/?nivel=N-1');await page.locator('#assistantOpen').waitFor();await page.locator('#globalSearch').waitFor();
   await page.waitForFunction(()=>document.querySelectorAll('.roomshape').length===330);
   for(const target of [
    {id:'507-aa38cf6c:r0035',code:'3.1.1.2.2-1',point:[800,1960],excluded:[935,2100],view:[730,1905,250,270]},

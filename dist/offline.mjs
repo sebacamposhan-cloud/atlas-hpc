@@ -1,5 +1,5 @@
 const $ = id => document.getElementById(id);
-let registration, registrationPromise, status, failure = '', progress, poll, updating = false;
+let registration, registrationPromise, status, failure = '', progress, poll, updating = false, checking = false, updateProgress = null, updateFailure = '';
 const mb = bytes => (bytes / 1e6).toLocaleString('es-CL', {maximumFractionDigits: 1})+' MB';
 function paint() {
   const online = navigator.onLine, busy = !!status?.downloading;
@@ -18,7 +18,12 @@ function paint() {
     $('offlineProgress').value = Math.round(progress.done / progress.total * 100);
     $('offlineProgressText').textContent = `${progress.done} de ${progress.total} archivos · ${$('offlineProgress').value}%`;
   } else $('offlineProgressText').textContent = status && !status.plan.ready ? `${status.plan.count} de ${status.plan.total} archivos guardados` : status?.plan.ready ? 'Plano completo, búsqueda, rombos, fichas y exportaciones disponibles en este navegador.' : '';
-  $('offlineUpdate').hidden = !registration?.waiting;
+  const installing=!!registration?.installing,waiting=!!registration?.waiting;
+  $('offlineUpdate').hidden = !waiting;
+  $('offlineCheckUpdate').disabled=checking||installing||!online;
+  $('offlineUpdateInfo').textContent=updateFailure||(waiting?'Nueva versión lista. Aplicarla recarga la página; guarda antes los cambios pendientes.':installing?'Preparando actualización'+(updateProgress?' · '+updateProgress.done+' de '+updateProgress.total+' archivos':'…'):'Puedes buscar una versión más reciente sin borrar la copia guardada.');
+  $('atlasUpdateNotice').hidden=!waiting&&!installing&&!updateFailure;
+  $('atlasUpdateText').textContent=updateFailure||(waiting?'Hay una nueva versión de Atlas lista para aplicar.':'Preparando una nueva versión de Atlas…');
   if (busy && !poll) poll = setInterval(() => refresh().catch(() => {}), 12000);
   if (!busy && poll) { clearInterval(poll); poll = null; }
 }
@@ -39,9 +44,8 @@ async function setup() {
     // Reopening a downloaded plan must not wait for a script request.
     const existing = await navigator.serviceWorker.getRegistration('./');
     registration = existing?.active ? existing : await navigator.serviceWorker.register('./sw.js', {scope: './', updateViaCache: 'none'});
-    registration.addEventListener('updatefound', () => {
-      registration.installing?.addEventListener('statechange', () => paint());
-    });
+    const watch=worker=>{if(!worker)return;worker.addEventListener('statechange',()=>{if(worker.state==='redundant')updateFailure='La actualización no se completó. Tu copia anterior sigue disponible; puedes reintentar.';setTimeout(paint,0);});};
+    registration.addEventListener('updatefound', () => {updateFailure='';updateProgress=null;watch(registration.installing);paint();});watch(registration.installing);
     if (!registration.active) await new Promise((resolve, reject) => {
       const worker = registration.installing || registration.waiting;
       const timer = setTimeout(() => reject(new Error('La descarga inicial está tardando. Reintenta con conexión estable.')), 30000);
@@ -74,10 +78,14 @@ $('offlineDialog').addEventListener('click', event => {if(event.target === $('of
 $('offlineSave').onclick = () => download('plan');
 $('offlineSaveDocuments').onclick = () => download('documents');
 $('offlineCancel').onclick = () => request('PAUSE').catch(error => {failure=error.message;paint();});
-$('offlineUpdate').onclick = () => { if (registration?.waiting) {updating = true;registration.waiting.postMessage({atlasOffline:true,type:'ACTIVATE'});} };
+$('offlineUpdate').onclick = () => { if (registration?.waiting) {if(window.dispatchEvent?.(new Event('atlas-before-update',{cancelable:true}))===false)return;updating = true;registration.waiting.postMessage({atlasOffline:true,type:'ACTIVATE'});} };
+$('atlasUpdateReview').onclick=openOffline;
+$('offlineCheckUpdate').onclick=async()=>{checking=true;updateFailure='';paint();try{await setup();await registration?.update();}catch{updateFailure='No se pudo buscar la actualización. Comprueba la conexión y reintenta.';}finally{checking=false;paint();}};
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('message', event => {
     const message = event.data;if (!message?.atlasOffline) return;
+    if(message.type==='UPDATE_PROGRESS')updateProgress=message;
+    if(message.type==='UPDATE_ERROR')updateFailure=message.error;
     if (message.type === 'PROGRESS') { if(status) status.downloading=message.pack;progress=message; }
     if (message.status) status=message.status;
     if (message.type === 'ERROR') failure=message.error;
@@ -90,4 +98,5 @@ window.addEventListener('online', () => {paint();if(registration?.active){refres
 window.addEventListener('offline', paint);
 document.addEventListener('visibilitychange', () => {if(!document.hidden && registration?.active) refresh().catch(() => {});});
 window.addEventListener('atlas-ready', () => setup(), {once:true});
+window.addEventListener('atlas-shell-ready', () => setup(), {once:true});
 paint();

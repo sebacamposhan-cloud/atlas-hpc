@@ -11,9 +11,11 @@ const sandbox = {window: {}, location: {search: ''}, URLSearchParams, document: 
 vm.runInNewContext(fs.readFileSync('dist/pisos.js', 'utf8'), sandbox);
 const pisos = sandbox.window.ATLAS_PISOS;
 assert(pisos.length >= 2, 'pisos.js debe declarar al menos dos pisos');
-assert.equal(sandbox.window.ATLAS_PISO.id, pisos[0].id, 'sin ?nivel= se abre el primer piso');
+assert.equal(sandbox.window.ATLAS_PISO.id, pisos[0].id, 'el nivel por defecto se conserva para enlaces anteriores');
+assert.deepEqual(Array.from(sandbox.window.ATLAS_TARJETAS,t=>t.id),['N-1','N01','N02','N03']);
+assert.equal(sandbox.window.ATLAS_TARJETAS.filter(t=>t.piso).length,pisos.length,'las tarjetas disponibles coinciden con los datos cargados');
 const index = fs.readFileSync('dist/index.html', 'utf8');
-assert(index.includes('data-selector-piso') && index.includes('src="pisos.js"'), 'index.html debe cargar el selector de piso');
+assert(index.includes('id="floorExplorer"') && index.includes('src="pisos.js"'), 'index.html debe cargar el explorador visual');
 const resumen = {};
 for (const piso of pisos) {
   const {data, atlas, map, selection} = decodeRuntime(JSON.parse(fs.readFileSync('dist/' + piso.datos + 'runtime.json', 'utf8')));
@@ -69,7 +71,7 @@ try {
   assert.equal((await fetch(base + '/?nivel=N02')).status, 401, 'debe pedir contraseña');
   const portada = await fetch(base + '/?nivel=N02', {headers});
   assert.equal(portada.status, 200);
-  assert((await portada.text()).includes('data-selector-piso'), 'todos los pisos usan la misma portada');
+  assert((await portada.text()).includes('id="floorExplorer"'), 'todos los pisos usan la misma portada');
   const antigua = await (await fetch(base + '/n02/', {headers})).text();
   assert(antigua.includes("location.replace('../?nivel=N02' + location.hash)"), 'la dirección antigua del nivel 2 redirige conservando el recinto');
   const sinBarra = await fetch(base + '/n02?x=1', {headers, redirect: 'manual'});

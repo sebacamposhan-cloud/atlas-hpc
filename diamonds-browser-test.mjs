@@ -33,7 +33,7 @@ try{
  browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',args:['--no-sandbox']});
  for(const viewport of [{width:1440,height:1000},{width:390,height:844}]){
   const context=await browser.newContext({viewport,serviceWorkers:'block'}),page=await context.newPage(),errors=[];page.setDefaultTimeout(10000);page.on('pageerror',e=>errors.push(e.message));
-  await page.goto(base);await page.locator('#diamondCatalogOpen').click();
+  await page.goto(base+'/?nivel=N-1');await page.locator('#assistantOpen').waitFor();await page.locator('#diamondCatalogOpen').click();
   assert.match(await page.locator('#diamondCount').innerText(),/443 observaciones/);assert.equal(await page.locator('[data-diamond-open]').count(),24);
   await page.locator('#diamondSearch').fill(outside.code);await page.locator(`[data-diamond-open="${outside.id}"]`).click();
   assert.equal(await page.locator('#diamondDetail tbody tr').count(),6);assert.match(await page.locator('#diamondDetail').innerText(),/fuera del recorte/);assert.equal(await page.locator('#diamondLocate').count(),0);

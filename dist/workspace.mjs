@@ -39,5 +39,5 @@ export function createWorkspace(ctx){
  function exportGeometry(){ctx.download(new Blob([JSON.stringify({format:'atlas-hpc-selection-v1',coordinateSystem:'plano unificado; unidades PDF',warning:'Superficies de consulta; revisar estado técnico individual',rooms:rows().map(r=>({id:r.id,code:r.code,level:r.level,source:r.document_id,geometry_status:r.geometry_status,geometry:ctx.footprint(r.id)}))},null,2)],{type:'application/json'}),archivo('Atlas_HPC_geometrias.json'));}
  document.querySelectorAll('button[data-module]').forEach(b=>b.onclick=()=>show(b.dataset.module));$('sidebarCollapse').onclick=()=>document.body.classList.toggle('sidebarCompact');$('globalSearch').oninput=e=>{$('search').value=e.target.value;ctx.search();};$('globalSearch').onkeydown=e=>{if(e.key==='Enter'){show('map');document.body.classList.remove('hideLeft');ctx.search();}};
  window.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();$('globalSearch').focus();}});
- return {show,refresh,clear,rows,paint,appearance,legend,filters:()=>filters,enabled:()=>enabled,apply};
+ return {show,refresh,clear,rows,paint,appearance,legend,setLayer:type=>{enabled=!!type;if(type)active=type;show('map');ctx.refresh();},filters:()=>filters,enabled:()=>enabled,apply};
 }

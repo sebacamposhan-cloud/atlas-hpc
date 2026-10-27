@@ -10,14 +10,12 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/atlas.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/atlas-192.png">
-<link rel="preload" href="map/overview.webp" as="image" fetchpriority="high">
-<link rel="preload" href="runtime.json" as="fetch" crossorigin>
-<link rel="modulepreload" href="runtime-loader.mjs">
 <title>Atlas HPC · Planos inteligentes</title>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="workspace.css">
 </head>
-<body class="hideLeft hideRight booting" data-module="map">
+<body class="hideLeft hideRight floorHome" data-module="map">
+<div id="atlasUpdateNotice" role="status" hidden><span id="atlasUpdateText"></span><button id="atlasUpdateReview">Revisar actualización</button></div>
 <nav class="appSidebar" aria-label="Módulos Atlas"><div class="sideBrand"><span class="brandMark">A</span><span class="navText"><b>ATLAS HPC</b><small>INGENIERÍA DOCUMENTAL</small></span></div><div class="sideProject"><span class="navText">Hospital Provincia Cordillera<br><small>Arquitectura · Nivel −1</small></span></div><div class="navGroup"><button data-module="work" title="Control de obra"><span class="navIcon">▦</span><span class="navText">Control de obra</span></button><button data-module="map" class="active" title="Explorador de planos"><span class="navIcon">▱</span><span class="navText">Explorador de planos</span></button><button data-module="dashboard" class="" title="Dashboard de recintos"><span class="navIcon">▥</span><span class="navText">Dashboard de recintos</span></button><button data-module="liberacion" class="" title="Liberación de frentes"><span class="navIcon">◐</span><span class="navText">Liberación de frentes</span></button><button data-module="layers" class="" title="Capas y terminaciones"><span class="navIcon">▧</span><span class="navText">Capas y terminaciones</span></button><button data-module="rooms" class="" title="Gestión de recintos"><span class="navIcon">☷</span><span class="navText">Gestión de recintos</span></button><button data-module="docs" class="" title="Documentación y fuentes"><span class="navIcon">▤</span><span class="navText">Documentación y fuentes</span></button></div><div class="sideBottom"><small class="navText">ATLAS 3.0 · incremental<br>Datos documentales · Copia local</small><button id="sidebarCollapse" aria-label="Contraer navegación">⇤</button></div></nav><header>
 <button id="navToggle" title="Buscar recintos" aria-label="Buscar recintos">⌕</button>
 <div class="brand">
@@ -27,7 +25,7 @@
 </div>
 <div class="project">Hospital Provincia Cordillera <span>Nivel −1 · Arquitectura</span>
 </div>
-<span data-selector-piso></span>
+<button id="floorHomeButton" hidden aria-label="Volver a los pisos">▦ <span>Pisos</span></button>
 <div class="globalSearchWrap"><input id="globalSearch" aria-label="Búsqueda global" placeholder="Buscar código, recinto o terminación…"><kbd>⌘ K</kbd></div><button id="dashboard">Dashboard</button>
 <button id="offlineOpen" class="offlineButton" aria-label="Modo sin conexión"><span id="offlineLabel">Sin conexión</span></button>
 <button id="detailToggle" title="Mostrar u ocultar ficha">Ficha</button>
@@ -90,6 +88,11 @@
 <span class="muted">Guardado en este dispositivo</span>
 </div>
 </aside>
+<section id="floorExplorer" aria-labelledby="floorExplorerTitle">
+  <div class="floorIntro"><div><span class="section-label">HOSPITAL PROVINCIA CORDILLERA</span><h1 id="floorExplorerTitle">Explorador de planos</h1><p>Elige un piso para comenzar.</p></div><span class="floorIndex">4 NIVELES</span></div>
+  <div id="floorGrid" class="floorGrid"></div>
+  <p class="floorFootnote">Planos, recintos y documentación por nivel.</p>
+</section>
 <section id="workspacePanel" hidden aria-label="Espacio de trabajo"></section><main>
 <div class="planheader">
 <div>
@@ -229,6 +232,7 @@ Ejes A–W · 1–12
   <div class="offlineActions">
     <button id="offlineSave" class="primary" disabled>Guardar plano y fichas</button>
     <button id="offlineCancel" hidden>Pausar descarga</button>
+    <button id="offlineCheckUpdate">Buscar actualizaciones</button><p id="offlineUpdateInfo" role="status"></p><a href="actualizar.html">Recuperar actualización</a>
     <button id="offlineUpdate" hidden>Actualizar versión</button>
   </div>
   <div class="offlineDocuments">
@@ -244,7 +248,7 @@ Ejes A–W · 1–12
 </dialog>
 <noscript><p>Activa JavaScript para consultar los recintos.</p></noscript>
 <script src="pisos.js"></script>
-<script type="module" src="app.js">
+<script type="module" src="floor-explorer.mjs">
 </script>
 </body>
 </html>

@@ -36,8 +36,8 @@ try {
     page.setDefaultTimeout(10000);
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
-    await page.goto(base);
-    await page.locator('#discipline').waitFor();
+    await page.goto(base+'/?nivel=N-1');await page.locator('#assistantOpen').waitFor();
+    await page.locator('[data-plan-type="architecture"]').waitFor();
     const canonical = await page.locator('#results [data-id]').evaluateAll(nodes => nodes.map(n => ({id:n.dataset.id, code:n.querySelector('strong').textContent})));
     const duplicate = bundle.observations.find(r => bundle.observations.filter(o => o.code === r.code).length > 1 && canonical.filter(a => a.code === r.code).length === 1);
     assert(duplicate, 'need a real ambiguous CIE / unique ARQ fixture');
@@ -46,7 +46,7 @@ try {
     // Start in ARQ to prove multiple CIE sources are not silently collapsed.
     await page.locator('#globalSearch').fill(duplicate.code);
     await page.waitForFunction(code => document.querySelector('#detail .detailCode')?.textContent === code, duplicate.code);
-    await page.locator('#discipline').selectOption('ceilings');
+    await page.locator('[data-plan-type="ceilings"]').click();
     await page.locator('#specialtyDetail').waitFor();
     assert.equal(await page.locator('[data-ceiling-observation]').count(), candidates.length);
     assert.equal(await page.locator('[data-ceiling-observation][aria-pressed="true"]').count(), 0);
@@ -95,7 +95,7 @@ try {
     assert.equal(await page.locator('#detail .detailCode').innerText(), verified.code);
     await page.locator('#globalSearch').fill('');
     if(await page.locator('#isolate').isVisible())await page.locator('#isolate').click();
-    await page.locator('#discipline').selectOption('ceilings');
+    await page.locator('[data-plan-type="ceilings"]').click();
     await page.waitForFunction(id => document.querySelector('[data-ceiling-observation][aria-pressed="true"]')?.dataset.ceilingObservation === id, verified.id);
     assert.equal(await page.locator('#specialtySheet').inputValue(), verified.sheetId);
 
@@ -103,19 +103,19 @@ try {
     await page.locator('#specialtySearch').fill(noArchitecture.code);
     await page.locator(`#specialtyResults [data-observation="${noArchitecture.id}"]`).click();
     assert.match(await page.locator('#specialtyDetail').innerText(), /Sin coincidencia en Arquitectura/);
-    await page.locator('#discipline').selectOption('floors');
+    await page.locator('[data-plan-type="floors"]').click();
     await page.waitForFunction(code => document.querySelector('#specialtyDetail h2')?.textContent === code, noArchitecture.code);
-    await page.locator('#discipline').selectOption('ceilings');
+    await page.locator('[data-plan-type="ceilings"]').click();
     await page.waitForFunction(id => document.querySelector('[data-ceiling-observation][aria-pressed="true"]')?.dataset.ceilingObservation === id, noArchitecture.id);
     assert.equal(await page.locator('#specialtyDetail h2').innerText(), noArchitecture.code);
 
     // Clearing an unmatched ARQ association must also remove the old card/actions.
-    await page.locator('#discipline').selectOption('architecture');
+    await page.locator('[data-plan-type="architecture"]').click();
     assert.match(await page.locator('#detail').textContent(), /Sin recinto seleccionado/);
     assert.equal(await page.locator('#editInfo').count(), 0);
     assert.equal(await page.locator('#background').evaluate(el => el.style.opacity), '1');
     await page.locator('#reset').click();
-    await page.locator('#discipline').selectOption('ceilings');
+    await page.locator('[data-plan-type="ceilings"]').click();
     await page.waitForFunction(() => document.querySelector('#specialtyDetail h2')?.textContent === 'Cielos · Nivel −1');
     assert.equal(await page.locator('[data-ceiling-observation]').count(), 0);
     assert.deepEqual(errors, []);
@@ -132,8 +132,8 @@ try {
     let attempts = 0;
     await page.route('**/disciplines.json', route => ++attempts === 1
       ? route.fulfill({status:503, body:'temporary test failure'}) : route.continue());
-    await page.goto(base);
-    await page.locator('#discipline').selectOption('ceilings');
+    await page.goto(base+'/?nivel=N-1');await page.locator('#assistantOpen').waitFor();
+    await page.locator('[data-plan-type="ceilings"]').click();
     await page.locator('#retrySpecialty').click();
     await page.locator('#specialtySheet').waitFor();
     assert.equal(attempts, 2);
@@ -153,17 +153,18 @@ try {
   const responseGate = new Promise(resolve => { release=resolve; });
   const requested = new Promise(resolve => { entered=resolve; });
   await page.route('**/disciplines.json', async route => { entered(); await responseGate; await route.continue(); });
-  await page.goto(base);
-  await page.locator('#discipline').waitFor();
-  await page.locator('#discipline').selectOption('ceilings');
+  await page.goto(base+'/?nivel=N-1');await page.locator('#assistantOpen').waitFor();
+  await page.locator('[data-plan-type="architecture"]').waitFor();
+  await page.locator('[data-plan-type="ceilings"]').click();
   await requested;
-  await page.locator('#discipline').selectOption('architecture');
+  await page.locator('[data-plan-type="architecture"]').click();
   const response = page.waitForResponse('**/disciplines.json');
   release();
   await (await response).finished();
   // A subsequent animation frame lets the response callback settle without a sleep.
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   assert.equal(await page.locator('main').getAttribute('data-discipline'), 'architecture');
+  assert.equal(await page.locator('[data-plan-type="architecture"]').getAttribute('aria-pressed'),'true');
   assert(await page.locator('#disciplinePanel').isHidden());
   assert.deepEqual(errors, []);
   completed.push('delayed CIE response cannot overwrite Architecture');

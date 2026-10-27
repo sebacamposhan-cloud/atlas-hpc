@@ -31,7 +31,7 @@ try {
  browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',args:['--no-sandbox']});
  for(const viewport of [{width:1440,height:1000},{width:390,height:844}]){
   const context=await browser.newContext({viewport,serviceWorkers:'block'}),page=await context.newPage(),errors=[];page.setDefaultTimeout(10000);
-  page.on('pageerror',e=>errors.push(e.message));await page.goto(base);await page.locator('#discipline').waitFor();
+  page.on('pageerror',e=>errors.push(e.message));await page.goto(base+'/?nivel=N-1');await page.locator('#assistantOpen').waitFor();await page.locator('[data-plan-type="architecture"]').waitFor();
   assert.equal(await page.locator('.roomshape[data-geometry-quality="validated"]').count(),2);
   assert.equal(await page.locator('.roomshape[data-geometry-quality="auxiliary_pending"]').count(),315);
   assert.equal(await page.locator('.roomshape[data-geometry-quality="source_pending"]').count(),13);
@@ -48,7 +48,7 @@ try {
   // Clear the text query before the independent map category filter.
   await page.locator('#reset').click();
   await page.locator(viewport.width<700?'#bottomLayers':'button[data-module="layers"]:visible').first().click();
-  assert.deepEqual(await page.locator('#activeLayer option').evaluateAll(nodes=>nodes.map(n=>n.value)),['CIE','PAV','walls']);
+  assert.deepEqual(await page.locator('#activeLayer option').evaluateAll(nodes=>nodes.map(n=>n.value)),['CIE','PAV','walls','liberacion']);
   await page.locator('#paintEnabled').check();
   await page.locator('#asepsisAttribute').selectOption('media');
   await page.locator('[data-go-map]').first().click();
@@ -70,7 +70,7 @@ try {
   assert.equal(await page.locator('#polygons path[fill]:not([fill="#425158"])').count(),72);
   await page.locator('#clearMapFilters').click();
   await page.waitForFunction(()=>document.querySelector('#activeFilterCount')?.textContent.includes('330 recintos'));
-  await page.locator('#discipline').selectOption('ceilings');await page.locator('#specialtySearch').waitFor();
+  await page.locator('[data-plan-type="ceilings"]').click();await page.locator('#specialtySearch').waitFor();
   const unextracted=bundle.observations.find(r=>!r.ceilingCodes);
   await page.locator('#specialtySearch').fill(unextracted.code);
   await page.locator(`[data-observation="${unextracted.id}"]`).click();

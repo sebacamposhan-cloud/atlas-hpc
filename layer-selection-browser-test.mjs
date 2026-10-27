@@ -14,7 +14,7 @@ try{
  browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,args:['--no-sandbox']});
  for(const viewport of [{width:1440,height:1000},{width:390,height:844}]){
   const context=await browser.newContext({viewport,serviceWorkers:'block',httpCredentials:{username:'atlas',password:'isolated-layer-test'}}),page=await context.newPage(),errors=[];
-  page.on('pageerror',e=>errors.push(e.message));await page.goto('http://127.0.0.1:'+server.address().port);
+  page.on('pageerror',e=>errors.push(e.message));await page.goto('http://127.0.0.1:'+server.address().port+'/?nivel=N-1');await page.locator('#assistantOpen').waitFor();
   const layers=()=>page.locator(viewport.width<700?'#bottomLayers':'button[data-module="layers"]:visible').first().click();
   await layers();await page.locator('#activeLayer').selectOption('CIE');
   assert.equal(await page.locator('[data-color="201"]').inputValue(),'#ffcccc');assert.match(await page.locator('#layerColorNote').innerText(),/ocho leyendas/);

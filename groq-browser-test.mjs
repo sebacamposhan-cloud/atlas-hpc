@@ -8,7 +8,7 @@ try{
  browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',args:['--no-sandbox']});
  for(const viewport of [{width:1440,height:1000},{width:390,height:844}]){
   const context=await browser.newContext({viewport,serviceWorkers:'block'}),page=await context.newPage(),errors=[];page.setDefaultTimeout(10000);page.on('pageerror',e=>errors.push(e.message));
-  await page.goto('http://127.0.0.1:'+server.address().port);
+  await page.goto('http://127.0.0.1:'+server.address().port+'/?nivel=N-1');await page.locator('#assistantOpen').waitFor();
   await page.locator('#assistantOpen').waitFor();
   await page.locator('#globalSearch').fill('3.1.4.1.1-1');
   await page.waitForFunction(()=>document.querySelector('#detail .detailCode')?.textContent==='3.1.4.1.1-1');

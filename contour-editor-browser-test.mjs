@@ -30,7 +30,7 @@ try{
  browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',args:['--no-sandbox']});
  for(const viewport of [{width:1440,height:1000},{width:390,height:844}]){
   const context=await browser.newContext({viewport,serviceWorkers:'block'}),page=await context.newPage(),errors=[];page.setDefaultTimeout(30000);page.on('pageerror',e=>errors.push(e.message));
-  await page.goto(base);await page.locator('#globalSearch').waitFor();await page.locator('#globalSearch').fill('RT.(-1)-1');
+  await page.goto(base+'/?nivel=N-1');await page.locator('#assistantOpen').waitFor();await page.locator('#globalSearch').waitFor();await page.locator('#globalSearch').fill('RT.(-1)-1');
   await page.waitForFunction(()=>document.querySelector('#detail .detailCode')?.textContent==='RT.(-1)-1');await page.locator('#editGeometry').click();
   await page.waitForFunction(()=>document.querySelector('#contourStatus')?.textContent.includes('PDF original cargado'));
   assert(await page.locator('.leaflet-pane img.leaflet-image-layer').count());assert(await page.locator('.leaflet-pm-toolbar').count());
