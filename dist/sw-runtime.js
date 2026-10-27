@@ -90,7 +90,8 @@ async function installVersion() {
       if (files.length && files.every(file => stored.has(file.url))) packs.add(pack);
     }
   }
-  await saveFiles(manifest.files.filter(file => file.core || packs.has(file.pack)));
+  try{await saveFiles(manifest.files.filter(file => file.core || packs.has(file.pack)),undefined,(done,total)=>{if(done===total||done%20===0)void broadcast({type:'UPDATE_PROGRESS',done,total,version:manifest.version});});}
+  catch(error){await broadcast({type:'UPDATE_ERROR',error:'La actualización no se completó. La copia anterior se conserva.',version:manifest.version});throw error;}
 }
 self.addEventListener('install', event => event.waitUntil(installVersion()));
 self.addEventListener('activate', event => event.waitUntil(self.clients.claim()));

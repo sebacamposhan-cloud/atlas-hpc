@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Actualizar Atlas</title>
+<style>body{font:16px/1.6 system-ui;color:#17313a;background:#f5f7fa;margin:0;padding:24px}main{max-width:620px;margin:40px auto;background:white;padding:28px;border-radius:14px}button,a{font:inherit}button{padding:12px 16px;border:1px solid #005fcc;border-radius:7px;color:#005fcc;background:white;margin:6px 8px 6px 0}#status{padding:16px;background:#edf4fa;overflow-wrap:anywhere}</style>
+<main><h1>Actualizar Atlas</h1><p>Esta página busca la versión publicada sin borrar tus correcciones, respaldos ni descargas anteriores. Guarda cualquier edición pendiente en las otras pestañas antes de aplicar la actualización.</p>
+<p id="status" role="status">Comprobando la versión publicada…</p>
+<button id="check">Buscar actualización</button><button id="apply" disabled>Aplicar y abrir Atlas</button><p><a href="/">Volver a Atlas</a></p></main>
+<script>
+const status=document.querySelector('#status'),check=document.querySelector('#check'),apply=document.querySelector('#apply');let registration;
+function inspect(){
+ if(registration.waiting){status.textContent='Nueva versión lista. Pulsa Aplicar para abrirla en este navegador.';apply.disabled=false;check.disabled=false;return;}
+ if(registration.installing){const worker=registration.installing;status.textContent='Preparando la nueva versión. Si tenías el plano guardado, se conserva también en la actualización; puede tardar varios minutos.';worker.addEventListener('statechange',()=>{if(worker.state==='redundant'){status.textContent='No se completó la actualización. Tu copia anterior sigue disponible. Comprueba la conexión y reintenta.';check.disabled=false;}else setTimeout(inspect,0);},{once:true});return;}
+ status.textContent='No hay una actualización pendiente. Puedes abrir Atlas con la versión activa.';apply.disabled=false;check.disabled=false;
+}
+check.onclick=async()=>{
+ check.disabled=true;apply.disabled=true;
+ try{if(!('serviceWorker' in navigator))throw Error('Este navegador no admite el modo offline.');registration=await navigator.serviceWorker.register('/sw.js',{scope:'/',updateViaCache:'none'});registration.addEventListener('updatefound',inspect,{once:true});await registration.update();inspect();}
+ catch{status.textContent='No se pudo comprobar la actualización. Mantén la conexión e inténtalo de nuevo.';check.disabled=false;}
+};
+apply.onclick=()=>{if(registration.waiting){apply.disabled=true;status.textContent='Aplicando actualización…';navigator.serviceWorker.addEventListener('controllerchange',()=>location.replace('/'),{once:true});registration.waiting.postMessage({atlasOffline:true,type:'ACTIVATE'});}else location.replace('/');};
+if('serviceWorker' in navigator)navigator.serviceWorker.addEventListener('message',event=>{const m=event.data;if(!m?.atlasOffline)return;if(m.type==='UPDATE_PROGRESS')status.textContent='Preparando actualización: '+m.done+' de '+m.total+' archivos. La copia anterior se conserva.';if(m.type==='UPDATE_ERROR'){status.textContent=m.error;check.disabled=false;}});
+check.click();
+</script></html>

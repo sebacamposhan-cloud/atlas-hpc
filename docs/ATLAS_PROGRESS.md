@@ -101,3 +101,13 @@ Se sustituyen los colores por hash de CIE por 20 muestras de su leyenda: 152 ext
 Selección independiente con borde azul, halo blanco y código visible aunque se cierre la ficha; no depende de oscurecer el mismo relleno. Contornos generales más finos con estado pendiente conservado. La nitidez vectorial no cambia el límite de resolución de las teselas ni certifica la geometría. Pruebas de imagen verifican color real y conservación de texto/lineado. Detalle y límites en `LAYER_COLORS.md`.
 
 Pendiente: revisar los contornos adicionales de la captura de Box Consulta Médica 7.1.2.1.2-2 (504) y del borde inclinado sur. Este incremento no declara corregidas esas geometrías. Para publicación estable, Render puede usar main tras revisión/fusión de la PR por el usuario; no hay merge ni despliegue automáticos.
+
+## Recuperación de actualizaciones en pestañas con copia anterior
+
+Se reprodujo en Chromium una portada antigua servida desde el service worker mientras el servidor ya tenía el selector de pisos nuevo. El flujo actual conserva versiones por caché y espera instalación completa antes de ofrecer activación; el estado de descarga/error y la disponibilidad tardía de registration.waiting no eran suficientemente visibles.
+
+Se añade aviso persistente, búsqueda manual de actualizaciones, progreso de preparación y error recuperable conservando la copia anterior. El estado installed se vuelve a consultar después del evento para evitar perder la transición a waiting. La activación desde la app se bloquea si hay una edición de contorno/formulario pendiente. No se recarga automáticamente una pestaña que tiene trabajo sin guardar.
+
+`/actualizar.html` es una página de recuperación independiente, deliberadamente fuera del manifiesto offline. Un worker antiguo deja pasar esa ruta al servidor; desde allí se registra el mismo worker con updateViaCache:none y se aplica la versión preparada sin borrar localStorage, IndexedDB ni CacheStorage. La página necesita conexión y solo estará disponible después de desplegar este incremento. Index y scripts del worker se entregan con Cache-Control:no-cache.
+
+Pruebas: `offline-update-browser-test.mjs` reproduce la portada anterior y verifica selector nuevo tras activar, conservación de una corrección local, un registro IndexedDB y la caché anterior; `offline-ui-test.mjs` cubre aviso, activación y carrera installed/waiting. `offline-test.mjs` conserva las pruebas de paquetes completos, fallos, pausa y reutilización. No se afirma haber intervenido en el navegador o Render del usuario.

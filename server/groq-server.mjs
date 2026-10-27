@@ -38,7 +38,7 @@ export async function createAtlasServer({env=process.env,fetchImpl=fetch}={}){
    if(!['GET','HEAD'].includes(req.method))return send(res,405,{error:'Método no permitido.'});
    const name=decodeURIComponent(url.pathname.endsWith('/')?url.pathname+'index.html':url.pathname),candidate=path.resolve(root,'.'+name),resolved=await realpath(candidate);
    if(!resolved.startsWith(path.resolve(root)+path.sep))return send(res,403,{error:'Ruta no permitida.'});
-   const bytes=await readFile(resolved);res.writeHead(200,{'Content-Type':mime[path.extname(resolved)]||'application/octet-stream'});res.end(req.method==='HEAD'?undefined:bytes);
+   const bytes=await readFile(resolved);if(['/index.html','/sw.js','/sw-runtime.js','/actualizar.html'].includes(name))res.setHeader('Cache-Control','no-cache');res.writeHead(200,{'Content-Type':mime[path.extname(resolved)]||'application/octet-stream'});res.end(req.method==='HEAD'?undefined:bytes);
   }catch(e){if(e.code==='EISDIR'){const url=new URL(req.url,'http://localhost');res.writeHead(301,{Location:url.pathname+'/'+url.search});return res.end();}if(e.code==='ENOENT')return send(res,404,{error:'Archivo no encontrado.'});if(e.retryAfterSeconds)res.setHeader('Retry-After',String(e.retryAfterSeconds));send(res,e.status||500,{error:e.status?e.message:'No se pudo procesar la consulta.',...(e.code&&e.status?{code:e.code}:{}),...(e.retryAfterSeconds?{retryAfterSeconds:e.retryAfterSeconds}:{})});}
  });
 }
