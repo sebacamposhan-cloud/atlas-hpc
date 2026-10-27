@@ -5,7 +5,7 @@ services:
     plan: free
     branch: main
     autoDeploy: false
-    buildCommand: node groq-test.mjs && node groq-recovery-test.mjs && node offline-test.mjs && node deployment-assets-test.mjs && node source-contours-test.mjs && node layer-colors-test.mjs && node pisos-test.mjs
+    buildCommand: node groq-test.mjs && node groq-recovery-test.mjs && node offline-test.mjs && node deployment-assets-test.mjs && node source-contours-test.mjs && node layer-colors-test.mjs && node pisos-test.mjs && node work-charts-test.mjs
     startCommand: node server/groq-server.mjs
     healthCheckPath: /healthz
     envVars:

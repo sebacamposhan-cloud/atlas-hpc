@@ -14,7 +14,6 @@ const safeToLeave=()=>window.dispatchEvent(new Event('atlas-before-floor-change'
 function state(home){
  document.body.classList.toggle('floorHome',home);gallery.hidden=!home;$('floorHomeButton').hidden=home;
  $('globalSearch').disabled=home||!ready;$('navToggle').disabled=home||!ready;
- for(const id of ['bottomSearch','bottomLayers','bottomDashboard','bottomLiberacion','bottomDocs'])if($(id))$(id).disabled=home||!ready;
  document.querySelectorAll('button[data-module]').forEach(b=>{b.disabled=(home||!ready)&&b.dataset.module!=='map';if(home){b.classList.toggle('active',b.dataset.module==='map');b.setAttribute('aria-current',b.dataset.module==='map'?'page':'false');}});
  document.querySelector('header .project span').textContent=home?'Explorador de planos':active.nombre+' · Arquitectura';
  document.querySelector('.sideProject small').textContent=home?'Explorador de planos':'Arquitectura · '+active.nombre;
@@ -23,7 +22,7 @@ function state(home){
 }
 function home(push=true){
  if(!safeToLeave())return;
- const alreadyHome=document.body.classList.contains('floorHome');state(true);if(push&&!alreadyHome)history.pushState(null,'',root);
+ const alreadyHome=document.body.classList.contains('floorHome');window.dispatchEvent(new Event('atlas-floor-home'));state(true);if(push&&!alreadyHome)history.pushState(null,'',root);
  $('floorExplorerTitle').tabIndex=-1;$('floorExplorerTitle').focus({preventScroll:true});
 }
 async function openFloor(id,push=true){

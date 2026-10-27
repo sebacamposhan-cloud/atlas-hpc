@@ -16,7 +16,7 @@
 </head>
 <body class="hideLeft hideRight floorHome" data-module="map">
 <div id="atlasUpdateNotice" role="status" hidden><span id="atlasUpdateText"></span><button id="atlasUpdateReview">Revisar actualización</button></div>
-<nav class="appSidebar" aria-label="Módulos Atlas"><div class="sideBrand"><span class="brandMark">A</span><span class="navText"><b>ATLAS HPC</b><small>INGENIERÍA DOCUMENTAL</small></span></div><div class="sideProject"><span class="navText">Hospital Provincia Cordillera<br><small>Arquitectura · Nivel −1</small></span></div><div class="navGroup"><button data-module="work" title="Control de obra"><span class="navIcon">▦</span><span class="navText">Control de obra</span></button><button data-module="map" class="active" title="Explorador de planos"><span class="navIcon">▱</span><span class="navText">Explorador de planos</span></button><button data-module="dashboard" class="" title="Dashboard de recintos"><span class="navIcon">▥</span><span class="navText">Dashboard de recintos</span></button><button data-module="liberacion" class="" title="Liberación de frentes"><span class="navIcon">◐</span><span class="navText">Liberación de frentes</span></button><button data-module="layers" class="" title="Capas y terminaciones"><span class="navIcon">▧</span><span class="navText">Capas y terminaciones</span></button><button data-module="rooms" class="" title="Gestión de recintos"><span class="navIcon">☷</span><span class="navText">Gestión de recintos</span></button><button data-module="docs" class="" title="Documentación y fuentes"><span class="navIcon">▤</span><span class="navText">Documentación y fuentes</span></button></div><div class="sideBottom"><small class="navText">ATLAS 3.0 · incremental<br>Datos documentales · Copia local</small><button id="sidebarCollapse" aria-label="Contraer navegación">⇤</button></div></nav><header>
+<nav class="appSidebar" aria-label="Módulos Atlas"><div class="sideBrand"><span class="brandMark">A</span><span class="navText"><b>ATLAS HPC</b><small>INGENIERÍA DOCUMENTAL</small></span></div><div class="sideProject"><span class="navText">Hospital Provincia Cordillera<br><small>Arquitectura · Nivel −1</small></span></div><div class="navGroup"><button data-module="work" title="Control de obra"><span class="navIcon">▦</span><span class="navText">Control de obra</span></button><button data-module="map" class="active" title="Explorador de planos"><span class="navIcon">▱</span><span class="navText">Explorador de planos</span></button><button data-module="liberacion" class="" title="Liberación de frentes"><span class="navIcon">◐</span><span class="navText">Liberación de frentes</span></button></div><div class="sideBottom"><small class="navText">ATLAS 3.0 · incremental<br>Datos documentales · Copia local</small><button id="sidebarCollapse" aria-label="Contraer navegación">⇤</button></div></nav><header>
 <button id="navToggle" title="Buscar recintos" aria-label="Buscar recintos">⌕</button>
 <div class="brand">
 <b>ATLAS<span>HPC</span>
@@ -93,7 +93,7 @@
   <div id="floorGrid" class="floorGrid"></div>
   <p class="floorFootnote">Planos, recintos y documentación por nivel.</p>
 </section>
-<section id="workspacePanel" hidden aria-label="Espacio de trabajo"></section><main>
+<section id="workspacePanel" hidden aria-label="Espacio de trabajo"></section><aside id="planFilters" hidden aria-labelledby="planFiltersTitle"></aside><main>
 <div class="planheader">
 <div>
 <div class="section-label">HOSPITAL PROVINCIA CORDILLERA</div>
@@ -108,7 +108,7 @@ Ejes A–W · 1–12
 </span>
 <small id="selectedRoomBadge" role="status" hidden></small>
 </div>
-<div class="toolbar">
+<div class="toolbar"><button id="planSettingsOpen" aria-label="Buscar y filtrar en el plano" aria-controls="planFilters" aria-expanded="false" title="Buscar y filtrar en el plano"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><path d="M9 3v6m7 0v6M8 15v6" stroke-width="3"/></svg><span>Filtros</span></button>
 <button id="fit" aria-label="Ver área completa">⌖</button>
 <button id="zoomIn" aria-label="Acercar">＋</button>
 <button id="zoomOut" aria-label="Alejar">−</button>
@@ -203,16 +203,7 @@ Ejes A–W · 1–12
 </aside>
 </div>
 <nav class="bottomNav" aria-label="Navegación del plano">
-<button data-module="work" title="Control de obra"><span>▦</span>Obra</button><button id="bottomMap" class="active">
-<span>⌖</span>Plano</button>
-<button id="bottomSearch">
-<span>☷</span>Recintos</button>
-<button id="bottomOffline" aria-label="Guardar y consultar sin conexión">
-<span aria-hidden="true">↓</span>Sin conexión</button>
-<button id="bottomLayers">
-<span>▱</span>Capas</button>
-<button id="bottomDashboard" data-module="dashboard"><span>▥</span>Dashboard</button><button id="bottomLiberacion" data-module="liberacion"><span>◐</span>Liberación</button><button id="bottomDocs">
-<span>▤</span>Documentos</button>
+<button data-module="work" title="Control de obra"><span>▦</span>Obra</button><button id="bottomMap" class="active"><span>⌖</span>Planos</button><button id="bottomLiberacion" data-module="liberacion"><span>◐</span>Liberación</button><button id="bottomOffline" aria-label="Guardar y consultar sin conexión"><span aria-hidden="true">↓</span>Sin conexión</button>
 </nav>
 <dialog id="modal">
 <button id="closeModal" class="close" aria-label="Cerrar">×</button>
@@ -243,7 +234,7 @@ Ejes A–W · 1–12
   <details class="offlineHelp"><summary>Usarlo en iPhone o iPad</summary>
     <p>Abre este sitio en Safari. En Compartir, elige «Añadir a pantalla de inicio». Abre Atlas desde ese icono y pulsa «Guardar plano y fichas» allí.</p>
     <p>Mantén Atlas abierto durante la descarga. Espera el mensaje «Listo para usar sin conexión» antes de desconectarte.</p>
-    <p>La copia y tus correcciones quedan en este navegador. Si borras sus datos, se pierden ambas. Respalda tus correcciones desde Recintos antes de borrarlos.</p>
+    <p>La copia y tus correcciones quedan en este navegador. Si borras sus datos, se pierden ambas. Respalda tus correcciones desde Filtros del plano → Colores y respaldo antes de borrarlos.</p>
   </details>
 </dialog>
 <noscript><p>Activa JavaScript para consultar los recintos.</p></noscript>
