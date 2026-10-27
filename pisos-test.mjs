@@ -29,6 +29,12 @@ for (const piso of pisos) {
   for (const d of data.documents) assert(atlas.tiles.some(t => t.id === d.id), piso.id + ': lámina sin transformación ' + d.id);
   assert(fs.existsSync('dist/' + map.overview), piso.id + ': falta el plano de fondo');
   for (const o of map.overlays || []) assert(fs.existsSync('dist/' + o.href), piso.id + ': falta la capa ' + o.id);
+  // Capas del dibujo que se pueden apagar (pisos dibujados desde DWG): vista general y cada tesela declarada.
+  if (piso.datos) assert.deepEqual((map.capas || []).map(c => c.id).sort(), ['ejes', 'mobiliario', 'relleno'], piso.id + ': faltan capas del dibujo');
+  for (const c of map.capas || []) {
+    assert(fs.existsSync('dist/' + c.overview), piso.id + ': falta la vista general de ' + c.id);
+    for (const [z, teselas] of Object.entries(c.teselas)) for (const t of teselas) assert(fs.existsSync(`dist/${c.tilePath}${z}/${t}.webp`), `${piso.id}: falta la tesela ${c.id} ${z}/${t}`);
+  }
   assert(map.levels.length && fs.existsSync('dist/' + map.export), piso.id + ': el plano debe tener mosaicos y exportación');
   for (const l of map.levels) for (let y = 0; y < l.rows; y++) for (let x = 0; x < l.columns; x++) assert(fs.existsSync(`dist/${map.tilePath || 'map/'}${l.z}/${x}_${y}.webp`), `${piso.id}: falta la tesela ${l.z}/${x}_${y}`);
   if (piso.datos) {
@@ -41,7 +47,8 @@ for (const piso of pisos) {
     const dentroDe = (p, ring) => { let c = false; for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) { const a = ring[i], b = ring[j]; if ((a[1] > p[1]) !== (b[1] > p[1]) && p[0] < (b[0] - a[0]) * (p[1] - a[1]) / (b[1] - a[1]) + a[0]) c = !c; } return c; };
     for (const r of data.rooms.filter(r => r.diamond_bbox)) { const [x0, y0, x1, y1] = r.diamond_bbox, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, anillo = r.polygon || auxiliar.get(r.id); assert([[cx, y0], [x1, cy], [cx, y1], [x0, cy]].every(p => dentroDe(p, anillo)), piso.id + ': rombo fuera del contorno en ' + r.id); assert(fs.existsSync('dist/' + decodeURIComponent(r.diamond_url)), piso.id + ': falta la imagen del rombo de ' + r.id); }
     // Sin arcos inventados: ningún contorno con tramos curvos largos (muchos segmentos cortos con giro suave seguidos).
-    for (const r of data.rooms.filter(r => r.polygon)) { const p = r.polygon, n = p.length; let seguidos = 0, max = 0; for (let i = 0; i < n; i++) { const a = p[(i - 1 + n) % n], b = p[i], c = p[(i + 1) % n], u = [b[0] - a[0], b[1] - a[1]], v = [c[0] - b[0], c[1] - b[1]], g = Math.abs(Math.atan2(u[0] * v[1] - u[1] * v[0], u[0] * v[0] + u[1] * v[1])); seguidos = Math.hypot(...u) < 50 && Math.hypot(...v) < 50 && g > .03 && g < .7 ? seguidos + 1 : 0; max = Math.max(max, seguidos); } assert(max < 5, piso.id + ': contorno con arco en ' + r.id); }
+    // Los contornos rellenados desde el rótulo (scripts/dwg-plano) siguen el dibujo del DWG: sus curvas son pilares o muros reales.
+    for (const r of data.rooms.filter(r => r.polygon && !/relleno desde el rótulo|Contorno parcial del DWG/.test(r.geometry_method))) { const p = r.polygon, n = p.length; let seguidos = 0, max = 0; for (let i = 0; i < n; i++) { const a = p[(i - 1 + n) % n], b = p[i], c = p[(i + 1) % n], u = [b[0] - a[0], b[1] - a[1]], v = [c[0] - b[0], c[1] - b[1]], g = Math.abs(Math.atan2(u[0] * v[1] - u[1] * v[0], u[0] * v[0] + u[1] * v[1])); seguidos = Math.hypot(...u) < 50 && Math.hypot(...v) < 50 && g > .03 && g < .7 ? seguidos + 1 : 0; max = Math.max(max, seguidos); } assert(max < 5, piso.id + ': contorno con arco en ' + r.id); }
     for (const d of data.documents) assert(fs.existsSync('dist/' + piso.datos + 'geometry/' + d.id + '.json'), piso.id + ': falta geometry/' + d.id);
     assert(new Set(data.rooms.map(r => r.code)).size === data.rooms.length, piso.id + ': códigos repetidos');
   }
