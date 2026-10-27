@@ -29,15 +29,22 @@ assert.throws(() => M.leerItemizado({SheetNames: ['Formulario n°11A'], Sheets: 
 // Enlace recinto → partidas con el PMA real.
 const pma = decodePma(JSON.parse(fs.readFileSync('dist/pma/catalog.json', 'utf8')));
 const n1 = pma.main.filter(r => r.level === 'A-S01');
-const caucho = n1.find(r => r.PAV === '108'), {nodos} = M.nodosRecinto(caucho, items);
+const caucho = n1.find(r => r.PAV === '108' && r.CIE !== '202'), {nodos} = M.nodosRecinto(caucho, items);
 const pav = nodos.find(n => n.id === '6.1.4.6');
 assert.equal(pav.cantidad, M.area(caucho), 'cantidad = superficie del PMA');
 assert.deepEqual(pav.prereq, ['P-NIV-RES'], 'caucho ← nivelación de pavimentos resilientes');
 assert.deepEqual(nodos.find(n => n.id === 'P-NIV-RES').prereq, ['2.6'], 'nivelación ← sobrelosa');
+assert.deepEqual(nodos.find(n => n.id === '2.6').prereq, ['P-SOBRELOSA'], 'sobrelosa ← trabajos previos y reparación de sobrelosa');
 const humedo = n1.find(r => r.CIE === '202' && r.PAV === '101');
 if (humedo) assert.deepEqual(M.nodosRecinto(humedo, items).nodos.find(n => n.id === '6.1.2.1').prereq, ['4.3.1'], 'baldosa en recinto húmedo ← impermeabilización');
+// Decisión 27-10-2026: todo recinto con cielo 202 lleva 4.3.1, también bajo pavimentos resilientes.
+const humedoVinilico = n1.find(r => r.CIE === '202' && ['104', '105', '106', '107', '108'].includes(r.PAV)), nh = M.nodosRecinto(humedoVinilico, items).nodos;
+assert.equal(nh.find(n => n.id === '4.3.1').cantidad, M.area(humedoVinilico), '4.3.1 con la superficie del recinto húmedo');
+assert(nh.some(n => n.tipo === 'partida' && /^6\.1\.4\./.test(n.id) && n.prereq.includes('4.3.1') && n.prereq.includes('P-NIV-RES')), 'vinílico en recinto húmedo ← impermeabilización y nivelación');
+const conPav = n1.filter(r => r.CIE === '202' && M.nodosRecinto(r, items).nodos.some(n => n.id === '2.6'));
+assert.equal(conPav.filter(r => M.nodosRecinto(r, items).nodos.some(n => n.id === '4.3.1')).length, conPav.length, 'todos los recintos con cielo 202 y pavimento llevan 4.3.1');
 const pintado = n1.find(r => ['11', '12'].includes(r.M1)), np = M.nodosRecinto(pintado, items).nodos;
-assert(np.find(n => n.id === '6.2.2').prereq.includes('5.1') && np.find(n => n.id === '5.1').prereq.includes('5.3'), 'pintura ← empaste ← tabique ← sellos');
+assert(np.find(n => n.id === '6.2.2').prereq.includes('5.3') && np.find(n => n.id === '5.3').prereq.includes('5.1') && !np.find(n => n.id === '5.1').prereq.length, 'pintura ← empaste ← sellos ← tabique (inicia la cadena)');
 assert.equal(np.find(n => /^6\.4\.1\./.test(n.id)).cantidad, null, 'muros sin m² por recinto: no se valorizan');
 
 // Reglas del checklist.
@@ -51,7 +58,7 @@ assert.equal(M.validarPartida(pav, v('Aprobado', 100, 'Conforme'), []).length, 0
 
 // Valorización y estados de recinto.
 const reg = {key: M.keyFor(caucho.code), code: caucho.code.trim(), level: 'N-1', version: 1, at: new Date().toISOString(), responsable: 'QA', fecha: '2026-10-27',
-  protocolos: {'P-NIV-RES': {estado: 'Pendiente'}}, partidas: {'6.1.4.6': v('En ejecución', 50), '2.6': v('Aprobado', 100, 'Conforme')}};
+  protocolos: {'P-NIV-RES': {estado: 'Pendiente'}, 'P-SOBRELOSA': {estado: 'Liberado'}}, partidas: {'6.1.4.6': v('En ejecución', 50), '2.6': v('Aprobado', 100, 'Conforme')}};
 assert.deepEqual(M.validarRegistro(reg, nodos), []);
 const rep = M.reporteAvance(pma, items, [reg]), fila = rep.filas.find(f => f.code === caucho.code.trim()), nodo = fila.nodos.find(n => n.id === '6.1.4.6');
 assert.equal(Math.round(nodo.ejecutado), Math.round(M.area(caucho) * .5 * 1000), 'ejecutado = cantidad × % × PU');
@@ -64,6 +71,7 @@ const obs = M.reporteAvance(pma, items, [{...reg, partidas: {...reg.partidas, '6
 assert.equal(obs.filas.find(f => f.code === caucho.code.trim()).estado, 'Observado');
 const rev = M.revision(rep, items);
 assert(rev.sinVinculo.some(x => x.id === '6.5.1.1'), 'puertas sin vínculo por recinto quedan para revisión');
-assert(rev.sinProtocolo.some(x => x.id === '2.6'), 'partidas sin protocolo previo quedan para revisión');
+assert.deepEqual(rev.sinProtocolo, [], 'con la sobrelosa ligada a su protocolo y el tabique como inicio de cadena, ninguna partida queda sin previo');
+assert(M.validarRegistro({...reg, protocolos: {'P-NIV-RES': {estado: 'Pendiente'}}}, nodos).join().includes('no puede quedar aprobada'), 'sobrelosa aprobada exige su protocolo previo liberado');
 console.log(JSON.stringify({checks: 'passed', recintos: rep.filas.length, partidas: rep.partidas.length, valorizables: rep.piso.valorizables,
   scope: 'Itemizado por código ITEM (desordenado, eliminados, títulos, duplicados), enlace recinto → partidas con PMA real, cadena de protocolos, reglas de estado, valorización, estados de recinto y listas de revisión.'}));
