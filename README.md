@@ -24,6 +24,10 @@ Validación de navegación: `PLAYWRIGHT_MODULE=<ruta-a-playwright-core> node flo
 
 Para sumar un piso: extraer su plano a `data/<piso>/`, generar `dist/<piso>/` con un importador como `scripts/import-n02.mjs`, agregar una línea en `dist/pisos.js` y en `otherLevels` de `server/groq-server.mjs`, y ejecutar `node scripts/prepare-offline.mjs` y `node pisos-test.mjs`.
 
+## PMA de terminaciones RevB
+
+Control de obra → **PMA de terminaciones** incorpora los 3.107 registros del Excel, sus revisiones de pavimentos/cielos/muros, filtros, gráficos y detalle con hoja/fila. Las fichas del plano muestran un desplegable PMA para cotejar terminaciones y superficies declaradas. Los conflictos de nivel/eliminación se señalan sin sobrescribir rombos ni contornos. Original intacto, catálogo offline y SQLite documental independiente: [alcance, datos y verificación](docs/PMA_REVB.md).
+
 ## Control de obra y filtros del plano
 
 - **Control de obra** abre por defecto Protocolos de la matriz, con la matriz Excel incorporada. También mantiene Avances y protocolos (registros locales del proyecto completo) y Características del piso (atributos documentales del nivel activo). El antiguo Dashboard deja de ser un apartado principal.

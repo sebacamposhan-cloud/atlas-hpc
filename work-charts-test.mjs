@@ -15,3 +15,5 @@ const empty=workChart({title:'Protocolos',items:[],kind:'pie'},esc);assert.match
 const single=workChart({title:'Protocolos',items:[{key:'<Pendiente>',n:1,color:'#000000'}],kind:'pie',filter:'protocol'},esc);assert.match(single,/<circle/);assert.match(single,/&lt;Pendiente>/);assert(!single.includes('NaN'));assert(single.includes('tabindex="0"'));
 const pie=workChart({title:'Estados',items:model.protocolStates,kind:'pie',filter:'protocol'},esc);assert.match(pie,/<path/);assert(pie.includes('aria-label="Aprobado: 2 registros"'));assert(!pie.includes('100%'));
 console.log('Work charts: unique IDs, latest event, separate dimensions, missing states, real denominators, empty/single/multiple pie, accessible actions and escaped labels passed');
+
+assert(workChart({title:'PMA',items:[],emptyText:'Sin registros para estos filtros.'},s=>String(s)).includes('Sin registros para estos filtros.'));
