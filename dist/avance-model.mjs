@@ -15,7 +15,7 @@ const enCapitulo = (code, caps) => caps.some(c => code === c || code.startsWith(
 // Nombres de respaldo: el checklist funciona aunque el itemizado aún no se haya cargado en el dispositivo.
 export const NOMBRES = {
   '2.6': 'Sobrerradier / sobrelosa para terminación de pisos', '4.3.1': 'Impermeabilización bajo pavimentos de recintos húmedos',
-  '5.1': 'Tabiquería', '5.3': 'Sellos cortafuego', '6.1.2.1': 'Baldosa microvibrada lisa 40x40', '6.1.3.1': 'Porcelanato técnico 60x60',
+  '5.1': 'Tabiquería', '5.3': 'Sellos de juntas y cortafuego', '6.1.2.1': 'Baldosa microvibrada lisa 40x40', '6.1.3.1': 'Porcelanato técnico 60x60',
   '6.1.4.2': 'Pavimento vinílico homogéneo antiestático 2 mm', '6.1.4.3': 'Pavimento vinílico homogéneo 2 mm', '6.1.4.4': 'Pavimento vinílico antideslizante R10 2 mm',
   '6.1.4.5': 'Pavimento vinílico antideslizante clase 3 2,5 mm', '6.1.4.6': 'Pavimento caucho virgen 3 mm', '6.1.5.1': 'Textil flocado 4,3 mm', '6.1.5.2': 'Resina de poliuretano',
   '6.2.2': 'Empaste para terminación de pintura', '6.2.3': 'Porcelanato técnico en muros', '6.2.4': 'Laminado de alta presión (HPL)', '6.2.7': 'Revestimiento acústico de madera',
@@ -38,14 +38,18 @@ const PINTURA_MURO = {BAJA: '6.4.1.1', MEDIA: '6.4.1.2'}, PINTURA_CIELO = {BAJA:
 export const PROTOCOLOS = {
   'P-NIV-RES': {nombre: 'Nivelación de pavimentos resilientes', ref: 'NPPR-TER'},
   'P-SUSTRATO': {nombre: 'Nivelación y humedad del sustrato', ref: 'NPPR-TER'},
-  'P-INST-CIELO': {nombre: 'Instalaciones sobre cielo liberadas', ref: 'MEP (varios)'}
+  'P-INST-CIELO': {nombre: 'Instalaciones sobre cielo liberadas', ref: 'MEP (varios)'},
+  'P-SOBRELOSA': {nombre: 'Trabajos previos y reparación de sobrelosa', ref: 'P23-SOBRELOSA-OG-01'}
 };
-// Tabla de cadena: origen «dada» (indicada en el encargo) o «propuesta» (completada para revisión).
+// Partidas que inician su cadena por decisión de obra: no se listan como «sin protocolo previo».
+export const INICIO_CADENA = new Set(['5.1']);
+// Tabla de cadena: origen «dada» (indicada en el encargo), «decidida» (revisión con obra, 27-10-2026) o «propuesta» (completada para revisión).
 export const CADENA = [
   ['6.1.4.x vinílicos · 6.1.4.6 caucho', 'P-NIV-RES', 'dada'], ['Nivelación de pavimentos resilientes', '2.6', 'dada'],
   ['6.1.5.2 resina PU', 'P-SUSTRATO', 'dada'], ['6.10.2.8 retorno sanitario', '6.1.5.2', 'dada'],
-  ['6.1.2 / 6.1.3 baldosa y porcelanato en recintos húmedos', '4.3.1', 'dada'], ['6.4.1 pintura de muros', '6.2.2', 'dada'],
-  ['6.2.2 empaste', '5.1', 'dada'], ['5.1 tabiquería', '5.3', 'dada'], ['6.3 cielos', 'P-INST-CIELO', 'dada'], ['6.6 quincallería', '6.5', 'dada'],
+  ['Pavimento de todo recinto con cielo húmedo (202)', '4.3.1', 'decidida'], ['6.4.1 pintura de muros', '6.2.2', 'dada'],
+  ['6.2.2 empaste', '5.3', 'decidida'], ['5.3 sellos de juntas', '5.1', 'decidida'], ['5.1 tabiquería (inicia la cadena)', '—', 'decidida'],
+  ['2.6 sobrerradier / sobrelosa', 'P-SOBRELOSA', 'decidida'], ['6.3 cielos', 'P-INST-CIELO', 'dada'], ['6.6 quincallería', '6.5', 'dada'],
   ['Nivelación y humedad del sustrato', '2.6', 'propuesta'], ['4.3.1 impermeabilización', '2.6', 'propuesta'],
   ['6.1.2 / 6.1.3 baldosa y porcelanato en recintos secos', '2.6', 'propuesta'], ['6.1.5.1 textil flocado', 'P-NIV-RES', 'propuesta'],
   ['6.4.3.8 esmalte epóxico de piso', 'P-SUSTRATO', 'propuesta'], ['6.2.3 / 6.2.4 / 6.2.7 revestimientos de muro', '5.1', 'propuesta'],
@@ -68,12 +72,14 @@ export function nodosRecinto(row, items = new Map()) {
   const pav = limpio(row.PAV), cie = limpio(row.CIE), muros = ['M1', 'M2', 'M3', 'M4'].map(k => limpio(row[k])), humedo = cie === CIE_HUMEDO;
   // Pavimento
   if (PAV[pav]) {
-    const id = PAV[pav];
-    partida('2.6', 'Pavimento ' + pav, [], false);
-    if (VINILICOS_CAUCHO.has(pav) || pav === '112') { protocolo('P-NIV-RES', ['2.6']); partida(id, 'Pavimento ' + pav, ['P-NIV-RES']); }
-    else if (pav === '116' || pav === '115') { protocolo('P-SUSTRATO', ['2.6']); partida(id, 'Pavimento ' + pav, ['P-SUSTRATO']); if (pav === '116') partida('6.10.2.8', 'Retorno de resina PU', ['6.1.5.2'], false); }
-    else if (humedo) { partida('4.3.1', 'Recinto húmedo (cielo 202)', ['2.6']); partida(id, 'Pavimento ' + pav, ['4.3.1']); }
-    else partida(id, 'Pavimento ' + pav, ['2.6']);
+    // Todo recinto con cielo húmedo (202) lleva impermeabilización 4.3.1 bajo su pavimento, sea cual sea el pavimento.
+    const id = PAV[pav], impermeable = humedo ? ['4.3.1'] : [];
+    protocolo('P-SOBRELOSA');
+    partida('2.6', 'Pavimento ' + pav, ['P-SOBRELOSA'], false);
+    if (humedo) partida('4.3.1', 'Recinto húmedo (cielo 202)', ['2.6']);
+    if (VINILICOS_CAUCHO.has(pav) || pav === '112') { protocolo('P-NIV-RES', ['2.6']); partida(id, 'Pavimento ' + pav, ['P-NIV-RES', ...impermeable]); }
+    else if (pav === '116' || pav === '115') { protocolo('P-SUSTRATO', ['2.6']); partida(id, 'Pavimento ' + pav, ['P-SUSTRATO', ...impermeable]); if (pav === '116') partida('6.10.2.8', 'Retorno de resina PU', ['6.1.5.2'], false); }
+    else partida(id, 'Pavimento ' + pav, humedo ? impermeable : ['2.6']);
   } else if (pav && !['N/A', '-'].includes(pav)) sinPartida.push('Pavimento ' + pav);
   // Cielo
   if (CIE[cie]) {
@@ -83,14 +89,14 @@ export function nodosRecinto(row, items = new Map()) {
     if (CIE_PINTADO.has(cie)) { if (PINTURA_CIELO[asepsia]) partida(PINTURA_CIELO[asepsia], 'Cielo ' + cie + ' · asepsia ' + asepsia, [id]); else sinPartida.push('Pintura de cielo con asepsia ' + (asepsia || 'sin dato')); }
     if (CIE_CENEFA.has(cie)) partida('6.10.4.2', 'Cenefa de cielo ' + cie, [id], false);
   } else if (cie && !['N/A', '-'].includes(cie)) sinPartida.push('Cielo ' + cie);
-  // Muros: tabique y sellos son la base de cualquier revestimiento o pintura de muro.
+  // Muros: tabique → sellos de juntas → empaste. El tabique es la base de cualquier revestimiento o pintura de muro.
   const conMuro = muros.filter(c => MUROS_PINTURA[c] || MURO_REVESTIMIENTO[c]);
-  if (conMuro.length) { partida('5.3', 'Muros', [], false); partida('5.1', 'Muros', ['5.3'], false); }
+  if (conMuro.length) { partida('5.1', 'Muros', [], false); partida('5.3', 'Muros', ['5.1'], false); }
   for (const c of new Set(muros)) {
     if (MURO_REVESTIMIENTO[c]) partida(MURO_REVESTIMIENTO[c], 'Muro ' + c, ['5.1'], false);
     const pintura = MUROS_PINTURA[c] || (c === '15' ? asepsia : null);
     if (MUROS_PINTURA[c] || c === '15') {
-      partida('6.2.2', 'Muro ' + c, ['5.1'], false);
+      partida('6.2.2', 'Muro ' + c, ['5.3'], false);
       if (PINTURA_MURO[pintura]) partida(PINTURA_MURO[pintura], 'Muro ' + c + ' · asepsia ' + pintura, ['6.2.2'], false);
       else sinPartida.push('Pintura de muro ' + c + ' con asepsia ' + (pintura || 'sin dato'));
     }
@@ -221,7 +227,7 @@ export function leerItemizado(libro, XLSX) {
 // Listas para revisión: partidas del piloto sin cantidad por recinto, sin protocolo previo y terminaciones sin partida.
 export function revision(reporte, items) {
   const generadas = new Map();
-  for (const n of reporte.partidas) { const g = generadas.get(n.item) || {id: n.item, nombre: n.nombre, recintos: 0, sinCantidad: 0, sinProtocolo: !n.prereq.length}; g.recintos++; if (n.cantidad == null) g.sinCantidad++; generadas.set(n.item, g); }
+  for (const n of reporte.partidas) { const g = generadas.get(n.item) || {id: n.item, nombre: n.nombre, recintos: 0, sinCantidad: 0, sinProtocolo: !n.prereq.length && !INICIO_CADENA.has(n.item)}; g.recintos++; if (n.cantidad == null) g.sinCantidad++; generadas.set(n.item, g); }
   const piloto = [...items.values()].filter(i => i.piloto && i.p1 > 0);
   const cubiertas = id => generadas.has(id) || [...generadas.keys()].some(g => id.startsWith(g + '.'));
   return {
