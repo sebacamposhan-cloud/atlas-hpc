@@ -28,6 +28,10 @@ Para sumar un piso: extraer su plano a `data/<piso>/`, generar `dist/<piso>/` co
 
 Control de obra abre el seguimiento de 330 recintos y 1.940 partidas PMA aplicables: instalación, condición, faltantes, observaciones, responsable, fecha e historial. Se registra desde Control o la ficha del plano. Gráficos de instalación, conformidad, avance por partida y pendientes por sector; filtros por asepsia, sector y estado. Datos locales al dispositivo con respaldo/importación y funcionamiento offline. [Alcance y validación](docs/ROOM_PROGRESS.md).
 
+## Avance valorizado por partida · piloto nivel −1
+
+Control de obra → Avance valorizado y la ficha de cada recinto: los 414 recintos A-S01 del PMA RevB reciben sus partidas del itemizado (Formulario n°11A) según terminaciones y asepsia, con cadena de protocolos previos (una partida no se aprueba sin su previo liberado). Estado, %, conformidad, faltantes y observaciones con fecha y autor. Valor ejecutado = superficie PMA × % × precio unitario; totales por partida, recinto, asepsia y piso; cinco gráficos de decisión y capa «Avance de obra» en el plano. El itemizado con precios se carga en el dispositivo y no se publica. [Reglas, cadena, gráficos y listas para revisar](docs/AVANCE_VALORIZADO.md).
+
 ## PMA de terminaciones RevB
 
 Control de obra → **PMA de terminaciones** incorpora los 3.107 registros del Excel, sus revisiones de pavimentos/cielos/muros, filtros, gráficos y detalle con hoja/fila. Las fichas del plano muestran un desplegable PMA para cotejar terminaciones y superficies declaradas. Los conflictos de nivel/eliminación se señalan sin sobrescribir rombos ni contornos. Original intacto, catálogo offline y SQLite documental independiente: [alcance, datos y verificación](docs/PMA_REVB.md).
