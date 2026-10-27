@@ -187,3 +187,9 @@ Nuevo acceso Marcados en el visor: documentos con nombre, autor y propósito obl
 Guardado automático local en IndexedDB con transacciones y control de versión, respaldo/restauración JSON sin sobrescribir conflictos, PDF con plano coloreado/numerado y relación de recintos/metadatos. Instantánea del documento durante la exportación; módulos incluidos en el núcleo offline. La lista reserva una columna derecha en escritorio y una franja inferior en móvil. No modifica bases SQLite, PMA, originales, geometrías ni avance registrado. No hay sincronización compartida. Uso, límites y pruebas en docs/MARKING_DOCUMENTS.md.
 
 Verificado: comando completo de build de Render, pruebas de dominio, Chromium 1440/390 con clics reales y PDF extraído, duplicados, eliminación, persistencia, conflictos, restauración en otro navegador, aislamiento por piso y recarga offline; regresiones de selección/colores, pisos, gestos y recursos protegidos. Publicación por PR a main, sin merge ni despliegue automáticos.
+
+## Protocolos por piso activo
+
+Matriz y críticos quedan acotados al piso de trabajo: −1/S01, 1/N01, 2/N02 y 3/N03. Abiertos como estado inicial; cabeceras, especialidades, tipos, listado y gráficos respetan el piso. Referencias compartidas explícitas identificadas, sin asignar niveles intermedios de un rango ambiguo ni registros sin nivel. Preferencias separadas por piso. Los gráficos de avance siguen independientes.
+
+Se amplía únicamente el catálogo derivado con conteos por nivel/estado/especialidad para mantener la carga diferida por tipo. Las 20.233 filas originales y las bases no cambian. Pruebas contra todas las filas, importación reproducible, cuatro pisos en escritorio/móvil, fechas, navegación a detalle, cambio de estado durante cargas, reintentos y offline. Detalles y cifras en docs/PROTOCOL_FLOORS.md.
