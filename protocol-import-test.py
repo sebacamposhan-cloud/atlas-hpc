@@ -13,7 +13,7 @@ class ProtocolImport(unittest.TestCase):
     return subprocess.run([sys.executable,str(SCRIPT),str(source),str(output)],env={**os.environ,'PYTHONHASHSEED':seed},capture_output=True,text=True)
    first=run(SOURCE);self.assertEqual(first.returncode,0,first.stderr)
    snapshot={str(p.relative_to(output)):hashlib.sha256(p.read_bytes()).hexdigest() for p in output.rglob('*.json')}
-   self.assertEqual(len(snapshot),155)
+   self.assertEqual(len(snapshot),156)
    second=run(SOURCE,'2');self.assertEqual(second.returncode,0,second.stderr)
    self.assertEqual(snapshot,{str(p.relative_to(output)):hashlib.sha256(p.read_bytes()).hexdigest() for p in output.rglob('*.json')})
    corrupt=Path(temporary)/'different-total.xlsx'

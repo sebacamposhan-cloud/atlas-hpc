@@ -148,3 +148,16 @@ Integridad: se mantienen las 17 combinaciones repetidas de código/folio. Tres e
 Pruebas nuevas: lectura independiente SheetJS de todos los campos de las 20.233 filas, conservación byte a byte del original y descarga protegida, agrupación/fechas/duplicados/diferencias, esquema y versión de los detalles y paquetes offline. Python verifica importación reproducible entre semillas distintas y rechazo de totales incompatibles sin alterar derivados existentes. Chromium cubre escritorio/móvil, desplegables, filtros, paginación, ficha, persistencia, descarga, respuesta tardía, reintentos y recarga real sin conexión. Las suites anteriores de gráficos y filtros se adaptan a la nueva vista inicial; fuentes anteriores, runtime, SQLite y geometrías se mantienen.
 
 Actualización mediante importador reproducible y PR a main. No se modifica ni se sincroniza el Excel original desde el navegador; la fuente publicada es una copia documental con fecha de corte. No hay merge ni despliegue automáticos.
+
+
+## Filtros de fechas y análisis de protocolos críticos
+
+Se incorporan filtros inclusivos de elaboración/cierre, vista Pendiente de cierre como alias explícito de ABIERTO y grupo Cerrados incluyendo autocontrol. Se conserva el estado original, la opción de cierre por autocontrol y los nulos. Selección, intervalo y criterio de criticidad se recuerdan en la consulta.
+
+Nueva vista interna de Control de obra: Protocolos críticos. Regla: estado abierto, elaboración válida, campo de cierre vacío y fecha de evaluación estrictamente posterior al primer aniversario calendario. Para 29 de febrero, el aniversario en año no bisiesto se toma el 28; solo el día posterior cumple «más de». Cerrados, autocontrol y nulos no se clasifican críticos; campos de cierre en conflicto y fechas ausentes/inválidas tampoco se suponen abiertos antiguos. Se mantienen los datos originales.
+
+El índice compacto contiene solo las 5.678 filas abiertas con los campos necesarios; no se cargan los 154 detalles completos para construir el gráfico. Estado al corte de fuente (26-10-2026) y fecha de evaluación están visibles. Hoy usa America/Santiago y se actualiza al reabrir/retomar la vista; las fechas elegidas explícitamente se conservan. Barras de los diez procesos con más críticos, torta de tramos y tabla paginada enlazan a los registros originales, transmitiendo fecha, filtros y fila seleccionada. No hay reescrituras de Excel ni mezcla con la aprobación técnica local.
+
+Verificación independiente sobre el XML original y tests: al 27-10-2026 hay 2.045 críticos, 1.495 abiertos sin elaboración válida y cero conflictos de cierre entre los abiertos; 1.758 en más de 1 y hasta 2 años, 286 en más de 2 y hasta 3, uno en más de 3 años. Los 38 valores de elaboración formados por espacios se tratan como fecha ausente y no como fechas antiguas.
+
+Validación: 25 suites Node, importación reproducible Python, Chromium escritorio/móvil, igualdad/umbral de un año, bisiestos, cambios de día en Chile, cierres excluidos, fechas inclusivas, rangos inválidos, gráficos a filas originales, criterio persistido, reintento y recarga offline. Los originales, SQLite, geometrías y las 154 colecciones de detalle se conservan. Nueva salida derivada open-aging.json y módulos en el manifiesto offline; sin merge/despliegue automáticos.

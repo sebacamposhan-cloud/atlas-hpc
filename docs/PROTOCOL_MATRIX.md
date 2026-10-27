@@ -52,6 +52,7 @@ Hay 17 combinaciones repetidas de código/folio y una fila sin especialidad docu
 `scripts/import-protocol-matrix.py` utiliza ZIP/XML de la biblioteca estándar de Python, verifica cabeceras y totales antes de escribir y extrae valores guardados. No ejecuta fórmulas, macros, vínculos ni instrucciones dentro del documento. No modifica el original ni las bases SQLite.
 
 - `dist/protocols/catalog.json`: índice, procedencia, agrupaciones, recuentos y diferencias.
+- `dist/protocols/open-aging.json`: índice compacto de abiertos para antigüedad; conserva fechas/estados raw y apunta a su código y fila.
 - `dist/protocols/registers/protocol-*.json`: 154 conjuntos por código, con strings agrupados y las filas originales.
 - `protocol-model.mjs`: decodificación con validación de versión/esquema, filtros, fechas y paginación.
 - `protocol-catalog.mjs`: paneles, selección, carga bajo demanda, caché limitada, reintentos y protección frente a respuestas tardías.
@@ -75,3 +76,5 @@ La regeneración no incluye fecha de ejecución y usa orden determinista. Las sa
 `protocol-import-test.py` verifica repetibilidad con dos semillas de hash y que un total incompatible no modifique derivados válidos.
 
 `protocol-matrix-browser-test.mjs` usa Node protegido y Chromium real en escritorio/móvil: carga diferida, desplegables/paneles, filtros, ficha inline, paginación, persistencia sin sobrescribir datos locales, resultados vacíos, descarga, reintentos, respuesta atrasada y recarga con el service worker activo y red deshabilitada. Las capturas muestran registros reales del archivo; los únicos registros de prueba locales quedan aislados en el contexto del navegador y no se incorporan al programa.
+
+Filtros de fechas y análisis posterior: [CRITICAL_PROTOCOLS.md](CRITICAL_PROTOCOLS.md).

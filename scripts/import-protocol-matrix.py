@@ -91,7 +91,19 @@ def import_matrix(source,output):
             protocols.append({'id':entry['id'],'code':code,'name':names[0],'names':names,'rawCodes':sorted(entry['rawCodes']),'specialtyIds':sorted(entry['specialtyIds']),'count':entry['count'],'states':dict(sorted(entry['states'].items())),'levels':dict(sorted(entry['levels'].items())),'file':path})
         groups=[{**g,'variants':sorted(g['variants']),'typeIds':sorted(g['typeIds'])} for g in specialties.values()];groups.sort(key=lambda g:normalized(g['name']))
         audit={'statusWhitespace':whitespace,'duplicateFolios':duplicates,'missingSpecialtyRows':[row for row,v in data if not (v[1] or '').strip()],'missingIssueDate':sum(not v[9] for row,v in data),'missingCloseDate':sum(not v[12] for row,v in data),'rawStates':dict(sorted(raw_states.items())),'declaredStates':declared,'declaredTotal':declared_total,'calculatedStates':dict(sorted(clean_states.items())),'differences':{state:clean_states[state]-declared.get(state,0) for state in sorted(set(clean_states)|set(declared)) if clean_states[state]!=declared.get(state,0)}}
-        catalog={'schema':1,'source':{'filename':'matriz-control-protocolos-rev1-hpc.xlsx','originalName':'Matriz Control De Protocolos REV1 - HPC.xlsx','sha256':digest,'bytes':source.stat().st_size,'revision':'REV1 (nombre del archivo)','cutoff':cutoff_date,'date1904':date1904,'registrySheet':registry['name'],'registrySheetId':registry['id'],'summarySheet':summary['name'],'summaryTotalRow':total_row[0],'columns':dict(zip(FIELDS,HEADERS)),'formulaColumns':sorted(formula_columns),'valueMode':'Valores guardados en el Excel; no se ejecutan ni recalculan fórmulas.'},'totalRecords':len(data),'totalTypes':len(protocols),'specialties':groups,'types':protocols,'audit':audit,'sheets':[{'name':s['name'],'state':s['state'],'imported':s['name'] in [registry['name'],summary['name']]} for s in sheets]}
+        aging_fields=['sourceRow','typeId','code','folio','level','receiver','issued','closedDate','state']
+        aging_strings=[];aging_lookup={}
+        def aging_value(value):
+            if value is None:return None
+            if value not in aging_lookup:aging_lookup[value]=len(aging_strings);aging_strings.append(value)
+            return aging_lookup[value]
+        aging_rows=[]
+        for row,v in data:
+            if (v[15] or '').strip() not in ['ABIERTO','PENDIENTE']:continue
+            values=[ident('protocol',v[3].strip()),v[3],v[4],v[6],v[14],v[9],v[12],v[15]]
+            aging_rows.append([row,*[aging_value(value) for value in values]])
+        write(output/'open-aging.json',{'schema':1,'sourceSha256':digest,'fields':aging_fields,'strings':aging_strings,'rows':aging_rows})
+        catalog={'schema':1,'source':{'filename':'matriz-control-protocolos-rev1-hpc.xlsx','originalName':'Matriz Control De Protocolos REV1 - HPC.xlsx','sha256':digest,'bytes':source.stat().st_size,'revision':'REV1 (nombre del archivo)','cutoff':cutoff_date,'date1904':date1904,'registrySheet':registry['name'],'registrySheetId':registry['id'],'summarySheet':summary['name'],'summaryTotalRow':total_row[0],'columns':dict(zip(FIELDS,HEADERS)),'formulaColumns':sorted(formula_columns),'valueMode':'Valores guardados en el Excel; no se ejecutan ni recalculan fórmulas.'},'aging':{'file':'open-aging.json','count':len(aging_rows)},'totalRecords':len(data),'totalTypes':len(protocols),'specialties':groups,'types':protocols,'audit':audit,'sheets':[{'name':s['name'],'state':s['state'],'imported':s['name'] in [registry['name'],summary['name']]} for s in sheets]}
         write(output/'catalog.json',catalog)
         valid={p['file'].split('/')[-1] for p in protocols}
         for old in (output/'registers').glob('protocol-*.json'):
