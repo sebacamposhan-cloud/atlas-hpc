@@ -33,6 +33,13 @@ Validación de navegación: `PLAYWRIGHT_MODULE=<ruta-a-playwright-core> node flo
 
 Para sumar un piso desde sus láminas DWG, sigue `scripts/dwg-plano/LEEME.md` (extraer, recintos, mosaicos e `scripts/import-dwg.mjs`). Después agrega una línea en `dist/pisos.js`, en `otherLevels` de `server/groq-server.mjs` y en `pmaLevels` de `dist/pma-model.mjs`, y ejecuta `node scripts/prepare-offline.mjs` y `node pisos-test.mjs`.
 
+## Observaciones en terreno con fotos
+
+Desde la ficha de cualquier recinto, «+ Observación con foto» abre la cámara del celular (solo cámara, fotos tomadas en el lugar) y registra qué se observa, terminación, categoría, prioridad, responsable y plazo. Tocando el recinto se ven sus observaciones con las miniaturas de sus fotos.
+- **Seguimiento:** Abierta → En corrección → Corregida (con foto «después» o comentario) → Cerrada, con historial completo.
+- **Control de obra → Observaciones en terreno:** pendientes, vencidas, corregidas por verificar y cierres, pendientes por responsable, filtros, capa del plano y respaldo JSON para llevarlas a otro equipo.
+- **Datos locales al equipo**, sin sincronización entre usuarios. [Uso y límites](docs/OBSERVACIONES_TERRENO.md).
+
 ## Avance por recinto · piloto nivel −1
 
 Control de obra → **Avance por recinto** sigue 330 recintos y 1.940 partidas PMA aplicables: instalación, condición, faltantes, observaciones, responsable, fecha e historial. Se registra desde Control o la ficha del plano. Gráficos de instalación, conformidad, avance por partida y pendientes por sector; filtros por asepsia, sector y estado. Datos locales al dispositivo con respaldo/importación y funcionamiento offline. [Alcance y validación](docs/ROOM_PROGRESS.md).
@@ -160,9 +167,13 @@ HTML/CSS/JS y datos estáticos en dist; configuración en .openai/hosting.json. 
 Después de cambiar datos, ejecutar `node scripts/prepare-runtime.mjs`. Los iconos PNG se generan con `node scripts/prepare-icons.mjs`. Después de cualquier cambio en dist, ejecutar `node scripts/prepare-offline.mjs` para renovar las huellas y la versión del paquete offline, y después `node offline-test.mjs` para comprobar que el manifiesto coincide con los archivos publicados.
 
 
-### Documentos de marcado en Arquitectura
+### Proyectos (documentos de marcado) en Arquitectura
 
-En el visor, **Marcados → Nuevo documento** exige nombre, autor y propósito. Tocar un recinto lo pinta y añade su número y código a la lista exterior al plano (derecha en escritorio, debajo en móvil). Los números se conservan al quitar recintos. Documentos independientes por piso, color editable, PDF con plano/listado/metadatos y respaldo JSON. Guardado local en IndexedDB; no hay sincronización entre dispositivos. Buscar un código acerca el plano sin marcarlo. Detalles y pruebas: [docs/MARKING_DOCUMENTS.md](docs/MARKING_DOCUMENTS.md).
+**Proyectos** parte de cualquier piso para pintar recintos de interés con una **leyenda de estados** (por ejemplo, Pendiente → En ejecución → Terminado para un levantamiento de pisos vinílicos), con conteo y m² por estado. Se guardan **cortes con fecha** (por ejemplo, cierre de mes) y se comparan de dos maneras:
+- en el plano, recintos que avanzaron, siguieron igual o retrocedieron, con una tabla por estado;
+- **lado a lado**, los dos cortes sobre la vista general del plano.
+
+En el visor, **Proyectos → Nuevo proyecto** exige nombre, autor y propósito. Tocar un recinto lo pinta y añade su número y código a la lista exterior al plano (derecha en escritorio, debajo en móvil). Los números se conservan al quitar recintos. Documentos independientes por piso, color editable, PDF con plano/listado/metadatos y respaldo JSON. Guardado local en IndexedDB; no hay sincronización entre dispositivos. Buscar un código acerca el plano sin marcarlo. Detalles y pruebas: [docs/MARKING_DOCUMENTS.md](docs/MARKING_DOCUMENTS.md).
 
 ### Protocolos del piso activo
 

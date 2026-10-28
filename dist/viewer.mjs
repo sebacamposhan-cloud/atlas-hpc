@@ -46,3 +46,4 @@ export function updateTiles(){clearTimeout(tileTimer);tileTimer=0;if(!map||!svg|
 }
 window.addEventListener('online',updateTiles);
 export function exportMapURL(){return map.export;}
+export function mapa(){return map;}
