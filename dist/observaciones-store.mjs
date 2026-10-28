@@ -36,6 +36,9 @@ const todos = req => new Promise((resolve, reject) => { req.onsuccess = () => re
 export function leerObservaciones(level) {
   return transaccion('readonly', ['observaciones'], async (s, listo) => { listo(await todos(level ? s.observaciones.index('level').getAll(level) : s.observaciones.getAll())); });
 }
+export function leerObservacion(id) {
+  return transaccion('readonly', ['observaciones'], async (s, listo) => { listo(await todos(s.observaciones.get(id))); });
+}
 export function leerHistorial(obsId) {
   return transaccion('readonly', ['historial'], async (s, listo) => { listo((await todos(s.historial.index('obsId').getAll(obsId))).sort((a, b) => a.at.localeCompare(b.at))); });
 }
