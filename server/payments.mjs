@@ -29,6 +29,7 @@ export async function createPayments(env){
    }
    const token=(req.headers['x-payment-session']||''),user=sessions.get(token);if(!user)return send(401,{error:'Inicia sesión en Estados de pago'});
    if(url.pathname==='/api/payments/logout'&&req.method==='POST'){sessions.delete(token);return send(200,{ok:true});}
+   if(url.pathname==='/api/payments/history'&&req.method==='GET')return send(200,{history:db.prepare('SELECT data FROM audit WHERE payment_id=? ORDER BY id DESC').all(url.searchParams.get('id')||'').map(r=>JSON.parse(r.data))});
    if(url.pathname==='/api/payments'&&req.method==='GET')return send(200,{user:{username:user.username,role:user.role},contractors:paymentContractors,payments:db.prepare('SELECT data FROM payments ORDER BY rowid DESC').all().map(r=>JSON.parse(r.data))});
    if(url.pathname==='/api/payments'&&req.method==='POST'){
     const b=await input();validatePlan(b.plan);const text=(v,max=500)=>typeof v==='string'&&v.trim()&&v.length<=max;
