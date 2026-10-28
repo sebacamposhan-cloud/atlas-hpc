@@ -1,6 +1,6 @@
 -- Atlas · Proyectos y observaciones en terreno (con fotos) compartidos en la nube.
 -- Ejecutar en Supabase → SQL Editor → New query → pegar todo → Run. Se puede volver a ejecutar sin perder datos.
--- Usa las mismas cuentas de Supabase Auth que Estados de pago; el acceso se da con app_metadata.campo_role = 'editor' o 'lector'.
+-- Usa las cuentas personales de Supabase Auth de Atlas; el acceso se da con app_metadata.campo_role = 'editor' o 'lector'.
 -- No usa la clave service_role: las lecturas pasan por RLS y las escrituras por guardar_atlas_campo, con control de versión.
 
 create table if not exists public.atlas_campo(

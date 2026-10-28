@@ -43,7 +43,7 @@ Desde la ficha de cualquier recinto, «+ Observación con foto» abre la cámara
 
 ## Nube de proyectos y observaciones
 
-Botón **Nube** en la cabecera: con la cuenta personal de Atlas (Supabase, la misma de Estados de pago) los proyectos y las observaciones con fotos se sincronizan entre equipos y no se pierden al cerrar la app ni al actualizar el código. Sin red todo sigue guardándose en el equipo y se sube después. Activación (SQL, permisos y Render) y reglas de conflicto: [docs/NUBE_CAMPO.md](docs/NUBE_CAMPO.md).
+Botón **Nube** en la cabecera: con la cuenta personal de Atlas (Supabase) los proyectos y las observaciones con fotos se sincronizan entre equipos y no se pierden al cerrar la app ni al actualizar el código. Sin red todo sigue guardándose en el equipo y se sube después. Activación (SQL, permisos y Render) y reglas de conflicto: [docs/NUBE_CAMPO.md](docs/NUBE_CAMPO.md).
 
 ## Avance por recinto · piloto nivel −1
 
@@ -59,7 +59,7 @@ Control de obra → **PMA de terminaciones** incorpora los 3.107 registros del E
 
 ## Control de obra y filtros del plano
 
-- **Control de obra** abre por defecto Protocolos de la matriz, con la matriz Excel incorporada. Ese panel junta dos vistas, **Matriz** y **Críticos · más de un año**. **Avance por recinto** junta **Por recinto** y, en el nivel −1, **Avance valorizado**. También mantiene Características del piso (atributos documentales del nivel activo). El panel Avances y protocolos se retiró; sus registros locales no se borran. El antiguo Dashboard deja de ser un apartado principal.
+- **Control de obra** abre por defecto Protocolos de la matriz, con la matriz Excel incorporada. Ese panel junta dos vistas, **Matriz** y **Críticos · más de un año**. **Avance por recinto** junta **Por recinto** y, en el nivel −1, **Avance valorizado**. El panel Avances y protocolos se retiró; sus registros locales no se borran. Características del piso también se retiró (28 de octubre de 2026, decisión del jefe de producción); los atributos documentales del piso siguen en el plano desde **Filtros**. Estados de pago se eliminó de la app el mismo día: es información sensible y sujeta a negociación, y no debe estar donde entra todo el personal de terreno. Detalle en [docs/PAYMENTS.md](docs/PAYMENTS.md). El antiguo Dashboard deja de ser un apartado principal.
 - Los gráficos de torta muestran estados técnicos y cierres administrativos de los protocolos registrados. Las barras muestran zonas y su último estado por dimensión. Seleccionar un estado consulta sus registros. Sin datos se muestra «Sin registros»; no se calcula avance de producción ni cumplimiento contra un total no documentado.
 - **Filtros**, en la barra derecha del visor, permite buscar recintos y categorías, sumar categorías dentro de una familia y cruzarlas con otras familias, asepsia, sector o revisión. Se mantiene el zoom mientras se ajustan filtros; el panel conserva la selección al cerrarlo y abrirlo de nuevo. En móvil se adapta a un panel compacto.
 - Gestión de recintos y Documentación y fuentes dejan de aparecer en la navegación. Las fichas conservan sus referencias; los respaldos están disponibles desde Filtros → Colores y respaldo. Los enlaces anteriores por módulo siguen siendo compatibles.

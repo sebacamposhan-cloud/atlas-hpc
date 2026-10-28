@@ -1,4 +1,4 @@
-// Nube de proyectos y observaciones en terreno: mismo proyecto Supabase y cuentas que Estados de pago (supabase/campo.sql).
+// Nube de proyectos y observaciones en terreno: proyecto Supabase con cuentas personales de Atlas (supabase/campo.sql).
 // El servidor solo reenvía con la sesión de cada usuario; Supabase aplica RLS y el control de versión. No usa la clave service_role.
 const ID = /^[A-Za-z0-9_-]{1,100}$/, DESDE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
 const BUCKET = 'atlas-campo', MAX_JSON = 2500000, MAX_FOTO = 5242880, PAGINA = 500, CAMPOS = 'tipo,id,version,data,updated_at,updated_by';
