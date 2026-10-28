@@ -2,13 +2,12 @@
 
 Los **proyectos** (recintos pintados por estado, con cortes) y las **observaciones en terreno con fotos** se guardan primero en el equipo (IndexedDB) y, con la sesión de **Nube** iniciada, se sincronizan con Supabase. Así no se pierden al cerrar la app, al actualizar el código ni al cambiar de celular, y todos los equipos ven lo mismo.
 
-Usa el mismo proyecto Supabase y las mismas cuentas personales que Estados de pago ([PAYMENTS_SUPABASE.md](PAYMENTS_SUPABASE.md)). No usa la clave `service_role`.
+Usa un proyecto Supabase con cuentas personales (es el mismo proyecto que usaba el antiguo módulo Estados de pago, retirado el 28 de octubre de 2026). No usa la clave `service_role`.
 
 ## Activación (una vez)
 
 1. **Supabase → SQL Editor → New query**. Pegar el contenido completo de [`supabase/campo.sql`](../supabase/campo.sql) y apretar **Run**. Si Supabase advierte de operaciones destructivas, es por los `drop policy if exists`: confirmar. Debe terminar en *Success. No rows returned*. Se puede volver a ejecutar sin perder datos.
-   - No hace falta volver a ejecutar `supabase/payments.sql` si Estados de pago ya funciona.
-2. **Cuentas:** cada persona necesita un usuario en **Authentication → Users → Add user → Create new user** (correo y contraseña, *Auto Confirm User*). Si ya tiene cuenta para Estados de pago, sirve la misma. Las contraseñas se entregan por un medio privado, nunca por el chat ni en el repositorio.
+2. **Cuentas:** cada persona necesita un usuario en **Authentication → Users → Add user → Create new user** (correo y contraseña, *Auto Confirm User*). Si ya tenía cuenta de Atlas en ese proyecto, sirve la misma. Las contraseñas se entregan por un medio privado, nunca por el chat ni en el repositorio.
 3. **Permiso:** en SQL Editor, por cada persona (cambiar el correo):
 
    ```sql
@@ -16,7 +15,7 @@ Usa el mismo proyecto Supabase y las mismas cuentas personales que Estados de pa
    ```
 
    `editor` registra y edita; `lector` solo ve (por ejemplo, para revisar sin modificar). Quien ya tenía sesión abierta debe cerrarla y volver a entrar para tomar el permiso.
-4. **Render → Environment:** `SUPABASE_URL` (Project URL) y `SUPABASE_ANON_KEY` (clave *anon public*, legacy). Si Estados de pago ya usa Supabase, ya están. Nunca la clave `service_role` ni la contraseña de la base.
+4. **Render → Environment:** `SUPABASE_URL` (Project URL) y `SUPABASE_ANON_KEY` (clave *anon public*, legacy). Si ya estaban configuradas, se mantienen. Nunca la clave `service_role` ni la contraseña de la base.
 5. Fusionar la rama y hacer **Manual Deploy** en Render.
 
 ## Uso

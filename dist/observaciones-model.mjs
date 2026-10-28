@@ -70,6 +70,23 @@ export function entrada(obsId, autor, accion, detalle, comentario = '', at = new
   return {id, obsId, at, autor: String(autor).trim(), accion, detalle, comentario: String(comentario || '').trim()};
 }
 
+// A conversation entry is a versioned update, even when the observation's state is unchanged.
+// Photos keep their existing before/after meaning and travel through the same atomic store/cloud package.
+export function registrarSeguimiento(o, {autor, comentario = '', estado = null, fotos = [], at = new Date().toISOString()} = {}) {
+  if (!texto(autor || '', 160)) throw Error('Indica quién hace este cambio.');
+  if (typeof comentario !== 'string' || comentario.length > 2000) throw Error('El comentario admite hasta 2.000 caracteres.');
+  const nota = comentario.trim(), cambia = estado && estado !== o.estado;
+  if (!cambia && !nota && !fotos.length) throw Error('Escribe un comentario, agrega una foto o selecciona un estado.');
+  const base = {...o, fotos: [...o.fotos, ...fotos], actualizada: at};
+  const cambio = cambia ? cambiarEstado(base, estado, {autor, comentario: nota, at}) : null;
+  const observacion = cambio?.observacion || validarObservacion({...base, version: o.version + 1});
+  const historial = [];
+  if (cambio) historial.push(cambio.historial);
+  else if (nota) historial.push(entrada(o.id, autor, 'comentario', 'Añadió un comentario', nota, at));
+  if (fotos.length) historial.push({...entrada(o.id, autor, 'foto', `Agregó ${fotos.length} foto${fotos.length === 1 ? '' : 's'}`, '', at), fotoIds: fotos.map(f => f.id)});
+  return {observacion, historial};
+}
+
 // El plazo es para corregir: una observación ya corregida (por verificar) no cuenta como vencida.
 export const vencida = (o, hoy) => (o.estado === 'Abierta' || o.estado === 'En corrección') && !!o.plazo && o.plazo < hoy;
 const dias = (a, b) => (Date.parse(b) - Date.parse(a)) / 864e5;

@@ -1,15 +1,18 @@
-# Estados de pago
+# Estados de pago (retirado)
 
-**Opción recomendada para Render Free:** seguir [PAYMENTS_SUPABASE.md](PAYMENTS_SUPABASE.md). La configuración de disco descrita debajo es una alternativa local; no hace falta contratarla para usar Supabase.
+El 28 de octubre de 2026, por decisión del jefe de producción, Estados de pago se eliminó de Atlas. Los estados de pago son información sensible y sujeta a cambios de negociación, y no deben estar en una app donde entra todo el personal de terreno.
 
-Control de obra → Estados de pago abre un acceso individual adicional. Las cuentas autorizadas comparten los registros. Roles `editor` (crear/editar) y `approver` (también aprobar o modificar aprobados). Montos enteros CLP; retención es un monto, no un porcentaje. Los impuestos no se calculan automáticamente.
+## Qué se retiró
 
-## Configuración en Render
+- La tarjeta «Estados de pago» de Control de obra.
+- La página `payments.html` y sus módulos (`payments.mjs`, `payment-plan.mjs`, `payment-calculation.mjs`).
+- La API `/api/payments` del servidor (`server/payments.mjs`, `server/payments-supabase.mjs`, `server/payment-contractors.mjs`). Ahora responde «Ruta no disponible».
+- El script `scripts/payment-user.mjs`, las pruebas de pagos, los SQL `supabase/payments.sql` y `supabase/price-catalog-setup.sql`, y las guías `PAYMENTS_SUPABASE.md`, `PRICE_CATALOG.md` y `PAYMENT_PLANS.md`.
 
-1. Requiere servicio con **disco persistente** montado en `/var/data` (el plan gratuito actual no ofrece ese disco). Alternativamente se necesita adaptar este módulo a una base externa antes de activarlo.
-2. En Environment añadir `PAYMENTS_DB_PATH=/var/data/payments.sqlite`.
-3. Crear un hash por persona en un equipo seguro usando Node 24: `node scripts/payment-user.mjs nombre editor < /ruta/privada/password.txt` (o `approver`). El archivo privado debe contener una contraseña de al menos 12 caracteres; eliminarlo de forma adecuada después. Nunca guardarlo en el repositorio. Guardar únicamente `{username,role,hash}` por persona en un array JSON en la variable secreta `PAYMENTS_USERS_JSON` de Render. Roles válidos: `editor`, `approver`. Usar contraseñas largas y únicas. No publicar ese JSON ni enviar contraseñas al chat.
-4. Publicar main. Sin ambas variables, la API responde 503 y no guarda datos en disco efímero. Cambiar/quitar usuarios requiere reiniciar el servicio y cierra todas las sesiones. No hay autorregistro ni recuperación por correo.
-5. Configurar respaldo externo del disco/base y verificar restauración antes del uso real financiero. La base contiene registros e historial de cada versión; no hay borrado desde la interfaz.
+Todo sigue en el historial de git, en el commit anterior a este retiro.
 
-La clave general de Atlas sigue siendo necesaria; cada persona se identifica además en pagos. Sesiones de una hora, conservadas solo en memoria del servidor y de la pestaña; reiniciar, cerrar pestaña o recargar exige entrar otra vez. Sin modo offline para pagos. La API exige sesión para leer y escribir. Los hashes y la base están fuera de `dist`; no se incluyen en el paquete offline. Las sesiones no se guardan en localStorage. El historial conserva autor, fecha y versión en servidor; todavía no tiene pantalla de consulta.
+## Qué no se tocó
+
+- **Datos en Supabase.** Las tablas `atlas_payments`, `atlas_payment_audit` y `atlas_price_items`, y las funciones `save_atlas_payment` e `import_atlas_prices`, siguen en el proyecto. Si se quieren eliminar, primero hay que exportarlas y luego borrarlas desde el SQL Editor de Supabase. Lo decide y lo hace el responsable del proyecto.
+- **Cuentas.** Las cuentas personales siguen sirviendo para la Nube (permiso `campo_role`). El permiso `payments_role` ya no tiene uso y se puede quitar.
+- **Render.** Si existen las variables `PAYMENTS_DB_PATH` o `PAYMENTS_USERS_JSON`, ya no se usan y se pueden borrar. `SUPABASE_URL` y `SUPABASE_ANON_KEY` se mantienen, porque las usa la Nube.

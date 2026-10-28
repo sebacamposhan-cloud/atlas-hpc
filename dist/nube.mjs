@@ -1,4 +1,4 @@
-// Nube: sesión con la cuenta de Atlas (Supabase, la misma de Estados de pago) y sincronización de proyectos y observaciones
+// Nube: sesión con la cuenta personal de Atlas (Supabase) y sincronización de proyectos y observaciones
 // con fotos entre equipos. Sin conexión todo sigue guardándose en este equipo; se sincroniza al volver la señal,
 // después de cada guardado y cada 3 minutos con la app abierta.
 import {crearSincronizador} from './nube-sync.mjs';
