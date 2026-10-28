@@ -1,3 +1,4 @@
+import {paymentContractors} from './payment-contractors.mjs';
 import {scryptSync,randomBytes,timingSafeEqual,randomUUID} from 'node:crypto';
 import path from 'node:path';
 export function passwordHash(password,salt=randomBytes(16).toString('hex')){return salt+':'+scryptSync(password,salt,64).toString('hex');}
@@ -24,7 +25,7 @@ export async function createPayments(env){
    }
    const token=(req.headers['x-payment-session']||''),user=sessions.get(token);if(!user)return send(401,{error:'Inicia sesión en Estados de pago'});
    if(url.pathname==='/api/payments/logout'&&req.method==='POST'){sessions.delete(token);return send(200,{ok:true});}
-   if(url.pathname==='/api/payments'&&req.method==='GET')return send(200,{user:{username:user.username,role:user.role},payments:db.prepare('SELECT data FROM payments ORDER BY rowid DESC').all().map(r=>JSON.parse(r.data))});
+   if(url.pathname==='/api/payments'&&req.method==='GET')return send(200,{user:{username:user.username,role:user.role},contractors:paymentContractors,payments:db.prepare('SELECT data FROM payments ORDER BY rowid DESC').all().map(r=>JSON.parse(r.data))});
    if(url.pathname==='/api/payments'&&req.method==='POST'){
     const b=await input();const text=(v,max=500)=>typeof v==='string'&&v.trim()&&v.length<=max;
     if(!text(b.contractor)||!/^\d{4}-(0[1-9]|1[0-2])$/.test(b.period)||!Array.isArray(b.items)||!b.items.length||b.items.length>100||b.items.some(i=>!text(i.description)||!Number.isSafeInteger(i.amount)||i.amount<0)||!Number.isSafeInteger(b.retention)||b.retention<0||!['Borrador','En revisión','Aprobado','Rechazado'].includes(b.status))return send(400,{error:'Revisa contratista, período, partidas, montos enteros CLP, retención y estado'});
