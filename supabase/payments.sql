@@ -20,16 +20,22 @@ begin
  if jsonb_array_length(payload->'items') not between 1 and 100 or coalesce(payload->>'status','') not in ('Borrador','En revisión','Aprobado','Rechazado') then raise exception 'Invalid items or state'; end if;
  for item in select * from jsonb_array_elements(payload->'items') loop
   if length(trim(coalesce(item->>'description',''))) not between 1 and 500 or coalesce(item->>'amount','') !~ '^\d+$' then raise exception 'Invalid item'; end if;
+  if item ? 'quantity' then
+   if (item->>'quantity')::numeric<0 or (item->>'unitPrice')::numeric<0 or (item->>'amount')::numeric<>round((item->>'quantity')::numeric*(item->>'unitPrice')::numeric) then raise exception 'Invalid quantity amount';end if;
+  end if;
   total := total+(item->>'amount')::numeric;
  end loop;
  if coalesce(payload->>'retention','') !~ '^\d+$' then raise exception 'Invalid retention'; end if;
  retention := (payload->>'retention')::numeric;
+ if payload ? 'retentionPercent' then
+ if (payload->>'retentionPercent')::numeric not between 0 and 100 or retention<>round(total*(payload->>'retentionPercent')::numeric/100) then raise exception 'Invalid retention percent';end if;
+ end if;
  if total>9007199254740991 or retention>total then raise exception 'Invalid total'; end if;
  select data into previous from public.atlas_payments where id=pid for update;
  if payload->>'id' is not null and previous is null then raise exception 'Unknown payment'; end if;
  if previous is not null and (payload->>'version')::integer is distinct from (previous->>'version')::integer then raise exception using errcode='40001',message='Version conflict'; end if;
  if (payload->>'status'='Aprobado' or previous->>'status'='Aprobado') and role<>'approver' then raise exception 'Approver required'; end if;
- result := jsonb_build_object('id',pid,'version',coalesce((previous->>'version')::integer,0)+1,'contractor',trim(payload->>'contractor'),'period',payload->>'period','items',payload->'items','amount',total,'retention',retention,'net',total-retention,'status',payload->>'status','by',auth.jwt()->>'email','at',now());
+ result := jsonb_build_object('id',pid,'version',coalesce((previous->>'version')::integer,0)+1,'contractor',trim(payload->>'contractor'),'period',payload->>'period','items',payload->'items','amount',total,'retention',retention,'retentionPercent',payload->'retentionPercent','net',total-retention,'status',payload->>'status','by',auth.jwt()->>'email','at',now());
  insert into public.atlas_payments values(pid,(result->>'version')::integer,result,now()) on conflict(id) do update set version=excluded.version,data=excluded.data,updated_at=excluded.updated_at;
  insert into public.atlas_payment_audit(payment_id,actor,data) values(pid,auth.uid(),result);
  return result;
