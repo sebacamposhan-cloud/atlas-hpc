@@ -167,9 +167,13 @@ HTML/CSS/JS y datos estáticos en dist; configuración en .openai/hosting.json. 
 Después de cambiar datos, ejecutar `node scripts/prepare-runtime.mjs`. Los iconos PNG se generan con `node scripts/prepare-icons.mjs`. Después de cualquier cambio en dist, ejecutar `node scripts/prepare-offline.mjs` para renovar las huellas y la versión del paquete offline, y después `node offline-test.mjs` para comprobar que el manifiesto coincide con los archivos publicados.
 
 
-### Documentos de marcado en Arquitectura
+### Proyectos (documentos de marcado) en Arquitectura
 
-En el visor, **Marcados → Nuevo documento** exige nombre, autor y propósito. Tocar un recinto lo pinta y añade su número y código a la lista exterior al plano (derecha en escritorio, debajo en móvil). Los números se conservan al quitar recintos. Documentos independientes por piso, color editable, PDF con plano/listado/metadatos y respaldo JSON. Guardado local en IndexedDB; no hay sincronización entre dispositivos. Buscar un código acerca el plano sin marcarlo. Detalles y pruebas: [docs/MARKING_DOCUMENTS.md](docs/MARKING_DOCUMENTS.md).
+**Proyectos** parte de cualquier piso para pintar recintos de interés con una **leyenda de estados** (por ejemplo, Pendiente → En ejecución → Terminado para un levantamiento de pisos vinílicos), con conteo y m² por estado. Se guardan **cortes con fecha** (por ejemplo, cierre de mes) y se comparan de dos maneras:
+- en el plano, recintos que avanzaron, siguieron igual o retrocedieron, con una tabla por estado;
+- **lado a lado**, los dos cortes sobre la vista general del plano.
+
+En el visor, **Proyectos → Nuevo proyecto** exige nombre, autor y propósito. Tocar un recinto lo pinta y añade su número y código a la lista exterior al plano (derecha en escritorio, debajo en móvil). Los números se conservan al quitar recintos. Documentos independientes por piso, color editable, PDF con plano/listado/metadatos y respaldo JSON. Guardado local en IndexedDB; no hay sincronización entre dispositivos. Buscar un código acerca el plano sin marcarlo. Detalles y pruebas: [docs/MARKING_DOCUMENTS.md](docs/MARKING_DOCUMENTS.md).
 
 ### Protocolos del piso activo
 

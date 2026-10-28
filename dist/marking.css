@@ -41,6 +41,47 @@ body.markingOpen .toolbar, body.markingOpen main > footer { right: 332px; }
 #markingForm input:not([type=color]), #markingForm textarea { display: block; width: 100%; font-size: 16px; }
 #markingForm button { margin-top: 14px; }
 #markingError { color: #a32626; }
+/* Proyectos: pincel de estados, resumen por estado, cortes, comparación, vista lado a lado y editor de la leyenda. */
+#markingPanel i, #markingDialog i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; flex: none; }
+.pincel { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 16px 0; }
+.pincel button { font-size: 11px; min-height: 34px; padding: 5px 9px; display: inline-flex; align-items: center; }
+.pincel button[aria-checked="true"] { background: #e7eef3; border-color: #28516a; color: #1f3d50; font-weight: 650; box-shadow: inset 0 0 0 1px #28516a; }
+.estadosTabla { width: 100%; border-collapse: collapse; font-size: 11px; margin: 8px 0; }
+.estadosTabla td, .estadosTabla th { padding: 5px 4px; border-bottom: 1px solid var(--line); text-align: left; }
+.estadosTabla small { display: block; color: var(--muted); font-size: 9px; }
+.cortes { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin: 10px 0; font-size: 11px; }
+.cortes > div { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.cortes h3 { margin: 0; font-size: 12px; }
+.cortes p { margin: 6px 0; color: var(--muted); font-size: 10px; }
+.cortes ul { list-style: none; padding: 0; margin: 6px 0 0; display: grid; gap: 4px; }
+.cortes li { display: flex; align-items: center; gap: 6px; }
+.cortes li > span { flex: 1; min-width: 0; }
+.cortes li b, .cortes li small { display: block; }
+.cortes li small { color: var(--muted); font-size: 9px; }
+.cortes button { font-size: 10px; min-height: 30px; padding: 4px 8px; }
+.comparacionCortes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0; }
+.comparacionCortes label { display: grid; gap: 3px; font-size: 10px; }
+.cambiosResumen { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; font-size: 11px; }
+.cambiosResumen span { display: inline-flex; align-items: center; gap: 2px; border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; }
+.cambiosResumen b { margin-left: 4px; }
+.markedRooms.cambios b { display: flex; align-items: center; }
+#markingDialog.ancho { max-width: min(1240px, 96vw); width: min(1240px, 96vw); }
+.ladoALado { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.ladoALado figure { margin: 0; min-width: 0; }
+.ladoALado figcaption { font-weight: 650; font-size: 13px; margin-bottom: 6px; }
+.ladoALado canvas { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+.ladoLeyenda { display: flex; flex-wrap: wrap; gap: 10px; font-size: 11px; margin-top: 6px; }
+.estadosEditor { border: 1px solid var(--line); border-radius: 8px; margin: 12px 0 0; padding: 10px; }
+.estadosEditor legend { font-size: 12px; font-weight: 650; padding: 0 4px; }
+.estadosEditor legend small { font-weight: 400; color: var(--muted); }
+.plantillas { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 11px; margin-bottom: 8px; }
+.plantillas button { font-size: 11px; }
+.estadosLista { list-style: none; padding: 0; margin: 0 0 8px; display: grid; gap: 6px; }
+.estadosLista li { display: flex; gap: 6px; align-items: center; }
+.estadosLista input[type=color] { width: 44px; height: 36px; padding: 2px; flex: none; }
+#markingForm .estadosLista input[name=estadoNombre] { flex: 1; min-width: 0; font-size: 16px; }
+.estadosLista button { min-width: 36px; min-height: 36px; padding: 0; }
+#markingForm .colorUnico[hidden] { display: none; }
 @media(max-width:700px) {
   #markingPanel {
     top: auto; width: 100%; height: clamp(170px,33dvh,260px); border-left: 0; border-top: 1px solid var(--line);
@@ -69,4 +110,8 @@ body.markingOpen .toolbar, body.markingOpen main > footer { right: 332px; }
   .markingOpen .planheader { padding: 6px 10px; top: 51px; left: 10px; }
   .markingOpen .planheader h1 { font-size: 12px; }
   .markingOpen .planheader .badge { display: none; }
+  #markingPanel:has(.pincel) { grid-template-rows: auto auto auto minmax(0,1fr) auto; }
+  .pincel { grid-column: 1/-1; padding: 4px 10px 0; gap: 4px; }
+  .pincel button { min-height: 30px; font-size: 10px; padding: 3px 7px; }
+  .ladoALado { grid-template-columns: 1fr; }
 }
