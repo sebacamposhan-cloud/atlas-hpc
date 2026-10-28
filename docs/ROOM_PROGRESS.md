@@ -25,6 +25,10 @@ No aplica (`N/A` o `-`) se muestra y excluye del denominador. Códigos sin defin
 3. **Instaladas pendientes de revisión o corrección:** separa Sin revisar, Con observaciones y Conforme dentro de lo ya instalado.
 4. **Trabajo pendiente por sector:** ordena la cantidad de partidas que aún no están instaladas y conformes para orientar las próximas visitas.
 
+Los indicadores, estados de la torta/barras, familias y sectores permiten abrir un listado de evidencia. El detalle muestra partidas, recinto, material, instalación, condición, faltantes/notas y última revisión. Se pagina a 25 filas y permite abrir el editor de avance o la ficha en el plano. La consulta del detalle conserva el denominador del dashboard; los filtros generales de piso, sector, familia, asepsia y búsqueda sí delimitan el conjunto. Los recintos completos se determinan con todas sus partidas aplicables, incluso al seleccionar una familia.
+
+**Cobertura del levantamiento:** partidas con estado de instalación distinto de Sin registrar / partidas aplicables documentadas del conjunto. Distingue falta de datos de trabajo expresamente no iniciado. Los registros de fuente cambiada quedan Sin registrar hasta cotejar; no cuentan como ejecución ni muestran una fecha vigente en el detalle. Las partidas desconocidas o sin correspondencia PMA se mantienen fuera de la base y con aviso. El estado de pagos permanece en su acceso personal protegido y no se consulta desde este dashboard.
+
 Indicadores: partidas instaladas, instaladas y conformes, recintos completos y conformes, partidas con observaciones. Filtros por código/nombre, sector, partida, asepsia requerida y recintos completos/pendientes/con observaciones/sin registrar. Los filtros se despliegan para dejar visibles los indicadores en móvil.
 
 El porcentaje usa partidas aplicables documentadas como denominador, con el mismo peso por partida. **No es porcentaje físico ponderado por m², costo ni esfuerzo.** En proceso no se convierte en un 50%. Un recinto completo exige todas sus terminaciones aplicables instaladas y conformes; seleccionar una familia no cambia esa definición. No se reutilizan los estados Revisado OK del Excel como avance ejecutado y no se cierran protocolos automáticamente.
@@ -58,3 +62,13 @@ Capturas con datos aislados de ensayo, nunca incorporados al catálogo publicado
 [Control móvil, datos QA](images/room-progress-mobile.png)
 
 Publicación mediante PR revisada a main y Manual Deploy en Render. La rama del servicio sigue siendo main. Ante una pestaña con versión antigua, usar `/actualizar.html`, conservando los datos del sitio.
+
+## Orientación de los próximos análisis
+
+Los dashboards de ejecución deberían responder qué falta, dónde y qué registro lo respalda. Esta mejora convierte los gráficos existentes en consultas de partidas; no añade otro panel documental ni restaura PMA de terminaciones.
+
+- Checklist: instalación, conformidad y cobertura, con detalle por familia/sector/recinto, según el piso activo. Datos locales del equipo actual.
+- Observaciones: pendientes por responsable, vencimientos y corregidas esperando verificar, con fotos y su propio historial. Sincronización según la sesión Nube. No se deduce conformidad del checklist solo por cerrar una observación.
+- Protocolos: abiertos, críticos y datos para Revisar, conservando la fecha de corte del Excel. Un protocolo cerrado no convierte automáticamente una partida en instalada.
+- Pagos: subtotal/retención/neto y versiones por subcontratista, dentro del acceso protegido. Aprobado es estado de aprobación, no comprobante de transferencia ni porcentaje físico.
+- Evolución semanal y comparación contra metas necesitan cortes fechados y metas acordadas. No se presentan tendencias, retrasos de planificación ni valor ganado a partir de un único estado o de cantidades sin validar.
