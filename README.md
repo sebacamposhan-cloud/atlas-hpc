@@ -163,3 +163,7 @@ Después de cambiar datos, ejecutar `node scripts/prepare-runtime.mjs`. Los icon
 ### Documentos de marcado en Arquitectura
 
 En el visor, **Marcados → Nuevo documento** exige nombre, autor y propósito. Tocar un recinto lo pinta y añade su número y código a la lista exterior al plano (derecha en escritorio, debajo en móvil). Los números se conservan al quitar recintos. Documentos independientes por piso, color editable, PDF con plano/listado/metadatos y respaldo JSON. Guardado local en IndexedDB; no hay sincronización entre dispositivos. Buscar un código acerca el plano sin marcarlo. Detalles y pruebas: [docs/MARKING_DOCUMENTS.md](docs/MARKING_DOCUMENTS.md).
+
+### Protocolos del piso activo
+
+En Control de obra, la matriz muestra por defecto los abiertos de S01 (piso −1), N01 (1), N02 (2) o N03 (3). Los contadores, desplegables y críticos usan el mismo ámbito. Los registros compartidos que mencionan explícitamente ese piso se identifican; los niveles desconocidos no se asignan por suposición. Véase [docs/PROTOCOL_FLOORS.md](docs/PROTOCOL_FLOORS.md).
