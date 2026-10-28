@@ -1,6 +1,18 @@
 # Avance dibujado por estado de pago
 
-El formulario de pago tiene Abrir plano y dibujar avance. Lápiz libre y Mover, zoom, colores ejecutado/pendiente/observación y deshacer. Disponible para arquitectura de −1, 1, 2 y 3. No calcula cantidades, superficies ni aprobación técnica.
+El formulario de pago tiene Abrir plano y dibujar avance. Está disponible para arquitectura de −1, 1, 2 y 3.
+
+**Herramientas:**
+- **Recinto:** tocar un recinto lo pinta completo con el estado elegido (ejecutado, pendiente u observación). Tocarlo de nuevo con el mismo estado lo desmarca. Usa los contornos oficiales de cada piso, los mismos del visor (`resolveFootprints`).
+- **Lápiz:** con línea fina, pincel medio o pincel grueso, para pintar solo una parte de un recinto.
+- **Mover,** zoom y **Deshacer** (el último trazo o la última marca de recinto del piso).
+
+**Avance (arriba del plano):** porcentajes por superficie de los recintos marcados o pintados.
+- Un recinto marcado cuenta entero. Lo pintado con lápiz dentro de un recinto cuenta en proporción a lo pintado.
+- Un trazo que solo cruza menos del 3 % de un recinto no lo incluye.
+- Muestra m² y % ejecutado, pendiente, observación y sin marcar, más el detalle por recinto.
+- La superficie sale del contorno, con 1 unidad = 1,764 cm, y puede diferir de la superficie declarada en la ficha. No es una medición de obra ni una aprobación técnica.
+- Cada piso guarda sus recintos marcados (`rooms`) y su avance calculado (`avance`) junto a los trazos. El formulario muestra ese avance sin recalcular.
 
 Conservar dibujo mantiene un borrador en el formulario; **Guardar el estado de pago** envía plano, partidas y cantidades juntos a Supabase. Cerrar/recargar antes de guardar pierde el borrador. El pago y cada revisión del historial contienen su propia copia JSON de los trazos. El siguiente pago del mismo subcontratista copia el plano del registro más reciente por período y fecha de guardado, sin modificar ese registro; puede continuar en los cuatro pisos. No se heredan dibujos entre contratistas. Cambiar contratista exige confirmar antes de reemplazar el borrador. Solo hereda registros ya guardados en nube y cargados en la consulta actual.
 
@@ -10,4 +22,4 @@ Ejecutar de nuevo `supabase/payments.sql`, que ahora conserva `plan` en cada pag
 
 ## Límites de esta versión
 
-Se usa la imagen overview del plano actual con coordenadas normalizadas, no una lámina técnica PDF ni copia binaria inmutable de la imagen. Se preservan trazos, pero si cambia el plano base entre versiones requiere cotejar antes de reutilizarlos. No hay importación automática entre revisiones de plano ni exportación de plano PDF. Hasta 300 trazos por piso y 40 KB de dibujo total; al superar el límite pide reducir trazos, sin guardar una copia incompleta. Un único dedo dibuja en modo Lápiz; Mover y botones de zoom permiten navegar. El acceso sigue los mismos permisos de pagos. La imagen base ya existente en Atlas no contiene datos de pagos.
+Se usa la imagen overview del plano actual con coordenadas normalizadas, no una lámina técnica PDF ni copia binaria inmutable de la imagen. Se preservan trazos, pero si cambia el plano base entre versiones requiere cotejar antes de reutilizarlos. No hay importación automática entre revisiones de plano ni exportación de plano PDF. Hasta 300 trazos y 800 recintos marcados por piso, y 40 KB de dibujo total; al superar el límite pide reducir trazos, sin guardar una copia incompleta. Un único dedo dibuja en modo Lápiz; Mover y botones de zoom permiten navegar. El acceso sigue los mismos permisos de pagos. La imagen base ya existente en Atlas no contiene datos de pagos.
