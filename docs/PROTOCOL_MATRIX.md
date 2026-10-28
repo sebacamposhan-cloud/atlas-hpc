@@ -39,21 +39,23 @@ En los pisos 1, 2 y 3, al elegir un protocolo aparece **Ver en el plano**; cada 
 
   | Texto en EJES | Se dibuja |
   |---|---|
-  | `AD-AG/A3-A5` | el rectángulo entre los ejes AD y AG y entre A3 y A5 |
-  | `AH/A1-A2` | un tramo a lo largo de AH |
-  | `AC-A2` | el pilar del cruce |
+  | `AD-AG/A3-A5` | el rectángulo exacto entre los ejes AD y AG y entre A3 y A5 |
+  | `AH/A1-A2` | una línea sobre el eje AH, de A1 a A2, con topes |
+  | `AC-A2` | un círculo en el pilar del cruce |
   | `AO-AV` | una franja, porque solo trae ejes con letra |
 
-- El orden no importa (`A3-A5/AD-AG`). El texto que sigue a los ejes se ignora (`(Colada 5.1)`, `Tipo B`, `REGULARIZACION`). Se aceptan `B-O/4-5`, sin la A del edificio, y `A1A11`, con los ejes pegados.
-- Un eje que no está en la grilla (`A12B`, `A11A`) se aproxima a su eje base y se marca con ≈.
+- El orden no importa (`A3-A5/AD-AG`). Se aceptan `B-O/4-5`, sin la A del edificio, y `A1A11`, con los ejes pegados.
+- El texto antes o después de los ejes no cambia la ubicación (`Nucleo N4P AM-AN/A1-A2`, `(Colada 5.1)`, `N1T`), y el panel lo informa como «se ignoró».
+- Un eje que no está en la grilla (`A12B`, `A11A`) se aproxima a su eje base y el panel lo informa (`≈ A12B → A12`).
 
 **Qué se dibuja y qué no:**
-- Cada recuadro lleva el número del protocolo a tres cifras (folio 7 → 007), en cualquier estado.
+- Cada figura lleva el número del protocolo a tres cifras (folio 7 → 007), en cualquier estado. **Todos los números se escriben.** Si no caben o chocan, se corren junto a su figura con una línea guía.
 - El color sigue el estado: abierto, cerrado o cerrado por autocontrol.
-- Varios folios con el mismo encuadre comparten recuadro.
-- Los números aparecen al acercarse, para que no se amontonen.
+- Varios folios con la misma figura comparten trazo.
+- **Medidas:** cada folio ubicado indica las suyas en metros, por ejemplo «24,6 × 16,4 m · 403,4 m²» o «tramo de 73,8 m». Salen de la grilla del DWG: un vano mide 8,2 m.
+- **Lo que dice la matriz:** cada folio muestra su texto EJES tal cual («EJES: «AD-AE/A1-A2 N1T»»), para comprobar la lectura.
 - **Los anulados (NULO) no se dibujan:** se listan arriba en el panel derecho (abajo en el celular).
-- También se listan los folios sin ejes ubicables: textos como «Descrito en monografía», tensado de pilas por línea y ejes del edificio B u otros.
+- **Sin ubicación (lista abierta):** cita el texto de EJES y el motivo. Puede ser la celda vacía, un texto sin ejes del edificio A («Nucleo N6P», «Descrito en monografía», «Linea 1_138») o ejes que no están en la grilla.
 
 **Cobertura con la matriz REV1** (sin contar anulados):
 
@@ -67,7 +69,8 @@ El nivel −1 aún no tiene grilla, porque su plano viene de PDF.
 
 **Grilla:**
 - `dist/n0x/ejes.json` sale de la capa `S-GRID` de las láminas DWG. Cada etiqueta (AD, A5…) está dentro de su círculo y su eje es la recta que pasa por el centro.
-- Los tres pisos comparten las coordenadas del modelo de Revit. Los ejes que N01 y N03 comparten coinciden a 0,0 cm.
+- Los ejes que N01 y N03 comparten coinciden a 0,0 cm. Las láminas de N02 están corridas: +18,8 cm en X y −3,2 cm en Y (mediana de sus ejes A1, A3', AO1 y AO2).
+- Cada piso usa la posición de sus propios ejes. Los que le faltan se toman de la grilla completa, corridos ese desplazamiento, para que las figuras queden sobre los pilares del dibujo de ese piso. El ajuste queda registrado en `ejes.json` (`ajuste`).
 - Se arma una sola grilla del edificio A con las burbujas de los tres pisos (A2 y A3 solo aparecen en N03): 26 ejes con letra (AA…AW, AA', AO1, AO2) y 14 numerados (A0…A12, A3'), cada 8,2 m.
 - Para regenerarla: `node scripts/ejes/generar.mjs`. Necesita `data/n0x/dibujo.json` y `marco.json`, de `scripts/dwg-plano/extraer.mjs`.
 - `protocol-ejes.mjs` lee y encuadra, y `protocolos-plano.mjs` dibuja la capa y el panel.

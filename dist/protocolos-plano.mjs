@@ -1,8 +1,10 @@
-// Protocolos de la matriz en el plano: cada folio se encuadra entre sus ejes con su número (001, 002…), en cualquier estado.
-// Los anulados (NULO) no se dibujan: van en el panel de la derecha, igual que los que no traen ejes ubicables.
+// Protocolos de la matriz en el plano: cada folio se dibuja exactamente sobre sus ejes con su número (001, 002…),
+// en cualquier estado: zona entre ejes, tramo sobre un eje o pilar en un cruce. Todos los números se escriben; si
+// chocan, se corren junto a su figura con una línea guía. Los anulados (NULO) y los que no traen ejes ubicables no se
+// dibujan: van en el panel de la derecha citando lo que dice la matriz.
 // La grilla de ejes de cada piso sale del DWG (dist/<piso>/ejes.json, scripts/ejes/generar.mjs).
 import {nivel, datos} from './level.mjs';
-import {crearGrilla, ubicarEjes, numeroProtocolo} from './protocol-ejes.mjs';
+import {crearGrilla, ubicarEjes, numeroProtocolo, textoMedidas, motivoSinUbicar} from './protocol-ejes.mjs';
 import {stateLabels, stateColors} from './protocol-model.mjs';
 
 const ORDEN_ESTADOS = ['ABIERTO', 'CERRADO POR AUTOCONTROL', 'CERRADO'];
@@ -25,23 +27,53 @@ export function createProtocolPlan(ctx) {
 
   const colorDe = estado => stateColors[estado] || '#8a929b';
   const visibles = () => actual.ubicados.filter(p => !ocultos.has(p.estado));
+  // Zona: polígono entre los ejes. Tramo: línea sobre el eje con topes en los ejes que lo cortan. Pilar: círculo en el cruce.
+  function figura({u, color, enFoco}, px) {
+    if (u.poligono) return `<polygon points="${u.poligono.map(p => p.join(',')).join(' ')}" fill="${color}" fill-opacity="${enFoco ? .32 : .13}" stroke="${color}" stroke-width="${enFoco ? 3.5 : 1.8}" vector-effect="non-scaling-stroke"/>`;
+    if (u.linea) {
+      const [p, q] = u.linea, largo = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1, n = [-(q[1] - p[1]) / largo * 7 * px, (q[0] - p[0]) / largo * 7 * px];
+      const tope = c => `<line x1="${c[0] - n[0]}" y1="${c[1] - n[1]}" x2="${c[0] + n[0]}" y2="${c[1] + n[1]}" stroke="${color}" stroke-width="2" vector-effect="non-scaling-stroke"/>`;
+      return `<line x1="${p[0]}" y1="${p[1]}" x2="${q[0]}" y2="${q[1]}" stroke="${color}" stroke-width="${enFoco ? 6 : 4}" stroke-opacity=".85" vector-effect="non-scaling-stroke"/>${tope(p)}${tope(q)}`;
+    }
+    const [x, y] = u.punto;
+    return `<circle cx="${x}" cy="${y}" r="${(enFoco ? 10 : 7) * px}" fill="${color}" fill-opacity=".3" stroke="${color}" stroke-width="${enFoco ? 3 : 2}" vector-effect="non-scaling-stroke"/><circle cx="${x}" cy="${y}" r="${1.8 * px}" fill="${color}"/>`;
+  }
+  // Busca un lugar libre para el número: dentro de la figura y, si no cabe o choca, alrededor en anillos crecientes.
+  function etiqueta({u, color, enFoco, texto}, px, ocupadas) {
+    const t = enFoco ? 15 : 12, w = (texto.length * t * .62 + 8) * px, h = (t + 5) * px, sep = 6 * px, [bx, by, bw, bh] = u.caja, [cx, cy] = u.centro;
+    const candidatos = [];
+    if (u.tipo !== 'punto') { candidatos.push([cx, cy]); for (let k = 1; k <= 3 && (2 * k + 1) * h < bh; k++) candidatos.push([cx, cy - k * h], [cx, cy + k * h]); }
+    for (let anillo = 0; anillo < 5; anillo++) {
+      const d = anillo * (h + sep);
+      candidatos.push([bx + bw + sep + w / 2 + d, cy], [cx, by - sep - h / 2 - d], [bx - sep - w / 2 - d, cy], [cx, by + bh + sep + h / 2 + d],
+        [bx + bw + sep + w / 2 + d, by - sep - h / 2 - d], [bx - sep - w / 2 - d, by + bh + sep + h / 2 + d]);
+    }
+    const rect = ([x, y]) => [x - w / 2, y - h / 2, w, h], libre = r => !ocupadas.some(o => r[0] < o[0] + o[2] && o[0] < r[0] + r[2] && r[1] < o[1] + o[3] && o[1] < r[1] + r[3]);
+    const lugar = candidatos.find(c => libre(rect(c))) || candidatos[0];
+    ocupadas.push(rect(lugar));
+    const dentro = u.tipo !== 'punto' && lugar[0] >= bx && lugar[0] <= bx + bw && lugar[1] >= by && lugar[1] <= by + bh;
+    const cercano = [Math.min(Math.max(lugar[0], bx), bx + bw), Math.min(Math.max(lugar[1], by), by + bh)];
+    return (dentro ? '' : `<line x1="${lugar[0]}" y1="${lugar[1]}" x2="${cercano[0]}" y2="${cercano[1]}" stroke="${color}" stroke-width="1" stroke-opacity=".75" vector-effect="non-scaling-stroke"/>`)
+      + `<text x="${lugar[0]}" y="${lugar[1]}" text-anchor="middle" dominant-baseline="central" font-size="${t * px}" font-weight="700" fill="${color}" stroke="white" stroke-width="${3.5 * px}" paint-order="stroke">${esc(texto)}</text>`;
+  }
   function dibujar() {
     if (!actual) { capa.replaceChildren(); return; }
-    const escala = svg.getScreenCTM()?.a || 1, px = 1 / escala, grupos = new Map();
-    // El número se escribe cuando su recuadro se ve con tamaño suficiente (o es el elegido): de lejos se amontonarían.
-    const legible = (u, enFoco) => { const ancho = u.caja[2] * escala, alto = u.caja[3] * escala; return enFoco || (u.tipo === 'punto' ? ancho >= 12 : u.tipo === 'tramo' ? Math.max(ancho, alto) >= 70 : Math.min(ancho, alto) >= 30); };
-    // Varios folios con el mismo encuadre comparten recuadro y se listan sus números juntos.
+    const px = 1 / (svg.getScreenCTM()?.a || 1), vista = svg.viewBox.baseVal, grupos = new Map();
+    // Varios folios con la misma figura comparten trazo y se listan sus números juntos.
     for (const p of visibles()) {
-      const clave = p.u.poligono.map(q => q.map(Math.round).join(',')).join(';');
+      const clave = p.u.tipo + ':' + (p.u.poligono || p.u.linea || [p.u.punto]).map(q => q.map(Math.round).join(',')).join(';');
       if (!grupos.has(clave)) grupos.set(clave, {u: p.u, items: []});
       grupos.get(clave).items.push(p);
     }
-    capa.innerHTML = [...grupos.values()].sort((a, b) => b.u.caja[2] * b.u.caja[3] - a.u.caja[2] * a.u.caja[3]).map(g => {
-      const estado = ORDEN_ESTADOS.find(e => g.items.some(p => p.estado === e)) || g.items[0].estado, color = colorDe(estado), enFoco = g.items.some(p => p.fila.id === foco);
-      const numeros = g.items.map(p => p.numero), texto = (g.u.aproximado ? '≈ ' : '') + (numeros.length > 4 ? numeros.slice(0, 3).join(' · ') + ' +' + (numeros.length - 3) : numeros.join(' · '));
-      return `<polygon points="${g.u.poligono.map(p => p.join(',')).join(' ')}" fill="${color}" fill-opacity="${enFoco ? .34 : .14}" stroke="${color}" stroke-width="${enFoco ? 3.5 : 1.6}" vector-effect="non-scaling-stroke"/>`
-        + (!legible(g.u, enFoco) ? '' : `<text x="${g.u.centro[0]}" y="${g.u.centro[1]}" text-anchor="middle" dominant-baseline="central" font-size="${(enFoco ? 15 : 12) * px}" font-weight="700" fill="${color}" stroke="white" stroke-width="${3.5 * px}" paint-order="stroke">${esc(texto)}</text>`);
-    }).join('');
+    const lista = [...grupos.values()].map(g => {
+      const estado = ORDEN_ESTADOS.find(e => g.items.some(p => p.estado === e)) || g.items[0].estado, numeros = g.items.map(p => p.numero);
+      return {...g, color: colorDe(estado), enFoco: g.items.some(p => p.fila.id === foco), texto: (g.u.aproximado ? '≈ ' : '') + (numeros.length > 4 ? numeros.slice(0, 3).join(' · ') + ' +' + (numeros.length - 3) : numeros.join(' · '))};
+    });
+    const area = g => g.u.caja[2] * g.u.caja[3], margen = 60 * px;
+    const enVista = ({u: {caja: c}}) => c[0] <= vista.x + vista.width + margen && c[0] + c[2] >= vista.x - margen && c[1] <= vista.y + vista.height + margen && c[1] + c[3] >= vista.y - margen;
+    // Primero el elegido y las figuras chicas, que necesitan su número al lado; las zonas grandes tienen más lugar.
+    const ocupadas = [], etiquetas = lista.filter(enVista).sort((a, b) => (b.enFoco - a.enFoco) || area(a) - area(b)).map(g => etiqueta(g, px, ocupadas)).join('');
+    capa.innerHTML = [...lista].sort((a, b) => area(b) - area(a)).map(g => figura(g, px)).join('') + etiquetas;
   }
   new MutationObserver(dibujar).observe(svg, {attributes: true, attributeFilter: ['viewBox']});
   new ResizeObserver(dibujar).observe(svg);
@@ -52,17 +84,20 @@ export function createProtocolPlan(ctx) {
     const w = Math.max(x1 - x0, 500), h = Math.max(y1 - y0, 500), cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
     ctx.setView([cx - w * .65, cy - h * .65, w * 1.3, h * 1.3]);
   }
-  const fila = (p, extra = '') => `<b>${esc(numeroProtocolo(p.folio))}</b><span>${esc(String(p.axes ?? '').trim() || 'Sin ejes')}${extra}</span><small>${esc([p.element, p.receiver].filter(v => String(v ?? '').trim()).join(' · ') || 'Sin elemento documentado')}</small>`;
+  // Lo que dice la matriz, tal cual, para poder comprobarlo.
+  const vacio = v => !String(v ?? '').trim() || String(v).trim() === 'null';
+  const cita = texto => vacio(texto) ? '(celda vacía)' : '«' + esc(String(texto).trim()) + '»';
+  const quien = f => esc([f.element, f.receiver].filter(v => !vacio(v)).join(' · ') || 'Sin elemento documentado');
   function render() {
     const {tipo, ubicados, anulados, sinUbicar} = actual, cuenta = estado => ubicados.filter(p => p.estado === estado).length;
     panel.innerHTML = `<div class="protocolHead"><div><small>Protocolo en el plano · ${esc(nivel.nombre)}</small><h2>${esc(tipo.code)}</h2><p>${esc(tipo.name)}</p></div><button data-cerrar aria-label="Cerrar">×</button></div>
       <p class="protocolResumen">${ubicados.length} en el plano · ${anulados.length} anulados · ${sinUbicar.length} sin ubicación</p>
       <div class="protocolLeyenda">${ORDEN_ESTADOS.filter(cuenta).map(e => `<label><input type="checkbox" data-estado="${esc(e)}" ${ocultos.has(e) ? '' : 'checked'}><i style="background:${colorDe(e)}"></i>${esc(stateLabels[e] || e)} <b>${cuenta(e)}</b></label>`).join('')}</div>
       <div class="protocolScroll">
-        <section class="protocolAnulados"><h3>Anulados · fuera del plano</h3>${anulados.length ? `<ul>${anulados.map(p => `<li id="anulado-${esc(p.id)}" class="${p.id === foco ? 'activo' : ''}">${fila(p)}</li>`).join('')}</ul>` : '<p>Este protocolo no tiene folios anulados en el piso.</p>'}</section>
-        <h3>En el plano</h3><ul class="protocolLista">${ubicados.map(p => `<li><button data-folio="${esc(p.fila.id)}" class="${p.fila.id === foco ? 'activo' : ''}" ${ocultos.has(p.estado) ? 'disabled' : ''}><i style="background:${colorDe(p.estado)}"></i>${fila(p.fila, p.u.aproximado ? ' ≈' : '')}</button></li>`).join('') || '<li><p>Ningún folio con ejes ubicables.</p></li>'}</ul>
-        ${sinUbicar.length ? `<details class="protocolSinUbicar"><summary>Sin ubicación en el plano (${sinUbicar.length})</summary><ul>${sinUbicar.map(s => `<li class="${s.fila.id === foco ? 'activo' : ''}">${fila(s.fila)}<em>${esc(s.motivo)}</em></li>`).join('')}</ul></details>` : ''}
-        <p class="protocolNota">El recuadro va entre los ejes extremos que indica el protocolo; los números aparecen al acercarse. ≈ marca un eje que no está en la grilla y se aproximó al más cercano (p. ej. A12B → A12). La matriz no se modifica.</p>
+        <section class="protocolAnulados"><h3>Anulados · fuera del plano</h3>${anulados.length ? `<ul>${anulados.map(f => `<li class="${f.id === foco ? 'activo' : ''}"><b>${esc(numeroProtocolo(f.folio))}</b><span>EJES: ${cita(f.axes)}</span><small>${quien(f)}</small></li>`).join('')}</ul>` : '<p>Este protocolo no tiene folios anulados en el piso.</p>'}</section>
+        ${sinUbicar.length ? `<details class="protocolSinUbicar" open><summary>Sin ubicación en el plano (${sinUbicar.length})</summary><ul>${sinUbicar.map(s => `<li class="${s.fila.id === foco ? 'activo' : ''}"><b>${esc(numeroProtocolo(s.fila.folio))}</b><span>EJES: ${cita(s.fila.axes)}</span><em>${esc(s.motivo)}</em><small>${quien(s.fila)}</small></li>`).join('')}</ul></details>` : ''}
+        <h3>En el plano (${ubicados.length})</h3><ul class="protocolLista">${ubicados.map(p => `<li><button data-folio="${esc(p.fila.id)}" class="${p.fila.id === foco ? 'activo' : ''}" ${ocultos.has(p.estado) ? 'disabled' : ''}><i style="background:${colorDe(p.estado)}"></i><b>${esc(p.numero)}</b><span>${esc(p.u.etiqueta)} · ${esc(textoMedidas(p.u))}</span><small>EJES: ${cita(p.fila.axes)}${p.u.ignorado ? ' · se ignoró «' + esc(p.u.ignorado) + '»' : ''}${p.u.aproximados.length ? ' · ≈ ' + esc(p.u.aproximados.map(a => a.id + ' → ' + a.base).join(', ')) : ''}</small><small>${quien(p.fila)} · ${esc(stateLabels[p.estado] || p.estado)}</small></button></li>`).join('') || '<li><p>Ningún folio con ejes ubicables.</p></li>'}</ul>
+        <p class="protocolNota">Se dibuja exactamente entre los ejes que indica el protocolo: zona entre ejes, tramo sobre un eje o pilar en un cruce. Las medidas salen de la grilla del DWG (vano de 8,2 m). ≈ marca un eje que no está en la grilla y se aproximó a su base (A12B → A12). La matriz no se modifica.</p>
       </div>
       <div class="protocolFooter"><button data-volver>← Volver a la matriz</button></div>`;
     panel.querySelector('[data-cerrar]').onclick = cerrar;
@@ -75,7 +110,7 @@ export function createProtocolPlan(ctx) {
     });
   }
 
-  // filas: registros del protocolo en este piso (todas los estados); foco: id de un folio para centrarlo.
+  // filas: registros del protocolo en este piso (todos los estados); foco: id de un folio para centrarlo.
   async function mostrar({tipo, filas, foco: id = null}) {
     if (!pisoConEjes()) { ctx.toast('El piso −1 aún no tiene la grilla de ejes: su plano viene de PDF. Por ahora los protocolos se ubican en los pisos 1, 2 y 3.'); return false; }
     let grilla;
@@ -86,7 +121,7 @@ export function createProtocolPlan(ctx) {
       if (estado === 'NULO') { anulados.push(f); continue; }
       const u = ubicarEjes(f.axes, grilla);
       if (u.estado === 'ok') ubicados.push({fila: f, u, estado, numero: numeroProtocolo(f.folio)});
-      else sinUbicar.push({fila: f, motivo: u.estado === 'faltan' ? 'Ejes que no están en el plano: ' + u.faltan.join(', ') : 'Sin ejes del edificio A reconocibles'});
+      else sinUbicar.push({fila: f, motivo: motivoSinUbicar(f.axes, u)});
     }
     const porNumero = (a, b) => String(a).localeCompare(String(b), 'es', {numeric: true});
     ubicados.sort((a, b) => porNumero(a.numero, b.numero)); anulados.sort((a, b) => porNumero(a.folio, b.folio)); sinUbicar.sort((a, b) => porNumero(a.fila.folio, b.fila.folio));
@@ -97,8 +132,7 @@ export function createProtocolPlan(ctx) {
     encuadrar(enfocado ? [enfocado.u.caja] : ubicados.map(p => p.u.caja));
     if (id && !enfocado) {
       const anulado = anulados.find(p => p.id === id), sin = sinUbicar.find(s => s.fila.id === id);
-      ctx.toast(anulado ? `El folio ${numeroProtocolo(anulado.folio)} está anulado: queda fuera del plano.` : sin ? `El folio ${numeroProtocolo(sin.fila.folio)} no tiene ejes ubicables: ${sin.motivo.toLowerCase()}.` : 'Ese folio no está en este piso.');
-      if (sin) panel.querySelector('.protocolSinUbicar').open = true;
+      ctx.toast(anulado ? `El folio ${numeroProtocolo(anulado.folio)} está anulado: queda fuera del plano.` : sin ? `El folio ${numeroProtocolo(sin.fila.folio)} no se ubica. ${sin.motivo}` : 'Ese folio no está en este piso.');
       panel.querySelector('li.activo')?.scrollIntoView({block: 'nearest'});
     } else panel.querySelector('[data-folio].activo')?.scrollIntoView({block: 'nearest'});
     dibujar();
