@@ -1,5 +1,7 @@
 # Estados de pago
 
+**Opción recomendada para Render Free:** seguir [PAYMENTS_SUPABASE.md](PAYMENTS_SUPABASE.md). La configuración de disco descrita debajo es una alternativa local; no hace falta contratarla para usar Supabase.
+
 Control de obra → Estados de pago abre un acceso individual adicional. Las cuentas autorizadas comparten los registros. Roles `editor` (crear/editar) y `approver` (también aprobar o modificar aprobados). Montos enteros CLP; retención es un monto, no un porcentaje. Los impuestos no se calculan automáticamente.
 
 ## Configuración en Render

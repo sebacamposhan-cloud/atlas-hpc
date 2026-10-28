@@ -1,8 +1,10 @@
+import {createSupabasePayments} from './payments-supabase.mjs';
 import {paymentContractors} from './payment-contractors.mjs';
 import {scryptSync,randomBytes,timingSafeEqual,randomUUID} from 'node:crypto';
 import path from 'node:path';
 export function passwordHash(password,salt=randomBytes(16).toString('hex')){return salt+':'+scryptSync(password,salt,64).toString('hex');}
 export async function createPayments(env){
+ if(env.SUPABASE_URL||env.SUPABASE_ANON_KEY)return createSupabasePayments(env);
  const sessions=new Map(),attempts=new Map();let db,users=[];
  if(env.PAYMENTS_DB_PATH&&env.PAYMENTS_USERS_JSON){
   users=JSON.parse(env.PAYMENTS_USERS_JSON);if(!Array.isArray(users)||!users.length||users.some(u=>!u.username||!['editor','approver'].includes(u.role)||!/^([a-f0-9]{32}):([a-f0-9]{128})$/.test(u.hash))||new Set(users.map(u=>u.username)).size!==users.length)throw Error('Configuración de usuarios de pagos inválida');
