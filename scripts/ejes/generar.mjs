@@ -12,14 +12,16 @@ import {aAtlas} from '../dwg-plano/marco.mjs';
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const esNumero = id => /^A\d/.test(id), delEdificio = id => /^A/.test(id);
-const propios = Object.fromEntries(['n01', 'n02', 'n03'].map(n => [n, new Map(grillaDeNivel(leerCapaEjes(repo, n)).filter(e => !e.id.includes('#') && delEdificio(e.id)).map(e => [e.id, e]))]));
+// s01 es el nivel −1: sus láminas DWG van en el marco de su plano (data/s01/marco.json) y su grilla en dist/ejes.json.
+const NIVELES = ['n01', 'n02', 'n03', 's01'], destino = nivel => nivel === 's01' ? 'dist/ejes.json' : `dist/${nivel}/ejes.json`;
+const propios = Object.fromEntries(NIVELES.map(n => [n, new Map(grillaDeNivel(leerCapaEjes(repo, n)).filter(e => !e.id.includes('#') && delEdificio(e.id)).map(e => [e.id, e]))]));
 const completa = new Map(), origen = new Map();
-for (const nivel of ['n01', 'n03', 'n02']) for (const [id, e] of propios[nivel]) if (!completa.has(id)) { completa.set(id, e); origen.set(id, nivel); }
+for (const nivel of ['n01', 'n03', 's01', 'n02']) for (const [id, e] of propios[nivel]) if (!completa.has(id)) { completa.set(id, e); origen.set(id, nivel); }
 const ejes = [...completa.values()].sort((a, b) => a.id.localeCompare(b.id, 'es', {numeric: true}));
 const mediana = v => { const s = [...v].sort((a, b) => a - b), m = s.length >> 1; return !s.length ? 0 : s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 const medio = e => [(e.a[0] + e.b[0]) / 2, (e.a[1] + e.b[1]) / 2];
 const resumen = {};
-for (const nivel of ['n01', 'n02', 'n03']) {
+for (const nivel of NIVELES) {
   const marco = JSON.parse(fs.readFileSync(path.join(repo, 'data', nivel, 'marco.json'), 'utf8'));
   // Desplazamiento del piso: ejes numerados (verticales) dan X; ejes con letra (horizontales) dan Y.
   const comunes = ejes.filter(e => origen.get(e.id) !== nivel && propios[nivel].has(e.id));
@@ -35,7 +37,7 @@ for (const nivel of ['n01', 'n02', 'n03']) {
     ejes: ejes.map(e => { const propio = propios[nivel].get(e.id), c = propio && medio(propio);
       const linea = !propio ? [correr(e.a), correr(e.b)] : esNumero(e.id) ? [[c[0], e.a[1] + dy], [c[0], e.b[1] + dy]] : [[e.a[0] + dx, c[1]], [e.b[0] + dx, c[1]]];
       return {id: e.id, tipo: esNumero(e.id) ? 'numero' : 'letra', a: aAtlas(marco, linea[0]), b: aAtlas(marco, linea[1]), lamina: propio ? nivel : origen.get(e.id)}; })};
-  fs.writeFileSync(path.join(repo, 'dist', nivel, 'ejes.json'), JSON.stringify(salida) + '\n');
+  fs.writeFileSync(path.join(repo, destino(nivel)), JSON.stringify(salida) + '\n');
   resumen[nivel] = {...salida.ajuste, ejesPropios: salida.ajuste.ejesPropios.length};
 }
 console.log(JSON.stringify({ejes: ejes.length, letras: ejes.filter(e => !esNumero(e.id)).map(e => e.id).join(' '), numeros: ejes.filter(e => esNumero(e.id)).map(e => e.id).join(' '), ajuste: resumen}, null, 1));

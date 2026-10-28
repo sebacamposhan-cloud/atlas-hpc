@@ -1,0 +1,1328 @@
+{
+ "pares": [
+  {
+   "codigo": "3.1.4.1.1-1",
+   "lamina": "A-501",
+   "errorCm": 0.7
+  },
+  {
+   "codigo": "3.1.4.2.3-1",
+   "lamina": "A-501",
+   "errorCm": 0.8
+  },
+  {
+   "codigo": "3.1.4.1.2-1",
+   "lamina": "A-501",
+   "errorCm": 0.7
+  },
+  {
+   "codigo": "3.1.4.2.2-1",
+   "lamina": "A-501",
+   "errorCm": 0.7
+  },
+  {
+   "codigo": "3.1.4.2.1-1",
+   "lamina": "A-501",
+   "errorCm": 0.7
+  },
+  {
+   "codigo": "3.1.4.1.3-1",
+   "lamina": "A-501",
+   "errorCm": 0.7
+  },
+  {
+   "codigo": "3.1.4.1.4-1",
+   "lamina": "A-501",
+   "errorCm": 0.8
+  },
+  {
+   "codigo": "CU.3.1.4-2",
+   "lamina": "A-501",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "3.1.4.3.12-1",
+   "lamina": "A-501",
+   "errorCm": 1.3
+  },
+  {
+   "codigo": "3.1.4.3.6-1",
+   "lamina": "A-501",
+   "errorCm": 0.8
+  },
+  {
+   "codigo": "3.1.4.3.9-1",
+   "lamina": "A-501",
+   "errorCm": 0.7
+  },
+  {
+   "codigo": "3.1.4.3.1-1",
+   "lamina": "A-501",
+   "errorCm": 0.7
+  },
+  {
+   "codigo": "3.1.4.3.1-2",
+   "lamina": "A-501",
+   "errorCm": 0.8
+  },
+  {
+   "codigo": "3.1.4.3.10-1",
+   "lamina": "A-501",
+   "errorCm": 1.5
+  },
+  {
+   "codigo": "3.1.4.3.2-2",
+   "lamina": "A-501",
+   "errorCm": 0.8
+  },
+  {
+   "codigo": "3.1.4.3.2-1",
+   "lamina": "A-501",
+   "errorCm": 0.8
+  },
+  {
+   "codigo": "3.1.4.3.3-1",
+   "lamina": "A-501",
+   "errorCm": 0.7
+  },
+  {
+   "codigo": "3.1.4.3.7-1",
+   "lamina": "A-501",
+   "errorCm": 0.8
+  },
+  {
+   "codigo": "3.1.4.3.4-1",
+   "lamina": "A-501",
+   "errorCm": 0.6
+  },
+  {
+   "codigo": "3.1.4.3.8-1",
+   "lamina": "A-501",
+   "errorCm": 0.7
+  },
+  {
+   "codigo": "3.1.4.3.5-1",
+   "lamina": "A-501",
+   "errorCm": 0.7
+  },
+  {
+   "codigo": "3.1.4.3.11-1",
+   "lamina": "A-501",
+   "errorCm": 1.5
+  },
+  {
+   "codigo": "8.1.7.1.11-1",
+   "lamina": "A-501",
+   "errorCm": 1.3
+  },
+  {
+   "codigo": "8.1.7.1.7-1",
+   "lamina": "A-501",
+   "errorCm": 0.7
+  },
+  {
+   "codigo": "8.1.4.1.17-1",
+   "lamina": "A-501",
+   "errorCm": 1.5
+  },
+  {
+   "codigo": "8.1.4.1.18-1",
+   "lamina": "A-501",
+   "errorCm": 1.4
+  },
+  {
+   "codigo": "CU.3.1.4-1",
+   "lamina": "A-501",
+   "errorCm": 0.7
+  },
+  {
+   "codigo": "10.1.1.1.6-1",
+   "lamina": "A-502",
+   "errorCm": 1.4
+  },
+  {
+   "codigo": "8.2.4.4.6-3",
+   "lamina": "A-502",
+   "errorCm": 0.6
+  },
+  {
+   "codigo": "8.2.4.4.9-1",
+   "lamina": "A-502",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "8.2.4.4.6-4",
+   "lamina": "A-502",
+   "errorCm": 0.6
+  },
+  {
+   "codigo": "8.2.4.4.6-2",
+   "lamina": "A-502",
+   "errorCm": 0.7
+  },
+  {
+   "codigo": "8.2.4.1.5-1",
+   "lamina": "A-502",
+   "errorCm": 0.6
+  },
+  {
+   "codigo": "8.2.4.1.4-1",
+   "lamina": "A-502",
+   "errorCm": 0.6
+  },
+  {
+   "codigo": "8.2.4.4.11-1",
+   "lamina": "A-502",
+   "errorCm": 1.5
+  },
+  {
+   "codigo": "8.1.4.1.13-1",
+   "lamina": "A-502",
+   "errorCm": 1.5
+  },
+  {
+   "codigo": "8.1.4.1.15-1",
+   "lamina": "A-502",
+   "errorCm": 1.4
+  },
+  {
+   "codigo": "8.1.4.1.14-1",
+   "lamina": "A-502",
+   "errorCm": 1.6
+  },
+  {
+   "codigo": "8.2.4.4.9-2",
+   "lamina": "A-502",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "8.2.4.4.1-1",
+   "lamina": "A-502",
+   "errorCm": 0.6
+  },
+  {
+   "codigo": "CU.8.2.4-2",
+   "lamina": "A-502",
+   "errorCm": 0.6
+  },
+  {
+   "codigo": "8.2.4.1.5-2",
+   "lamina": "A-502",
+   "errorCm": 0.6
+  },
+  {
+   "codigo": "3.1.1.7.4-1",
+   "lamina": "A-503",
+   "errorCm": 0.2
+  },
+  {
+   "codigo": "CU.3.1.1-2",
+   "lamina": "A-503",
+   "errorCm": 0.2
+  },
+  {
+   "codigo": "CU.8.1.4-1",
+   "lamina": "A-503",
+   "errorCm": 0.2
+  },
+  {
+   "codigo": "3.1.1.7.12-2",
+   "lamina": "A-503",
+   "errorCm": 1.8
+  },
+  {
+   "codigo": "3.1.1.7.15-1",
+   "lamina": "A-503",
+   "errorCm": 1.8
+  },
+  {
+   "codigo": "3.1.1.7.9-2",
+   "lamina": "A-503",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "3.1.1.7.5-1",
+   "lamina": "A-503",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "3.1.1.7.11-1",
+   "lamina": "A-503",
+   "errorCm": 1.8
+  },
+  {
+   "codigo": "3.1.1.7.9-1",
+   "lamina": "A-503",
+   "errorCm": 0.2
+  },
+  {
+   "codigo": "3.1.1.7.14-1",
+   "lamina": "A-503",
+   "errorCm": 1.9
+  },
+  {
+   "codigo": "3.1.1.7.17-1",
+   "lamina": "A-503",
+   "errorCm": 1.7
+  },
+  {
+   "codigo": "3.1.1.7.16-1",
+   "lamina": "A-503",
+   "errorCm": 1.7
+  },
+  {
+   "codigo": "3.1.1.7.13-1",
+   "lamina": "A-503",
+   "errorCm": 1.7
+  },
+  {
+   "codigo": "3.1.1.7.3-1",
+   "lamina": "A-503",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "3.1.1.7.6-1",
+   "lamina": "A-503",
+   "errorCm": 0.2
+  },
+  {
+   "codigo": "3.1.1.7.2-1",
+   "lamina": "A-503",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "3.1.1.7.10-1",
+   "lamina": "A-503",
+   "errorCm": 1.8
+  },
+  {
+   "codigo": "3.1.1.6.6-1",
+   "lamina": "A-503",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "CU.3.1.1-5",
+   "lamina": "A-503",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "8.2.4.2.12-1",
+   "lamina": "A-503",
+   "errorCm": 1.8
+  },
+  {
+   "codigo": "8.1.4.1.3-1",
+   "lamina": "A-503",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "8.1.4.1.4-1",
+   "lamina": "A-503",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "8.1.4.1.6-1",
+   "lamina": "A-503",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "8.1.4.1.8-1",
+   "lamina": "A-503",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "8.1.4.1.9-2",
+   "lamina": "A-503",
+   "errorCm": 0.2
+  },
+  {
+   "codigo": "8.1.4.1.7-1",
+   "lamina": "A-503",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "8.1.4.1.19-1",
+   "lamina": "A-503",
+   "errorCm": 1.8
+  },
+  {
+   "codigo": "8.1.4.1.1-1",
+   "lamina": "A-503",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "8.1.4.1.10-1",
+   "lamina": "A-503",
+   "errorCm": 1.7
+  },
+  {
+   "codigo": "8.1.4.1.10-2",
+   "lamina": "A-503",
+   "errorCm": 1.9
+  },
+  {
+   "codigo": "8.1.4.1.5-1",
+   "lamina": "A-503",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "8.1.4.1.9-1",
+   "lamina": "A-503",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "8.1.4.1.5-2",
+   "lamina": "A-503",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "8.2.4.2.14-1",
+   "lamina": "A-503",
+   "errorCm": 1.7
+  },
+  {
+   "codigo": "8.1.4.1.20-1",
+   "lamina": "A-503",
+   "errorCm": 1.9
+  },
+  {
+   "codigo": "10.1.1.1.14-2",
+   "lamina": "A-503",
+   "errorCm": 4
+  },
+  {
+   "codigo": "3.1.1.6.4-6",
+   "lamina": "A-504",
+   "errorCm": 0.2
+  },
+  {
+   "codigo": "3.1.1.6.4-1",
+   "lamina": "A-504",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "3.1.1.6.4-2",
+   "lamina": "A-504",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "3.1.1.6.1-1",
+   "lamina": "A-504",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "7.1.2.1.2-2",
+   "lamina": "A-504",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "7.1.2.1.2-1",
+   "lamina": "A-504",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "7.1.2.1.2-3",
+   "lamina": "A-504",
+   "errorCm": 0.2
+  },
+  {
+   "codigo": "7.1.2.1.5-1",
+   "lamina": "A-504",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "CU.7.1.2-1",
+   "lamina": "A-504",
+   "errorCm": 0.2
+  },
+  {
+   "codigo": "3.1.1.6.4-5",
+   "lamina": "A-504",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "3.1.1.6.13-1",
+   "lamina": "A-504",
+   "errorCm": 1.9
+  },
+  {
+   "codigo": "3.1.1.6.8-1",
+   "lamina": "A-504",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "3.1.1.6.5-1",
+   "lamina": "A-504",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "3.1.1.6.9-1",
+   "lamina": "A-504",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "3.1.1.6.7-1",
+   "lamina": "A-504",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "3.1.1.6.10-1",
+   "lamina": "A-504",
+   "errorCm": 1.8
+  },
+  {
+   "codigo": "7.1.2.1.7-1",
+   "lamina": "A-504",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "CU.3.1.1-6",
+   "lamina": "A-504",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "8.1.7.1.6-1",
+   "lamina": "A-505",
+   "errorCm": 0.6
+  },
+  {
+   "codigo": "8.1.7.1.9-1",
+   "lamina": "A-505",
+   "errorCm": 0.6
+  },
+  {
+   "codigo": "8.1.7.1.8-1",
+   "lamina": "A-505",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "8.1.7.1.10-1",
+   "lamina": "A-505",
+   "errorCm": 1.6
+  },
+  {
+   "codigo": "8.1.7.1.12-1",
+   "lamina": "A-505",
+   "errorCm": 1.6
+  },
+  {
+   "codigo": "8.1.7.1.13-1",
+   "lamina": "A-505",
+   "errorCm": 1.7
+  },
+  {
+   "codigo": "CU.8.1.7-1",
+   "lamina": "A-505",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "8.1.7.1.14-2",
+   "lamina": "A-505",
+   "errorCm": 1.7
+  },
+  {
+   "codigo": "8.1.7.1.1-1",
+   "lamina": "A-505",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "8.1.7.1.14-4",
+   "lamina": "A-505",
+   "errorCm": 1.7
+  },
+  {
+   "codigo": "8.1.7.1.14-1",
+   "lamina": "A-505",
+   "errorCm": 1.7
+  },
+  {
+   "codigo": "8.1.7.1.3-1",
+   "lamina": "A-505",
+   "errorCm": 0.6
+  },
+  {
+   "codigo": "8.1.7.1.2-1",
+   "lamina": "A-505",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "8.1.7.1.15-1",
+   "lamina": "A-505",
+   "errorCm": 1.6
+  },
+  {
+   "codigo": "8.1.7.1.4-1",
+   "lamina": "A-505",
+   "errorCm": 0.6
+  },
+  {
+   "codigo": "8.1.7.1.14-3",
+   "lamina": "A-505",
+   "errorCm": 1.7
+  },
+  {
+   "codigo": "8.1.7.1.5-1",
+   "lamina": "A-505",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "8.1.7.1.16-1",
+   "lamina": "A-505",
+   "errorCm": 1.6
+  },
+  {
+   "codigo": "CU.8.1.7-2",
+   "lamina": "A-505",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "9.1.2.1.2-2",
+   "lamina": "A-506",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "9.1.2.1.5-1",
+   "lamina": "A-506",
+   "errorCm": 0.6
+  },
+  {
+   "codigo": "9.1.2.1.1-1",
+   "lamina": "A-506",
+   "errorCm": 0.6
+  },
+  {
+   "codigo": "8.2.1.1.5-1",
+   "lamina": "A-506",
+   "errorCm": 0.6
+  },
+  {
+   "codigo": "8.2.4.4.7-2",
+   "lamina": "A-506",
+   "errorCm": 0.6
+  },
+  {
+   "codigo": "8.2.1.1.4-2",
+   "lamina": "A-506",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "8.2.1.1.4-1",
+   "lamina": "A-506",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "8.2.4.2.13-1",
+   "lamina": "A-506",
+   "errorCm": 1.6
+  },
+  {
+   "codigo": "8.2.4.2.11-1",
+   "lamina": "A-506",
+   "errorCm": 1.6
+  },
+  {
+   "codigo": "8.2.1.1.3-1",
+   "lamina": "A-506",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "8.2.4.4.3-1",
+   "lamina": "A-506",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "8.2.4.4.5-1",
+   "lamina": "A-506",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "8.2.4.4.5-2",
+   "lamina": "A-506",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "8.2.1.1.2-2",
+   "lamina": "A-506",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "8.2.4.3.5-1",
+   "lamina": "A-506",
+   "errorCm": 0.6
+  },
+  {
+   "codigo": "8.2.4.3.6-1",
+   "lamina": "A-506",
+   "errorCm": 0.6
+  },
+  {
+   "codigo": "8.2.4.2.8-1",
+   "lamina": "A-506",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "8.2.4.3.7-2",
+   "lamina": "A-506",
+   "errorCm": 0.6
+  },
+  {
+   "codigo": "8.2.4.2.6-1",
+   "lamina": "A-506",
+   "errorCm": 0.6
+  },
+  {
+   "codigo": "8.2.4.3.3-2",
+   "lamina": "A-506",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "8.2.4.3.6-2",
+   "lamina": "A-506",
+   "errorCm": 0.6
+  },
+  {
+   "codigo": "8.2.4.3.1-1",
+   "lamina": "A-506",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "8.2.4.3.2-1",
+   "lamina": "A-506",
+   "errorCm": 0.6
+  },
+  {
+   "codigo": "8.2.4.3.3-1",
+   "lamina": "A-506",
+   "errorCm": 0.7
+  },
+  {
+   "codigo": "8.2.4.3.4-1",
+   "lamina": "A-506",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "8.2.4.3.4-2",
+   "lamina": "A-506",
+   "errorCm": 0.6
+  },
+  {
+   "codigo": "8.2.4.2.3-1",
+   "lamina": "A-506",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "8.2.4.2.9-1",
+   "lamina": "A-506",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "8.2.4.2.5-1",
+   "lamina": "A-506",
+   "errorCm": 0.6
+  },
+  {
+   "codigo": "8.2.4.2.9-2",
+   "lamina": "A-506",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "8.2.4.2.4-1",
+   "lamina": "A-506",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "8.2.4.2.1-1",
+   "lamina": "A-506",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "8.2.4.2.7-1",
+   "lamina": "A-506",
+   "errorCm": 0.6
+  },
+  {
+   "codigo": "8.2.4.2.2-1",
+   "lamina": "A-506",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "8.2.4.3.5-2",
+   "lamina": "A-506",
+   "errorCm": 0.6
+  },
+  {
+   "codigo": "CU.3.1.1-9",
+   "lamina": "A-506",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "CU.8.2.4-3",
+   "lamina": "A-506",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "8.2.4.4.7-1",
+   "lamina": "A-506",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "CU.8.2.4-1",
+   "lamina": "A-506",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "8.2.4.3.6-3",
+   "lamina": "A-506",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "CU.3.1.1-11",
+   "lamina": "A-506",
+   "errorCm": 1.8
+  },
+  {
+   "codigo": "CU.3.1.1-1",
+   "lamina": "A-507",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "3.1.1.1.2-1",
+   "lamina": "A-507",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "3.1.1.2.6-1",
+   "lamina": "A-507",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "3.1.1.1.1-1",
+   "lamina": "A-507",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "3.1.1.7.1-1",
+   "lamina": "A-507",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "3.1.1.4.1-1",
+   "lamina": "A-507",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "3.1.1.4.3-1",
+   "lamina": "A-507",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "3.1.1.4.3-2",
+   "lamina": "A-507",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "3.1.1.4.1-2",
+   "lamina": "A-507",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "3.1.1.4.2-2",
+   "lamina": "A-507",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "3.1.1.3.1-2",
+   "lamina": "A-507",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "3.1.1.3.1-1",
+   "lamina": "A-507",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "3.1.1.3.2-3",
+   "lamina": "A-507",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "3.1.1.3.2-2",
+   "lamina": "A-507",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "3.1.1.4.2-1",
+   "lamina": "A-507",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "3.1.1.4.2-3",
+   "lamina": "A-507",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "3.1.1.4.2-4",
+   "lamina": "A-507",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "3.1.1.3.3-1",
+   "lamina": "A-507",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "3.1.1.3.3-2",
+   "lamina": "A-507",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "3.1.1.3.3-3",
+   "lamina": "A-507",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "3.1.1.3.3-4",
+   "lamina": "A-507",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "3.1.1.3.3-5",
+   "lamina": "A-507",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "3.1.1.1.3-1",
+   "lamina": "A-507",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "3.1.1.1.3-2",
+   "lamina": "A-507",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "3.1.1.7.1-2",
+   "lamina": "A-507",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "3.1.1.1.4-1",
+   "lamina": "A-507",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "3.1.1.2.1-1",
+   "lamina": "A-507",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "3.1.1.2.4-1",
+   "lamina": "A-507",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "3.1.1.2.3-1",
+   "lamina": "A-507",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "3.1.1.2.5-1",
+   "lamina": "A-507",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "3.1.1.7.7-1",
+   "lamina": "A-507",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "3.1.1.7.12-1",
+   "lamina": "A-507",
+   "errorCm": 1.8
+  },
+  {
+   "codigo": "3.1.1.7.12-3",
+   "lamina": "A-507",
+   "errorCm": 1.6
+  },
+  {
+   "codigo": "9.1.3.1.9-1",
+   "lamina": "A-507",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "9.1.3.1.9-2",
+   "lamina": "A-507",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "9.1.3.1.10-1",
+   "lamina": "A-507",
+   "errorCm": 1.8
+  },
+  {
+   "codigo": "9.1.3.1.2-1",
+   "lamina": "A-507",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "9.1.3.1.12-1",
+   "lamina": "A-507",
+   "errorCm": 1.8
+  },
+  {
+   "codigo": "9.1.4.2.2-1",
+   "lamina": "A-507",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "9.1.4.2.3-1",
+   "lamina": "A-507",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "9.1.4.2.1-1",
+   "lamina": "A-507",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "9.1.4.1.5-3",
+   "lamina": "A-507",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "CU.9.1.4-1",
+   "lamina": "A-507",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "3.1.1.3.2-1",
+   "lamina": "A-507",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "8.1.4.1.16-1",
+   "lamina": "A-507",
+   "errorCm": 1.6
+  },
+  {
+   "codigo": "8.1.4.1.20-2",
+   "lamina": "A-507",
+   "errorCm": 1.6
+  },
+  {
+   "codigo": "CU.3.1.1-4",
+   "lamina": "A-507",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "CU.3.1.1-8",
+   "lamina": "A-507",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "2.1.4.1.2-1",
+   "lamina": "A-508",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "2.1.4.1.5-1",
+   "lamina": "A-508",
+   "errorCm": 0.2
+  },
+  {
+   "codigo": "2.1.4.1.4-1",
+   "lamina": "A-508",
+   "errorCm": 0.2
+  },
+  {
+   "codigo": "2.1.4.1.3-2",
+   "lamina": "A-508",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "2.1.4.1.3-1",
+   "lamina": "A-508",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "2.1.4.3.4-1",
+   "lamina": "A-508",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "2.1.4.3.1-1",
+   "lamina": "A-508",
+   "errorCm": 0.2
+  },
+  {
+   "codigo": "2.1.4.2.1-1",
+   "lamina": "A-508",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "2.1.4.2.2-1",
+   "lamina": "A-508",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "2.1.4.3.5-1",
+   "lamina": "A-508",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "2.1.4.3.6-1",
+   "lamina": "A-508",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "2.1.4.2.3-1",
+   "lamina": "A-508",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "2.1.4.3.2-1",
+   "lamina": "A-508",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "2.1.4.3.3-1",
+   "lamina": "A-508",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "2.1.4.3.8-1",
+   "lamina": "A-508",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "3.2.4.2.1-2",
+   "lamina": "A-508",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "3.2.4.2.1-1",
+   "lamina": "A-508",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "3.2.4.3.1-1",
+   "lamina": "A-508",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "3.2.4.3.5-1",
+   "lamina": "A-508",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "3.2.4.2.4-1",
+   "lamina": "A-508",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "2.1.4.1.1-1",
+   "lamina": "A-508",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "3.1.1.6.1-2",
+   "lamina": "A-508",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "3.1.1.6.2-1",
+   "lamina": "A-508",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "3.2.4.3.4-1",
+   "lamina": "A-508",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "CU.3.2.4-1",
+   "lamina": "A-508",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "7.1.2.1.3-1",
+   "lamina": "A-508",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "7.1.2.1.6-1",
+   "lamina": "A-508",
+   "errorCm": 0.2
+  },
+  {
+   "codigo": "7.1.2.1.4-1",
+   "lamina": "A-508",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "3.2.4.1.1-1",
+   "lamina": "A-508",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "3.1.1.5.1-1",
+   "lamina": "A-508",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "3.1.1.5.2-1",
+   "lamina": "A-508",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "3.1.1.6.16-1",
+   "lamina": "A-508",
+   "errorCm": 1.7
+  },
+  {
+   "codigo": "3.1.1.5.3-2",
+   "lamina": "A-508",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "3.1.1.6.15-1",
+   "lamina": "A-508",
+   "errorCm": 1.8
+  },
+  {
+   "codigo": "3.1.1.6.17-1",
+   "lamina": "A-508",
+   "errorCm": 1.9
+  },
+  {
+   "codigo": "3.1.1.6.14-1",
+   "lamina": "A-508",
+   "errorCm": 1.9
+  },
+  {
+   "codigo": "3.1.1.6.4-3",
+   "lamina": "A-508",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "3.1.1.6.4-4",
+   "lamina": "A-508",
+   "errorCm": 0.5
+  },
+  {
+   "codigo": "3.2.4.2.5-1",
+   "lamina": "A-508",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "3.2.4.3.3-1",
+   "lamina": "A-508",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "3.2.4.2.2-1",
+   "lamina": "A-508",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "3.2.4.2.3-1",
+   "lamina": "A-508",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "3.2.4.3.2-1",
+   "lamina": "A-508",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "3.2.4.1.2-1",
+   "lamina": "A-508",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "2.1.4.3.9-2",
+   "lamina": "A-508",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "2.1.4.3.7-1",
+   "lamina": "A-508",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "2.1.4.3.9-1",
+   "lamina": "A-508",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "3.2.4.1.3-1",
+   "lamina": "A-508",
+   "errorCm": 0.4
+  },
+  {
+   "codigo": "3.1.1.5.4-1",
+   "lamina": "A-508",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "CU.3.1.1-7",
+   "lamina": "A-508",
+   "errorCm": 0.3
+  },
+  {
+   "codigo": "CU.2.1.4-1",
+   "lamina": "A-508",
+   "errorCm": 0.2
+  },
+  {
+   "codigo": "CU.3.1.1-10",
+   "lamina": "A-508",
+   "errorCm": 2.1
+  }
+ ],
+ "escala": 0.5669190375559987,
+ "giroGrados": 0.0008528615342528731,
+ "medianaCm": 0.48853177617970023,
+ "p90Cm": 1.7076819691720455,
+ "porLamina": {
+  "A-501": {
+   "pares": 27,
+   "medianaCm": 0.7
+  },
+  "A-502": {
+   "pares": 15,
+   "medianaCm": 0.6
+  },
+  "A-503": {
+   "pares": 36,
+   "medianaCm": 0.3
+  },
+  "A-504": {
+   "pares": 18,
+   "medianaCm": 0.3
+  },
+  "A-505": {
+   "pares": 19,
+   "medianaCm": 0.6
+  },
+  "A-506": {
+   "pares": 41,
+   "medianaCm": 0.5
+  },
+  "A-507": {
+   "pares": 48,
+   "medianaCm": 0.5
+  },
+  "A-508": {
+   "pares": 52,
+   "medianaCm": 0.3
+  }
+ },
+ "T": {
+  "c": 0.5669190374931925,
+  "s": 0.000008438726975324912,
+  "tx": 5865.5057584471215,
+  "ty": 6893.69922661855
+ }
+}

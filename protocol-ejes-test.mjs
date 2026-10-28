@@ -20,12 +20,12 @@ assert.equal(leerEjes('AD-AE/A1-A2 N1T').ignorado, 'N1T');
 assert.equal(leerEjes('AJ-AF/A9-A12 (Colada 5.1)').ignorado, '(Colada 5.1)');
 for (const sin of ['S/N', 'Linea 1_138', 'Descrito en monografia', 'BG-BG2/B4-B8', '', null]) assert.equal(leerEjes(sin), null, String(sin));
 
-// 2. Grilla de cada piso: los mismos 40 ejes del edificio A; letras horizontales y números verticales, cada 8,2 m.
+// 2. Grilla de cada piso (el −1 en dist/ejes.json): los mismos 41 ejes del edificio A; letras horizontales y números verticales, cada 8,2 m.
 const grillas = {};
-for (const piso of ['n01', 'n02', 'n03']) {
-  const datos = JSON.parse(readFileSync(`dist/${piso}/ejes.json`, 'utf8'));
+for (const piso of ['n01', 'n02', 'n03', 's01']) {
+  const datos = JSON.parse(readFileSync(piso === 's01' ? 'dist/ejes.json' : `dist/${piso}/ejes.json`, 'utf8'));
   assert.equal(datos.schema, 1);
-  assert.equal(datos.ejes.length, 40, piso);
+  assert.equal(datos.ejes.length, 41, piso);
   grillas[piso] = crearGrilla(datos);
   for (const id of ['AA', 'AD', 'AH', 'AO1', 'AW', 'A0', 'A3', "A3'", 'A12']) assert(grillas[piso].ejes.has(id), piso + ' ' + id);
   for (const e of grillas[piso].ejes.values()) assert(e.tipo === 'letra' ? Math.abs(e.u[1]) < 1e-6 : Math.abs(e.u[0]) < 1e-6, piso + ' ' + e.id + ' no es ortogonal');
@@ -59,7 +59,7 @@ assert.equal(motivoSinUbicar(null, ubicarEjes(null, g)), 'La celda EJES está va
 assert.equal(motivoSinUbicar('Nucleo N6P', ubicarEjes('Nucleo N6P', g)), 'El texto no nombra ejes del edificio A (AA…AW con A0…A12).');
 assert.equal(motivoSinUbicar('AZ/A3-A4', ubicarEjes('AZ/A3-A4', g)), 'Nombra ejes que no están en la grilla del plano: AZ.');
 // Todos los pisos comparten coordenadas del modelo: el mismo protocolo cae en la misma zona relativa a sus ejes.
-for (const piso of ['n02', 'n03']) { const z = ubicarEjes('AD-AG/A3-A5', grillas[piso]), gp = grillas[piso]; assert(Math.abs(z.caja[0] - gp.ejes.get('A3').a[0]) < 0.01 && Math.abs(z.caja[1] - gp.ejes.get('AD').a[1]) < 0.01, piso); }
+for (const piso of ['n02', 'n03', 's01']) { const z = ubicarEjes('AD-AG/A3-A5', grillas[piso]), gp = grillas[piso]; assert(Math.abs(z.caja[0] - gp.ejes.get('A3').a[0]) < 0.01 && Math.abs(z.caja[1] - gp.ejes.get('AD').a[1]) < 0.01, piso); }
 
 // 4. Número de protocolo a tres cifras.
 assert.deepEqual(['7', '60', '1416', ' ', '12-B', null].map(numeroProtocolo), ['007', '060', '1416', 's/n', '12-B', 's/n']);
@@ -68,10 +68,10 @@ assert.deepEqual(['7', '60', '1416', ' ', '12-B', null].map(numeroProtocolo), ['
 const catalog = JSON.parse(readFileSync('dist/protocols/catalog.json', 'utf8')), filas = [];
 for (const type of catalog.types) filas.push(...decodeMatrixRows(JSON.parse(readFileSync('dist/protocols/' + type.file, 'utf8')), catalog, type));
 const cobertura = {};
-for (const [piso, minimo] of [['N01', 0.8], ['N02', 0.94], ['N03', 0.94]]) {
+for (const [piso, minimo, grilla] of [['N01', 0.8, 'n01'], ['N02', 0.94, 'n02'], ['N03', 0.94, 'n03'], ['N-1', 0.75, 's01']]) {
   const delPiso = filas.filter(f => onProtocolFloor(f.level, piso) && String(f.state ?? '').trim() !== 'NULO');
-  const ubicados = delPiso.filter(f => ubicarEjes(f.axes, grillas[piso.toLowerCase()]).estado === 'ok').length;
+  const ubicados = delPiso.filter(f => ubicarEjes(f.axes, grillas[grilla]).estado === 'ok').length;
   cobertura[piso] = `${ubicados}/${delPiso.length}`;
   assert(ubicados / delPiso.length >= minimo, `${piso}: ${ubicados} de ${delPiso.length}`);
 }
-console.log('Protocolos por ejes: lectura de EJES, grilla DWG de N01–N03 (40 ejes, ortogonal), zona/tramo/pilar/franja, aproximación A12B→A12, número 001 y cobertura real ' + JSON.stringify(cobertura) + ' validados.');
+console.log('Protocolos por ejes: lectura de EJES, grilla DWG de −1, 1, 2 y 3 (41 ejes, ortogonal), zona/tramo/pilar/franja, aproximación A12B→A12, número 001 y cobertura real ' + JSON.stringify(cobertura) + ' validados.');

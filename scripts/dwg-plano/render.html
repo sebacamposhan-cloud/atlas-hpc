@@ -7,12 +7,15 @@
 // en dist/<nivel>/map/<capa>/<z>/, solo donde tiene dibujo. Genera también la imagen del rombo de cada recinto para su ficha.
 // render.html?nivel=n01 genera todo; &x=..&y=..&w=..&h=..&s=.. muestra una zona de prueba (coordenadas de Atlas) y &guardar=nombre
 // la deja en data/<nivel>/revision/ (no se publica).
+// El nivel −1 (s01) dibuja en el marco de su plano existente: marco.origen es la esquina de la ventana del mapa y
+// marco.carpeta la carpeta de dist donde van sus mosaicos («map», la del −1); no genera rombos (el −1 ya tiene los suyos).
 const q = new URLSearchParams(location.search), nivel = q.get('nivel');
-const log = s => { document.getElementById('out').textContent = s; fetch(`/save?name=dist/${nivel}/map/estado.txt`, {method: 'POST', body: s}); };
-addEventListener('error', e => log('ERROR ' + e.message));
-addEventListener('unhandledrejection', e => log('ERROR ' + (e.reason?.message || e.reason)));
 const leer = async f => (await fetch(`/repo/data/${nivel}/${f}`)).json();
 const marco = await leer('marco.json'), dibujo = await leer('dibujo.json'), laminas = await leer('laminas.json');
+const carpeta = marco.carpeta || `${nivel}/map`, [OX, OY] = marco.origen || [0, 0], conRombos = !marco.carpeta;
+const log = s => { document.getElementById('out').textContent = s; fetch(`/save?name=dist/${carpeta}/estado.txt`, {method: 'POST', body: s}); };
+addEventListener('error', e => log('ERROR ' + e.message));
+addEventListener('unhandledrejection', e => log('ERROR ' + (e.reason?.message || e.reason)));
 const E = marco.escala, X = x => (x - marco.ox) * E, Y = y => (marco.oy - y) * E;
 const CAPAS = [{id: 'relleno', nombre: 'Relleno de pasillos y zonas'}, {id: 'mobiliario', nombre: 'Mobiliario y equipos'}, {id: 'ejes', nombre: 'Ejes de grilla'}];
 
@@ -78,7 +81,7 @@ function compuesto(x, y, w, h, s) {
   return c;
 }
 const enviar = async (name, c, type = 'image/webp', quality = .82) => fetch('/save?name=' + name, {method: 'POST', body: await new Promise(r => c.toBlob(r, type, quality))});
-const save = (name, c, type, quality) => enviar(`dist/${nivel}/map/${name}`, c, type, quality);
+const save = (name, c, type, quality) => enviar(`dist/${carpeta}/${name}`, c, type, quality);
 
 if (q.has('x')) {
   const c = compuesto(+q.get('x'), +q.get('y'), +q.get('w'), +q.get('h'), +(q.get('s') || 1));
@@ -92,14 +95,14 @@ if (q.has('x')) {
     L.columns = Math.ceil(marco.width * L.scale / tile); L.rows = Math.ceil(marco.height * L.scale / tile);
     const span = tile / L.scale;
     for (let by = 0; by < L.rows; by += CH) for (let bx = 0; bx < L.columns; bx += CH) {
-      const x = bx * span, y = by * span, w = Math.min(CH, L.columns - bx) * span, h = Math.min(CH, L.rows - by) * span;
+      const x = OX + bx * span, y = OY + by * span, w = Math.min(CH, L.columns - bx) * span, h = Math.min(CH, L.rows - by) * span;
       for (const capa of ['base', ...CAPAS.map(c => c.id)]) {
         const c = document.createElement('canvas'); c.width = Math.round(w * L.scale); c.height = Math.round(h * L.scale);
         const ctx = c.getContext('2d'); if (capa === 'base') { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height); }
         if (!dibujar(ctx, capa, x, y, w, h, L.scale) && capa !== 'base') continue;
         for (let j = 0; j * tile < c.height; j++) for (let i = 0; i * tile < c.width; i++) {
           const tx = bx + i, ty = by + j;
-          if (capa !== 'base' && !consulta(DATOS[capa], tx * span, ty * span, span, span).length) continue;
+          if (capa !== 'base' && !consulta(DATOS[capa], OX + tx * span, OY + ty * span, span, span).length) continue;
           const tw = Math.min(tile, c.width - i * tile), th = Math.min(tile, c.height - j * tile), t = document.createElement('canvas');
           t.width = tw; t.height = th; t.getContext('2d').drawImage(c, i * tile, j * tile, tw, th, 0, 0, tw, th);
           await save(`${capa === 'base' ? '' : capa + '/'}${L.z}/${tx}_${ty}.webp`, t, 'image/webp', capa === 'base' ? .82 : .85);
@@ -113,12 +116,12 @@ if (q.has('x')) {
   for (const capa of ['base', ...CAPAS.map(c => c.id)]) {
     const c = document.createElement('canvas'); c.width = Math.round(marco.width * .3); c.height = Math.round(marco.height * .3);
     const ctx = c.getContext('2d'); if (capa === 'base') { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height); }
-    dibujar(ctx, capa, 0, 0, marco.width, marco.height, .3);
+    dibujar(ctx, capa, OX, OY, marco.width, marco.height, .3);
     await save(capa === 'base' ? 'overview.webp' : capa + '/overview.webp', c, 'image/webp', .8);
   }
-  await save('export.jpg', compuesto(0, 0, marco.width, marco.height, .5), 'image/jpeg', .85);
+  await save('export.jpg', compuesto(OX, OY, marco.width, marco.height, .5), 'image/jpeg', .85);
   // Imagen del rombo de cada recinto para su ficha (dist/<nivel>/rombos/<código>.png): el dibujo base recortado al rombo.
-  const cajas = {}, unicos = new Map(); for (const r of laminas.rombos) if (r.codigo && !unicos.has(r.codigo)) unicos.set(r.codigo, r);
+  const cajas = {}, unicos = new Map(); if (conRombos) for (const r of laminas.rombos) if (r.codigo && !unicos.has(r.codigo)) unicos.set(r.codigo, r);
   for (const [codigo, r] of unicos) {
     const lineas = laminas.bloques[r.bloque]; if (!lineas?.length) continue;
     const co = Math.cos(r.giro), si = Math.sin(r.giro), P = ([u, v]) => [X(r.p[0] + r.escala * (co * u - si * v)), Y(r.p[1] + r.escala * (si * u + co * v))];
@@ -136,10 +139,10 @@ if (q.has('x')) {
     await enviar(`dist/${nivel}/rombos/${encodeURIComponent(codigo)}.png`, c, 'image/png');
     cajas[codigo] = [x0, y0, x1, y1].map(v => +v.toFixed(2));
   }
-  await fetch(`/save?name=data/${nivel}/rombos-plano.json`, {method: 'POST', body: JSON.stringify(cajas)});
-  await fetch(`/save?name=dist/${nivel}/map/index.json`, {method: 'POST', body: JSON.stringify({origin: [0, 0], width: marco.width, height: marco.height, tileSize: tile,
-    overview: `${nivel}/map/overview.webp`, export: `${nivel}/map/export.jpg`, tilePath: `${nivel}/map/`, levels: levels.map(({z, scale, columns, rows}) => ({z, scale, columns, rows})),
-    capas: CAPAS.map(c => ({...c, tilePath: `${nivel}/map/${c.id}/`, overview: `${nivel}/map/${c.id}/overview.webp`, teselas: presentes[c.id]}))})});
+  if (conRombos) await fetch(`/save?name=data/${nivel}/rombos-plano.json`, {method: 'POST', body: JSON.stringify(cajas)});
+  await fetch(`/save?name=dist/${carpeta}/index.json`, {method: 'POST', body: JSON.stringify({origin: [OX, OY], width: marco.width, height: marco.height, tileSize: tile,
+    overview: `${carpeta}/overview.webp`, export: `${carpeta}/export.jpg`, tilePath: `${carpeta}/`, levels: levels.map(({z, scale, columns, rows}) => ({z, scale, columns, rows})),
+    capas: CAPAS.map(c => ({...c, tilePath: `${carpeta}/${c.id}/`, overview: `${carpeta}/${c.id}/overview.webp`, teselas: presentes[c.id]}))})});
   log('TERMINADO en ' + ((performance.now() - t0) / 1000).toFixed(0) + ' s · rombos ' + Object.keys(cajas).length);
 }
 </script>

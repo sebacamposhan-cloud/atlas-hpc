@@ -1,6 +1,6 @@
 # Plano por capas, rombos y contornos desde las láminas DWG
 
-Dibuja el plano de un nivel directamente desde sus láminas DWG de arquitectura 1:50, sin PDF. Se usa para los niveles 1, 2 y 3.
+Dibuja el plano de un nivel directamente desde sus láminas DWG de arquitectura 1:50, sin PDF. Se usa para los niveles 1, 2 y 3, y para el −1 (`s01`), que se dibuja en el marco de su plano anterior: ver `scripts/s01-plano/LEEME.md`.
 
 Fuentes, fuera del repo: carpetas «Planos N01», «Planos N02» y «Planos N03» con las láminas `HPC-ARQ-PLA-N0x-A-5xx`.
 
@@ -24,7 +24,7 @@ Fuentes, fuera del repo: carpetas «Planos N01», «Planos N02» y «Planos N03�
 - Cada capa que se puede apagar tiene teselas transparentes en `dist/<nivel>/map/<capa>/`, solo donde tiene dibujo.
 - El visor dibuja las capas sobre la base con mezcla «multiplicar».
 
-**Preferencia:** el botón «Capas» de la barra del plano guarda la elección en el equipo, y vale para todos los pisos. El nivel −1 viene de PDF sin capas, así que necesita sus láminas DWG para poder apagarlas.
+**Preferencia:** el botón «Capas» de la barra del plano guarda la elección en el equipo, y vale para todos los pisos, incluido el −1.
 
 ## Pasos
 

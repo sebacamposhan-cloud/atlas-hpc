@@ -3,7 +3,7 @@
 // cual (es lo que se quiere ver): rellenos tenues debajo y todos los bordes encima, con halo blanco, para que cada
 // límite se lea; cada número va sobre su figura. Los anulados (NULO) y los que no traen ejes ubicables no se dibujan:
 // van en el panel de la derecha citando lo que dice la matriz.
-// La grilla de ejes de cada piso sale del DWG (dist/<piso>/ejes.json, scripts/ejes/generar.mjs).
+// La grilla de ejes de cada piso sale del DWG (dist/ejes.json para el −1 y dist/<piso>/ejes.json, scripts/ejes/generar.mjs).
 import {nivel, datos} from './level.mjs';
 import {crearGrilla, ubicarEjes, numeroProtocolo, textoMedidas, motivoSinUbicar} from './protocol-ejes.mjs';
 import {stateLabels, stateColors} from './protocol-model.mjs';
@@ -14,7 +14,6 @@ function cargarGrilla() {
   return grillaPendiente ||= fetch(datos('ejes.json')).then(r => { if (!r.ok) throw Error('Sin grilla'); return r.json(); }).then(crearGrilla)
     .catch(error => { grillaPendiente = null; throw error; });
 }
-export const pisoConEjes = () => nivel.id !== 'N-1';
 
 export function createProtocolPlan(ctx) {
   const esc = ctx.esc, svg = document.getElementById('svg');
@@ -105,7 +104,6 @@ export function createProtocolPlan(ctx) {
 
   // filas: registros del protocolo en este piso (todos los estados); foco: id de un folio para centrarlo.
   async function mostrar({tipo, filas, foco: id = null}) {
-    if (!pisoConEjes()) { ctx.toast('El piso −1 aún no tiene la grilla de ejes: su plano viene de PDF. Por ahora los protocolos se ubican en los pisos 1, 2 y 3.'); return false; }
     let grilla;
     try { grilla = await cargarGrilla(); } catch { ctx.toast('No se pudo cargar la grilla de ejes del piso. Revisa la conexión o el paquete sin conexión.'); return false; }
     const ubicados = [], anulados = [], sinUbicar = [];
