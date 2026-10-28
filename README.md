@@ -33,6 +33,13 @@ Validación de navegación: `PLAYWRIGHT_MODULE=<ruta-a-playwright-core> node flo
 
 Para sumar un piso desde sus láminas DWG, sigue `scripts/dwg-plano/LEEME.md` (extraer, recintos, mosaicos e `scripts/import-dwg.mjs`). Después agrega una línea en `dist/pisos.js`, en `otherLevels` de `server/groq-server.mjs` y en `pmaLevels` de `dist/pma-model.mjs`, y ejecuta `node scripts/prepare-offline.mjs` y `node pisos-test.mjs`.
 
+## Observaciones en terreno con fotos
+
+Desde la ficha de cualquier recinto, «+ Observación con foto» abre la cámara del celular (solo cámara, fotos tomadas en el lugar) y registra qué se observa, terminación, categoría, prioridad, responsable y plazo. Tocando el recinto se ven sus observaciones con las miniaturas de sus fotos.
+- **Seguimiento:** Abierta → En corrección → Corregida (con foto «después» o comentario) → Cerrada, con historial completo.
+- **Control de obra → Observaciones en terreno:** pendientes, vencidas, corregidas por verificar y cierres, pendientes por responsable, filtros, capa del plano y respaldo JSON para llevarlas a otro equipo.
+- **Datos locales al equipo**, sin sincronización entre usuarios. [Uso y límites](docs/OBSERVACIONES_TERRENO.md).
+
 ## Avance por recinto · piloto nivel −1
 
 Control de obra → **Avance por recinto** sigue 330 recintos y 1.940 partidas PMA aplicables: instalación, condición, faltantes, observaciones, responsable, fecha e historial. Se registra desde Control o la ficha del plano. Gráficos de instalación, conformidad, avance por partida y pendientes por sector; filtros por asepsia, sector y estado. Datos locales al dispositivo con respaldo/importación y funcionamiento offline. [Alcance y validación](docs/ROOM_PROGRESS.md).
