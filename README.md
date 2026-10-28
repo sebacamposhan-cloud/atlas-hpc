@@ -9,7 +9,8 @@ Todos los pisos comparten visor, fichas, búsqueda, edición, exportaciones, res
 | Nivel 2 | `/?nivel=N02` | `dist/n02/` | Recintos y monografía de la planta DWG (8 láminas, `scripts/import-n02.mjs`); plano por capas dibujado desde esas láminas (`scripts/dwg-plano/`) |
 | Nivel 3 | `/?nivel=N03` | `dist/n03/` | 7 láminas DWG (A-502 a A-508; falta A-501): plano por capas, rombos y contornos (`scripts/dwg-plano/`, `scripts/import-dwg.mjs`) |
 
-- **Capas del dibujo.** En los niveles 1, 2 y 3, el botón «Capas» de la barra del plano apaga el relleno de pasillos y zonas, el mobiliario y los equipos, y los ejes de grilla. La elección se guarda en el equipo y vale para todos los pisos. El nivel −1 viene de PDF sin capas: lo indica en el mismo botón hasta que se carguen sus láminas DWG.
+- **Capas del dibujo.** En los cuatro niveles (−1, 1, 2 y 3), el botón «Capas» de la barra del plano apaga el relleno de pasillos y zonas, el mobiliario y los equipos, y los ejes de grilla. La elección se guarda en el equipo y vale para todos los pisos.
+- **El nivel −1** se dibuja desde sus láminas DWG (A-501…A-508, A-511, A-512) en el mismo marco que su plano PDF anterior. Sus recintos, contornos, rombos y correcciones siguen en su lugar: el error mediano del calce es 0,5 cm. Ver `scripts/s01-plano/LEEME.md`.
 - **Recintos de los niveles 1 y 3.** El contorno se obtiene rellenando desde el rótulo entre muros, puertas, ventanas y pilares, y se valida contra la superficie del PMA:
   - Nivel 1: 286 contornos, 9 parciales y 64 superficies auxiliares de 359 recintos.
   - Nivel 3: 233 contornos, 4 parciales y 71 superficies auxiliares de 308 recintos.
@@ -80,7 +81,7 @@ Fuente: `dist/source/matriz-control-protocolos-rev1-hpc.xlsx`. Para regenerar lo
 
 En Protocolos de la matriz se puede filtrar por elaboración o cierre con límites Desde/Hasta inclusivos. «Pendiente de cierre (abiertos)» es una vista de ABIERTO, ya que la fuente no contiene un estado PENDIENTE. «Cerrados (incluye autocontrol)» agrupa ambos estados de cierre sin modificar las filas originales.
 
-**En el plano por ejes (pisos 1, 2 y 3):** al elegir un protocolo, **Ver en el plano** encuadra cada folio entre sus ejes (por ejemplo, «AD-AG/A3-A5»). Cada folio lleva su número (001, 002…), cualquiera sea su estado. Los anulados no se dibujan: se listan a la derecha. [Detalle](docs/PROTOCOL_MATRIX.md#ubicación-en-el-plano-por-ejes).
+**En el plano por ejes (pisos −1, 1, 2 y 3):** al elegir un protocolo, **Ver en el plano** encuadra cada folio entre sus ejes (por ejemplo, «AD-AG/A3-A5»). Cada folio lleva su número (001, 002…), cualquiera sea su estado. Los anulados no se dibujan: se listan a la derecha. [Detalle](docs/PROTOCOL_MATRIX.md#ubicación-en-el-plano-por-ejes).
 
 Control de obra → Protocolos de la matriz → **Críticos · más de un año** muestra abiertos con fecha de elaboración válida, sin dato de cierre y con más de un año calendario a la fecha de evaluación. El aniversario exacto no es crítico. El análisis usa Hoy en America/Santiago por defecto; permite una fecha personalizada y distingue el estado de la matriz al corte de la antigüedad calculada.
 

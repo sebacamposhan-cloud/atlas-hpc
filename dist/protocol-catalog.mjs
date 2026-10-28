@@ -12,8 +12,8 @@ export async function renderProtocolCatalog(root,ctx,options={}){
  let catalog;
  try{catalog=await loadCatalog();}catch(error){if(!root.isConnected)return;root.innerHTML=`<p role="alert">${esc(error.message)}</p><button id="retryProtocolCatalog">Reintentar</button>`;root.querySelector('#retryProtocolCatalog').onclick=()=>renderProtocolCatalog(root,ctx,options);return;}
  if(!root.isConnected)return;
- // «Ver en el plano» encuadra cada folio por sus ejes; el piso −1 aún no tiene grilla de ejes (plano desde PDF).
- const enPlano=!!ctx.verProtocolos&&nivel.id!=='N-1';
+ // «Ver en el plano» encuadra cada folio por sus ejes (grilla del DWG de cada piso, también el −1).
+ const enPlano=!!ctx.verProtocolos;
  const floor=protocolFloors[nivel.id],key=KEY+':'+nivel.id,baseScope=scopeProtocolCatalog(catalog,nivel.id);let scope=scopeProtocolCatalog(catalog,nivel.id,'ABIERTO');
  let chosen=null,rows=[],page=0,serial=0,recordId=null,stored={};const defaults=()=>({state:root.querySelector('#matrixScopeState')?.value??'ABIERTO',level:'',receiver:'',query:'',dateField:'issued',dateFrom:'',dateTo:'',asOf:chileToday(),criticalOnly:false});const filters=defaults();
  try{const value=JSON.parse(localStorage.getItem(key)||'null');if(value?.sourceSha256===catalog.source.sha256)stored=value;}catch{}

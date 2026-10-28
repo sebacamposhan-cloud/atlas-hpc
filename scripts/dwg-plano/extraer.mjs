@@ -3,7 +3,8 @@
 // Las láminas exportadas desde Revit comparten las coordenadas del modelo (m): cada una aporta solo la ventana de su
 // vista en planta (el contorno de lo dibujado), así no entran la viñeta, la leyenda ni lo que queda fuera del encuadre.
 // Lector LibreDWG en WebAssembly (GPL), instalado fuera del repo como en scripts/n02-plano; no forma parte del sitio.
-// Uso: node scripts/dwg-plano/extraer.mjs <carpeta con node_modules del lector> <carpeta de láminas> <nivel: n01|n02|n03>
+// Uso: node scripts/dwg-plano/extraer.mjs <carpeta con node_modules del lector> <carpeta de láminas> <nivel: n01|n02|n03|s01>
+//   (s01 es el nivel −1: su marco se calza después con el plano PDF existente, ver scripts/s01-plano/ajuste.mjs)
 //   -> data/<nivel>/laminas.json y marco.json; dibujo.json y barreras.json son datos intermedios grandes (no se publican)
 import fs from 'node:fs';
 import path from 'node:path';
@@ -12,7 +13,7 @@ import {fileURLToPath, pathToFileURL} from 'node:url';
 import {calcularMarco} from './marco.mjs';
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const [herramienta, carpeta, nivel] = process.argv.slice(2);
-if (!/^n0\d$/.test(nivel || '')) throw Error('Indica el nivel: n01, n02 o n03.');
+if (!/^(n0\d|s01)$/.test(nivel || '')) throw Error('Indica el nivel: n01, n02, n03 o s01.');
 const {Dwg_File_Type, LibreDwg} = await import(pathToFileURL(path.join(herramienta, 'node_modules/@mlightcad/libredwg-web/dist/libredwg-web.js')).href);
 const libredwg = await LibreDwg.create(path.join(herramienta, 'node_modules/@mlightcad/libredwg-web/wasm/') + path.sep);
 const salidaDir = path.join(repo, 'data', nivel);

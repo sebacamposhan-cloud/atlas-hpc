@@ -31,7 +31,7 @@ La matriz se consulta sin editarla. Los protocolos locales y su historial existe
 
 ## Ubicación en el plano por ejes
 
-En los pisos 1, 2 y 3, al elegir un protocolo aparece **Ver en el plano**; cada folio desplegado trae además **Ver protocolo 001 en el plano**.
+En los pisos −1, 1, 2 y 3, al elegir un protocolo aparece **Ver en el plano**; cada folio desplegado trae además **Ver protocolo 001 en el plano**.
 
 **Cómo se encuadra cada folio:**
 - Se encuadra entre los ejes de su columna EJES. La primera A es el edificio y la segunda letra o el número es el eje.
@@ -65,15 +65,15 @@ En los pisos 1, 2 y 3, al elegir un protocolo aparece **Ver en el plano**; cada 
 | 1 | 1.833 de 2.256 |
 | 2 | 1.427 de 1.494 |
 | 3 | 1.345 de 1.404 |
-
-El nivel −1 aún no tiene grilla, porque su plano viene de PDF.
+| −1 | 2.131 de 2.732 |
 
 **Grilla:**
-- `dist/n0x/ejes.json` sale de la capa `S-GRID` de las láminas DWG. Cada etiqueta (AD, A5…) está dentro de su círculo y su eje es la recta que pasa por el centro.
-- Los ejes que N01 y N03 comparten coinciden a 0,0 cm. Las láminas de N02 están corridas: +18,8 cm en X y −3,2 cm en Y (mediana de sus ejes A1, A3', AO1 y AO2).
+- `dist/n0x/ejes.json`, y `dist/ejes.json` para el −1, salen de la capa `S-GRID` de las láminas DWG. Cada etiqueta (AD, A5…) está dentro de su círculo y su eje es la recta que pasa por el centro.
+- Los ejes que comparten N01, N03 y S01 coinciden a 0,0 cm. Las láminas de N02 están corridas: +18,8 cm en X y −3,2 cm en Y (mediana de sus ejes A1, A3', AO1 y AO2).
+- El −1 lleva su grilla al marco de su plano con el mismo calce que su dibujo DWG (`data/s01/marco.json`).
 - Cada piso usa la posición de sus propios ejes. Los que le faltan se toman de la grilla completa, corridos ese desplazamiento, para que las figuras queden sobre los pilares del dibujo de ese piso. El ajuste queda registrado en `ejes.json` (`ajuste`).
-- Se arma una sola grilla del edificio A con las burbujas de los tres pisos (A2 y A3 solo aparecen en N03): 26 ejes con letra (AA…AW, AA', AO1, AO2) y 14 numerados (A0…A12, A3'), cada 8,2 m.
-- Para regenerarla: `node scripts/ejes/generar.mjs`. Necesita `data/n0x/dibujo.json` y `marco.json`, de `scripts/dwg-plano/extraer.mjs`.
+- Se arma una sola grilla del edificio A con las burbujas de los cuatro pisos (A2 y A3 solo aparecen en N03; A11' en S01): 26 ejes con letra (AA…AW, AA', AO1, AO2) y 15 numerados (A0…A12, A3', A11'), cada 8,2 m.
+- Para regenerarla: `node scripts/ejes/generar.mjs`. Necesita `data/n0x/` y `data/s01/` (`dibujo.json` y `marco.json`), de `scripts/dwg-plano/extraer.mjs` y, para el −1, `scripts/s01-plano/ajuste.mjs`.
 - `protocol-ejes.mjs` lee y encuadra, y `protocolos-plano.mjs` dibuja la capa y el panel.
 - `protocol-ejes-test.mjs` valida la lectura, la geometría y la cobertura con los 20.233 registros. Corre en el build de Render.
 
