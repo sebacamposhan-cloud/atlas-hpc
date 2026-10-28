@@ -11,7 +11,7 @@ if coalesce(auth.jwt()->'app_metadata'->>'payments_role','')<>'approver' then ra
 if jsonb_typeof(items) is distinct from 'array' then raise exception 'Invalid items';end if;
 if jsonb_array_length(items)>100 then raise exception 'Batch too large';end if;
 for item in select * from jsonb_array_elements(items) loop
-if coalesce(item->>'code','') !~ '^\d+(\.\d+)*$' or length(coalesce(item->>'desc','')) not between 1 and 2000 or length(coalesce(item->>'unit','')) not between 1 and 50 or jsonb_typeof(item->'pu') is distinct from 'number' then raise exception 'Invalid item';end if;
+if coalesce(item->>'code','') !~ '^\d+(\.\d+)*$' or length(coalesce(item->>'desc','')) not between 1 and 2000 or length(coalesce(item->>'unit','')) not between 1 and 500 or jsonb_typeof(item->'pu') is distinct from 'number' then raise exception 'Invalid item';end if;
 if (item->>'pu')::numeric<0 then raise exception 'Invalid price';end if;
 insert into public.atlas_price_items values(item->>'code',item) on conflict(code) do update set data=excluded.data;
 end loop;

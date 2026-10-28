@@ -1,0 +1,3 @@
+import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';
+// This workbook records a valuation instruction in column C rather than a short unit.
+const note='No valorizar en este Ítem, Valorizar en ítem 9.19.10';assert(note.length>50&&note.length<=500);const sql=readFileSync('supabase/price-catalog-setup.sql','utf8');assert(sql.includes("length(coalesce(item->>'unit','')) not between 1 and 500"));assert(sql.includes("coalesce(auth.jwt()->'app_metadata'->>'payments_role','')<>'approver'"));console.log('Price import accepts the original 5.1.12 valuation note without changing its source unit or approver restriction. SQL still requires live project verification.');
