@@ -1,3 +1,4 @@
+import {validatePlan} from '../dist/payment-plan.mjs';
 import {paymentContractors} from './payment-contractors.mjs';
 export function createSupabasePayments(env,fetchImpl=fetch){
  const base=String(env.SUPABASE_URL||'').replace(/\/$/,''),key=env.SUPABASE_ANON_KEY;
@@ -24,7 +25,7 @@ export function createSupabasePayments(env,fetchImpl=fetch){
  const items=[];for(let offset=0;offset<100000;offset+=1000){const result=await call('/rest/v1/atlas_price_items?select=data&order=code.asc&limit=1000&offset='+offset,token);if(!result.ok)return send(503,{error:'Falta cargar el catálogo compartido de precios en Supabase'});items.push(...result.data.map(row=>row.data));if(result.data.length<1000)break;}if(!items.length)return send(503,{error:'El catálogo compartido está vacío. Carga Rev01 en Supabase'});return send(200,{items});
  }
  if(url.pathname==='/api/payments'&&req.method==='GET'){const result=await call('/rest/v1/atlas_payments?select=data&order=updated_at.desc',token);if(!result.ok)return send(503,{error:'No se pudo consultar pagos. Revisa la configuración de Supabase.'});return send(200,{user:{username:identity.data.email,role},contractors:paymentContractors,payments:result.data.map(row=>row.data)});}
- if(url.pathname==='/api/payments'&&req.method==='POST'){const body=await input();const result=await call('/rest/v1/rpc/save_atlas_payment',token,{payload:body});if(!result.ok)return send(result.data?.code==='40001'?409:400,{error:result.data?.code==='40001'?'El registro cambió; actualiza antes de guardar':'No se pudo guardar: revisa campos, permisos y versión del registro'});return send(200,{payment:result.data});}
+ if(url.pathname==='/api/payments'&&req.method==='POST'){const body=await input();validatePlan(body.plan);const result=await call('/rest/v1/rpc/save_atlas_payment',token,{payload:body});if(!result.ok)return send(result.data?.code==='40001'?409:400,{error:result.data?.code==='40001'?'El registro cambió; actualiza antes de guardar':'No se pudo guardar: revisa campos, permisos y versión del registro'});return send(200,{payment:result.data});}
  return send(404,{error:'Ruta no disponible'});
  }catch{return send(503,{error:'No se pudo conectar con pagos. Reintenta con conexión.'});}
  };
