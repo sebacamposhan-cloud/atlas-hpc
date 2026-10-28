@@ -1,0 +1,75 @@
+/* Observaciones en terreno: sección de la ficha, formulario (pantalla completa en el celular), visor de fotos y panel. */
+.obsRoom > summary { font-weight: 650; }
+.obsFichaCabecera { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 8px 0; font-size: 12px; }
+.obsFichaCabecera .primary { min-height: 40px; white-space: nowrap; }
+.obsFichaCabecera em, .obsLista em { color: #b42323; font-style: normal; font-weight: 650; }
+.obsLista { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.obsLista button { width: 100%; display: flex; gap: 10px; align-items: flex-start; text-align: left; white-space: normal; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; min-height: 44px; }
+.obsLista i { flex: none; width: 10px; height: 10px; border-radius: 50%; margin-top: 4px; }
+.obsLista button > span { flex: 1; min-width: 0; }
+.obsFotosFicha { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.obsFotosFicha > span { position: relative; width: 68px; height: 68px; border-radius: 6px; overflow: hidden; display: block; background: #eef1f3; }
+.obsFotosFicha img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.obsFotosFicha > span > span { position: absolute; left: 0; right: 0; bottom: 0; font-size: 9px; color: #fff; background: #0009; padding: 1px 4px; margin: 0; }
+.obsFotosFicha .obsMas { display: grid; place-items: center; font-size: 12px; color: #4d5b66; }
+.obsLista b { display: block; font-size: 12px; overflow-wrap: anywhere; }
+.obsLista small { display: block; color: var(--muted); font-size: 10px; margin-top: 3px; }
+.obsNota { color: #71808b; font-size: 11px; margin: 0; }
+.obsError, .obsMensaje { color: #a32626; font-size: 12px; }
+dialog.obsDialog { width: min(640px, 96vw); max-width: 96vw; max-height: 92dvh; padding: 0; border: 0; border-radius: 12px; overflow: hidden; }
+.obsForm { display: flex; flex-direction: column; max-height: 92dvh; position: relative; }
+.obsForm header { display: flex; justify-content: space-between; gap: 10px; padding: 14px 16px 10px; border-bottom: 1px solid var(--line); }
+.obsForm header h2 { font-size: 16px; margin: 3px 0 6px; overflow-wrap: anywhere; }
+.obsForm header small { font-size: 10px; color: #71808b; letter-spacing: .5px; }
+.obsCerrar { border: 0; font-size: 24px; min-width: 44px; min-height: 44px; flex: none; }
+.obsCuerpo { flex: 1; min-height: 0; overflow: auto; padding: 12px 16px; display: grid; gap: 12px; align-content: start; }
+.obsForm label { display: grid; gap: 4px; font-size: 12px; font-weight: 600; }
+.obsForm input:not([type=radio]):not([type=file]), .obsForm select, .obsForm textarea { font-size: 16px; width: 100%; box-sizing: border-box; }
+.obsCampos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+.obsPrioridad { border: 0; padding: 0; margin: 0; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.obsPrioridad legend { font-size: 12px; font-weight: 600; margin-bottom: 6px; padding: 0; }
+.obsPrioridad label { display: flex; gap: 5px; font-weight: 400; align-items: center; min-height: 32px; }
+.obsBotonesFoto { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.obsBotonesFoto label { position: relative; display: flex; align-items: center; justify-content: center; min-height: 50px; border: 1px solid var(--line); border-radius: 8px; background: #f3f6f8; cursor: pointer; font-size: 13px; }
+.obsBotonesFoto .obsCamara { background: #2b4f66; color: #fff; border-color: #2b4f66; font-size: 14px; }
+.obsBotonesFoto input, .obsImportar input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+.obsMiniaturas { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin: 8px 0 4px; }
+.obsMiniaturas figure { position: relative; margin: 0; }
+.obsMiniaturas figure > button:first-child { display: block; padding: 0; border: 0; width: 100%; aspect-ratio: 1; overflow: hidden; border-radius: 6px; }
+.obsMiniaturas img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.obsMiniaturas figcaption { font-size: 10px; color: #4d5b66; margin-top: 3px; }
+.obsMiniaturas figcaption button { font-size: 10px; padding: 3px 7px; min-height: 0; }
+.obsQuitar { position: absolute; top: 3px; right: 3px; width: 28px; height: 28px; min-height: 0; padding: 0; border-radius: 50%; background: #fffe; border: 1px solid var(--line); font-size: 17px; line-height: 1; }
+.obsEstado { border-top: 1px solid var(--line); padding-top: 10px; }
+.obsEstado h3 { font-size: 13px; margin: 0 0 4px; }
+.obsTransiciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.obsTransiciones button { border: 1px solid var(--c); color: var(--c); background: #fff; min-height: 42px; font-size: 12px; font-weight: 650; }
+.obsChip { display: inline-block; font-size: 11px; padding: 2px 9px; border-radius: 999px; color: var(--c); border: 1px solid var(--c); background: #fff; font-weight: 650; }
+.obsHistorial { font-size: 12px; }
+.obsHistorial ol { padding-left: 18px; font-size: 11px; display: grid; gap: 5px; }
+.obsHistorial span { color: #4d5b66; }
+.obsForm footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 16px; border-top: 1px solid var(--line); background: #fff; }
+.obsForm footer .primary { min-height: 46px; padding: 0 20px; flex: none; }
+.obsVisor { position: absolute; inset: 0; background: #000e; display: grid; place-items: center; z-index: 5; }
+.obsVisor[hidden] { display: none; }
+.obsVisor img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.obsVisor button { position: absolute; top: 10px; right: 10px; width: 44px; height: 44px; border-radius: 50%; font-size: 24px; padding: 0; }
+.obsAcciones { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; align-items: center; }
+.obsAcciones button, .obsImportar { font-size: 12px; }
+.obsImportar { position: relative; display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 8px; padding: 7px 11px; cursor: pointer; background: #fff; }
+.obsFiltros { display: grid; grid-template-columns: 2fr repeat(4, minmax(0, 1fr)) auto; gap: 8px; align-items: end; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.obsFiltros label { display: grid; gap: 4px; font-size: 11px; min-width: 0; }
+.obsFiltros .check { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.obsResponsables { margin: 12px 0; font-size: 12px; }
+.obsTitulo { font-size: 14px; margin: 16px 0 8px; }
+.obsListaPanel { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+@media(max-width:700px) {
+  dialog.obsDialog { width: 100vw; max-width: 100vw; height: 100dvh; max-height: 100dvh; border-radius: 0; margin: 0; }
+  .obsForm { height: 100%; max-height: 100dvh; }
+  .obsCampos { grid-template-columns: 1fr; }
+  .obsFiltros { grid-template-columns: 1fr 1fr; }
+  .obsFiltros label:first-child { grid-column: 1 / -1; }
+  .obsListaPanel { grid-template-columns: 1fr; }
+  .obsFichaCabecera { flex-wrap: wrap; }
+  .obsFichaCabecera .primary { width: 100%; }
+}
