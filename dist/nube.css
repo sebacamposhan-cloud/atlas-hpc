@@ -1,0 +1,19 @@
+/* Botón «Nube» de la cabecera (con punto de estado) y diálogo de sesión. */
+.nubeButton { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.nubeButton svg { flex: none; }
+.nubeButton i { width: 7px; height: 7px; border-radius: 50%; background: #9aa3ad; flex: none; }
+.nubeButton[data-fase=listo] i { background: #3ccf8e; }
+.nubeButton[data-fase=sincronizando] i { background: #5aa9ff; animation: nubePulso 1s ease-in-out infinite alternate; }
+.nubeButton[data-fase=sin-conexion] i { background: #f0b429; }
+.nubeButton[data-fase=error] i { background: #f25f5c; }
+@keyframes nubePulso { to { opacity: .3; } }
+#nubeDialog { width: min(440px, 94vw); }
+#nubeDialog h2 { margin-top: 0; }
+#nubeDialog label { display: block; margin: 10px 0; font-size: 13px; }
+#nubeDialog input { display: block; width: 100%; margin-top: 4px; font-size: 16px; }
+#nubeError { color: #a32626; min-height: 1.2em; font-size: 12px; }
+.nubeEstado { font-weight: 600; }
+.nubeNota { color: var(--muted); font-size: 12px; }
+.nubeAcciones { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+@media (max-width: 700px) { .nubeButton span { display: none; } .nubeButton { padding: 6px 8px; } }
+@media (prefers-reduced-motion: reduce) { .nubeButton[data-fase=sincronizando] i { animation: none; } }

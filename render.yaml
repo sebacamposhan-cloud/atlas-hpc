@@ -5,7 +5,7 @@ services:
     plan: free
     branch: main
     autoDeploy: false
-    buildCommand: node scripts/prepare-offline.mjs && node groq-test.mjs &&node groq-recovery-test.mjs && node offline-test.mjs && node deployment-assets-test.mjs && node source-contours-test.mjs && node layer-colors-test.mjs && node pisos-test.mjs && node work-charts-test.mjs && node protocol-matrix-test.mjs && node critical-protocol-test.mjs && node pma-test.mjs && node room-progress-test.mjs && node progress-floor-test.mjs && node avance-test.mjs && node marking-test.mjs && node protocol-scope-test.mjs && node observaciones-test.mjs && node proyectos-test.mjs && node payments-test.mjs && node payment-calculation-test.mjs && node payments-supabase-test.mjs
+    buildCommand: node scripts/prepare-offline.mjs && node groq-test.mjs &&node groq-recovery-test.mjs && node offline-test.mjs && node deployment-assets-test.mjs && node source-contours-test.mjs && node layer-colors-test.mjs && node pisos-test.mjs && node work-charts-test.mjs && node protocol-matrix-test.mjs && node critical-protocol-test.mjs && node pma-test.mjs && node room-progress-test.mjs && node progress-floor-test.mjs && node avance-test.mjs && node marking-test.mjs && node protocol-scope-test.mjs && node observaciones-test.mjs && node proyectos-test.mjs && node nube-test.mjs &&node payments-test.mjs && node payment-calculation-test.mjs && node payments-supabase-test.mjs
     startCommand: node server/groq-server.mjs
     healthCheckPath: /healthz
     envVars:

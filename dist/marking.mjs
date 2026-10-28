@@ -142,7 +142,7 @@ export function createMarking(ctx) {
       showDialog(`<h2>Mis proyectos</h2><p>Arquitectura · ${esc(ctx.levelName)}. Un proyecto pinta recintos por estado (por ejemplo, pisos vinílicos instalados) y guarda cortes para comparar el avance.</p><button id="newMarking" class="primary">+ Nuevo proyecto</button>
         <div class="markingLibrary">${docs.map(doc => `<button data-open-marking="${esc(doc.id)}"><b>${esc(doc.name)}</b><span>${esc(doc.author)} · ${doc.rooms.length} recintos${doc.cortes?.length ? ` · ${doc.cortes.length} cortes` : ''}</span><small>${esc(doc.purpose)}</small></button>`).join('') || '<p>Aún no hay proyectos para este piso.</p>'}</div>
         <button id="markingBackupAll" ${docs.length ? '' : 'disabled'}>Respaldar proyectos de este piso</button><label>Restaurar respaldo JSON<input id="markingRestore" type="file" accept=".json,application/json"></label>
-        <p>Guardado en este navegador. Usa el respaldo para llevar tus proyectos a otro equipo.</p>`);
+        <p>Se guarda en este equipo. Con la sesión de «Nube» iniciada se sincroniza con los demás equipos; sin ella, usa el respaldo.</p>`);
       dialog.querySelector('#newMarking').onclick = () => editor();
       dialog.querySelector('#markingBackupAll').onclick = () => download(docs);
       dialog.querySelectorAll('[data-open-marking]').forEach(button => {button.onclick = () => {
@@ -238,6 +238,14 @@ export function createMarking(ctx) {
     } catch (failure) {dialog.querySelector('#markingError').textContent = failure.message;}
   }
   launch.onclick = () => ctx.editing() ? ctx.toast('Guarda o cancela la edición del contorno antes de marcar.') : library();
+  // Si la nube trae otra versión del proyecto abierto, se muestra esa después de los guardados en curso.
+  window.addEventListener('atlas-markings-changed', event => {
+    if (event.detail?.origen !== 'nube' || event.detail.id !== active?.id) return;
+    queue = queue.then(async () => {
+      const doc = (await readMarkings()).find(d => d.id === active?.id);
+      if (doc && active && doc.version !== active.version) {active = upgradeMarking(doc); render(); ctx.redraw(); ctx.toast('El proyecto se actualizó con cambios de otro equipo.');}
+    }).catch(() => {});
+  });
   window.addEventListener('atlas-floor-home', close);
   for (const name of ['atlas-before-floor-change', 'atlas-before-update']) window.addEventListener(name, event => {
     if (pending) {event.preventDefault(); ctx.toast('Espera a que termine el guardado del documento.');}

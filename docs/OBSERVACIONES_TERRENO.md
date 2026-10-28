@@ -24,7 +24,7 @@ Lista de pendientes («punch list») por recinto, pensada para registrar desde e
 ## Datos y límites
 - **Almacenamiento:** IndexedDB `atlas-observaciones` con tres tablas: observaciones, fotos e historial. Cada guardado es una sola transacción, con versión esperada para no pisar lo guardado en otra pestaña. El historial solo se agrega, nunca se reescribe.
 - **Fotos:** se reducen en el navegador (lado mayor 1600 px, JPEG ~0,72, miniatura de 320 px) respetando la orientación de la cámara. Se guardan como bytes. Guardar espera a que terminen de procesarse, y al guardar la primera se pide almacenamiento persistente.
-- **Los registros son locales al equipo. No hay sincronización entre usuarios.** Mientras no exista la base compartida, el **respaldo JSON** (que incluye las fotos) lleva las observaciones a otro equipo. La importación agrega lo que no existe y rechaza todo si una observación existente difiere.
+- **Los registros se guardan primero en el equipo.** Con la sesión de **Nube** iniciada se sincronizan, con sus fotos e historial, entre todos los equipos ([NUBE_CAMPO.md](NUBE_CAMPO.md)). Sin sesión, el **respaldo JSON** (que incluye las fotos) lleva las observaciones a otro equipo. La importación agrega lo que no existe y rechaza todo si una observación existente difiere.
 - **Preparado para la base compartida:** identificador único, autor, fechas, versión e historial por observación.
 - **No se modifican** terminaciones, geometrías, PMA ni otros registros.
 

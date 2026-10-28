@@ -19,18 +19,34 @@ async function transaction(mode, run) {
     });
   } finally { db.close(); }
 }
+// Aviso de cambios: origen «local» (guardado en este equipo) o «nube» (llegó de otro equipo).
+const notify = (id, origen) => window.dispatchEvent?.(new CustomEvent('atlas-markings-changed', {detail: {id, origen}}));
 export function readMarkings() {
   return transaction('readonly', (store, done) => {store.getAll().onsuccess = event => done(event.target.result);});
 }
-export function saveMarking(doc, expectedVersion) {
+export async function saveMarking(doc, expectedVersion) {
   validateMarking(doc);
   if (doc.version !== expectedVersion + 1) throw Error('Versión inválida.');
-  return transaction('readwrite', (store, done, abort) => {
+  const saved = await transaction('readwrite', (store, done, abort) => {
     store.get(doc.id).onsuccess = event => {
       if ((event.target.result?.version || 0) !== expectedVersion) return abort('El documento cambió en otra pestaña. Vuelve a abrirlo desde Documentos antes de continuar.');
       store.put(doc); done(doc);
     };
   });
+  notify(doc.id, 'local');
+  return saved;
+}
+// Versión que llegó de la nube: reemplaza la de este equipo con la versión local siguiente.
+export async function replaceMarking(doc) {
+  const saved = await transaction('readwrite', (store, done, abort) => {
+    store.get(doc.id).onsuccess = event => {
+      const next = {...doc, version: (event.target.result?.version || 0) + 1};
+      try {validateMarking(next);} catch (failure) {return abort(failure.message);}
+      store.put(next); done(next);
+    };
+  });
+  notify(doc.id, 'nube');
+  return saved;
 }
 export function importMarkings(backup) {
   if (backup?.format !== 'atlas-markings-v1' || !Array.isArray(backup.documents) || backup.documents.length > 1000) throw Error('Respaldo de marcados inválido.');
@@ -43,5 +59,5 @@ export function importMarkings(backup) {
       if (!existing) store.add(doc);
     };
     done(backup.documents.length);
-  });
+  }).then(count => {notify(null, 'local'); return count;});
 }

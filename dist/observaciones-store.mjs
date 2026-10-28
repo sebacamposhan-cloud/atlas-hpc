@@ -1,7 +1,7 @@
 // Almacenamiento local de observaciones en terreno: IndexedDB «atlas-observaciones» con observaciones, fotos e historial.
 // Guardado atómico con versión esperada (no se sobrescribe lo guardado en otra pestaña) e historial que solo se agrega.
 // Las fotos se guardan como bytes (ArrayBuffer), que IndexedDB conserva de forma fiable también en iPhone.
-// Los datos son locales al equipo hasta que exista la base compartida: el respaldo JSON incluye las fotos.
+// Con la sesión de «Nube» iniciada se sincronizan con los demás equipos (nube.mjs); el respaldo JSON incluye las fotos.
 import {validarObservacion, RESPALDO} from './observaciones-model.mjs';
 
 const TABLAS = ['observaciones', 'fotos', 'historial'];
@@ -29,7 +29,8 @@ async function transaccion(modo, tablas, run) {
     });
   } finally { db.close(); }
 }
-const avisar = () => window.dispatchEvent?.(new Event('atlas-observaciones-changed'));
+// Origen «local» (guardado en este equipo) o «nube» (llegó de otro equipo).
+const avisar = (origen = 'local') => window.dispatchEvent?.(new CustomEvent('atlas-observaciones-changed', {detail: {origen}}));
 const todos = req => new Promise((resolve, reject) => { req.onsuccess = () => resolve(req.result); req.onerror = () => reject(req.error); });
 
 export function leerObservaciones(level) {
@@ -60,6 +61,40 @@ export async function guardarObservacion(obs, versionEsperada, {fotos = [], quit
   });
   avisar();
   return obs;
+}
+
+// Para la nube: todas las observaciones con su historial en una lectura, fotos guardadas y lo que llega de otros equipos.
+export function leerParaNube() {
+  return transaccion('readonly', ['observaciones', 'historial'], async (s, listo) => {
+    const [observaciones, historial] = await Promise.all([todos(s.observaciones.getAll()), todos(s.historial.getAll())]), porObs = new Map();
+    for (const h of historial) { if (!porObs.has(h.obsId)) porObs.set(h.obsId, []); porObs.get(h.obsId).push(h); }
+    listo(observaciones.map(obs => ({obs, historial: porObs.get(obs.id) || []})));
+  });
+}
+export function idsFotos() {
+  return transaccion('readonly', ['fotos'], async (s, listo) => { listo(new Set(await todos(s.fotos.getAllKeys()))); });
+}
+export function leerFoto(id) {
+  return transaccion('readonly', ['fotos'], async (s, listo) => { listo(await todos(s.fotos.get(id))); });
+}
+// Reemplaza la observación con la versión local siguiente y agrega el historial que falte (el historial nunca se borra).
+export async function guardarDesdeNube(obs, historial) {
+  const guardada = await transaccion('readwrite', ['observaciones', 'historial'], (s, listo, abortar) => {
+    s.observaciones.get(obs.id).onsuccess = e => {
+      let nueva;
+      try { nueva = validarObservacion({...obs, version: (e.target.result?.version || 0) + 1}); } catch (error) { return abortar(error.message); }
+      s.observaciones.put(nueva);
+      for (const h of historial) if (h && typeof h.id === 'string' && h.obsId === obs.id && typeof h.at === 'string') s.historial.put(h);
+      listo(nueva);
+    };
+  });
+  avisar('nube');
+  return guardada;
+}
+export async function guardarFotoDesdeNube(foto) {
+  if (!(foto.datos instanceof ArrayBuffer) || !(foto.mini instanceof ArrayBuffer)) throw Error('Foto inválida.');
+  await transaccion('readwrite', ['fotos'], (s, listo) => { s.fotos.put(foto); listo(foto); });
+  avisar('nube');
 }
 
 // Espacio usado y disponible del navegador (las fotos son lo que más ocupa).
