@@ -1,3 +1,4 @@
+import {createPayments} from './payments.mjs';
 import {createHash,timingSafeEqual} from 'node:crypto';
 import http from 'node:http';
 import {readFile,realpath} from 'node:fs/promises';
@@ -11,6 +12,7 @@ const otherLevels=['n01/runtime.json','n02/runtime.json','n03/runtime.json'];
 const root=fileURLToPath(new URL('../dist/',import.meta.url));
 const mime={'.xlsx':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','.html':'text/html; charset=utf-8','.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.json':'application/json','.webmanifest':'application/manifest+json','.svg':'image/svg+xml','.jpg':'image/jpeg','.jpeg':'image/jpeg','.png':'image/png','.webp':'image/webp','.pdf':'application/pdf','.woff2':'font/woff2'};
 export async function createAtlasServer({env=process.env,fetchImpl=fetch}={}){
+ const payments=await createPayments(env);
  const password=env.ATLAS_ACCESS_PASSWORD,username=env.ATLAS_ACCESS_USER||'atlas';
  if(!['127.0.0.1','localhost','::1'].includes(env.ATLAS_HOST||'127.0.0.1')&&!password)throw Error('Configura ATLAS_ACCESS_PASSWORD antes de exponer Atlas fuera de loopback.');
  const authorized=req=>{if(!password)return true;const expected=Buffer.from(username+':'+password).toString('base64'),actual=(req.headers.authorization||'').replace(/^Basic /,'');const hash=value=>createHash('sha256').update(value).digest();return timingSafeEqual(hash(actual),hash(expected));};
@@ -23,6 +25,7 @@ export async function createAtlasServer({env=process.env,fetchImpl=fetch}={}){
    const url=new URL(req.url,'http://localhost');
    if(url.pathname==='/healthz'&&req.method==='GET')return send(res,200,{status:'ok'});
    if(!authorized(req)){res.setHeader('WWW-Authenticate','Basic realm="Atlas HPC", charset="UTF-8"');return send(res,401,{error:'Acceso protegido. Introduce el usuario y contraseña de Atlas.'});}
+   if(url.pathname==='/api/payments'||url.pathname.startsWith('/api/payments/'))return payments(req,res,url);
    if(url.pathname==='/api/groq/status'&&req.method==='GET')return send(res,200,groq.status());
    if(url.pathname==='/api/groq/models'&&req.method==='GET')return send(res,200,await groq.models());
    if(url.pathname.startsWith('/api/')){
