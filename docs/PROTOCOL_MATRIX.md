@@ -49,7 +49,8 @@ En los pisos 1, 2 y 3, al elegir un protocolo aparece **Ver en el plano**; cada 
 - Un eje que no está en la grilla (`A12B`, `A11A`) se aproxima a su eje base y el panel lo informa (`≈ A12B → A12`).
 
 **Qué se dibuja y qué no:**
-- Cada figura lleva el número del protocolo a tres cifras (folio 7 → 007), en cualquier estado. **Todos los números se escriben.** Si no caben o chocan, se corren junto a su figura con una línea guía.
+- Cada figura lleva el número del protocolo a tres cifras (folio 7 → 007), en cualquier estado. **Todos los números se escriben sobre su figura:** al centro de la zona o del tramo, y junto al círculo del pilar.
+- **Las superposiciones se muestran tal cual**, porque es lo que se quiere ver. Los rellenos son tenues y se acumulan donde se cruzan protocolos. Todos los bordes van encima de los rellenos, con halo blanco, para que cada límite se lea.
 - El color sigue el estado: abierto, cerrado o cerrado por autocontrol.
 - Varios folios con la misma figura comparten trazo.
 - **Medidas:** cada folio ubicado indica las suyas en metros, por ejemplo «24,6 × 16,4 m · 403,4 m²» o «tramo de 73,8 m». Salen de la grilla del DWG: un vano mide 8,2 m.
