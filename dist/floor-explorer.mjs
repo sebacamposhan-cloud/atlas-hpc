@@ -1,5 +1,7 @@
 // Lightweight entry point. The existing viewer and its runtime load only after a floor is chosen.
 import './offline.mjs';
+import {iniciarNube} from './nube.mjs';
+iniciarNube();
 const $=id=>document.getElementById(id),floors=window.ATLAS_TARJETAS,active=window.ATLAS_PISO;
 const root=window.ATLAS_RAIZ;
 let started=false,ready=false,pending;

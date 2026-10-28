@@ -32,6 +32,8 @@
 .markingOpen .right, .markingOpen .left { display: none !important; }
 body.markingOpen #viewport { right: 320px; bottom: 0; }
 body.markingOpen .toolbar, body.markingOpen main > footer { right: 332px; }
+#markingOpen { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; height: 48px; }
+#markingOpen span { font-size: 9px; }
 #markingOpen[aria-expanded=true] { background: #dfeafa; color: #245b95; }
 #markingDialog { max-width: 620px; }
 .markingLibrary { display: grid; gap: 10px; margin: 20px 0; max-height: 40vh; overflow: auto; }
@@ -104,8 +106,8 @@ body.markingOpen .toolbar, body.markingOpen main > footer { right: 332px; }
   body.markingOpen #viewport { right: 0; bottom: clamp(170px,33dvh,260px); }
   body.markingOpen .toolbar { right: 10px; top: 52px; padding: 4px; }
   .markingOpen .toolbar button { min-height: 28px; height: 28px; padding: 3px; font-size: 10px; }
-  .markingOpen .toolbar #planSettingsOpen { height: 32px; }
-  .markingOpen .toolbar #planSettingsOpen svg { display: none; }
+  .markingOpen .toolbar #planSettingsOpen, .markingOpen .toolbar #markingOpen { height: 32px; }
+  .markingOpen .toolbar #planSettingsOpen svg, .markingOpen .toolbar #markingOpen svg { display: none; }
   body.markingOpen main > footer { display: none; }
   .markingOpen .planheader { padding: 6px 10px; top: 51px; left: 10px; }
   .markingOpen .planheader h1 { font-size: 12px; }

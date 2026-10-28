@@ -38,7 +38,11 @@ Para sumar un piso desde sus láminas DWG, sigue `scripts/dwg-plano/LEEME.md` (e
 Desde la ficha de cualquier recinto, «+ Observación con foto» abre la cámara del celular (solo cámara, fotos tomadas en el lugar) y registra qué se observa, terminación, categoría, prioridad, responsable y plazo. Tocando el recinto se ven sus observaciones con las miniaturas de sus fotos.
 - **Seguimiento:** Abierta → En corrección → Corregida (con foto «después» o comentario) → Cerrada, con historial completo.
 - **Control de obra → Observaciones en terreno:** pendientes, vencidas, corregidas por verificar y cierres, pendientes por responsable, filtros, capa del plano y respaldo JSON para llevarlas a otro equipo.
-- **Datos locales al equipo**, sin sincronización entre usuarios. [Uso y límites](docs/OBSERVACIONES_TERRENO.md).
+- **Se guardan en el equipo** y, con la sesión de **Nube**, se sincronizan con los demás equipos. [Uso y límites](docs/OBSERVACIONES_TERRENO.md).
+
+## Nube de proyectos y observaciones
+
+Botón **Nube** en la cabecera: con la cuenta personal de Atlas (Supabase, la misma de Estados de pago) los proyectos y las observaciones con fotos se sincronizan entre equipos y no se pierden al cerrar la app ni al actualizar el código. Sin red todo sigue guardándose en el equipo y se sube después. Activación (SQL, permisos y Render) y reglas de conflicto: [docs/NUBE_CAMPO.md](docs/NUBE_CAMPO.md).
 
 ## Avance por recinto · piloto nivel −1
 
@@ -173,7 +177,7 @@ Después de cambiar datos, ejecutar `node scripts/prepare-runtime.mjs`. Los icon
 - en el plano, recintos que avanzaron, siguieron igual o retrocedieron, con una tabla por estado;
 - **lado a lado**, los dos cortes sobre la vista general del plano.
 
-En el visor, **Proyectos → Nuevo proyecto** exige nombre, autor y propósito. Tocar un recinto lo pinta y añade su número y código a la lista exterior al plano (derecha en escritorio, debajo en móvil). Los números se conservan al quitar recintos. Documentos independientes por piso, color editable, PDF con plano/listado/metadatos y respaldo JSON. Guardado local en IndexedDB; no hay sincronización entre dispositivos. Buscar un código acerca el plano sin marcarlo. Detalles y pruebas: [docs/MARKING_DOCUMENTS.md](docs/MARKING_DOCUMENTS.md).
+En el visor, **Proyectos → Nuevo proyecto** exige nombre, autor y propósito. Tocar un recinto lo pinta y añade su número y código a la lista exterior al plano (derecha en escritorio, debajo en móvil). Los números se conservan al quitar recintos. Documentos independientes por piso, color editable, PDF con plano/listado/metadatos y respaldo JSON. Guardado local en IndexedDB y, con la sesión de **Nube**, sincronizado entre equipos ([docs/NUBE_CAMPO.md](docs/NUBE_CAMPO.md)). Buscar un código acerca el plano sin marcarlo. Detalles y pruebas: [docs/MARKING_DOCUMENTS.md](docs/MARKING_DOCUMENTS.md).
 
 ### Protocolos del piso activo
 
