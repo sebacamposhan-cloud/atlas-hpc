@@ -1,6 +1,8 @@
 # Piloto de avance por recinto · nivel −1
 
-Control de obra abre **Avance por recinto** en el nivel −1. El piloto usa los **330 recintos canónicos del plano** y sus **1.940 partidas aplicables documentadas en PMA**. Los 414 registros A-S01 del Excel no se convierten todos en recintos del plano: el ámbito de esta prueba es el área visible existente. Otros niveles conservan sus módulos; el piloto indica que debe abrirse en −1.
+Control de obra muestra el checklist y los indicadores de los recintos del piso activo: −1, 1, 2 o 3. Cada piso se cruza con su nivel PMA (A-S01, A-N01, A-N02 o A-N03). Los registros sin correspondencia válida se informan y no generan partidas. No se trasladan estados de un piso a otro.
+
+El panel local Avances y protocolos también limita zonas, eventos y protocolos a los recintos del piso. Los registros antiguos solo se asignan cuando la lámina o una identidad de recinto única permite determinar el piso; los ambiguos se excluyen con aviso. El avance valorizado conserva su alcance documental de nivel −1.
 
 ## Registro en terreno
 
@@ -31,8 +33,8 @@ La evolución semanal y los tiempos de resolución de observaciones son próximo
 
 ## Conservación, borradores y alcance del piloto
 
-- Almacenamiento IndexedDB **atlas-room-progress**, independiente de fuentes, geometrías y protocolos existentes. Clave `N-1|código`, con tabla rooms e historial append-only. No se escribe en el disco efímero de Render.
-- **Los avances son locales al navegador/dispositivo. No hay sincronización compartida entre usuarios.** Exportar respaldo conserva registros e historial en JSON; importar agrega datos y permite repetir el mismo respaldo. Si un registro existente difiere, se rechaza toda la importación para evitar sobrescribir el trabajo local. No se fusionan ediciones divergentes automáticamente.
+- Almacenamiento IndexedDB **atlas-room-progress**, independiente de fuentes, geometrías y protocolos existentes. Clave `piso|código` (las claves existentes `N-1|código` se conservan), con tabla rooms e historial append-only. No se escribe en el disco efímero de Render.
+- **Los avances son locales al navegador/dispositivo. No hay sincronización compartida entre usuarios.** Exportar respaldo conserva registros e historial del piso activo en JSON; importar agrega datos y permite repetir el mismo respaldo. Si un registro existente difiere, se rechaza toda la importación para evitar sobrescribir el trabajo local. No se fusionan ediciones divergentes automáticamente.
 - Guardado atómico de ficha e historial, con versión esperada para detectar modificaciones en otra pestaña. Actualizar avance vuelve a leer los registros. Las fichas abiertas reciben el cambio realizado en el mismo documento.
 - Borrador de formulario en sessionStorage, recuperable al regresar al recinto o recargar esa pestaña. No cuenta en gráficos hasta Guardar avance. Un borrador de otra versión se puede descargar o descartar; el formulario se bloquea hasta resolverlo para evitar sobrescribirlo. El borrador no sustituye un guardado ni un respaldo.
 - Hash de PMA y códigos de partida conservados en cada revisión. Si cambian, los estados anteriores quedan en historial y se presentan sin registro vigente hasta cotejar y guardar contra la nueva fuente.
