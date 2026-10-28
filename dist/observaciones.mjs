@@ -1,6 +1,8 @@
+import {createObservationDetail} from './observacion-detail.mjs';
+import {estadoObservacion,referenciaObservacion,filtrarObservaciones,facetasObservaciones} from './observaciones-query.mjs';
 // Observaciones en terreno por recinto, con registro fotográfico: sección en la ficha del plano, formulario pensado para
 // el celular (cámara del equipo), panel en Control de obra y capa del plano.
-// Los datos quedan en este equipo (observaciones-store.mjs) hasta que exista la base compartida.
+// Datos disponibles en el equipo; nube.mjs sincroniza observaciones, fotos e historial con una sesión autorizada.
 import {nivel} from './level.mjs';
 import {registerLayer} from './layers.mjs';
 import * as M from './observaciones-model.mjs';
@@ -54,14 +56,18 @@ export async function procesarFoto(archivo) {
 export function createObservaciones(ctx) {
   const esc = ctx.esc;
   const dialog = document.createElement('dialog'); dialog.id = 'obsDialog'; dialog.className = 'obsDialog'; dialog.setAttribute('aria-label', 'Observación en terreno'); document.body.append(dialog);
-  let urls = [], guardando = false;
+  let urls = [], guardando = false, volverDesdeEditor=null;
   const url = (buf, mime = 'image/jpeg') => { const u = URL.createObjectURL(new Blob([buf], {type: mime})); urls.push(u); return u; };
-  dialog.addEventListener('close', () => { urls.forEach(u => URL.revokeObjectURL(u)); urls = []; });
+  dialog.addEventListener('close', () => { urls.forEach(u => URL.revokeObjectURL(u)); urls = [];const volver=volverDesdeEditor;volverDesdeEditor=null;volver?.(); });
   dialog.addEventListener('cancel', e => { if (guardando) e.preventDefault(); });
-  const fila = (o, conRecinto, fotos = null, miniatura = null) => `<li><button type="button" data-obs="${esc(o.id)}"><i style="background:${COLOR_ESTADO[o.estado]}"></i><span><b>${conRecinto ? esc(o.room.code) + ' · ' : ''}${esc(o.descripcion)}</b>
-    <small>${esc(o.estado)} · ${esc(o.categoria)} · ${esc(o.responsable || 'Sin responsable')} · ${M.vencida(o, hoy()) ? '<em>vencida ' + plazoTexto(o.plazo) + '</em>' : o.plazo ? 'plazo ' + plazoTexto(o.plazo) : 'sin plazo'}${o.fotos.length ? ' · ' + o.fotos.length + (o.fotos.length === 1 ? ' foto' : ' fotos') : ''} · ${esc(o.autor)}, ${fechaCorta(o.creada)}</small>
+  const fila = (o, conRecinto, fotos = null, miniatura = null) => `<li><button type="button" data-obs="${esc(o.id)}" aria-haspopup="dialog" aria-controls="obsDetailDrawer"><i style="background:${COLOR_ESTADO[o.estado]}"></i><span><b>${conRecinto ? esc(o.room.code) + ' · ' : ''}${esc(o.descripcion)}</b>
+    <small>${esc(estadoObservacion(o.estado))} · ${esc(o.categoria)} · ${esc(o.responsable || 'Sin responsable')} · ${M.vencida(o, hoy()) ? '<em>vencida ' + plazoTexto(o.plazo) + '</em>' : o.plazo ? 'plazo ' + plazoTexto(o.plazo) : 'sin plazo'}${o.fotos.length ? ' · ' + o.fotos.length + (o.fotos.length === 1 ? ' foto' : ' fotos') : ''} · ${esc(o.autor)}, ${fechaCorta(o.creada)}</small>
     ${fotos?.length ? `<span class="obsFotosFicha">${fotos.slice(0, 4).map(f => `<span>${miniatura(f)}</span>`).join('')}${fotos.length > 4 ? `<span class="obsMas">+${fotos.length - 4}</span>` : ''}</span>` : ''}</span></button></li>`;
   const recintoDe = o => ctx.rooms().find(r => r.id === o.room.id) || ctx.rooms().find(r => r.code === o.room.code);
+  const detail=createObservationDetail({...ctx,level:nivel.id,room:recintoDe,processPhoto:procesarFoto,author:autorGuardado,rememberAuthor:recordarAutor,
+    highlight:id=>{document.querySelectorAll('[data-obs-row]').forEach(row=>row.classList.toggle('obsSelectedRow',row.dataset.obsRow===id));document.querySelectorAll('[data-obs]').forEach(b=>b.setAttribute('aria-expanded',String(b.dataset.obs===id)));},
+    focusRecord:id=>[...document.querySelectorAll('[data-obs]')].find(b=>b.dataset.obs===id&&b.offsetParent)?.focus({preventScroll:true}),
+    edit:async(obs,volver,changed)=>{volverDesdeEditor=volver;try{await editor(recintoDe(obs),obs,changed);if(!dialog.open){volverDesdeEditor=null;volver();}}catch(error){volverDesdeEditor=null;ctx.toast(error.message);volver();}}});
 
   // ---------- Sección de la ficha del recinto: cada observación con sus fotos a la vista ----------
   let urlsFicha = [];
@@ -77,7 +83,7 @@ export function createObservaciones(ctx) {
         <button type="button" class="primary" data-obs-nueva>+ Observación con foto</button></div>${lista.length ? `<ul class="obsLista">${lista.map(o => fila(o, false, fotos.get(o.id), miniatura)).join('')}</ul>` : ''}`;
       const volver = () => cargarObservaciones(true).then(() => ficha(root, room));
       root.querySelector('[data-obs-nueva]').onclick = () => editor(room, null, volver);
-      root.querySelectorAll('[data-obs]').forEach(b => { b.onclick = () => editor(room, lista.find(o => o.id === b.dataset.obs), volver); });
+      root.querySelectorAll('[data-obs]').forEach(b => { b.onclick = () => detail.open(b.dataset.obs,volver); });
     } catch (e) { root.innerHTML = `<p class="obsError">No se pudieron leer las observaciones: ${esc(e.message)}</p>`; }
   }
 
@@ -90,9 +96,9 @@ export function createObservaciones(ctx) {
     const opcionesTerminacion = Object.entries(M.TERMINACIONES).map(([k, nombre]) => { const f = finishes.find(f => f.field === k); return `<option value="${k}" ${(obs?.terminacion || 'GENERAL') === k ? 'selected' : ''}>${esc(nombre)}${f ? ' · ' + esc(f.code) + ' ' + esc(f.description || '') : ''}</option>`; }).join('');
     const responsables = [...new Set((cache?.lista || []).map(o => o.responsable).filter(Boolean))].sort();
     dialog.innerHTML = `<form class="obsForm" novalidate>
-      <header><div><small>${esc(ctx.levelName)} · ${esc(source?.code?.split('-').at(-1) || '')}</small><h2>${esc(room.code)} · ${esc(room.name)}</h2>${obs ? `<span class="obsChip" style="--c:${COLOR_ESTADO[obs.estado]}">${esc(obs.estado)}</span>` : '<span class="obsNota">Nueva observación</span>'}</div><button type="button" class="obsCerrar" aria-label="Cerrar">×</button></header>
+      <header><div><small>${esc(ctx.levelName)} · ${esc(source?.code?.split('-').at(-1) || '')}</small><h2>${esc(room.code)} · ${esc(room.name)}</h2>${obs ? `<span class="obsChip" style="--c:${COLOR_ESTADO[obs.estado]}">${esc(estadoObservacion(obs.estado))}</span>` : '<span class="obsNota">Nueva observación</span>'}</div><button type="button" class="obsCerrar" aria-label="Cerrar">×</button></header>
       <div class="obsCuerpo">
-      <section class="obsFotos"><div class="obsBotonesFoto"><label class="obsCamara">Tomar foto<input type="file" accept="image/*" capture="environment"></label></div>
+      <section class="obsFotos"><div class="obsBotonesFoto"><label class="obsCamara">Tomar foto<input type="file" accept="image/*" capture="environment"></label><label>Adjuntar fotos<input type="file" accept="image/*" multiple></label></div>
         <div class="obsMiniaturas"></div><small class="obsNota">Foto tomada con la cámara en el recinto. Se reduce y queda guardada en este equipo. Máximo ${M.MAX_FOTOS} por observación.</small></section>
       <label>Qué se observa *<textarea name="descripcion" rows="3" maxlength="2000" required placeholder="Ej.: sello perimetral incompleto junto a la puerta">${esc(obs?.descripcion || '')}</textarea></label>
       <div class="obsCampos">
@@ -160,10 +166,11 @@ export function createObservaciones(ctx) {
           const nombres = {descripcion: 'descripción', terminacion: 'terminación', categoria: 'categoría', prioridad: 'prioridad', responsable: 'responsable', plazo: 'plazo'};
           const cambios = Object.keys(nombres).filter(k => (obs[k] ?? null) !== (valores[k] ?? null));
           const base = {...obs, ...valores, fotos: [...obs.fotos.filter(f => !quitar.has(f.id)), ...fotosNuevas], actualizada: at};
-          if (!cambios.length && !fotosNuevas.length && !quitar.size && !estadoNuevo) { dialog.close(); return; }
+          if (!cambios.length && !fotosNuevas.length && !quitar.size && !estadoNuevo && !String(v.comentario||'').trim()) { dialog.close(); return; }
           if (cambios.length) hist.push(M.entrada(obs.id, autor, 'edicion', 'Editó ' + cambios.map(k => nombres[k]).join(', '), '', at));
           if (fotosNuevas.length) hist.push(M.entrada(obs.id, autor, 'foto', `Agregó ${fotosNuevas.length} foto${fotosNuevas.length === 1 ? '' : 's'}`, '', at));
           if (quitar.size) hist.push(M.entrada(obs.id, autor, 'foto', `Quitó ${quitar.size} foto${quitar.size === 1 ? '' : 's'}`, '', at));
+          if (!estadoNuevo && String(v.comentario||'').trim()) hist.push(M.entrada(obs.id,autor,'comentario','Añadió un comentario',v.comentario,at));
           if (estadoNuevo) { const r = M.cambiarEstado(base, estadoNuevo, {autor, comentario: v.comentario, at}); o = r.observacion; hist.push(r.historial); }
           else o = M.validarObservacion({...base, version: obs.version + 1});
         }
@@ -181,46 +188,39 @@ export function createObservaciones(ctx) {
     if (!obs) setTimeout(() => form.descripcion.focus({preventScroll: true}), 50);
   }
 
-  // ---------- Panel de Control de obra ----------
-  const filtros = {texto: '', estado: 'Pendientes', responsable: '', categoria: '', prioridad: '', vencidas: false, foco: false};
+  // ---------- Inventory: category navigation, state shortcuts and persistent observation detail ----------
+  const filtros = {texto:'',estado:'Pendientes',responsable:'',categoria:'',prioridad:'',vencidas:false,foco:false,page:0};
   async function panel(root, opciones = {}) {
-    root.innerHTML = '<p class="obsNota">Cargando observaciones…</p>';
-    let datos; try { datos = await cargarObservaciones(true); } catch (e) { root.innerHTML = `<p class="obsError">No se pudieron leer las observaciones: ${esc(e.message)}</p>`; return; }
-    const lista = datos.lista, h = hoy(), r = M.resumen(lista, h), uso = await espacio();
-    const responsables = [...new Set(lista.map(o => o.responsable || 'Sin responsable'))].sort();
-    const filtrada = ordenar(lista.filter(o => {
-      if (filtros.estado === 'Pendientes' ? !M.PENDIENTES.has(o.estado) : filtros.estado && o.estado !== filtros.estado) return false;
-      if (filtros.responsable && (o.responsable || 'Sin responsable') !== filtros.responsable) return false;
-      if (filtros.categoria && o.categoria !== filtros.categoria) return false;
-      if (filtros.prioridad && o.prioridad !== filtros.prioridad) return false;
-      if (filtros.vencidas && !M.vencida(o, h)) return false;
-      const t = filtros.texto.trim().toLowerCase();
-      return !t || [o.room.code, o.room.name, o.descripcion, o.responsable || ''].some(s => s.toLowerCase().includes(t));
-    }));
-    const opcion = (lista, actual, todas) => `<option value="">${todas}</option>` + lista.map(v => `<option ${v === actual ? 'selected' : ''}>${esc(v)}</option>`).join('');
-    root.innerHTML = `<div class="documentaryIntro"><h2>Observaciones en terreno · ${esc(ctx.levelName)}</h2><p>Pendientes por recinto con fotos tomadas en terreno, responsable y plazo. Se registran y se revisan tocando el recinto en el plano. Guardadas en este equipo${uso ? ` · ${mb(uso.usado)} usados` : ''}; el respaldo JSON (con fotos) las lleva a otro equipo mientras no exista la base compartida.</p></div>
-      <div class="kpiGrid">${[[r.pendientes, 'Pendientes', r.recintos + ' recintos con pendientes'], [r.vencidas, 'Vencidas', 'pendientes con plazo cumplido'], [r.porVerificar, 'Corregidas por verificar', 'esperan cierre en terreno'], [r.porEstado.Cerrada, 'Cerradas', r.diasCierre == null ? 'sin cierres aún' : 'cierre promedio en ' + r.diasCierre.toLocaleString('es-CL', {maximumFractionDigits: 1}) + ' días']]
-        .map(([n, t, s]) => `<article class="kpi"><span>${t}</span><b>${n}</b><small>${s}</small></article>`).join('')}</div>
-      <div class="obsAcciones"><button type="button" data-obs-capa>Ver en el plano</button><button type="button" data-obs-respaldo ${lista.length ? '' : 'disabled'}>Respaldo JSON</button><label class="obsImportar">Importar respaldo<input type="file" accept=".json,application/json"></label></div>
-      <div class="obsFiltros"><label>Buscar<input data-f="texto" value="${esc(filtros.texto)}" placeholder="Código, recinto, texto o responsable"></label>
-        <label>Estado<select data-f="estado"><option ${filtros.estado === 'Pendientes' ? 'selected' : ''}>Pendientes</option><option value="" ${filtros.estado === '' ? 'selected' : ''}>Todos</option>${M.ESTADOS.map(e => `<option ${filtros.estado === e ? 'selected' : ''}>${e}</option>`).join('')}</select></label>
-        <label>Responsable<select data-f="responsable">${opcion(responsables, filtros.responsable, 'Todos')}</select></label>
-        <label>Categoría<select data-f="categoria">${opcion(M.CATEGORIAS, filtros.categoria, 'Todas')}</select></label>
-        <label>Prioridad<select data-f="prioridad">${opcion(M.PRIORIDADES, filtros.prioridad, 'Todas')}</select></label>
-        <label class="check"><input type="checkbox" data-f="vencidas" ${filtros.vencidas ? 'checked' : ''}> Solo vencidas</label></div>
-      ${r.porResponsable.length ? `<details class="obsResponsables" ${r.porResponsable.length > 1 ? 'open' : ''}><summary>Pendientes por responsable</summary><table class="avanceTabla"><thead><tr><th>Responsable</th><th>Pendientes</th><th>Vencidas</th></tr></thead><tbody>${r.porResponsable.map(([k, v]) => `<tr class="${v.vencidas ? 'alerta' : ''}"><td>${esc(k)}</td><td>${v.pendientes}</td><td>${v.vencidas}</td></tr>`).join('')}</tbody></table></details>` : ''}
-      <h3 class="obsTitulo">${filtrada.length} observaci${filtrada.length === 1 ? 'ón' : 'ones'}</h3>
-      ${filtrada.length ? `<ul class="obsLista obsListaPanel">${filtrada.map(o => fila(o, true)).join('')}</ul>` : `<p class="obsNota">${lista.length ? 'Ninguna observación con estos filtros.' : 'Aún no hay observaciones en este piso. Abre un recinto en el plano y usa «+ Observación con foto».'}</p>`}`;
-    const refrescar = () => panel(root, opciones);
-    root.querySelectorAll('[data-f]').forEach(c => {
-      const aplicar = () => { filtros[c.dataset.f] = c.type === 'checkbox' ? c.checked : c.value; filtros.foco = c.dataset.f === 'texto'; refrescar(); };
-      if (c.dataset.f === 'texto') { let espera; c.oninput = () => { clearTimeout(espera); espera = setTimeout(aplicar, 350); }; } else c.onchange = aplicar;
-    });
-    if (filtros.foco) { const t = root.querySelector('[data-f="texto"]'); t.focus({preventScroll: true}); t.setSelectionRange(t.value.length, t.value.length); }
-    root.querySelector('[data-obs-capa]').onclick = () => opciones.pintarCapa?.('observaciones');
-    root.querySelector('[data-obs-respaldo]').onclick = async () => { try { ctx.download(new Blob([JSON.stringify(await exportarObservaciones(nivel.id))], {type: 'application/json'}), `observaciones_${nivel.id}_${hoy()}.json`); } catch (e) { ctx.toast(e.message); } };
-    root.querySelector('.obsImportar input').onchange = async e => { try { const f = e.target.files[0]; if (!f) return; const n = await importarObservaciones(JSON.parse(await f.text())); ctx.toast(`Respaldo importado: ${n} observaciones nuevas.`); refrescar(); } catch (err) { ctx.toast(err.message); } };
-    root.querySelectorAll('[data-obs]').forEach(b => { b.onclick = () => { const o = lista.find(x => x.id === b.dataset.obs); editor(recintoDe(o), o, refrescar); }; });
+    if(!root.isConnected)return;const request=Number(root.dataset.obsPanelRequest||0)+1;root.dataset.obsPanelRequest=request;const vigente=()=>root.isConnected&&Number(root.dataset.obsPanelRequest)===request;root.innerHTML='<p class="obsNota">Cargando observaciones…</p>';
+    let datos;try{datos=await cargarObservaciones(true);}catch(error){if(vigente())root.innerHTML=`<p class="obsError">No se pudieron leer las observaciones: ${esc(error.message)}</p>`;return;}
+    const uso=await espacio();if(!vigente())return;
+    const lista=datos.lista,h=hoy(),r=M.resumen(lista,h),facetas=facetasObservaciones(lista,filtros,h),filtrada=ordenar(filtrarObservaciones(lista,filtros,h)),pages=Math.max(1,Math.ceil(filtrada.length/30));filtros.page=Math.min(filtros.page,pages-1);
+    const shown=filtrada.slice(filtros.page*30,filtros.page*30+30),responsables=[...new Set(lista.map(o=>o.responsable||'Sin responsable'))].sort();
+    const opcion=(lista,actual,todas)=>`<option value="">${todas}</option>`+lista.map(v=>`<option ${v===actual?'selected':''}>${esc(v)}</option>`).join('');
+    const row=o=>`<tr data-obs-row="${esc(o.id)}" class="${detail.active()===o.id?'obsSelectedRow':''}"><td data-label="Referencia"><small>${esc(referenciaObservacion(o))}</small></td><td data-label="Observación"><button type="button" class="obsOpenRecord" data-obs="${esc(o.id)}" aria-haspopup="dialog" aria-controls="obsDetailDrawer"><b>${esc(o.descripcion)}</b><small>${o.fotos.length} foto${o.fotos.length===1?'':'s'}</small></button></td><td data-label="Estado"><span class="obsChip" style="--c:${COLOR_ESTADO[o.estado]}">${esc(estadoObservacion(o.estado))}</span></td><td data-label="Categoría">${esc(o.categoria)}</td><td data-label="Recinto"><b>${esc(o.room.code)}</b><br>${esc(o.room.name)}</td><td data-label="Responsable / plazo">${esc(o.responsable||'Sin responsable')}<br>${M.vencida(o,h)?'<em class="obsOverdue">Vencida · </em>':''}${esc(plazoTexto(o.plazo))}</td><td data-label="Modificada">${esc(fechaHora(o.actualizada))}</td></tr>`;
+    root.innerHTML=`<div class="documentaryIntro"><h2>Observaciones en terreno · ${esc(ctx.levelName)}</h2><p>Filtra por categoría, selecciona una fila y revisa fotos, estado y actividad en su ficha. Los registros de este piso están disponibles en el equipo${uso?' · '+mb(uso.usado)+' usados':''}; se comparten cuando la sesión Nube está sincronizada.</p></div>
+      <div class="kpiGrid">${[[r.pendientes,'Pendientes',r.recintos+' recintos con pendientes','Pendientes'],[r.vencidas,'Vencidas','con plazo cumplido','vencidas'],[r.porVerificar,'Por validar','corregidas que esperan verificación','Corregida'],[r.porEstado.Cerrada,'Cerradas',r.diasCierre==null?'sin cierres aún':'cierre promedio en '+r.diasCierre.toLocaleString('es-CL',{maximumFractionDigits:1})+' días','Cerrada']].map(([n,t,small,key])=>`<button type="button" class="kpi obsKpi" data-obs-shortcut="${key}"><span>${t}</span><b>${n}</b><small>${small}</small></button>`).join('')}</div>
+      <div class="obsAcciones"><details class="obsNew"><summary>+ Nueva observación</summary><label>Recinto<select id="obsNewRoom"><option value="">Selecciona un recinto del piso</option>${ctx.rooms().map(room=>`<option value="${esc(room.id)}">${esc(room.code+' · '+room.name)}</option>`).join('')}</select></label><button type="button" data-new-from-list>Crear observación</button></details><button type="button" data-obs-capa>Ver en el plano</button><button type="button" data-obs-respaldo ${lista.length?'':'disabled'}>Respaldo JSON</button><label class="obsImportar">Importar respaldo<input type="file" accept=".json,application/json"></label></div>
+      <div class="obsWorkspace"><nav class="obsCategories" aria-label="Categorías de observaciones"><h3>Categorías</h3>${facetas.categorias.map(c=>`<button type="button" data-obs-category="${esc(c.value)}" aria-pressed="${filtros.categoria===c.value}"><span>${esc(c.label)}</span><b>${c.n}</b></button>`).join('')}</nav><div class="obsInventory">
+      <div class="obsStateTabs" aria-label="Estados de observaciones">${facetas.estados.map(e=>`<button type="button" data-obs-state="${esc(e.value)}" aria-pressed="${filtros.estado===e.value}">${esc(e.label)} <b>${e.n}</b></button>`).join('')}</div>
+      <div class="obsFiltros"><label>Buscar<input data-f="texto" value="${esc(filtros.texto)}" placeholder="Referencia, recinto, descripción o responsable"></label><label>Responsable<select data-f="responsable">${opcion(responsables,filtros.responsable,'Todos')}</select></label><label>Prioridad<select data-f="prioridad">${opcion(M.PRIORIDADES,filtros.prioridad,'Todas')}</select></label><label class="check"><input type="checkbox" data-f="vencidas" ${filtros.vencidas?'checked':''}> Solo vencidas</label><button type="button" data-clear-obs>Restablecer filtros</button></div>
+      <h3 class="obsTitulo">${filtrada.length} observaci${filtrada.length===1?'ón':'ones'}${filtros.categoria?' · '+esc(filtros.categoria):''}</h3>
+      ${shown.length?`<div class="obsTableScroll"><table class="obsInventoryTable"><thead><tr><th>Referencia</th><th>Observación</th><th>Estado</th><th>Categoría</th><th>Recinto</th><th>Responsable / plazo</th><th>Modificada</th></tr></thead><tbody>${shown.map(row).join('')}</tbody></table></div>`:`<p class="obsNota">${lista.length?'Sin observaciones con estos filtros.':'Aún no hay observaciones en este piso. Crea una desde el listado o desde la ficha del plano.'}</p>`}
+      <div class="pagination"><button type="button" data-obs-page="prev" ${filtros.page===0?'disabled':''}>Anterior</button><span>Página ${filtros.page+1} de ${pages}</span><button type="button" data-obs-page="next" ${filtros.page+1===pages?'disabled':''}>Siguiente</button></div></div></div>
+      ${r.porResponsable.length?`<details class="obsResponsables"><summary>Pendientes por responsable</summary><table class="avanceTabla"><thead><tr><th>Responsable</th><th>Pendientes</th><th>Vencidas</th></tr></thead><tbody>${r.porResponsable.map(([k,v])=>`<tr class="${v.vencidas?'alerta':''}"><td>${esc(k)}</td><td>${v.pendientes}</td><td>${v.vencidas}</td></tr>`).join('')}</tbody></table></details>`:''}`;
+    const refrescar=()=>panel(root,opciones);
+    root.querySelectorAll('[data-f]').forEach(c=>{const aplicar=()=>{filtros[c.dataset.f]=c.type==='checkbox'?c.checked:c.value;filtros.foco=c.dataset.f==='texto';filtros.page=0;refrescar();};if(c.dataset.f==='texto'){let espera;c.oninput=()=>{clearTimeout(espera);espera=setTimeout(aplicar,250);};}else c.onchange=aplicar;});
+    if(filtros.foco){const text=root.querySelector('[data-f="texto"]');text.focus({preventScroll:true});text.setSelectionRange(text.value.length,text.value.length);}
+    root.querySelectorAll('[data-obs-category]').forEach(b=>b.onclick=()=>{filtros.categoria=b.dataset.obsCategory;filtros.page=0;filtros.foco=false;refrescar();});
+    root.querySelectorAll('[data-obs-state]').forEach(b=>b.onclick=()=>{filtros.estado=b.dataset.obsState;filtros.page=0;filtros.foco=false;refrescar();});
+    root.querySelectorAll('[data-obs-shortcut]').forEach(b=>b.onclick=()=>{const key=b.dataset.obsShortcut;Object.assign(filtros,{texto:'',categoria:'',prioridad:'',responsable:'',vencidas:key==='vencidas',estado:key==='vencidas'?'Pendientes':key,page:0,foco:false});refrescar();});
+    root.querySelector('[data-clear-obs]').onclick=()=>{Object.assign(filtros,{texto:'',estado:'Pendientes',categoria:'',prioridad:'',responsable:'',vencidas:false,page:0,foco:false});refrescar();};
+    root.querySelectorAll('[data-obs-page]').forEach(b=>b.onclick=()=>{filtros.page+=b.dataset.obsPage==='prev'?-1:1;filtros.foco=false;refrescar();});
+    root.querySelector('[data-new-from-list]').onclick=()=>{const room=ctx.rooms().find(r=>r.id===root.querySelector('#obsNewRoom').value);if(!room)return ctx.toast('Selecciona un recinto del piso.');if(!detail.close())return;editor(room,null,refrescar);};
+    root.querySelector('[data-obs-capa]').onclick=()=>{if(detail.close())opciones.pintarCapa?.('observaciones');};
+    root.querySelector('[data-obs-respaldo]').onclick=async()=>{try{ctx.download(new Blob([JSON.stringify(await exportarObservaciones(nivel.id))],{type:'application/json'}),`observaciones_${nivel.id}_${hoy()}.json`);}catch(error){ctx.toast(error.message);}};
+    root.querySelector('.obsImportar input').onchange=async e=>{try{const f=e.target.files[0];if(!f)return;const n=await importarObservaciones(JSON.parse(await f.text()));ctx.toast(`Respaldo importado: ${n} observaciones nuevas.`);refrescar();}catch(error){ctx.toast(error.message);}};
+    root.querySelectorAll('[data-obs]').forEach(b=>b.onclick=()=>detail.open(b.dataset.obs,refrescar));
   }
 
   return {ficha, panel, editor};
