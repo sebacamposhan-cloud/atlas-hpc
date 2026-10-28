@@ -11,11 +11,16 @@ export function createMarking(ctx) {
   const dialog = document.createElement('dialog');
   dialog.id = 'markingDialog'; dialog.setAttribute('aria-label', 'Proyectos de marcado'); document.body.append(dialog);
   const launch = document.createElement('button');
-  launch.id = 'markingOpen'; launch.textContent = 'Proyectos'; launch.title = 'Proyectos: pintar recintos por estado y comparar cortes'; launch.setAttribute('aria-expanded', 'false'); launch.setAttribute('aria-controls', panel.id);
+  launch.id = 'markingOpen'; launch.title = 'Proyectos: pintar recintos por estado y comparar cortes'; launch.setAttribute('aria-label', launch.title); launch.setAttribute('aria-expanded', 'false'); launch.setAttribute('aria-controls', panel.id);
+  // Ícono de plano con recintos pintados y texto chico, igual que «Filtros».
+  launch.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 12h18M12 3v18"/><rect x="4.5" y="4.5" width="6" height="6" fill="currentColor" stroke="none" opacity=".35"/><rect x="13.5" y="13.5" width="6" height="6" fill="currentColor" stroke="none" opacity=".8"/></svg><span>Proyectos</span>';
   document.querySelector('.toolbar').prepend(launch);
   let active = null, focused = null, pending = 0, queue = Promise.resolve(), error = '', pincel = null, comparando = null, borrar = null;
   const find = id => ctx.rooms().find(room => room.id === id);
   const redraw = () => {ctx.redraw(); requestAnimationFrame(ctx.resize);};
+  // Pide al navegador que no borre los proyectos del equipo aunque le falte espacio (una vez por sesión).
+  let persistencia = false;
+  const pedirPersistencia = () => { if (persistencia) return; persistencia = true; navigator.storage?.persist?.().catch(() => {}); };
   const download = docs => ctx.download(new Blob([JSON.stringify(markingBackup(docs), null, 2)], {type: 'application/json'}), 'marcados-arquitectura.json');
   const hoy = () => new Intl.DateTimeFormat('en-CA', {timeZone: 'America/Santiago', year: 'numeric', month: '2-digit', day: '2-digit'}).format(new Date());
   const fecha = f => f ? f.split('-').reverse().join('-') : '';
@@ -56,7 +61,7 @@ export function createMarking(ctx) {
         if (next !== active) {
           const value = {...next, updatedAt: new Date().toISOString(), version: active.version + 1};
           await saveMarking(value, active.version);
-          active = value; error = '';
+          active = value; error = ''; pedirPersistencia();
         }
       } catch (failure) {error = 'Cambio no guardado. ' + failure.message; ctx.toast(error);}
       finally {pending--; render(); ctx.redraw();}
@@ -186,7 +191,7 @@ export function createMarking(ctx) {
       pending++; button.disabled = true;
       try {
         const next = doc ? {...setEstados(doc, leyenda), ...datos, version: doc.version + 1, updatedAt: new Date().toISOString()} : newMarking({...datos, estados: leyenda}, ctx.level, crypto.randomUUID());
-        await saveMarking(validateMarking(next), doc?.version || 0); open(next);
+        await saveMarking(validateMarking(next), doc?.version || 0); pedirPersistencia(); open(next);
       } catch (failure) {dialog.querySelector('#markingError').textContent = failure.message;}
       finally {pending--; button.disabled = false; status();}
     };

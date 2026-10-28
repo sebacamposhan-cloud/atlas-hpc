@@ -172,7 +172,7 @@ export function createObservaciones(ctx) {
       try {
         await guardarObservacion(o, versionEsperada, {historial: hist, quitarFotos: [...quitar],
           fotos: nuevas.map(f => ({id: f.id, obsId: o.id, tipo: f.tipo, at, autor, mime: f.mime, ancho: f.ancho, alto: f.alto, bytes: f.bytes, datos: f.datos, mini: f.mini}))});
-        recordarAutor(autor); guardando = false; dialog.close(); ctx.toast(estadoNuevo ? `Observación: ${estadoNuevo}.` : 'Observación guardada en este equipo.'); alGuardar?.();
+        recordarAutor(autor); pedirPersistencia(); guardando = false; dialog.close(); ctx.toast(estadoNuevo ? `Observación: ${estadoNuevo}.` : 'Observación guardada en este equipo.'); alGuardar?.();
       } catch (e) { guardando = false; form.querySelectorAll('button').forEach(b => { b.disabled = false; }); mensaje.textContent = 'No se guardó. ' + e.message; }
     }
     form.onsubmit = e => { e.preventDefault(); persistir(); };
