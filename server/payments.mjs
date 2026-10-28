@@ -1,3 +1,4 @@
+import {validatePlan} from '../dist/payment-plan.mjs';
 import {calculatePayment} from '../dist/payment-calculation.mjs';
 import {createSupabasePayments} from './payments-supabase.mjs';
 import {paymentContractors} from './payment-contractors.mjs';
@@ -30,13 +31,13 @@ export async function createPayments(env){
    if(url.pathname==='/api/payments/logout'&&req.method==='POST'){sessions.delete(token);return send(200,{ok:true});}
    if(url.pathname==='/api/payments'&&req.method==='GET')return send(200,{user:{username:user.username,role:user.role},contractors:paymentContractors,payments:db.prepare('SELECT data FROM payments ORDER BY rowid DESC').all().map(r=>JSON.parse(r.data))});
    if(url.pathname==='/api/payments'&&req.method==='POST'){
-    const b=await input();const text=(v,max=500)=>typeof v==='string'&&v.trim()&&v.length<=max;
+    const b=await input();validatePlan(b.plan);const text=(v,max=500)=>typeof v==='string'&&v.trim()&&v.length<=max;
     if(!text(b.contractor)||!/^\d{4}-(0[1-9]|1[0-2])$/.test(b.period)||!Array.isArray(b.items)||!b.items.length||b.items.length>100||b.items.some(i=>!text(i.description)||!Number.isSafeInteger(i.amount)||i.amount<0)||!Number.isSafeInteger(b.retention)||b.retention<0||!['Borrador','En revisión','Aprobado','Rechazado'].includes(b.status))return send(400,{error:'Revisa contratista, período, partidas, montos enteros CLP, retención y estado'});
     const old=b.id?db.prepare('SELECT data FROM payments WHERE id=?').get(b.id):null;if(b.id&&!old)return send(404,{error:'Estado de pago no encontrado'});const previous=old?JSON.parse(old.data):null;
     if((b.status==='Aprobado'||previous?.status==='Aprobado')&&user.role!=='approver')return send(403,{error:'Se requiere un usuario aprobador'});
     if(b.retentionPercent!=null){const calc=calculatePayment(b.items,b.retentionPercent);if(calc.retention!==b.retention||calc.items.some((i,n)=>i.amount!==b.items[n].amount))return send(400,{error:'Cálculo de pago inconsistente'});}
     const total=b.items.reduce((n,i)=>n+i.amount,0);if(!Number.isSafeInteger(total)||b.retention>total)return send(400,{error:'Retención o monto total inválido'});
-    const record={id:b.id||randomUUID(),version:(previous?.version||0)+1,contractor:b.contractor.trim(),period:b.period,items:b.items.map(i=>({...i,description:i.description.trim(),amount:i.amount})),amount:total,retention:b.retention,...(b.retentionPercent!=null?{retentionPercent:b.retentionPercent}:{}),net:total-b.retention,status:b.status,by:user.username,at:new Date().toISOString()};
+    const record={id:b.id||randomUUID(),version:(previous?.version||0)+1,contractor:b.contractor.trim(),period:b.period,plan:b.plan||null,items:b.items.map(i=>({...i,description:i.description.trim(),amount:i.amount})),amount:total,retention:b.retention,...(b.retentionPercent!=null?{retentionPercent:b.retentionPercent}:{}),net:total-b.retention,status:b.status,by:user.username,at:new Date().toISOString()};
     db.exec('BEGIN IMMEDIATE');try{if(previous){const result=db.prepare('UPDATE payments SET version=?,data=? WHERE id=? AND version=?').run(record.version,JSON.stringify(record),record.id,b.version);if(!result.changes){db.exec('ROLLBACK');return send(409,{error:'El registro cambió; actualiza antes de guardar'});}}else db.prepare('INSERT INTO payments VALUES(?,?,?)').run(record.id,record.version,JSON.stringify(record));db.prepare('INSERT INTO audit(payment_id,actor,at,data) VALUES(?,?,?,?)').run(record.id,user.username,record.at,JSON.stringify(record));db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');throw e;}return send(200,{payment:record});
    }return send(404,{error:'Ruta no disponible'});
   }catch{return send(400,{error:'No se pudo procesar el estado de pago'});}
