@@ -58,7 +58,7 @@ Control de obra → **PMA de terminaciones** incorpora los 3.107 registros del E
 
 ## Control de obra y filtros del plano
 
-- **Control de obra** abre por defecto Protocolos de la matriz, con la matriz Excel incorporada. También mantiene Avances y protocolos (registros locales del proyecto completo) y Características del piso (atributos documentales del nivel activo). El antiguo Dashboard deja de ser un apartado principal.
+- **Control de obra** abre por defecto Protocolos de la matriz, con la matriz Excel incorporada. También mantiene Características del piso (atributos documentales del nivel activo). El panel Avances y protocolos se retiró; sus registros locales no se borran. El antiguo Dashboard deja de ser un apartado principal.
 - Los gráficos de torta muestran estados técnicos y cierres administrativos de los protocolos registrados. Las barras muestran zonas y su último estado por dimensión. Seleccionar un estado consulta sus registros. Sin datos se muestra «Sin registros»; no se calcula avance de producción ni cumplimiento contra un total no documentado.
 - **Filtros**, en la barra derecha del visor, permite buscar recintos y categorías, sumar categorías dentro de una familia y cruzarlas con otras familias, asepsia, sector o revisión. Se mantiene el zoom mientras se ajustan filtros; el panel conserva la selección al cerrarlo y abrirlo de nuevo. En móvil se adapta a un panel compacto.
 - Gestión de recintos y Documentación y fuentes dejan de aparecer en la navegación. Las fichas conservan sus referencias; los respaldos están disponibles desde Filtros → Colores y respaldo. Los enlaces anteriores por módulo siguen siendo compatibles.

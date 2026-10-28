@@ -2,7 +2,7 @@
 
 Control de obra muestra el checklist y los indicadores de los recintos del piso activo: −1, 1, 2 o 3. Cada piso se cruza con su nivel PMA (A-S01, A-N01, A-N02 o A-N03). Los registros sin correspondencia válida se informan y no generan partidas. No se trasladan estados de un piso a otro.
 
-El panel local Avances y protocolos también limita zonas, eventos y protocolos a los recintos del piso. Los registros antiguos solo se asignan cuando la lámina o una identidad de recinto única permite determinar el piso; los ambiguos se excluyen con aviso. El avance valorizado conserva su alcance documental de nivel −1.
+El panel local Avances y protocolos (retirado de Control de obra en octubre de 2026) también limitaba zonas, eventos y protocolos a los recintos del piso. Los registros antiguos solo se asignan cuando la lámina o una identidad de recinto única permite determinar el piso; los ambiguos se excluyen con aviso. El avance valorizado conserva su alcance documental de nivel −1.
 
 ## Registro en terreno
 

@@ -21,10 +21,11 @@ El botón «Filtros» de la barra derecha abre un panel junto al plano en escrit
 
 ## Gráficos de control
 
-Control de obra tiene dos vistas internas:
+**Características del piso** es la vista documental de Control de obra.
 
-1. **Avances y protocolos:** registros de este navegador para todos los pisos. Tortas de estado técnico y cierre administrativo de los protocolos; barras de zonas y último estado registrado por dimensión. Las acciones del gráfico/leyenda consultan los registros correspondientes. Listados de revisión y piloto de puertas quedan plegables bajo los gráficos.
-2. **Características del piso:** indicadores y barras documentales del piso activo. Seleccionar una categoría devuelve al plano y destaca los recintos correspondientes, también al regresar desde una especialidad.
+- El panel **Avances y protocolos** se retiró de Control de obra (octubre de 2026).
+- `construction-dashboard.mjs` queda en el repositorio sin usarse, y los registros locales de ese panel siguen en IndexedDB: no se borran.
+- **Características del piso:** indicadores y barras documentales del piso activo. Seleccionar una categoría devuelve al plano y destaca los recintos correspondientes, también al regresar desde una especialidad.
 
 Las tortas se usan para categorías excluyentes. Las terminaciones que pueden solaparse conservan barras. El denominador es el conjunto de registros, nunca un total previsto de obra no documentado. Sin eventos, el estado es «Sin registrar»; sin registros, el gráfico indica que no hay datos. No se calculan m² ejecutados, avance global ni cumplimiento sin bases suficientes.
 

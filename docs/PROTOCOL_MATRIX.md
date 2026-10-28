@@ -27,7 +27,7 @@ Al seleccionar se carga únicamente su detalle. Se puede filtrar por estado, niv
 
 [Consulta móvil](images/protocol-matrix-mobile.png)
 
-La matriz se consulta sin editarla. Los protocolos locales y su historial existentes en IndexedDB siguen independientes y disponibles en Avances y protocolos. No se insertan automáticamente veinte mil registros en esa base ni se confunde un estado CERRADO del Excel con una aprobación técnica local.
+La matriz se consulta sin editarla. Los protocolos locales y su historial existentes en IndexedDB siguen independientes; el panel Avances y protocolos que los mostraba se retiró de Control de obra, pero los registros no se borran. No se insertan automáticamente veinte mil registros en esa base ni se confunde un estado CERRADO del Excel con una aprobación técnica local.
 
 ## Datos conservados y diferencias
 

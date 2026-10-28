@@ -21,7 +21,9 @@ No se suman tres veces los recintos por aparecer en tres hojas. Las 9.321 observ
 
 ## Consulta y control
 
-Filtros por código/texto/material/unidad, nivel literal del Excel, familia, estado de revisión, condición de eliminado, comparación X y discrepancias de eliminación entre hojas. Hay 25 registros por página, detalle de los 57 campos con su fila original, torta de revisión y barras por nivel; pulsar el gráfico aplica su filtro. No se calculan superficies a partir de polígonos ni se convierte texto superficial en cantidades de obra.
+**Recinto:** al tocar el campo (o su flecha) se despliega la lista de recintos del nivel elegido, con código y nombre; se elige con un toque o con flechas y Enter. Elegir uno filtra la tabla por su código exacto y abre su registro; «Todos los recintos» quita la selección. Lo escrito acota la lista y, si no se elige nada, sigue filtrando la tabla por código, texto, material o unidad. Cambiar el nivel limpia el recinto.
+
+Filtros por nivel literal del Excel, familia, estado de revisión, condición de eliminado, comparación X y discrepancias de eliminación entre hojas. Hay 25 registros por página, detalle de los 57 campos con su fila original, torta de revisión y barras por nivel; pulsar el gráfico aplica su filtro. No se calculan superficies a partir de polígonos ni se convierte texto superficial en cantidades de obra.
 
 La comparación X es la del propio PMA (1.513 filas frente a 1.594 IGUAL). Es independiente de las diferencias de códigos detectadas entre PMA y rombo del plano. El usuario puede ver ambos valores, su procedencia y decidir la corrección mediante el flujo documental existente. No se reemplazan acabados, colores o geometrías automáticamente.
 
