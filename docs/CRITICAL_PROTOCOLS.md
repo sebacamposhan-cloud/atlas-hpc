@@ -22,7 +22,7 @@ La fecha elegida modifica la antigüedad, no reconstruye un historial de estados
 
 ## Gráfico y consulta de registros
 
-**Control de obra → Protocolos críticos** contiene:
+**Control de obra → Protocolos de la matriz → Críticos · más de un año** (una vista del mismo panel desde octubre de 2026) contiene:
 
 1. Fecha de evaluación y botón Hoy.
 2. Filtros desplegables por especialidad, nivel del Excel, recibe, intervalo de elaboración y nombre/código de proceso.

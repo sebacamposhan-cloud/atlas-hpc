@@ -58,7 +58,7 @@ Control de obra → **PMA de terminaciones** incorpora los 3.107 registros del E
 
 ## Control de obra y filtros del plano
 
-- **Control de obra** abre por defecto Protocolos de la matriz, con la matriz Excel incorporada. También mantiene Características del piso (atributos documentales del nivel activo). El panel Avances y protocolos se retiró; sus registros locales no se borran. El antiguo Dashboard deja de ser un apartado principal.
+- **Control de obra** abre por defecto Protocolos de la matriz, con la matriz Excel incorporada. Ese panel junta dos vistas, **Matriz** y **Críticos · más de un año**. **Avance por recinto** junta **Por recinto** y, en el nivel −1, **Avance valorizado**. También mantiene Características del piso (atributos documentales del nivel activo). El panel Avances y protocolos se retiró; sus registros locales no se borran. El antiguo Dashboard deja de ser un apartado principal.
 - Los gráficos de torta muestran estados técnicos y cierres administrativos de los protocolos registrados. Las barras muestran zonas y su último estado por dimensión. Seleccionar un estado consulta sus registros. Sin datos se muestra «Sin registros»; no se calcula avance de producción ni cumplimiento contra un total no documentado.
 - **Filtros**, en la barra derecha del visor, permite buscar recintos y categorías, sumar categorías dentro de una familia y cruzarlas con otras familias, asepsia, sector o revisión. Se mantiene el zoom mientras se ajustan filtros; el panel conserva la selección al cerrarlo y abrirlo de nuevo. En móvil se adapta a un panel compacto.
 - Gestión de recintos y Documentación y fuentes dejan de aparecer en la navegación. Las fichas conservan sus referencias; los respaldos están disponibles desde Filtros → Colores y respaldo. Los enlaces anteriores por módulo siguen siendo compatibles.
@@ -80,7 +80,9 @@ Fuente: `dist/source/matriz-control-protocolos-rev1-hpc.xlsx`. Para regenerar lo
 
 En Protocolos de la matriz se puede filtrar por elaboración o cierre con límites Desde/Hasta inclusivos. «Pendiente de cierre (abiertos)» es una vista de ABIERTO, ya que la fuente no contiene un estado PENDIENTE. «Cerrados (incluye autocontrol)» agrupa ambos estados de cierre sin modificar las filas originales.
 
-Control de obra → **Protocolos críticos** muestra abiertos con fecha de elaboración válida, sin dato de cierre y con más de un año calendario a la fecha de evaluación. El aniversario exacto no es crítico. El análisis usa Hoy en America/Santiago por defecto; permite una fecha personalizada y distingue el estado de la matriz al corte de la antigüedad calculada.
+**En el plano por ejes (pisos 1, 2 y 3):** al elegir un protocolo, **Ver en el plano** encuadra cada folio entre sus ejes (por ejemplo, «AD-AG/A3-A5»). Cada folio lleva su número (001, 002…), cualquiera sea su estado. Los anulados no se dibujan: se listan a la derecha. [Detalle](docs/PROTOCOL_MATRIX.md#ubicación-en-el-plano-por-ejes).
+
+Control de obra → Protocolos de la matriz → **Críticos · más de un año** muestra abiertos con fecha de elaboración válida, sin dato de cierre y con más de un año calendario a la fecha de evaluación. El aniversario exacto no es crítico. El análisis usa Hoy en America/Santiago por defecto; permite una fecha personalizada y distingue el estado de la matriz al corte de la antigüedad calculada.
 
 Incluye barras por proceso, torta por tramos y listado paginado con acceso al folio/fila original. Filtros de especialidad, nivel, recibe y elaboración acotan el análisis. Pulsar un proceso o registro abre la consulta de la matriz con el mismo criterio de criticidad, fechas y alcance. Los abiertos sin fecha válida se cuentan aparte.
 

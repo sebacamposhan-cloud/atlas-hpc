@@ -1,5 +1,6 @@
 import {createMarking} from './marking.mjs';
 import {createMarkingOverlay,markingLegend} from './marking-overlay.mjs';
+import {createProtocolPlan} from './protocolos-plano.mjs';
 import {markingItems} from './marking-model.mjs';
 import {renderRoomProgress} from './room-progress.mjs';
 import {renderAvanceRecinto,iniciarCapaAvance} from './avance.mjs';
@@ -22,7 +23,7 @@ import {startPan,panView,startPinch,pinchView} from './gestures.mjs';
 import './offline.mjs';
 'use strict';
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let marking,markingOverlay,ui,disciplines,assistant,diamondCatalog,liberacion,observaciones,avanceCapa=false,obsCapa=false,showDiamonds=false;let undoGeometry=[],redoGeometry=[];
+let marking,markingOverlay,protocolPlan,ui,disciplines,assistant,diamondCatalog,liberacion,observaciones,avanceCapa=false,obsCapa=false,showDiamonds=false;let undoGeometry=[],redoGeometry=[];
 function rememberGeometry(){undoGeometry.push(structuredClone(edit));if(undoGeometry.length>100)undoGeometry.shift();redoGeometry=[];}
 
 let atlas,aliases=new Map(),data,doc,selected=null,results=[],filtered=false,view=[0,0,3971,2384],previousView=null,isolation=false,edit=null,drag=null,searchTimer,querySerial=0;
@@ -152,13 +153,15 @@ async function initialize(){
   observaciones ||= createObservaciones({esc,toast,levelName:nivel.nombre,rooms:()=>uniqueRooms(data.rooms),source:r=>data.documents.find(d=>d.id===r.document_id),download:downloadBlob});
   if(!obsCapa){obsCapa=true;iniciarCapaObservaciones(()=>render());}
   liberacion ||= createLiberacion({esc,rooms:()=>uniqueRooms(data.rooms),toast,changed:()=>{ui?.refresh();runSearch();if(selected)renderDetail();},paint:state=>ui?.apply('liberacion',state),select:selectRoom,show:name=>ui?.show(name)});
-  ui ||= createWorkspace({esc,observaciones,rooms:()=>uniqueRooms(data.rooms),results:()=>results,data:()=>data,selected:()=>selected,editing:()=>!!edit,architecture:()=>disciplines?.switchMode('architecture'),resize:()=>requestAnimationFrame(updateTiles),toast,modal,hasGeometry:id=>!!footprint(id),footprint,redraw:render,refresh:runSearch,search:()=>{clearTimeout(searchTimer);searchTimer=setTimeout(runSearch,160);},reset,select:selectRoom,excel,download:downloadBlob,scope:()=>atlas.scope,liberacion});
+  ui ||= createWorkspace({esc,observaciones,rooms:()=>uniqueRooms(data.rooms),results:()=>results,data:()=>data,selected:()=>selected,editing:()=>!!edit,architecture:()=>disciplines?.switchMode('architecture'),resize:()=>requestAnimationFrame(updateTiles),toast,modal,hasGeometry:id=>!!footprint(id),footprint,redraw:render,refresh:runSearch,search:()=>{clearTimeout(searchTimer);searchTimer=setTimeout(runSearch,160);},reset,select:selectRoom,excel,download:downloadBlob,scope:()=>atlas.scope,liberacion,verProtocolos:datos=>protocolPlan?.mostrar(datos)});
   if(!assistant){createAssistant({selected:()=>selected});assistant=true;}
   // Catálogo de rombos original del nivel −1 (recortes de las láminas PDF). En pisos importados desde DWG el rombo va dibujado en el plano y en la ficha.
   if(!diamondCatalog&&data.documents.some(d=>d.kind!=='dwg')&&data.rooms.some(r=>r.diamond_bbox)){createDiamondCatalog({esc,loadImage:r=>diamondURL(r,data.documents),data:()=>data,inScope,editing:()=>!!edit,toast,showing:()=>showDiamonds,toggle:()=>{disciplines.switchMode('architecture');ui.show('map');showDiamonds=!showDiamonds;render();},openRoom:id=>{disciplines.switchMode('architecture');ui.show('map');selectRoom(id);}});diamondCatalog=true;}
   disciplines ||= createDisciplines({esc,specialties:nivel.especialidades,level:nivel.nombre,showLayer:type=>ui?.setLayer(type),editing:()=>!!edit,selected:()=>selected,enterSpecialty:()=>{marking?.close();querySerial++;clearTimeout(searchTimer);document.body.classList.add('hideRight','hideLeft');},toast,download:downloadBlob,rooms:()=>uniqueRooms(data.rooms),material:code=>data.materials.find(m=>m.code===code),returnArchitecture:(code,id)=>{const matches=uniqueRooms(data.rooms).filter(r=>r.code===code),target=id?matches.find(r=>r.id===id):matches.length===1?matches[0]:null;if(target){selectRoom(target.id);}else{clearArchitectureSelection(code);if(code)toast(matches.length?'Varias coincidencias en Arquitectura: selecciona el recinto.':'Sin correspondencia en Arquitectura para '+code);}},syncCode:code=>{const matches=uniqueRooms(data.rooms).filter(r=>r.code===code);selected=matches.length===1?matches[0]:null;if(selected)selectRoom(selected.id,false);else{clearArchitectureSelection(code);}document.body.classList.add('hideRight');}});
   marking ||= createMarking({esc,level:nivel.id,levelName:nivel.nombre,rooms:()=>uniqueRooms(data.rooms),source:r=>data.documents.find(d=>d.id===r.document_id),editing:()=>!!edit,toast,download:downloadBlob,redraw:render,resize:updateTiles,enter:()=>{ui.closeFilters();ui.show('map');selected=null;isolation=false;},focus:r=>{if(r)setView(bounds(r,70));},export:(snapshot,comparacion)=>exportAtlas('pdf',snapshot,comparacion),fondo:()=>{const m=mapa();return {url:m.overview,export:m.export,origin:m.origin,width:m.width,height:m.height};},position:r=>world(r).position,path:footprintPath});
   markingOverlay ||= createMarkingOverlay({esc,active:()=>marking.active(),focused:()=>marking.focused(),items:()=>marking.items(),room:id=>uniqueRooms(data.rooms).find(r=>r.id===id),path:footprintPath,position:r=>world(r).position});
+  // Protocolos de la matriz encuadrados por sus ejes en el plano, con su número; los anulados quedan en el panel derecho.
+  protocolPlan ||= createProtocolPlan({esc,toast,setView,resize:updateTiles,enter:()=>{marking?.close();ui.closeFilters();ui.show('map');selected=null;isolation=false;render();},volver:()=>ui.show('work')});
   montarCapasDibujo();
   $('asepsis').innerHTML='<option value="">Todas / sin filtro</option>'+[...new Set(data.rooms.flatMap(r=>r.asepsis))].sort().map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join('');
   results=uniqueRooms(data.rooms);changeDoc(data.documents[0].id);listResults();$('loading').hidden=true;document.body.classList.remove('booting');window.dispatchEvent(new Event('atlas-ready'));

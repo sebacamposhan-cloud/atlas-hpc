@@ -1,6 +1,6 @@
 # Avance valorizado por recinto y partida · piloto nivel −1
 
-Control de obra → **Avance valorizado** y la ficha de cada recinto del plano (sección **Avance valorizado por partida**). El objetivo pasa de documentar a controlar y valorizar el avance. Piloto: solo nivel −1.
+Control de obra → Avance por recinto → **Avance valorizado** (una vista del mismo panel desde octubre de 2026) y la ficha de cada recinto del plano (sección **Avance valorizado por partida**). El objetivo pasa de documentar a controlar y valorizar el avance. Piloto: solo nivel −1.
 
 ## Fuentes
 
@@ -50,7 +50,7 @@ Una partida no puede quedar **Aprobada** si su previo no está liberado (partida
 | 6.2.3 / 6.2.4 / 6.2.7 revestimientos de muro | 5.1 | Propuesta |
 | 6.4.2 pintura de cielos · 6.10.4.2 cenefa | Su cielo (6.3.x) | Propuesta |
 
-Los protocolos de la matriz REV1 se registran por ejes (p. ej. «AD-AG/A3-A5»), no por recinto. Por eso aquí los protocolos previos se marcan por recinto (Pendiente / Liberado) con su tipo REV1 como referencia. Leerlos automáticamente requiere ubicar los ejes en el plano: siguiente paso.
+Los protocolos de la matriz REV1 se registran por ejes (p. ej. «AD-AG/A3-A5»), no por recinto. Por eso aquí los protocolos previos se marcan por recinto (Pendiente / Liberado) con su tipo REV1 como referencia. Los ejes ya se ubican en los pisos 1, 2 y 3 (Protocolos de la matriz → Ver en el plano; [PROTOCOL_MATRIX.md](PROTOCOL_MATRIX.md#ubicación-en-el-plano-por-ejes)). El nivel −1 aún no tiene grilla de ejes, porque su plano viene de PDF. Cruzar ejes con recintos de forma automática sigue pendiente.
 
 ## Checklist y valorización
 

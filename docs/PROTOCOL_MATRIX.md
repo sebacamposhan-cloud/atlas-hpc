@@ -29,6 +29,50 @@ Al seleccionar se carga únicamente su detalle. Se puede filtrar por estado, niv
 
 La matriz se consulta sin editarla. Los protocolos locales y su historial existentes en IndexedDB siguen independientes; el panel Avances y protocolos que los mostraba se retiró de Control de obra, pero los registros no se borran. No se insertan automáticamente veinte mil registros en esa base ni se confunde un estado CERRADO del Excel con una aprobación técnica local.
 
+## Ubicación en el plano por ejes
+
+En los pisos 1, 2 y 3, al elegir un protocolo aparece **Ver en el plano**; cada folio desplegado trae además **Ver protocolo 001 en el plano**.
+
+**Cómo se encuadra cada folio:**
+- Se encuadra entre los ejes de su columna EJES. La primera A es el edificio y la segunda letra o el número es el eje.
+- Ejemplos de lectura:
+
+  | Texto en EJES | Se dibuja |
+  |---|---|
+  | `AD-AG/A3-A5` | el rectángulo entre los ejes AD y AG y entre A3 y A5 |
+  | `AH/A1-A2` | un tramo a lo largo de AH |
+  | `AC-A2` | el pilar del cruce |
+  | `AO-AV` | una franja, porque solo trae ejes con letra |
+
+- El orden no importa (`A3-A5/AD-AG`). El texto que sigue a los ejes se ignora (`(Colada 5.1)`, `Tipo B`, `REGULARIZACION`). Se aceptan `B-O/4-5`, sin la A del edificio, y `A1A11`, con los ejes pegados.
+- Un eje que no está en la grilla (`A12B`, `A11A`) se aproxima a su eje base y se marca con ≈.
+
+**Qué se dibuja y qué no:**
+- Cada recuadro lleva el número del protocolo a tres cifras (folio 7 → 007), en cualquier estado.
+- El color sigue el estado: abierto, cerrado o cerrado por autocontrol.
+- Varios folios con el mismo encuadre comparten recuadro.
+- Los números aparecen al acercarse, para que no se amontonen.
+- **Los anulados (NULO) no se dibujan:** se listan arriba en el panel derecho (abajo en el celular).
+- También se listan los folios sin ejes ubicables: textos como «Descrito en monografía», tensado de pilas por línea y ejes del edificio B u otros.
+
+**Cobertura con la matriz REV1** (sin contar anulados):
+
+| Piso | Folios ubicados |
+|---|---|
+| 1 | 1.833 de 2.256 |
+| 2 | 1.427 de 1.494 |
+| 3 | 1.345 de 1.404 |
+
+El nivel −1 aún no tiene grilla, porque su plano viene de PDF.
+
+**Grilla:**
+- `dist/n0x/ejes.json` sale de la capa `S-GRID` de las láminas DWG. Cada etiqueta (AD, A5…) está dentro de su círculo y su eje es la recta que pasa por el centro.
+- Los tres pisos comparten las coordenadas del modelo de Revit. Los ejes que N01 y N03 comparten coinciden a 0,0 cm.
+- Se arma una sola grilla del edificio A con las burbujas de los tres pisos (A2 y A3 solo aparecen en N03): 26 ejes con letra (AA…AW, AA', AO1, AO2) y 14 numerados (A0…A12, A3'), cada 8,2 m.
+- Para regenerarla: `node scripts/ejes/generar.mjs`. Necesita `data/n0x/dibujo.json` y `marco.json`, de `scripts/dwg-plano/extraer.mjs`.
+- `protocol-ejes.mjs` lee y encuadra, y `protocolos-plano.mjs` dibuja la capa y el panel.
+- `protocol-ejes-test.mjs` valida la lectura, la geometría y la cobertura con los 20.233 registros. Corre en el build de Render.
+
 ## Datos conservados y diferencias
 
 Cada registro mantiene ITEM GRAL, ESPECIALIDAD / ACTIVIDAD, PARTIDAS / PROCESO, CODIGO, FOLIO, ELEMENTO, NIVEL, EJES, RECINTOS, FECHA DE ELABORACIÓN, AUTOCONTROL, CERRADO, FECHA DE CIERRE, Mes, RECIBE y ESTADO, incluyendo blancos y espacios del valor original. Fechas visibles se convierten desde su serial Excel; no se sustituyen ausencias por la fecha actual.
