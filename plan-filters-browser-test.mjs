@@ -13,7 +13,7 @@ try{
  for(const viewport of [{width:1440,height:1000},{width:390,height:844}]){
   const context=await browser.newContext({viewport,serviceWorkers:'block',httpCredentials:{username:'atlas',password:'isolated-plan-filters'}}),page=await context.newPage(),errors=[];page.setDefaultTimeout(15000);page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base+'/?nivel=N-1');await page.waitForFunction(()=>document.querySelectorAll('.roomshape').length===330);
-  assert.deepEqual(await page.locator('.navGroup button').evaluateAll(nodes=>nodes.map(n=>n.dataset.module)),['work','map','liberacion']);
+  assert.deepEqual(await page.locator('.navGroup button').evaluateAll(nodes=>nodes.map(n=>n.dataset.module)),['work','map']);
   assert.equal(await page.locator('.navGroup [data-module="layers"],.navGroup [data-module="rooms"],.navGroup [data-module="docs"],.navGroup [data-module="dashboard"]').count(),0);
   const work=async()=>{await page.locator(viewport.width<700?'.bottomNav [data-module="work"]':'.navGroup [data-module="work"]').click();await page.locator('[data-work-tab="progress"]').click();};
   await work();await page.locator('.workChart').first().waitFor();assert.equal(await page.locator('.workChart svg').count(),0);assert.equal(await page.locator('.chartEmpty').count(),3);if(process.env.ATLAS_SCREENSHOT_DIR)await page.screenshot({path:process.env.ATLAS_SCREENSHOT_DIR+'/work-control-empty-'+viewport.width+'.png'});

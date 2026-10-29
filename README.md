@@ -1,6 +1,6 @@
 # Pisos
 
-Todos los pisos comparten visor, fichas, búsqueda, edición, exportaciones, respaldos y modo sin conexión. La navegación principal tiene tres apartados: Control de obra, Explorador de planos y Liberación de frentes. La raíz `/` abre cuatro tarjetas en una cuadrícula de 2 × 2: pisos −1, 1, 2 y 3, cada uno con su propio plano. El botón «Pisos» y la navegación «Explorador de planos» permiten regresar a las tarjetas.
+Todos los pisos comparten visor, fichas, búsqueda, edición, exportaciones, respaldos y modo sin conexión. La navegación principal tiene dos apartados: Control de obra y Explorador de planos. La raíz `/` abre cuatro tarjetas en una cuadrícula de 2 × 2: pisos −1, 1, 2 y 3, cada uno con su propio plano. El botón «Pisos» y la navegación «Explorador de planos» permiten regresar a las tarjetas.
 
 | Piso | Dirección | Datos | Fuente |
 |---|---|---|---|
@@ -91,9 +91,9 @@ Con la fuente actual y evaluación al **27-10-2026**: **2.045 registros crítico
 
 Detalles y capturas: [CRITICAL_PROTOCOLS.md](docs/CRITICAL_PROTOCOLS.md). Tests: `node critical-protocol-test.mjs` y `PLAYWRIGHT_MODULE=<ruta-a-playwright-core> node critical-protocol-browser-test.mjs`.
 
-## Liberación de frentes
+## Liberación de frentes (archivado)
 
-Módulo de la barra lateral, capa en «Capas y terminaciones», gráfico del dashboard y sección de cada ficha. Calcula un semáforo por recinto (Bloqueado, Con restricción, Liberado, Sin datos) a partir de un Excel con las hojas Parámetros, Recintos, Solicitudes y Programa. Un mismo Excel sirve para todo el edificio; los recintos que no figuran en su hoja Recintos quedan «Sin datos». El Excel se guarda en el navegador (`atlas-liberacion-v1`). `dist/liberacion/datos-ejemplo.xlsx` contiene datos de prueba del nivel 2.
+El semáforo de liberación por recinto se retiró de la app el 28 de octubre de 2026. El código, el Excel de ejemplo, los estilos, su prueba y los pasos para volver a activarlo están en [archivo/semaforo-liberacion/](archivo/semaforo-liberacion/LEEME.md). Esa carpeta no se publica ni entra al paquete sin conexión.
 
 # ATLAS HPC 3 — incremento multiespecialidad
 

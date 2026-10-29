@@ -1,8 +1,9 @@
 // Liberación de frentes: semáforo por recinto a partir del Excel de consultas, PTO y programa.
 // Reglas tomadas de la app del nivel 2 (Recintos HPC). Un Excel vale para todo el edificio:
 // las consultas se asocian por código de recinto o por terminación («PAV 106», «CIE 202», «M 14», «M2 14»).
-import {registerLayer} from './layers.mjs';
-import {loadVendor} from './web-store.mjs';
+// Archivado: las importaciones apuntan a dist/ para que liberacion-test.mjs corra desde aquí. Al devolverlo a dist/, usar './layers.mjs' y './web-store.mjs'.
+import {registerLayer} from '../../dist/layers.mjs';
+import {loadVendor} from '../../dist/web-store.mjs';
 const CLAVE = 'atlas-liberacion-v1', CLAVE_ANTIGUA = 'recintos-hpc-excel-v1', DIA = 86400000;
 const CERRADOS = ['aprobada', 'aprobado', 'respondida', 'respondido', 'cerrada', 'cerrado'];
 export const ESTADOS = {bloqueado: 'Bloqueado', restriccion: 'Con restricción', liberado: 'Liberado', 'sin-dato': 'Sin datos'};

@@ -48,7 +48,7 @@ try {
   // Clear the text query before the independent map category filter.
   await page.locator('#reset').click();
   await page.locator('#planSettingsOpen').click();
-  assert.deepEqual(await page.locator('#activeLayer option').evaluateAll(nodes=>nodes.map(n=>n.value)),['walls','PAV','CIE','liberacion','asepsis','paint','sector','status']);
+  assert.deepEqual(await page.locator('#activeLayer option').evaluateAll(nodes=>nodes.map(n=>n.value)),['walls','PAV','CIE','asepsis','paint','sector','status']);
   await page.locator('#paintEnabled').check();
   await page.locator('.filterMore').first().locator('summary').click();await page.locator('#asepsisAttribute').selectOption('media');
   await page.locator('#applyPlanFilters').click();
