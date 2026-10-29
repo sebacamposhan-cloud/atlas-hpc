@@ -191,6 +191,7 @@ export function createObservaciones(ctx) {
   // ---------- Inventory: category navigation, state shortcuts and persistent observation detail ----------
   const filtros = {texto:'',estado:'Pendientes',responsable:'',categoria:'',prioridad:'',vencidas:false,foco:false,page:0};
   async function panel(root, opciones = {}) {
+    if(opciones.seleccion){Object.assign(filtros,{texto:'',estado:'Pendientes',responsable:'',categoria:'',prioridad:'',vencidas:false,foco:false,page:0},opciones.seleccion);opciones={...opciones,seleccion:null};}
     if(!root.isConnected)return;const request=Number(root.dataset.obsPanelRequest||0)+1;root.dataset.obsPanelRequest=request;const vigente=()=>root.isConnected&&Number(root.dataset.obsPanelRequest)===request;root.innerHTML='<p class="obsNota">Cargando observaciones…</p>';
     let datos;try{datos=await cargarObservaciones(true);}catch(error){if(vigente())root.innerHTML=`<p class="obsError">No se pudieron leer las observaciones: ${esc(error.message)}</p>`;return;}
     const uso=await espacio();if(!vigente())return;
