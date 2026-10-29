@@ -1,21 +1,20 @@
-/* Tema gerencial con los colores de Sacyr: azul marino y cian de la marca, azul y celeste de la paleta
-   «calmado y elegante», texto negro, ángulos rectos y sin sombras.
+/* Tema gerencial con los colores de Sacyr: fondo blanco, azul marino y azul de la marca en sólido, cian como
+   acento, texto negro, ángulos rectos y sin sombras. Sin tonos claros ni pastel: lo que se distingue, se
+   distingue con bordes y colores sólidos. Los colores de estado (verde, ámbar, rojo) son los únicos otros.
    Se carga al final de index.html y manda sobre los estilos anteriores sin modificarlos; para volver
    al aspecto anterior basta quitar su <link>. Los tonos de marca se leyeron del logo: si el manual de
    Sacyr da otros códigos, se cambian solo aquí. */
 :root {
-  --g-marca: #1b2a56;   /* azul marino Sacyr: barra lateral, títulos de tabla y de diálogo */
-  --g-azul: #0f5499;    /* azul de la paleta: lo seleccionado y los botones principales */
+  --g-marca: #1b2a56;   /* azul marino Sacyr: barra lateral, bordes, títulos y encabezados de tabla */
+  --g-azul: #0f5499;    /* azul Sacyr: lo seleccionado y los botones principales */
   --g-cian: #29a8df;    /* cian Sacyr: acentos y foco */
-  --g-claro: #e3eef8;   /* celeste de la paleta: fondo de trabajo */
-  --g-suave: #f2f7fc;   /* celeste más claro: filas al pasar el cursor */
-  --g-borde: #b7cbe0;   /* borde de tarjetas y campos */
+  --g-regla: #8c8c8c;   /* líneas entre filas */
   --g-texto: #000;
-  --g-texto2: #2c3a50;  /* texto secundario */
-  --ink: #000; --muted: #2c3a50; --line: #b7cbe0; --paper: #e3eef8; --teal: #0f5499; --navy: #1b2a56;
+  --g-texto2: #262626;  /* texto secundario */
+  --ink: #000; --muted: #262626; --line: #1b2a56; --paper: #fff; --teal: #0f5499; --navy: #1b2a56;
 }
 *, *::before, *::after { border-radius: 0 !important; box-shadow: none !important; text-shadow: none !important; }
-body { color: var(--g-texto); background: var(--g-claro); font-family: "Segoe UI", -apple-system, "Helvetica Neue", Arial, sans-serif; }
+body { color: var(--g-texto); background: #fff; font-family: "Segoe UI", -apple-system, "Helvetica Neue", Arial, sans-serif; }
 h1, h2, h3, h4, strong, b { color: inherit; }
 p, small, .muted, .obsNota, .chartSubtitle, .panelText, .sidebarIntro, .floorIntro p, .moduleHeading p, .documentaryIntro p { color: var(--g-texto2); }
 .section-label { color: var(--g-azul) !important; font-weight: 700; letter-spacing: 1.2px; }
@@ -28,56 +27,56 @@ p, small, .muted, .obsNota, .chartSubtitle, .panelText, .sidebarIntro, .floorInt
 
 /* Barra lateral azul marino */
 .appSidebar { background: var(--g-marca); border-right: 0; color: #fff; }
-.appSidebar small, .appSidebar .sideBrand small { color: #a9bbd6; }
-.appSidebar .sideBrand b, .appSidebar .sideProject, .appSidebar .sideBottom small { color: #fff; }
-.appSidebar .sideProject { background: transparent; border: 1px solid #3a4c7c; }
+.appSidebar small, .appSidebar .sideBrand small, .appSidebar .sideBrand b, .appSidebar .sideProject, .appSidebar .sideBottom small { color: #fff; }
+.appSidebar .sideProject { background: transparent; border: 1px solid #fff; }
 .brandMark { background: var(--g-cian); color: #fff; }
-.appSidebar .navGroup button { color: #c9d6ea; background: transparent; border: 0; border-left: 4px solid transparent; }
-.appSidebar .navGroup button:hover:not(:disabled) { background: #26386b; color: #fff; }
+.appSidebar .navGroup button { color: #fff; background: transparent; border: 0; border-left: 4px solid transparent; }
+.appSidebar .navGroup button:hover:not(:disabled) { background: var(--g-azul); color: #fff; outline: 0; }
 .appSidebar .navGroup .active, .appSidebar .navGroup .active:hover:not(:disabled) { background: #fff; color: var(--g-marca); font-weight: 700; border-left-color: var(--g-cian); }
-.appSidebar .navGroup button:disabled { color: #6a7ba3; opacity: 1; }
+.appSidebar .navGroup button:disabled { color: #fff; opacity: .45; }
 .appSidebar .sideBottom button { background: transparent; color: #fff; border: 0; }
 
 /* Cabecera */
 header { background: #fff; color: var(--g-texto); border-bottom: 3px solid var(--g-marca); }
 header button { background: #fff; color: var(--g-marca); border: 1px solid var(--g-marca); font-weight: 600; }
-header button:hover:not(:disabled) { background: var(--g-marca); color: #fff; }
-.globalSearchWrap input { background: #fff; border: 1px solid var(--g-borde); color: var(--g-texto); }
+header button:hover:not(:disabled) { background: var(--g-marca); color: #fff; outline: 0; }
+.globalSearchWrap input { background: #fff; border: 1px solid var(--g-marca); color: var(--g-texto); }
 .globalSearchWrap kbd { color: var(--g-texto2); }
 
-/* Lienzo */
-#workspacePanel, #floorExplorer { background: var(--g-claro); }
+/* Lienzo blanco */
+#workspacePanel, #floorExplorer { background: #fff; }
 
-/* Botones y campos */
+/* Botones y campos: al pasar el cursor se marcan con borde azul, sin fondos claros */
 button { background: #fff; color: var(--g-marca); border: 1px solid var(--g-marca); font-weight: 600; }
-button:hover:not(:disabled) { background: var(--g-claro); color: var(--g-marca); border-color: var(--g-marca); }
+button:hover:not(:disabled) { background: #fff; color: var(--g-azul); border-color: var(--g-azul); outline: 2px solid var(--g-azul); outline-offset: -2px; }
 button.primary { background: var(--g-azul); color: #fff; border-color: var(--g-azul); }
-button.primary:hover:not(:disabled) { background: var(--g-marca); color: #fff; border-color: var(--g-marca); }
-input, select, textarea { color: var(--g-texto); background: #fff; border: 1px solid var(--g-borde); }
+button.primary:hover:not(:disabled) { background: var(--g-marca); color: #fff; border-color: var(--g-marca); outline: 0; }
+input, select, textarea { color: var(--g-texto); background: #fff; border: 1px solid var(--g-marca); }
 input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--g-cian); outline-offset: 1px; }
 .obsImportar, .avanceCarga { background: #fff; color: var(--g-marca); border: 1px solid var(--g-marca); font-weight: 600; }
 
-/* Pestañas y selección: lo elegido va en azul */
-button[aria-pressed=true], button[aria-pressed=true]:hover:not(:disabled) { background: var(--g-azul) !important; color: #fff !important; border-color: var(--g-azul); }
+/* Pestañas y selección: lo elegido va en azul sólido */
+button[aria-pressed=true], button[aria-pressed=true]:hover:not(:disabled) { background: var(--g-azul) !important; color: #fff !important; border-color: var(--g-azul); outline: 0; }
 button[aria-pressed=true] b, button[aria-pressed=true] small { color: #fff !important; }
-.planTypes button { background: #fff; color: var(--g-marca); border: 1px solid var(--g-borde); margin-right: -1px; }
+.planTypes button { background: #fff; color: var(--g-marca); border: 1px solid var(--g-marca); margin-right: -1px; }
 .subVistas { background: transparent; border-bottom: 3px solid var(--g-azul); padding: 0; gap: 0; display: flex; }
-.subVistas button { background: #fff; color: var(--g-marca); border: 1px solid var(--g-borde); border-bottom: 0; margin-right: -1px; font-weight: 600; min-height: 38px; }
-.subVistas button[aria-selected=true], .subVistas button[aria-selected=true]:hover { background: var(--g-azul) !important; color: #fff !important; border-color: var(--g-azul); }
-.panelTrail { border-bottom: 1px solid var(--g-borde); }
+.subVistas button { background: #fff; color: var(--g-marca); border: 1px solid var(--g-marca); border-bottom: 0; margin-right: -1px; font-weight: 600; min-height: 38px; }
+.subVistas button[aria-selected=true], .subVistas button[aria-selected=true]:hover { background: var(--g-azul) !important; color: #fff !important; border-color: var(--g-azul); outline: 0; }
+.panelTrail { border-bottom: 1px solid var(--g-marca); }
 .workTabs button { color: var(--g-texto2); background: transparent; border: 0; border-bottom: 3px solid transparent; }
-.workTabs button[aria-pressed=true], .workTabs button[aria-pressed=true]:hover:not(:disabled) { background: transparent !important; color: var(--g-marca) !important; font-weight: 800; border-bottom-color: var(--g-cian); }
-.obsCategories { background: #fff; border: 1px solid var(--g-borde); }
+.workTabs button:hover:not(:disabled) { outline: 0; border-bottom-color: var(--g-marca); background: transparent; }
+.workTabs button[aria-pressed=true], .workTabs button[aria-pressed=true]:hover:not(:disabled) { background: transparent !important; color: var(--g-marca) !important; font-weight: 800; border-bottom-color: var(--g-azul); }
+.obsCategories { background: #fff; border: 1px solid var(--g-marca); }
 .obsCategories h3 { text-transform: uppercase; font-size: 11px; letter-spacing: .6px; color: var(--g-marca); }
 .obsCategories button { color: var(--g-texto); }
 .obsCategories button b, .obsStateTabs button b { color: var(--g-texto2); }
-.obsStateTabs button { background: #fff; border: 1px solid var(--g-borde); color: var(--g-marca); }
+.obsStateTabs button { background: #fff; border: 1px solid var(--g-marca); color: var(--g-marca); }
 .obsCategories [aria-pressed=true], .obsStateTabs [aria-pressed=true], .modeSwitch button.active, .toolbar #planSettingsOpen[aria-expanded=true] { background: var(--g-azul) !important; color: #fff !important; }
 .obsCategories [aria-pressed=true] b, .obsStateTabs [aria-pressed=true] b { color: #fff; }
-.modeSwitch { background: #fff; border: 1px solid var(--g-borde); }
+.modeSwitch { background: #fff; border: 1px solid var(--g-marca); }
 
-/* Tarjetas, indicadores y gráficos */
-.kpi, .chartCard, .floorCard, .obsTableScroll, .obsFiltros, .obsNew, .documentGrid .chartCard { background: #fff; border: 1px solid var(--g-borde); }
+/* Tarjetas, indicadores y gráficos: blanco con borde azul marino */
+.kpi, .chartCard, .floorCard, .obsTableScroll, .obsFiltros, .obsNew, .documentGrid .chartCard { background: #fff; border: 1px solid var(--g-marca); }
 .kpi { border-top: 4px solid var(--g-marca); }
 .kpi small { color: var(--g-texto2); }
 .lpKpi { border-top-color: var(--c, var(--g-marca)); }
@@ -87,59 +86,57 @@ button[aria-pressed=true] b, button[aria-pressed=true] small { color: #fff !impo
 .chartHeading { border-bottom: 2px solid var(--g-marca); }
 .chartHeading h3 { text-transform: uppercase; font-size: 12px; font-weight: 800; letter-spacing: .5px; color: var(--g-marca); }
 .chartHeading span { color: var(--g-texto2); font-weight: 600; }
-.workBar { background: var(--g-claro); }
+.workBar { background: #fff; border: 1px solid var(--g-regla); }
 .chartEmpty { color: var(--g-texto2); }
 
-/* Paneles de Control de obra: textos neutros y botones en azul marino. :where() deja estos valores por debajo
+/* Paneles de Control de obra: textos oscuros y botones en azul marino. :where() deja estos valores por debajo
    de los estados (seleccionado, vencido, error), que se refuerzan aparte. */
 #workspacePanel :where(p, small, summary, h3, h4, label, figcaption, dt, dd, .pagination span, .matrixOverview span) { color: var(--g-texto2); }
 #workspacePanel :where(button:not(.primary)) { color: var(--g-marca); }
 #workspacePanel .obsOverdue, #workspacePanel .obsError { color: #c21f1f; }
-.progressCoverage { background: #fff; border: 1px solid var(--g-borde); border-left: 6px solid var(--g-azul); color: var(--g-texto); }
+.progressCoverage { background: #fff; border: 1px solid var(--g-marca); border-left: 6px solid var(--g-azul); color: var(--g-texto); }
 
 /* Tarjetas de pisos y paneles */
 .floorCard.available:hover { border-color: var(--g-azul); outline: 2px solid var(--g-azul); outline-offset: -2px; transform: none; }
-.floorPreview, .unavailable .floorPreview { background: #fff; border-bottom: 1px solid var(--g-borde); }
-.floorPreviewNumber { color: var(--g-marca); font-weight: 800; opacity: .9; }
+.floorPreview, .unavailable .floorPreview { background: #fff; border-bottom: 1px solid var(--g-marca); }
+.floorPreviewNumber { color: var(--g-marca); font-weight: 800; opacity: 1; }
 .floorCardArrow { border: 1px solid var(--g-marca); color: var(--g-marca); }
-.floorCardStatus { border-top: 1px solid var(--g-claro); color: var(--g-texto2); font-weight: 600; }
+.floorCardStatus { border-top: 1px solid var(--g-regla); color: var(--g-texto2); font-weight: 600; }
 .floorCardStatus i { background: var(--g-cian); }
 .panelTitle { color: var(--g-marca); font-weight: 800; }
 .panelArt { stroke: var(--g-marca); }
-.panelArt .f { fill: #cfe0f1; }
+.panelArt .f { fill: none; stroke: var(--g-azul); stroke-width: 1.6; }
 .panelArt .m { fill: var(--g-cian); }
 .panelArt .kf { fill: var(--g-marca); }
 .panelArt .k { stroke: var(--g-azul); }
 
-/* Tablas: encabezado azul marino, filas con regla celeste */
+/* Tablas: encabezado azul marino, filas separadas por una línea gris */
 #workspacePanel th, dialog th { background: var(--g-marca) !important; color: #fff !important; font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: .5px; border: 0; }
 #workspacePanel th button, dialog th button { background: transparent; color: #fff; border: 0; }
-#workspacePanel td { border-color: #d3e1ef; }
-#workspacePanel tbody tr:hover > td { background: var(--g-suave); }
-.obsSelectedRow, .obsSelectedRow > td { background: var(--g-claro) !important; }
-.obsSelectedRow > td:first-child { border-left: 4px solid var(--g-azul); }
+#workspacePanel td { border-color: var(--g-regla); }
+.obsSelectedRow, .obsSelectedRow > td { background: #fff !important; font-weight: 600; }
+.obsSelectedRow > td:first-child { border-left: 5px solid var(--g-azul); }
 
-/* Estados: etiqueta rectangular con franja de color */
-.obsChip { background: #fff; color: var(--g-texto); border: 1px solid var(--g-borde); border-left: 8px solid var(--c); text-transform: uppercase; font-size: 10px; letter-spacing: .4px; padding: 3px 8px; font-weight: 700; }
-.status, .status.valid { background: #fff; color: var(--g-texto); border: 1px solid var(--g-borde); font-weight: 600; }
+/* Estados: etiqueta blanca con franja de color sólido */
+.obsChip { background: #fff; color: var(--g-texto); border: 1px solid var(--g-marca); border-left: 8px solid var(--c); text-transform: uppercase; font-size: 10px; letter-spacing: .4px; padding: 3px 8px; font-weight: 700; }
+.status, .status.valid { background: #fff; color: var(--g-texto); border: 1px solid var(--g-marca); font-weight: 600; }
 .status.valid { border-left: 6px solid #1a7f37; }
-.badge { border: 1px solid var(--g-borde); color: var(--g-marca); background: #fff; }
+.badge { border: 1px solid var(--g-marca); color: var(--g-marca); background: #fff; }
 .obsOverdue { color: #c21f1f; }
 
 /* Diálogos: barra de título azul marino */
-dialog { border: 1px solid var(--g-marca); }
-dialog::backdrop { background: #1b2a56b3; }
+dialog { border: 2px solid var(--g-marca); }
+dialog::backdrop { background: #1b2a56cc; }
 .obsForm header, .obsDetailDrawer header { background: var(--g-marca); border-bottom: 3px solid var(--g-cian); }
-.obsForm header, .obsForm header *, .obsDetailDrawer header, .obsDetailDrawer header * { color: #fff; }
-.obsForm header small, .obsDetailDrawer header small { color: #a9bbd6; }
+.obsForm header, .obsForm header *, .obsDetailDrawer header, .obsDetailDrawer header *, .obsForm header small, .obsDetailDrawer header small { color: #fff; }
 .obsForm header .obsChip, .obsDetailDrawer header .obsChip { color: var(--g-texto); }
 .obsForm header .obsCerrar, .obsDetailDrawer header [data-close-detail] { background: transparent; color: #fff; border: 0; }
-.obsForm header .obsCerrar:hover:not(:disabled), .obsDetailDrawer header [data-close-detail]:hover:not(:disabled) { background: #26386b; color: #fff; }
-.obsForm footer { border-top: 1px solid var(--g-borde); background: var(--g-suave); }
+.obsForm header .obsCerrar:hover:not(:disabled), .obsDetailDrawer header [data-close-detail]:hover:not(:disabled) { background: var(--g-azul); color: #fff; outline: 0; }
+.obsForm footer { border-top: 2px solid var(--g-marca); background: #fff; }
 .obsForm label, .obsDetailBody label { color: var(--g-texto); }
 .obsBotonesFoto label { background: #fff; border: 1px solid var(--g-marca); color: var(--g-marca); }
 .obsBotonesFoto .obsCamara { background: var(--g-azul); border-color: var(--g-azul); color: #fff; }
-.obsTransiciones button { background: #fff; color: var(--g-texto); border: 1px solid var(--g-borde); border-left: 6px solid var(--c); }
+.obsTransiciones button { background: #fff; color: var(--g-texto); border: 1px solid var(--g-marca); border-left: 6px solid var(--c); }
 
 /* Ficha del recinto, filtros del plano y búsqueda: el mismo criterio de textos */
 #detail :where(p, small, span, b, h3, h4, label, summary, dt, dd, li), #planFilters :where(p, small, b, label, summary, .colorOrigin, .filterHelp), .left :where(p, small, label, summary) { color: var(--g-texto2); }
@@ -147,22 +144,33 @@ dialog::backdrop { background: #1b2a56b3; }
 #detail .obsError, #detail .obsLista em, #detail .obsOverdue { color: #c21f1f; }
 #detail .obsFotosFicha span span { color: #fff; }
 .codeLink { color: var(--g-azul); text-decoration: underline; }
-.hint { background: #fff; color: var(--g-texto); border: 1px solid var(--g-borde); border-left: 6px solid var(--g-azul); }
-.pmaWarning, .avancePrevio, #geometryAuthority { background: #fff; color: var(--g-texto); border: 1px solid var(--g-borde); border-left: 6px solid #c26a00; }
+.hint { background: #fff; color: var(--g-texto); border: 1px solid var(--g-marca); border-left: 6px solid var(--g-azul); }
+.pmaWarning, .avancePrevio, #geometryAuthority { background: #fff; color: var(--g-texto); border: 1px solid var(--g-marca); border-left: 6px solid #c26a00; }
 .pmaWarning b, .avancePrevio b { color: var(--g-texto); }
 header .project span, #offlineLabel, #disciplineStatus { color: var(--g-texto2); }
 aside.left :where(summary), aside.left #closeSearch, #planFilters #toggleCategorySearch { color: var(--g-marca); }
 aside.left #search { border-color: var(--g-marca); }
-aside.left .result { background: #fff; border-color: var(--g-borde); color: var(--g-texto); }
+aside.left .result { background: #fff; border-color: var(--g-regla); color: var(--g-texto); }
 aside.left .result.active { background: var(--g-azul); border-color: var(--g-azul); color: #fff; }
 aside.left .result.active * { color: #fff; }
 
+.matrixGroup { border-color: var(--g-regla); }
+#detail .meta, #detail .avanceMontos div, #detail .rombo, #asepsisEvidence { background: #fff; border: 1px solid var(--g-marca); }
+#asepsisEvidence { border-left: 6px solid #c26a00; }
+#detail td, #detail th { border-color: var(--g-regla); }
+.avancePrevio.bloquea { background: #fff; color: var(--g-texto); }
+#expandDetail span { background: var(--g-marca); }
+.categoryControl { border-bottom-color: var(--g-regla); }
+aside.left #search { background: #fff; }
+aside.right, aside.left { border-color: var(--g-marca); }
+
 /* Visor del plano */
-.planheader, .toolbar, #activeLegend, #planFilters { background: #fff; border: 1px solid var(--g-borde); }
+#viewport, main { background: #fff; }
+.planheader, .toolbar, #activeLegend, #planFilters { background: #fff; border: 1px solid var(--g-marca); }
 .planheader { border-top: 3px solid var(--g-marca); }
 .toolbar button, .toolbar #reset { color: var(--g-marca); }
 .disciplineBar { border-bottom: 2px solid var(--g-marca); }
 .bottomNav { border-top: 3px solid var(--g-marca); }
 .bottomNav button { color: var(--g-texto2); }
-.bottomNav button.active, .bottomNav button:hover:not(:disabled) { color: var(--g-azul); background: transparent; font-weight: 700; }
+.bottomNav button.active, .bottomNav button:hover:not(:disabled) { color: var(--g-azul); background: transparent; font-weight: 700; outline: 0; }
 #toast { background: var(--g-marca); color: #fff; border-left: 6px solid var(--g-cian); }

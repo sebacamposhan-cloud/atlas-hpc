@@ -8,7 +8,7 @@ import {registerLayer} from './layers.mjs';
 import * as M from './observaciones-model.mjs';
 import {leerObservaciones, leerHistorial, leerFotos, guardarObservacion, espacio, pedirPersistencia, exportarObservaciones, importarObservaciones} from './observaciones-store.mjs';
 
-export const COLORES_RECINTO = {'Con vencidas': '#c62f2f', 'Abiertas': '#e0882a', 'Corregidas por verificar': '#2f7fb5', 'Cerradas': '#2e9e5b', 'Sin observaciones': '#cfd5da'};
+export const COLORES_RECINTO = {'Con vencidas': '#c62f2f', 'Abiertas': '#e0882a', 'Corregidas por verificar': '#2f7fb5', 'Cerradas': '#2e9e5b', 'Sin observaciones': '#ffffff'};
 const COLOR_ESTADO = {'Abierta': '#e0882a', 'En corrección': '#c9a21b', 'Corregida': '#2f7fb5', 'Cerrada': '#2e9e5b', 'Descartada': '#9aa3ad'};
 const ACCION = {'En corrección': 'En corrección', 'Corregida': 'Marcar corregida', 'Cerrada': 'Verificar y cerrar', 'Abierta': 'Reabrir', 'Descartada': 'Descartar'};
 const hoy = () => new Intl.DateTimeFormat('en-CA', {timeZone: 'America/Santiago', year: 'numeric', month: '2-digit', day: '2-digit'}).format(new Date());

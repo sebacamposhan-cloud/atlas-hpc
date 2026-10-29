@@ -55,7 +55,7 @@ dialog.lpDialog.lpAncho { width: min(1000px, 96vw); }
 .lpForm .lpSeccion h3 small { color: #2c3a50; font-weight: 400; }
 .lpTres { grid-template-columns: 1fr 1.4fr 1.4fr; }
 .lpElegidos { display: flex; flex-wrap: wrap; gap: 6px; }
-.lpChip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; background: var(--g-claro, #e3eef8); color: var(--g-marca, #1b2a56); border: 1px solid var(--g-borde, #b7cbe0); padding: 2px 2px 2px 8px; }
+.lpChip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; background: #fff; color: var(--g-marca, #1b2a56); border: 1px solid var(--g-marca, #1b2a56); padding: 2px 2px 2px 8px; }
 .lpChip button { border: 0; background: transparent; min-height: 26px; width: 26px; padding: 0; font-size: 16px; border-radius: 50%; }
 .lpBuscarRecinto input { width: 100%; box-sizing: border-box; }
 .lpResultados { display: grid; gap: 4px; max-height: 220px; overflow: auto; margin-top: 6px; }
@@ -63,7 +63,7 @@ dialog.lpDialog.lpAncho { width: min(1000px, 96vw); }
 .lpResultados button small { color: #2c3a50; margin-left: 4px; }
 .lpResultados .lpTodos { background: var(--g-azul, #0f5499); color: #fff; font-weight: 700; }
 .lpRestricciones { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.lpRestricciones li { display: flex; gap: 8px; align-items: center; border: 1px solid var(--g-borde, #b7cbe0); border-left: 6px solid #c26a00; padding: 8px 10px; font-size: 12px; background: #fff; }
+.lpRestricciones li { display: flex; gap: 8px; align-items: center; border: 1px solid var(--g-marca, #1b2a56); border-left: 6px solid #c26a00; padding: 8px 10px; font-size: 12px; background: #fff; }
 .lpRestricciones li > div { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .lpRestricciones li small { display: block; color: #2c3a50; font-size: 11px; margin-top: 2px; }
 .lpRestricciones li.vencida { border-left-color: #c21f1f; }
@@ -85,10 +85,10 @@ dialog.lpDialog.lpAncho { width: min(1000px, 96vw); }
 .lpForm footer [data-lp-eliminar] { margin-left: auto; color: #c21f1f; border-color: #c21f1f; }
 
 /* Reporte semanal */
-.lpReporte { position: fixed; inset: 0; z-index: 90; background: var(--g-claro, #e3eef8); overflow: auto; padding: 0 16px 32px; }
-.lpReporteBarra { position: sticky; top: 0; z-index: 1; display: flex; gap: 8px; align-items: center; justify-content: flex-end; flex-wrap: wrap; padding: 12px 0; background: var(--g-claro, #e3eef8); }
+.lpReporte { position: fixed; inset: 0; z-index: 90; background: #fff; overflow: auto; padding: 0 16px 32px; }
+.lpReporteBarra { position: sticky; top: 0; z-index: 1; display: flex; gap: 8px; align-items: center; justify-content: flex-end; flex-wrap: wrap; padding: 12px 0; background: #fff; border-bottom: 3px solid var(--g-marca, #1b2a56); margin-bottom: 16px; }
 .lpReporteBarra span { margin-right: auto; font-size: 12px; color: var(--g-marca, #1b2a56); }
-.lpHoja { background: white; max-width: 1050px; margin: 0 auto; padding: 32px 36px; border: 1px solid var(--g-borde, #b7cbe0); color: #000; font-size: 12px; }
+.lpHoja { background: white; max-width: 1050px; margin: 0 auto; padding: 32px 36px; border: 1px solid var(--g-marca, #1b2a56); color: #000; font-size: 12px; }
 .lpHoja h1 { font-size: 22px; margin: 4px 0; font-weight: 800; }
 .lpHoja h2 { font-size: 12px; margin: 22px 0 8px; color: var(--g-marca, #1b2a56); border-bottom: 2px solid var(--g-marca, #1b2a56); padding-bottom: 4px; text-transform: uppercase; letter-spacing: .6px; }
 .lpHoja h3 { font-size: 12px; margin: 12px 0 4px; }
@@ -97,18 +97,18 @@ dialog.lpDialog.lpAncho { width: min(1000px, 96vw); }
 .lpHojaCabecera p { margin: 0; font-size: 13px; }
 .lpHojaFecha { text-align: right; font-size: 11px; color: #2c3a50; }
 .lpDatos { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
-.lpDatos > div { border: 1px solid var(--g-borde, #b7cbe0); border-top: 4px solid var(--g-marca, #1b2a56); padding: 8px 10px; }
+.lpDatos > div { border: 1px solid var(--g-marca, #1b2a56); border-top: 4px solid var(--g-marca, #1b2a56); padding: 8px 10px; }
 .lpDatos span { display: block; font-size: 9px; color: var(--g-marca, #1b2a56); font-weight: 700; text-transform: uppercase; letter-spacing: .4px; }
 .lpDatos b { display: block; font-size: 20px; margin-top: 2px; font-weight: 800; }
 .lpDatos small { font-size: 10px; color: #2c3a50; }
 .lpHojaPlano figure { margin: 0; }
-.lpPlanoImagen img { width: 100%; height: auto; max-height: 75vh; object-fit: contain; display: block; border: 1px solid var(--g-borde, #b7cbe0); background: #fff; }
+.lpPlanoImagen img { width: 100%; height: auto; max-height: 75vh; object-fit: contain; display: block; border: 1px solid var(--g-marca, #1b2a56); background: #fff; }
 .lpHojaPlano figcaption { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 11px; margin-top: 6px; align-items: center; }
 .lpHojaPlano figcaption i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
 .lpHojaPlano figcaption small { flex-basis: 100%; color: #2c3a50; }
 .lpHojaTabla { width: 100%; border-collapse: collapse; font-size: 11px; }
 .lpHojaTabla th { text-align: left; background: var(--g-marca, #1b2a56); color: #fff; padding: 6px; font-weight: 700; text-transform: uppercase; font-size: 9.5px; letter-spacing: .4px; }
-.lpHojaTabla td { padding: 6px; border-bottom: 1px solid #d3e1ef; vertical-align: top; }
+.lpHojaTabla td { padding: 6px; border-bottom: 1px solid var(--g-regla, #8c8c8c); vertical-align: top; }
 .lpHojaTabla small { color: #2c3a50; }
 .lpPunto { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--c); margin-right: 5px; }
 .lpHojaDos { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
@@ -131,7 +131,7 @@ dialog.lpDialog.lpAncho { width: min(1000px, 96vw); }
   .lpFilaFrente input[data-k="frente"] { grid-column: 1 / -1; order: -1; }
   .lpFilaAcuerdo { grid-template-columns: 1fr 1fr auto; }
   .lpFilaAcuerdo input[data-k="texto"] { grid-column: 1 / -1; }
-  .lpFila { border-bottom: 1px solid var(--g-borde, #b7cbe0); padding-bottom: 8px; }
+  .lpFila { border-bottom: 1px solid var(--g-marca, #1b2a56); padding-bottom: 8px; }
   .lpTabla, .lpTabla tbody { display: block; }
   .lpTabla thead { display: none; }
   .lpTabla tr { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; background: white; border: 1px solid var(--line); border-radius: 10px; padding: 12px; }

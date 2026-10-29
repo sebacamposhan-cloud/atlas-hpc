@@ -7,9 +7,10 @@ import {workChart} from './work-charts.mjs';
 import * as M from './lastplanner-model.mjs';
 import {leerActividades, leerReuniones, guardarActividades, eliminarActividad, guardarReunion, eliminarReunion, exportarPlan, importarPlan} from './lastplanner-store.mjs';
 
-export const COLOR_ESTADO = {'Planificada': '#6b7f99', 'En ejecución': '#0f5499', 'Cumplida': '#1a7f37', 'No cumplida': '#c21f1f'};
-export const COLORES_RECINTO = {'No cumplida': '#c21f1f', 'Con restricción': '#c26a00', 'En ejecución': '#0f5499', 'Planificada': '#8fa3bd', 'Cumplida': '#1a7f37', 'Sin actividades': '#d3dce6'};
-const COLOR_FRENTE = {'Activo': '#1a7f37', 'Detenido': '#c21f1f', 'Sin iniciar': '#8fa3bd', 'Terminado': '#1b2a56'};
+export const COLOR_ESTADO = {'Planificada': '#1b2a56', 'En ejecución': '#0f5499', 'Cumplida': '#1a7f37', 'No cumplida': '#c21f1f'};
+// «Sin actividades» es blanco: la capa del plano mezcla en modo multiplicar, así que esos recintos quedan sin teñir.
+export const COLORES_RECINTO = {'No cumplida': '#c21f1f', 'Con restricción': '#c26a00', 'En ejecución': '#0f5499', 'Planificada': '#1b2a56', 'Cumplida': '#1a7f37', 'Sin actividades': '#ffffff'};
+const COLOR_FRENTE = {'Activo': '#1a7f37', 'Detenido': '#c21f1f', 'Sin iniciar': '#29a8df', 'Terminado': '#1b2a56'};
 const ACCION = {'En ejecución': 'Iniciar', 'Cumplida': 'Marcar cumplida', 'No cumplida': 'No cumplida', 'Planificada': 'Volver a planificada'};
 const VISTAS = {resumen: 'Resumen', semanal: 'Plan semanal', intermedio: 'Intermedio y restricciones', reuniones: 'Reuniones y frentes', rendimientos: 'Rendimientos'};
 const hoy = () => new Intl.DateTimeFormat('en-CA', {timeZone: 'America/Santiago', year: 'numeric', month: '2-digit', day: '2-digit'}).format(new Date());
@@ -21,7 +22,7 @@ const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
 const nSemana = s => +s.slice(6);
 const etiquetaSemana = s => { const {desde, hasta} = M.rangoSemana(s); return `Semana ${nSemana(s)} · ${fecha(desde).slice(0, 5)} al ${fecha(hasta)}`; };
 // Verde desde 80 %, ámbar desde 60 %: referencia habitual del PPC en obras que aplican Last Planner.
-const colorPct = v => v == null ? '#d3dce6' : v >= .8 ? '#1a7f37' : v >= .6 ? '#b58500' : '#c21f1f';
+const colorPct = v => v == null ? '#595959' : v >= .8 ? '#1a7f37' : v >= .6 ? '#b58500' : '#c21f1f';
 const CLAVE_AUTOR = 'atlas-autor';
 const autorGuardado = () => { try { return localStorage.getItem(CLAVE_AUTOR) || ''; } catch { return ''; } };
 const recordarAutor = v => { try { localStorage.setItem(CLAVE_AUTOR, v); } catch {} };
@@ -43,7 +44,7 @@ export function cargarPlan(forzar = false) {
   if (!cargando) cargando = Promise.all([leerActividades(), leerReuniones()]).then(([actividades, reuniones]) => { cache = {actividades, reuniones}; indexar(); return cache; }).catch(e => { cargando = null; throw e; });
   return cargando;
 }
-registerLayer('lastplanner', {nombre: 'Last Planner · semana', categories: r => [M.estadoRecinto(cache?.porCodigo?.get(String(r.code).trim()))], color: k => COLORES_RECINTO[k] || '#d3dce6', opacity: .55});
+registerLayer('lastplanner', {nombre: 'Last Planner · semana', categories: r => [M.estadoRecinto(cache?.porCodigo?.get(String(r.code).trim()))], color: k => COLORES_RECINTO[k] || '#ffffff', opacity: .55});
 export function iniciarCapaLastPlanner(alCambiar) {
   const recargar = () => cargarPlan(true).then(alCambiar).catch(() => {});
   recargar(); window.addEventListener('atlas-lastplanner-changed', recargar);
@@ -103,7 +104,7 @@ export function createLastPlanner(ctx) {
       ${tarjeta('Causas de no cumplimiento', M.causas(lista, semanas).reduce((n, c) => n + c.n, 0) + ' veces', tablaCausas(M.causas(lista, semanas)), 'Pareto de las últimas 8 semanas.')}
       ${tarjeta('Cumplimiento por responsable', porResp.length, barrasPct(porResp), 'PPC de las últimas 4 semanas (cumplidas / cerradas).')}
       ${tarjeta('Cumplimiento por sector', porSector.length, barrasPct(porSector), 'PPC de las últimas 4 semanas.')}
-      ${workChart({title: 'Restricciones pendientes por tipo', items: rr.porTipo.map(([key, n], i) => ({key, n, color: ['#c26a00', '#0f5499', '#1b2a56', '#29a8df', '#1a7f37', '#c21f1f', '#b58500', '#6b7f99', '#9db8d6', '#3d5a80'][i % 10]})), emptyText: 'Sin restricciones pendientes.'}, esc)}
+      ${workChart({title: 'Restricciones pendientes por tipo', items: rr.porTipo.map(([key, n], i) => ({key, n, color: ['#c26a00', '#0f5499', '#1b2a56', '#29a8df', '#1a7f37', '#c21f1f', '#b58500', '#000000', '#595959', '#7a4b00'][i % 10]})), emptyText: 'Sin restricciones pendientes.'}, esc)}
       ${tarjeta('Frentes de trabajo', frentes.length ? `${dotacion} personas en frentes activos` : '—', tablaFrentes(frentes), reunion ? `Según la reunión del ${fecha(reunion.fecha)}.` : '')}
       </div>`;
   }
