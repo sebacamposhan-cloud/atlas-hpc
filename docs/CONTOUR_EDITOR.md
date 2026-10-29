@@ -1,5 +1,7 @@
 # Revisión de contornos 2D
 
+> Para corregir contornos para todos los equipos existe además el editor interno sobre el DWG, `scripts/editor-contornos/` ([LEEME](../scripts/editor-contornos/LEEME.md)). Lo que se guarda aquí, en el navegador, sigue mandando solo en ese equipo.
+
 Incremento sobre el visor existente: abre un recinto de Arquitectura y pulsa **Editar contorno**. El editor renderiza la región del PDF original mediante PDF.js, conserva las coordenadas de la fuente y permite mover vértices, dibujar partes, cortar huecos, eliminar, deshacer y rehacer. No sustituye el plano general ni recalcula superficies de obra.
 
 Indica responsable y motivo, guarda y exporta la revisión JSON. El contorno actualizado pasa a selección y resaltado del plano; la ficha conserva código, seis campos del rombo y referencia documental. El historial permite consultar valores anteriores y revertir mediante una nueva corrección. Guardar deja el estado **Pendiente de revisión**, incluso si el contorno anterior estaba validado.
