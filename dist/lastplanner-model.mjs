@@ -67,7 +67,12 @@ export function validarActividad(a) {
   for (const k of ['inicioPlan', 'finPlan', 'inicioReal', 'finReal']) if (a[k] != null && !esFecha(a[k])) throw Error('Fecha no válida.');
   if (a.inicioPlan && a.finPlan && a.finPlan < a.inicioPlan) throw Error('El término planificado es anterior al inicio.');
   if (a.inicioReal && a.finReal && a.finReal < a.inicioReal) throw Error('El término real es anterior al inicio real.');
-  if (![a.cantidad, a.cantidadEjecutada, a.hh, a.diasReales].every(numero) || !entero(a.dotacion)) throw Error('Cantidades, dotación, días u horas no válidos.');
+  // Lo comprometido en una semana se planifica dentro de ella; un trabajo más largo se divide por semanas.
+  if (a.semana) {
+    const {desde, hasta} = rangoSemana(a.semana), corta = f => f.split('-').reverse().join('-');
+    if ([a.inicioPlan, a.finPlan].some(f => f && (f < desde || f > hasta))) throw Error(`Las fechas planificadas deben quedar dentro de la semana ${+a.semana.slice(6)} (${corta(desde)} al ${corta(hasta)}). Si el trabajo dura más, divídelo por semana.`);
+  }
+  if (![a.cantidad, a.cantidadEjecutada, a.hh, a.diasReales, a.rendimientoPlan].every(numero) || !entero(a.dotacion)) throw Error('Cantidades, rendimiento, dotación, días u horas no válidos.');
   if (a.diasReales === 0) throw Error('Los días trabajados deben ser mayores que cero.');
   if (!opcional(a.unidad, 20)) throw Error('Unidad no válida.');
   if (!Array.isArray(a.restricciones) || a.restricciones.length > 40) throw Error('Máximo 40 restricciones por actividad.');
@@ -91,16 +96,36 @@ export function validarActividad(a) {
 const limpio = v => String(v ?? '').trim() || null;
 const num = v => v === '' || v == null ? null : Number(v);
 // Campos editables desde el formulario (los de cierre se cambian con cambiarEstado).
-export const CAMPOS = {actividad: 'actividad', level: 'piso', sector: 'sector', frente: 'frente', recintos: 'recintos', responsable: 'responsable', semana: 'semana', inicioPlan: 'inicio planificado', finPlan: 'término planificado', cantidad: 'cantidad', unidad: 'unidad', dotacion: 'dotación', restricciones: 'restricciones'};
+export const CAMPOS = {actividad: 'actividad', level: 'piso', sector: 'sector', frente: 'frente', recintos: 'recintos', responsable: 'responsable', semana: 'semana', inicioPlan: 'inicio planificado', finPlan: 'término planificado', cantidad: 'cantidad', unidad: 'unidad', rendimientoPlan: 'rendimiento por persona', dotacion: 'dotación', restricciones: 'restricciones'};
 export function normalizar(v) {
   return {actividad: String(v.actividad ?? '').trim(), level: v.level, sector: limpio(v.sector), frente: limpio(v.frente), recintos: v.recintos || [],
     responsable: String(v.responsable ?? '').trim(), semana: v.semana || null, inicioPlan: v.inicioPlan || null, finPlan: v.finPlan || null,
-    cantidad: num(v.cantidad), unidad: limpio(v.unidad), dotacion: num(v.dotacion), restricciones: v.restricciones || []};
+    cantidad: num(v.cantidad), unidad: limpio(v.unidad), rendimientoPlan: num(v.rendimientoPlan), dotacion: num(v.dotacion), restricciones: v.restricciones || []};
+}
+
+// ---------- Dotación y fechas del plan ----------
+// Días hábiles con que cuenta la actividad: los de su plazo o, sin fechas, lunes a viernes de su semana.
+export const diasDisponibles = a => diasHabiles(a.inicioPlan, a.finPlan) || (a.semana ? 5 : null);
+// Personas para completar la cantidad en esos días con un rendimiento por persona al día (se redondea hacia arriba).
+export function dotacionRecomendada(cantidad, rendimiento, dias) {
+  if (!(cantidad > 0) || !(rendimiento > 0) || !(dias > 0)) return null;
+  const exacta = cantidad / (rendimiento * dias), personas = Math.max(1, Math.ceil(exacta - 1e-9));
+  return {personas, exacta, dias, diasNecesarios: cantidad / (rendimiento * personas)};
+}
+// Al pasar una actividad a otra semana sus fechas se mueven con ella (mismo día de la semana y misma duración),
+// sin pasarse del domingo. Si ya calzan con la semana o no tiene fechas, quedan como están.
+export function ajustarFechasASemana({inicioPlan = null, finPlan = null}, semana) {
+  if (!semana) return {inicioPlan, finPlan};
+  const {desde, hasta} = rangoSemana(semana), dentro = f => !f || (f >= desde && f <= hasta);
+  if (dentro(inicioPlan) && dentro(finPlan)) return {inicioPlan, finPlan};
+  const corrimiento = Math.round((Date.parse(desde) - Date.parse(lunesDe(semanaDe(inicioPlan || finPlan)))) / 864e5);
+  const mover = f => f && [sumarDias(f, corrimiento)].map(x => x < desde ? desde : x > hasta ? hasta : x)[0];
+  return {inicioPlan: mover(inicioPlan), finPlan: mover(finPlan)};
 }
 export const entrada = (autor, detalle, comentario = '', at = new Date().toISOString()) => ({at, autor: String(autor).trim(), detalle, comentario: String(comentario || '').trim()});
 
 export function nuevaActividad(valores, {id, autor, at = new Date().toISOString()}) {
-  return validarActividad({schema: 1, id, ...normalizar(valores), estado: 'Planificada', inicioReal: null, finReal: null, cantidadEjecutada: null, diasReales: null, hh: null,
+  return validarActividad({schema: 1, id, rendimientoPlan: null, ...normalizar(valores), estado: 'Planificada', inicioReal: null, finReal: null, cantidadEjecutada: null, diasReales: null, hh: null,
     causa: null, causaNota: null, origen: null, reprogramada: null, autor: String(autor ?? '').trim(), creada: at, actualizada: at, version: 1,
     historial: [entrada(autor, valores.semana ? 'Comprometida en la semana ' + valores.semana : 'Registrada en el plan intermedio', '', at)]});
 }
