@@ -7,7 +7,7 @@
 .lpSemana { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 16px; }
 .lpSemana strong { font-size: 15px; min-width: 230px; text-align: center; }
 .lpSemana button[data-lp-semana="-1"], .lpSemana button[data-lp-semana="1"] { width: 40px; min-height: 40px; font-size: 20px; padding: 0; }
-.lpHoy { font-size: 10px; color: #fff; background: #000; padding: 5px 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+.lpHoy { font-size: 10px; color: #fff; background: var(--g-cian, #29a8df); padding: 5px 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
 .lpKpi { text-align: left; color: inherit; font: inherit; border-left: 4px solid var(--c, var(--line)); }
 button.lpKpi { cursor: pointer; white-space: normal; }
 .lpKpi > b { color: var(--c, inherit); }
@@ -16,16 +16,16 @@ button.lpKpi { cursor: pointer; white-space: normal; }
 .lpGrid > section:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .lpLinea { font-size: 13px; margin: 0 0 6px; }
 .lpPPC { width: 100%; max-height: 220px; display: block; }
-.lpPPC text { font-size: 11px; fill: #000; font-weight: 700; }
-.lpPPC text.eje { fill: #333; font-weight: 400; font-size: 10px; }
-.lpPPC .meta { stroke: #000; stroke-dasharray: 4 3; fill: #000; font-size: 9px; font-weight: 400; stroke-width: 1; }
+.lpPPC text { font-size: 11px; fill: var(--g-marca, #1b2a56); font-weight: 700; }
+.lpPPC text.eje { fill: var(--g-texto2, #2c3a50); font-weight: 400; font-size: 10px; }
+.lpPPC .meta { stroke: var(--g-azul, #0f5499); stroke-dasharray: 4 3; fill: var(--g-azul, #0f5499); font-size: 9px; font-weight: 400; stroke-width: 1; }
 .lpPPC text.meta { stroke: none; }
 .lpPPC g.abierta rect:last-of-type { opacity: .45; }
 .lpPPC g[role=button] { cursor: pointer; }
-.lpPPC g[role=button]:hover rect:nth-of-type(2), .lpPPC g[role=button]:focus-visible rect:nth-of-type(2) { stroke: #000; stroke-width: 1.5; }
+.lpPPC g[role=button]:hover rect:nth-of-type(2), .lpPPC g[role=button]:focus-visible rect:nth-of-type(2) { stroke: var(--g-marca, #1b2a56); stroke-width: 1.5; }
 .lpPPC g:focus { outline: none; }
 .lpPctRow { grid-template-columns: 9px minmax(0, 1fr) 46px; }
-.lpPctRow small { color: #444; font-size: 10px; }
+.lpPctRow small { color: #2c3a50; font-size: 10px; }
 .lpScroll { overflow: auto; }
 .lpTabla { width: 100%; border-collapse: collapse; font-size: 12px; }
 .lpTabla th { background: #f7fafb; text-align: left; color: #627480; font-weight: 650; padding: 11px; white-space: nowrap; }
@@ -34,15 +34,15 @@ button.lpKpi { cursor: pointer; white-space: normal; }
 .lpTablaCorta td:nth-child(2) { min-width: 140px; }
 .lpTabla td:first-child { min-width: 0; }
 .lpTablaCorta td:first-child { min-width: 200px; }
-.lpTabla small { color: #444; font-size: 11px; }
+.lpTabla small { color: #2c3a50; font-size: 11px; }
 .lpTabla .obsChip, .lpTabla td[data-label="Plazo"], .lpTabla td[data-label="Compromiso"] { white-space: nowrap; }
 .lpTabla td button:not(.obsOpenRecord) { font-size: 12px; min-height: 36px; }
-.lpGrupo { font-size: 12px; margin: 18px 0 8px; color: #000; text-transform: uppercase; letter-spacing: .5px; border-bottom: 2px solid #000; padding-bottom: 4px; }
-.lpGrupo small { color: #444; font-weight: 400; margin-left: 4px; }
+.lpGrupo { font-size: 12px; margin: 18px 0 8px; color: var(--g-marca, #1b2a56); text-transform: uppercase; letter-spacing: .5px; border-bottom: 2px solid var(--g-marca, #1b2a56); padding-bottom: 4px; }
+.lpGrupo small { color: #2c3a50; font-weight: 400; margin-left: 4px; }
 .lpAcuerdos { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: 12px; }
-.lpAcuerdos small { display: block; color: #444; font-size: 11px; margin-top: 2px; }
+.lpAcuerdos small { display: block; color: #2c3a50; font-size: 11px; margin-top: 2px; }
 .lpDetalle { margin-top: 6px; font-size: 11px; }
-.lpDetalle summary { color: #000; text-decoration: underline; }
+.lpDetalle summary { color: var(--g-azul, #0f5499); text-decoration: underline; }
 .lpDetalle table { margin-top: 6px; }
 .lpEstimador { margin-bottom: 16px; }
 .lpEstimador .obsFiltros { grid-template-columns: 2fr 1fr 1fr; border: 0; padding: 0; }
@@ -50,25 +50,25 @@ button.lpKpi { cursor: pointer; white-space: normal; }
 
 /* Formularios */
 dialog.lpDialog.lpAncho { width: min(1000px, 96vw); }
-.lpForm .lpSeccion { border-top: 2px solid #000; padding-top: 10px; display: grid; gap: 8px; }
+.lpForm .lpSeccion { border-top: 2px solid var(--g-marca, #1b2a56); padding-top: 10px; display: grid; gap: 8px; }
 .lpForm .lpSeccion h3 { font-size: 12px; margin: 0; text-transform: uppercase; letter-spacing: .5px; }
-.lpForm .lpSeccion h3 small { color: #444; font-weight: 400; }
+.lpForm .lpSeccion h3 small { color: #2c3a50; font-weight: 400; }
 .lpTres { grid-template-columns: 1fr 1.4fr 1.4fr; }
 .lpElegidos { display: flex; flex-wrap: wrap; gap: 6px; }
-.lpChip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; background: #fff; color: #000; border: 1px solid #000; padding: 2px 2px 2px 8px; }
+.lpChip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; background: var(--g-claro, #e3eef8); color: var(--g-marca, #1b2a56); border: 1px solid var(--g-borde, #b7cbe0); padding: 2px 2px 2px 8px; }
 .lpChip button { border: 0; background: transparent; min-height: 26px; width: 26px; padding: 0; font-size: 16px; border-radius: 50%; }
 .lpBuscarRecinto input { width: 100%; box-sizing: border-box; }
 .lpResultados { display: grid; gap: 4px; max-height: 220px; overflow: auto; margin-top: 6px; }
 .lpResultados button { text-align: left; white-space: normal; font-size: 12px; min-height: 38px; }
-.lpResultados button small { color: #444; margin-left: 4px; }
-.lpResultados .lpTodos { background: #000; color: #fff; font-weight: 700; }
+.lpResultados button small { color: #2c3a50; margin-left: 4px; }
+.lpResultados .lpTodos { background: var(--g-azul, #0f5499); color: #fff; font-weight: 700; }
 .lpRestricciones { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.lpRestricciones li { display: flex; gap: 8px; align-items: center; border: 1px solid #000; border-left: 6px solid #c26a00; padding: 8px 10px; font-size: 12px; background: #fff; }
+.lpRestricciones li { display: flex; gap: 8px; align-items: center; border: 1px solid var(--g-borde, #b7cbe0); border-left: 6px solid #c26a00; padding: 8px 10px; font-size: 12px; background: #fff; }
 .lpRestricciones li > div { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.lpRestricciones li small { display: block; color: #444; font-size: 11px; margin-top: 2px; }
+.lpRestricciones li small { display: block; color: #2c3a50; font-size: 11px; margin-top: 2px; }
 .lpRestricciones li.vencida { border-left-color: #c21f1f; }
-.lpRestricciones li.liberada { border-left-color: #1a7f37; color: #333; }
-.lpRestricciones li.lpVacio { border: 0; padding: 0; color: #444; font-size: 11px; }
+.lpRestricciones li.liberada { border-left-color: #1a7f37; color: #2c3a50; }
+.lpRestricciones li.lpVacio { border: 0; padding: 0; color: #2c3a50; font-size: 11px; }
 .lpRestricciones button { font-size: 12px; min-height: 36px; flex: none; }
 .lpNuevaRestriccion { display: grid; grid-template-columns: 1.2fr 2fr 1.2fr 1fr auto; gap: 6px; }
 .lpNuevaRestriccion input, .lpNuevaRestriccion select { font-size: 14px !important; min-width: 0; }
@@ -85,36 +85,36 @@ dialog.lpDialog.lpAncho { width: min(1000px, 96vw); }
 .lpForm footer [data-lp-eliminar] { margin-left: auto; color: #c21f1f; border-color: #c21f1f; }
 
 /* Reporte semanal */
-.lpReporte { position: fixed; inset: 0; z-index: 90; background: #d4d4d4; overflow: auto; padding: 0 16px 32px; }
-.lpReporteBarra { position: sticky; top: 0; z-index: 1; display: flex; gap: 8px; align-items: center; justify-content: flex-end; flex-wrap: wrap; padding: 12px 0; background: #d4d4d4; }
-.lpReporteBarra span { margin-right: auto; font-size: 12px; color: #000; }
-.lpHoja { background: white; max-width: 1050px; margin: 0 auto; padding: 32px 36px; border: 1px solid #000; color: #000; font-size: 12px; }
+.lpReporte { position: fixed; inset: 0; z-index: 90; background: var(--g-claro, #e3eef8); overflow: auto; padding: 0 16px 32px; }
+.lpReporteBarra { position: sticky; top: 0; z-index: 1; display: flex; gap: 8px; align-items: center; justify-content: flex-end; flex-wrap: wrap; padding: 12px 0; background: var(--g-claro, #e3eef8); }
+.lpReporteBarra span { margin-right: auto; font-size: 12px; color: var(--g-marca, #1b2a56); }
+.lpHoja { background: white; max-width: 1050px; margin: 0 auto; padding: 32px 36px; border: 1px solid var(--g-borde, #b7cbe0); color: #000; font-size: 12px; }
 .lpHoja h1 { font-size: 22px; margin: 4px 0; font-weight: 800; }
-.lpHoja h2 { font-size: 12px; margin: 22px 0 8px; border-bottom: 2px solid #000; padding-bottom: 4px; text-transform: uppercase; letter-spacing: .6px; }
+.lpHoja h2 { font-size: 12px; margin: 22px 0 8px; color: var(--g-marca, #1b2a56); border-bottom: 2px solid var(--g-marca, #1b2a56); padding-bottom: 4px; text-transform: uppercase; letter-spacing: .6px; }
 .lpHoja h3 { font-size: 12px; margin: 12px 0 4px; }
-.lpHojaCabecera { display: flex; justify-content: space-between; gap: 16px; border-bottom: 3px solid #000; padding-bottom: 12px; }
-.lpHojaCabecera small { letter-spacing: .6px; color: #000; font-weight: 700; font-size: 10px; }
+.lpHojaCabecera { display: flex; justify-content: space-between; gap: 16px; border-bottom: 3px solid var(--g-marca, #1b2a56); padding-bottom: 12px; }
+.lpHojaCabecera small { letter-spacing: .6px; color: var(--g-azul, #0f5499); font-weight: 700; font-size: 10px; }
 .lpHojaCabecera p { margin: 0; font-size: 13px; }
-.lpHojaFecha { text-align: right; font-size: 11px; color: #333; }
+.lpHojaFecha { text-align: right; font-size: 11px; color: #2c3a50; }
 .lpDatos { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
-.lpDatos > div { border: 1px solid #000; border-top: 4px solid #000; padding: 8px 10px; }
-.lpDatos span { display: block; font-size: 9px; color: #000; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; }
+.lpDatos > div { border: 1px solid var(--g-borde, #b7cbe0); border-top: 4px solid var(--g-marca, #1b2a56); padding: 8px 10px; }
+.lpDatos span { display: block; font-size: 9px; color: var(--g-marca, #1b2a56); font-weight: 700; text-transform: uppercase; letter-spacing: .4px; }
 .lpDatos b { display: block; font-size: 20px; margin-top: 2px; font-weight: 800; }
-.lpDatos small { font-size: 10px; color: #333; }
+.lpDatos small { font-size: 10px; color: #2c3a50; }
 .lpHojaPlano figure { margin: 0; }
-.lpPlanoImagen img { width: 100%; height: auto; max-height: 75vh; object-fit: contain; display: block; border: 1px solid #000; background: #fff; }
+.lpPlanoImagen img { width: 100%; height: auto; max-height: 75vh; object-fit: contain; display: block; border: 1px solid var(--g-borde, #b7cbe0); background: #fff; }
 .lpHojaPlano figcaption { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 11px; margin-top: 6px; align-items: center; }
 .lpHojaPlano figcaption i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
-.lpHojaPlano figcaption small { flex-basis: 100%; color: #333; }
+.lpHojaPlano figcaption small { flex-basis: 100%; color: #2c3a50; }
 .lpHojaTabla { width: 100%; border-collapse: collapse; font-size: 11px; }
-.lpHojaTabla th { text-align: left; background: #000; color: #fff; padding: 6px; font-weight: 700; text-transform: uppercase; font-size: 9.5px; letter-spacing: .4px; }
-.lpHojaTabla td { padding: 6px; border-bottom: 1px solid #bdbdbd; vertical-align: top; }
-.lpHojaTabla small { color: #444; }
+.lpHojaTabla th { text-align: left; background: var(--g-marca, #1b2a56); color: #fff; padding: 6px; font-weight: 700; text-transform: uppercase; font-size: 9.5px; letter-spacing: .4px; }
+.lpHojaTabla td { padding: 6px; border-bottom: 1px solid #d3e1ef; vertical-align: top; }
+.lpHojaTabla small { color: #2c3a50; }
 .lpPunto { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--c); margin-right: 5px; }
 .lpHojaDos { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 .lpHojaDos .lpPPC { max-height: 180px; }
 .lpFirmas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-top: 56px; }
-.lpFirmas div { border-top: 1px solid #000; padding-top: 6px; text-align: center; font-size: 11px; }
+.lpFirmas div { border-top: 1px solid var(--g-marca, #1b2a56); padding-top: 6px; text-align: center; font-size: 11px; }
 
 @media (max-width: 1000px) {
   .lpFilaFrente { grid-template-columns: 1fr 1fr 2fr; }
@@ -131,7 +131,7 @@ dialog.lpDialog.lpAncho { width: min(1000px, 96vw); }
   .lpFilaFrente input[data-k="frente"] { grid-column: 1 / -1; order: -1; }
   .lpFilaAcuerdo { grid-template-columns: 1fr 1fr auto; }
   .lpFilaAcuerdo input[data-k="texto"] { grid-column: 1 / -1; }
-  .lpFila { border-bottom: 1px solid #000; padding-bottom: 8px; }
+  .lpFila { border-bottom: 1px solid var(--g-borde, #b7cbe0); padding-bottom: 8px; }
   .lpTabla, .lpTabla tbody { display: block; }
   .lpTabla thead { display: none; }
   .lpTabla tr { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; background: white; border: 1px solid var(--line); border-radius: 10px; padding: 12px; }

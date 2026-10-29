@@ -7,9 +7,9 @@ import {workChart} from './work-charts.mjs';
 import * as M from './lastplanner-model.mjs';
 import {leerActividades, leerReuniones, guardarActividades, eliminarActividad, guardarReunion, eliminarReunion, exportarPlan, importarPlan} from './lastplanner-store.mjs';
 
-export const COLOR_ESTADO = {'Planificada': '#5c5c5c', 'En ejecución': '#1f4e99', 'Cumplida': '#1a7f37', 'No cumplida': '#c21f1f'};
-export const COLORES_RECINTO = {'No cumplida': '#c21f1f', 'Con restricción': '#c26a00', 'En ejecución': '#1f4e99', 'Planificada': '#8c8c8c', 'Cumplida': '#1a7f37', 'Sin actividades': '#d9d9d9'};
-const COLOR_FRENTE = {'Activo': '#1a7f37', 'Detenido': '#c21f1f', 'Sin iniciar': '#8c8c8c', 'Terminado': '#000000'};
+export const COLOR_ESTADO = {'Planificada': '#6b7f99', 'En ejecución': '#0f5499', 'Cumplida': '#1a7f37', 'No cumplida': '#c21f1f'};
+export const COLORES_RECINTO = {'No cumplida': '#c21f1f', 'Con restricción': '#c26a00', 'En ejecución': '#0f5499', 'Planificada': '#8fa3bd', 'Cumplida': '#1a7f37', 'Sin actividades': '#d3dce6'};
+const COLOR_FRENTE = {'Activo': '#1a7f37', 'Detenido': '#c21f1f', 'Sin iniciar': '#8fa3bd', 'Terminado': '#1b2a56'};
 const ACCION = {'En ejecución': 'Iniciar', 'Cumplida': 'Marcar cumplida', 'No cumplida': 'No cumplida', 'Planificada': 'Volver a planificada'};
 const VISTAS = {resumen: 'Resumen', semanal: 'Plan semanal', intermedio: 'Intermedio y restricciones', reuniones: 'Reuniones y frentes', rendimientos: 'Rendimientos'};
 const hoy = () => new Intl.DateTimeFormat('en-CA', {timeZone: 'America/Santiago', year: 'numeric', month: '2-digit', day: '2-digit'}).format(new Date());
@@ -21,7 +21,7 @@ const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
 const nSemana = s => +s.slice(6);
 const etiquetaSemana = s => { const {desde, hasta} = M.rangoSemana(s); return `Semana ${nSemana(s)} · ${fecha(desde).slice(0, 5)} al ${fecha(hasta)}`; };
 // Verde desde 80 %, ámbar desde 60 %: referencia habitual del PPC en obras que aplican Last Planner.
-const colorPct = v => v == null ? '#d9d9d9' : v >= .8 ? '#1a7f37' : v >= .6 ? '#b58500' : '#c21f1f';
+const colorPct = v => v == null ? '#d3dce6' : v >= .8 ? '#1a7f37' : v >= .6 ? '#b58500' : '#c21f1f';
 const CLAVE_AUTOR = 'atlas-autor';
 const autorGuardado = () => { try { return localStorage.getItem(CLAVE_AUTOR) || ''; } catch { return ''; } };
 const recordarAutor = v => { try { localStorage.setItem(CLAVE_AUTOR, v); } catch {} };
@@ -43,7 +43,7 @@ export function cargarPlan(forzar = false) {
   if (!cargando) cargando = Promise.all([leerActividades(), leerReuniones()]).then(([actividades, reuniones]) => { cache = {actividades, reuniones}; indexar(); return cache; }).catch(e => { cargando = null; throw e; });
   return cargando;
 }
-registerLayer('lastplanner', {nombre: 'Last Planner · semana', categories: r => [M.estadoRecinto(cache?.porCodigo?.get(String(r.code).trim()))], color: k => COLORES_RECINTO[k] || '#d9d9d9', opacity: .55});
+registerLayer('lastplanner', {nombre: 'Last Planner · semana', categories: r => [M.estadoRecinto(cache?.porCodigo?.get(String(r.code).trim()))], color: k => COLORES_RECINTO[k] || '#d3dce6', opacity: .55});
 export function iniciarCapaLastPlanner(alCambiar) {
   const recargar = () => cargarPlan(true).then(alCambiar).catch(() => {});
   recargar(); window.addEventListener('atlas-lastplanner-changed', recargar);
@@ -57,7 +57,7 @@ export function createLastPlanner(ctx) {
   const filtros = {semana: M.semanaDe(hoy()), piso: nivel.id, estado: '', sector: '', responsable: '', texto: '', restricciones: 'Pendientes', estimar: {grupo: 0, cantidad: '', dotacion: ''}};
   const refrescar = () => { if (raiz?.isConnected) panel(raiz, opciones); };
   const delPiso = a => !filtros.piso || a.level === filtros.piso;
-  const chip = estado => `<span class="obsChip" style="--c:${COLOR_ESTADO[estado] || COLOR_FRENTE[estado] || '#000000'}">${esc(estado)}</span>`;
+  const chip = estado => `<span class="obsChip" style="--c:${COLOR_ESTADO[estado] || COLOR_FRENTE[estado] || '#1b2a56'}">${esc(estado)}</span>`;
   const quien = () => { let v = autorGuardado(); if (!v) { v = (prompt('¿Quién registra este cambio?') || '').trim(); if (v) recordarAutor(v); } return v; };
   const sectores = () => [...new Set([...ctx.rooms().map(r => r.sector), ...(cache?.actividades || []).map(a => a.sector)].filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es', {numeric: true}));
   const responsables = () => [...new Set([...(cache?.actividades || []).map(a => a.responsable), ...(cache?.reuniones || []).flatMap(r => [...r.frentes.map(f => f.responsable), ...r.asistentes.map(p => p.empresa)])].filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
@@ -73,7 +73,7 @@ export function createLastPlanner(ctx) {
   const barrasPct = filas => filas.length ? `<div class="workChartRows">${filas.map(f => `<div class="workChartRow lpPctRow"><i style="background:${colorPct(f.pct)}"></i><span>${esc(f.key)} <small>${esc(f.detalle)}</small></span><b>${pct(f.pct)}</b><em class="workBar"><span style="width:${(f.pct ?? 0) * 100}%;background:${colorPct(f.pct)}"></span></em></div>`).join('')}</div>` : '<p class="chartEmpty">Sin registros cerrados todavía.</p>';
   function graficoPPC(serie, interactivo = true) {
     const w = 336, izq = 30, paso = (w - izq) / serie.length;
-    return `<svg viewBox="0 0 ${w} 150" class="lpPPC" role="group" aria-label="PPC por semana"><line x1="${izq}" x2="${w}" y1="37" y2="37" class="meta"/><text x="${izq - 4}" y="40" text-anchor="end" class="meta">80 %</text><line x1="${izq}" x2="${w}" y1="125" y2="125" stroke="#000000"/>${serie.map((s, i) => {
+    return `<svg viewBox="0 0 ${w} 150" class="lpPPC" role="group" aria-label="PPC por semana"><line x1="${izq}" x2="${w}" y1="37" y2="37" class="meta"/><text x="${izq - 4}" y="40" text-anchor="end" class="meta">80 %</text><line x1="${izq}" x2="${w}" y1="125" y2="125" stroke="#1b2a56"/>${serie.map((s, i) => {
       const alto = (s.ppc ?? 0) * 110, x = izq + i * paso + 6, ancho = paso - 12, attrs = interactivo ? `data-lp-ir-semana="${s.semana}" tabindex="0" role="button"` : '';
       return `<g class="${s.cerrada || !s.comprometidas ? '' : 'abierta'}" ${attrs} aria-label="${esc(etiquetaSemana(s.semana))}: PPC ${pct(s.ppc)}, ${s.cumplidas} de ${s.comprometidas}"><title>${esc(etiquetaSemana(s.semana))} · ${s.cumplidas}/${s.comprometidas}${s.abiertas ? ' · ' + s.abiertas + ' por cerrar' : ''}</title><rect x="${x}" y="15" width="${ancho}" height="110" fill="transparent"/><rect x="${x}" y="${125 - alto}" width="${ancho}" height="${alto}" rx="3" fill="${colorPct(s.ppc)}"/><text x="${x + ancho / 2}" y="${(s.ppc == null ? 125 : 125 - alto) - 5}" text-anchor="middle">${s.ppc == null ? (s.comprometidas ? '' : '—') : Math.round(s.ppc * 100)}</text><text class="eje" x="${x + ancho / 2}" y="142" text-anchor="middle">S${nSemana(s.semana)}</text></g>`;
     }).join('')}</svg>`;
@@ -103,7 +103,7 @@ export function createLastPlanner(ctx) {
       ${tarjeta('Causas de no cumplimiento', M.causas(lista, semanas).reduce((n, c) => n + c.n, 0) + ' veces', tablaCausas(M.causas(lista, semanas)), 'Pareto de las últimas 8 semanas.')}
       ${tarjeta('Cumplimiento por responsable', porResp.length, barrasPct(porResp), 'PPC de las últimas 4 semanas (cumplidas / cerradas).')}
       ${tarjeta('Cumplimiento por sector', porSector.length, barrasPct(porSector), 'PPC de las últimas 4 semanas.')}
-      ${workChart({title: 'Restricciones pendientes por tipo', items: rr.porTipo.map(([key, n], i) => ({key, n, color: ['#c26a00', '#b58500', '#5c5c5c', '#1a7f37', '#1f4e99', '#c21f1f', '#8c8c8c', '#000000', '#4d4d4d', '#a3a3a3'][i % 10]})), emptyText: 'Sin restricciones pendientes.'}, esc)}
+      ${workChart({title: 'Restricciones pendientes por tipo', items: rr.porTipo.map(([key, n], i) => ({key, n, color: ['#c26a00', '#0f5499', '#1b2a56', '#29a8df', '#1a7f37', '#c21f1f', '#b58500', '#6b7f99', '#9db8d6', '#3d5a80'][i % 10]})), emptyText: 'Sin restricciones pendientes.'}, esc)}
       ${tarjeta('Frentes de trabajo', frentes.length ? `${dotacion} personas en frentes activos` : '—', tablaFrentes(frentes), reunion ? `Según la reunión del ${fecha(reunion.fecha)}.` : '')}
       </div>`;
   }
@@ -429,8 +429,8 @@ export function createLastPlanner(ctx) {
     g.setTransform(1, 0, 0, 1, 0, 0); g.font = '600 15px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
     for (const e of porRecinto.values()) {
       const [px, py] = ctx.position(e.room), x = (px - x0) * f, y = (py - y0) * f, t = e.acts.map(a => a.n).join(','), ancho = g.measureText(t).width + 12;
-      g.fillStyle = '#ffffffee'; g.strokeStyle = '#000000'; g.lineWidth = 1.2; g.beginPath(); if (g.roundRect) g.roundRect(x - ancho / 2, y - 11, ancho, 22, 6); else g.rect(x - ancho / 2, y - 11, ancho, 22); g.fill(); g.stroke();
-      g.fillStyle = '#000000'; g.fillText(t, x, y + 1);
+      g.fillStyle = '#ffffffee'; g.strokeStyle = '#1b2a56'; g.lineWidth = 1.2; g.beginPath(); if (g.roundRect) g.roundRect(x - ancho / 2, y - 11, ancho, 22, 6); else g.rect(x - ancho / 2, y - 11, ancho, 22); g.fill(); g.stroke();
+      g.fillStyle = '#1b2a56'; g.fillText(t, x, y + 1);
     }
     return {url: canvas.toDataURL('image/png'), conteo, recintos: porRecinto.size, faltan: [...new Set(faltan)]};
   }

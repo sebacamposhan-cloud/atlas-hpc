@@ -36,7 +36,14 @@ Para sumar un piso desde sus láminas DWG, sigue `scripts/dwg-plano/LEEME.md` (e
 
 ## Aspecto gerencial
 
-`dist/gerencial.css` se carga al final y da a toda la app un aspecto de informe de gestión: texto negro, ángulos rectos, sin sombras ni tintes pastel, barra lateral negra, encabezados de tabla negros y lo seleccionado en negro. Los únicos acentos son los colores de estado (verde, ámbar, rojo y azul). No modifica los estilos de cada módulo; para volver al aspecto anterior basta quitar su `<link>` de `dist/index.html`.
+`dist/gerencial.css` se carga al final y da a toda la app un aspecto de informe de gestión con los colores de Sacyr:
+- azul marino de la marca en la barra lateral, los encabezados de tabla y los títulos de diálogo;
+- azul en lo seleccionado y en los botones principales;
+- cian como acento;
+- celeste como fondo de trabajo;
+- texto negro, ángulos rectos y sin sombras.
+
+El verde, el ámbar y el rojo quedan solo para estados. Los tonos de marca se leyeron del logo y están como variables al inicio del archivo: si el manual de Sacyr da otros códigos, se cambian ahí. No modifica los estilos de cada módulo; para volver al aspecto anterior basta quitar su `<link>` de `dist/index.html`.
 
 ## Last Planner · plan de producción
 

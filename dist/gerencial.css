@@ -1,155 +1,168 @@
-/* Tema gerencial: negro real, ángulos rectos, sin sombras ni tintes pastel.
-   Se carga al final de index.html y manda sobre los estilos anteriores sin modificarlos;
-   para volver al aspecto anterior basta quitar su <link>. Los colores de estado son los únicos acentos. */
-:root { --ink: #000; --muted: #3a3a3a; --line: #bdbdbd; --paper: #ebebeb; --teal: #000; --navy: #000; }
+/* Tema gerencial con los colores de Sacyr: azul marino y cian de la marca, azul y celeste de la paleta
+   «calmado y elegante», texto negro, ángulos rectos y sin sombras.
+   Se carga al final de index.html y manda sobre los estilos anteriores sin modificarlos; para volver
+   al aspecto anterior basta quitar su <link>. Los tonos de marca se leyeron del logo: si el manual de
+   Sacyr da otros códigos, se cambian solo aquí. */
+:root {
+  --g-marca: #1b2a56;   /* azul marino Sacyr: barra lateral, títulos de tabla y de diálogo */
+  --g-azul: #0f5499;    /* azul de la paleta: lo seleccionado y los botones principales */
+  --g-cian: #29a8df;    /* cian Sacyr: acentos y foco */
+  --g-claro: #e3eef8;   /* celeste de la paleta: fondo de trabajo */
+  --g-suave: #f2f7fc;   /* celeste más claro: filas al pasar el cursor */
+  --g-borde: #b7cbe0;   /* borde de tarjetas y campos */
+  --g-texto: #000;
+  --g-texto2: #2c3a50;  /* texto secundario */
+  --ink: #000; --muted: #2c3a50; --line: #b7cbe0; --paper: #e3eef8; --teal: #0f5499; --navy: #1b2a56;
+}
 *, *::before, *::after { border-radius: 0 !important; box-shadow: none !important; text-shadow: none !important; }
-body { color: #000; background: #ebebeb; font-family: "Segoe UI", -apple-system, "Helvetica Neue", Arial, sans-serif; }
+body { color: var(--g-texto); background: var(--g-claro); font-family: "Segoe UI", -apple-system, "Helvetica Neue", Arial, sans-serif; }
 h1, h2, h3, h4, strong, b { color: inherit; }
-p, small, .muted, .obsNota, .chartSubtitle, .panelText, .sidebarIntro, .floorIntro p, .moduleHeading p, .documentaryIntro p { color: #333; }
-.section-label { color: #000 !important; font-weight: 700; letter-spacing: 1.2px; }
+p, small, .muted, .obsNota, .chartSubtitle, .panelText, .sidebarIntro, .floorIntro p, .moduleHeading p, .documentaryIntro p { color: var(--g-texto2); }
+.section-label { color: var(--g-azul) !important; font-weight: 700; letter-spacing: 1.2px; }
 
 /* Encabezados de página */
-.moduleHeading, .floorIntro { border-bottom: 3px solid #000; padding-bottom: 14px; }
-.moduleHeading h1, .floorIntro h1 { color: #000; font-weight: 800; letter-spacing: -.4px; }
-.documentaryIntro h2, #workContent h2 { color: #000; font-weight: 800; letter-spacing: -.2px; }
-.floorIndex { color: #000; font-weight: 700; }
+.moduleHeading, .floorIntro { border-bottom: 3px solid var(--g-marca); padding-bottom: 14px; }
+.moduleHeading h1, .floorIntro h1 { color: var(--g-marca); font-weight: 800; letter-spacing: -.4px; }
+.documentaryIntro h2, #workContent h2 { color: var(--g-marca); font-weight: 800; letter-spacing: -.2px; }
+.floorIndex { color: var(--g-marca); font-weight: 700; }
 
-/* Barra lateral negra */
-.appSidebar { background: #000; border-right: 0; color: #fff; }
-.appSidebar small, .appSidebar .sideBrand small { color: #a6a6a6; }
+/* Barra lateral azul marino */
+.appSidebar { background: var(--g-marca); border-right: 0; color: #fff; }
+.appSidebar small, .appSidebar .sideBrand small { color: #a9bbd6; }
 .appSidebar .sideBrand b, .appSidebar .sideProject, .appSidebar .sideBottom small { color: #fff; }
-.appSidebar .sideProject { background: #000; border: 1px solid #4d4d4d; }
-.brandMark { background: #fff; color: #000; }
-.appSidebar .navGroup button { color: #c8c8c8; background: transparent; border: 0; border-left: 4px solid transparent; }
-.appSidebar .navGroup button:hover:not(:disabled) { background: #1c1c1c; color: #fff; }
-.appSidebar .navGroup .active, .appSidebar .navGroup .active:hover:not(:disabled) { background: #fff; color: #000; font-weight: 700; border-left-color: #fff; }
-.appSidebar .navGroup button:disabled { color: #5c5c5c; opacity: 1; }
+.appSidebar .sideProject { background: transparent; border: 1px solid #3a4c7c; }
+.brandMark { background: var(--g-cian); color: #fff; }
+.appSidebar .navGroup button { color: #c9d6ea; background: transparent; border: 0; border-left: 4px solid transparent; }
+.appSidebar .navGroup button:hover:not(:disabled) { background: #26386b; color: #fff; }
+.appSidebar .navGroup .active, .appSidebar .navGroup .active:hover:not(:disabled) { background: #fff; color: var(--g-marca); font-weight: 700; border-left-color: var(--g-cian); }
+.appSidebar .navGroup button:disabled { color: #6a7ba3; opacity: 1; }
 .appSidebar .sideBottom button { background: transparent; color: #fff; border: 0; }
 
 /* Cabecera */
-header { background: #fff; color: #000; border-bottom: 2px solid #000; }
-header button { background: #fff; color: #000; border: 1px solid #000; font-weight: 600; }
-header button:hover:not(:disabled) { background: #000; color: #fff; }
-.globalSearchWrap input { background: #fff; border: 1px solid #000; color: #000; }
-.globalSearchWrap kbd { color: #555; }
+header { background: #fff; color: var(--g-texto); border-bottom: 3px solid var(--g-marca); }
+header button { background: #fff; color: var(--g-marca); border: 1px solid var(--g-marca); font-weight: 600; }
+header button:hover:not(:disabled) { background: var(--g-marca); color: #fff; }
+.globalSearchWrap input { background: #fff; border: 1px solid var(--g-borde); color: var(--g-texto); }
+.globalSearchWrap kbd { color: var(--g-texto2); }
 
 /* Lienzo */
-#workspacePanel, #floorExplorer { background: #ebebeb; }
+#workspacePanel, #floorExplorer { background: var(--g-claro); }
 
 /* Botones y campos */
-button { background: #fff; color: #000; border: 1px solid #000; font-weight: 600; }
-button:hover:not(:disabled) { background: #e2e2e2; color: #000; border-color: #000; }
-button.primary { background: #000; color: #fff; border-color: #000; }
-button.primary:hover:not(:disabled) { background: #2e2e2e; color: #fff; }
-input, select, textarea { color: #000; background: #fff; border: 1px solid #6e6e6e; }
-input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid #000; outline-offset: 1px; }
-.obsImportar, .avanceCarga { background: #fff; color: #000; border: 1px solid #000; font-weight: 600; }
+button { background: #fff; color: var(--g-marca); border: 1px solid var(--g-marca); font-weight: 600; }
+button:hover:not(:disabled) { background: var(--g-claro); color: var(--g-marca); border-color: var(--g-marca); }
+button.primary { background: var(--g-azul); color: #fff; border-color: var(--g-azul); }
+button.primary:hover:not(:disabled) { background: var(--g-marca); color: #fff; border-color: var(--g-marca); }
+input, select, textarea { color: var(--g-texto); background: #fff; border: 1px solid var(--g-borde); }
+input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--g-cian); outline-offset: 1px; }
+.obsImportar, .avanceCarga { background: #fff; color: var(--g-marca); border: 1px solid var(--g-marca); font-weight: 600; }
 
-/* Pestañas y selección: lo elegido va en negro */
-button[aria-pressed=true], button[aria-pressed=true]:hover:not(:disabled) { background: #000 !important; color: #fff !important; border-color: #000; }
+/* Pestañas y selección: lo elegido va en azul */
+button[aria-pressed=true], button[aria-pressed=true]:hover:not(:disabled) { background: var(--g-azul) !important; color: #fff !important; border-color: var(--g-azul); }
 button[aria-pressed=true] b, button[aria-pressed=true] small { color: #fff !important; }
-.planTypes button { background: #fff; color: #000; border: 1px solid #000; margin-right: -1px; }
-.subVistas { background: transparent; border-bottom: 2px solid #000; padding: 0; gap: 0; display: flex; }
-.subVistas button { background: #fff; color: #000; border: 1px solid #000; border-bottom: 0; margin-right: -1px; font-weight: 600; min-height: 38px; }
-.subVistas button[aria-selected=true], .subVistas button[aria-selected=true]:hover { background: #000 !important; color: #fff !important; }
-.panelTrail { border-bottom: 2px solid #000; }
-.workTabs button { color: #444; background: transparent; border: 0; border-bottom: 3px solid transparent; }
-.workTabs button[aria-pressed=true], .workTabs button[aria-pressed=true]:hover:not(:disabled) { background: transparent !important; color: #000 !important; font-weight: 800; border-bottom-color: #000; }
-.obsCategories { background: #fff; border: 1px solid #000; }
-.obsCategories h3 { text-transform: uppercase; font-size: 11px; letter-spacing: .6px; }
-.obsCategories button { color: #000; }
-.obsCategories button b, .obsStateTabs button b { color: #444; }
-.obsStateTabs button { background: #fff; border: 1px solid #000; color: #000; }
-.obsCategories [aria-pressed=true], .obsStateTabs [aria-pressed=true], .modeSwitch button.active, .toolbar #planSettingsOpen[aria-expanded=true] { background: #000 !important; color: #fff !important; }
+.planTypes button { background: #fff; color: var(--g-marca); border: 1px solid var(--g-borde); margin-right: -1px; }
+.subVistas { background: transparent; border-bottom: 3px solid var(--g-azul); padding: 0; gap: 0; display: flex; }
+.subVistas button { background: #fff; color: var(--g-marca); border: 1px solid var(--g-borde); border-bottom: 0; margin-right: -1px; font-weight: 600; min-height: 38px; }
+.subVistas button[aria-selected=true], .subVistas button[aria-selected=true]:hover { background: var(--g-azul) !important; color: #fff !important; border-color: var(--g-azul); }
+.panelTrail { border-bottom: 1px solid var(--g-borde); }
+.workTabs button { color: var(--g-texto2); background: transparent; border: 0; border-bottom: 3px solid transparent; }
+.workTabs button[aria-pressed=true], .workTabs button[aria-pressed=true]:hover:not(:disabled) { background: transparent !important; color: var(--g-marca) !important; font-weight: 800; border-bottom-color: var(--g-cian); }
+.obsCategories { background: #fff; border: 1px solid var(--g-borde); }
+.obsCategories h3 { text-transform: uppercase; font-size: 11px; letter-spacing: .6px; color: var(--g-marca); }
+.obsCategories button { color: var(--g-texto); }
+.obsCategories button b, .obsStateTabs button b { color: var(--g-texto2); }
+.obsStateTabs button { background: #fff; border: 1px solid var(--g-borde); color: var(--g-marca); }
+.obsCategories [aria-pressed=true], .obsStateTabs [aria-pressed=true], .modeSwitch button.active, .toolbar #planSettingsOpen[aria-expanded=true] { background: var(--g-azul) !important; color: #fff !important; }
 .obsCategories [aria-pressed=true] b, .obsStateTabs [aria-pressed=true] b { color: #fff; }
-.modeSwitch { background: #fff; border: 1px solid #000; }
+.modeSwitch { background: #fff; border: 1px solid var(--g-borde); }
 
 /* Tarjetas, indicadores y gráficos */
-.kpi, .chartCard, .floorCard, .obsTableScroll, .obsFiltros, .obsNew, .documentGrid .chartCard { background: #fff; border: 1px solid #000; }
-.kpi { border-top: 4px solid #000; }
-.kpi > span { color: #000; text-transform: uppercase; font-size: 10px; font-weight: 700; letter-spacing: .6px; }
-.kpi > b { color: #000; font-weight: 800; font-variant-numeric: tabular-nums; }
-.kpi small { color: #333; }
-.lpKpi { border-top-color: var(--c, #000); }
-.lpKpi > b { color: var(--c, #000); }
-.chartHeading { border-bottom: 2px solid #000; }
-.chartHeading h3 { text-transform: uppercase; font-size: 12px; font-weight: 800; letter-spacing: .5px; color: #000; }
-.chartHeading span { color: #000; font-weight: 600; }
-.workBar { background: #e3e3e3; }
-.chartEmpty { color: #444; }
+.kpi, .chartCard, .floorCard, .obsTableScroll, .obsFiltros, .obsNew, .documentGrid .chartCard { background: #fff; border: 1px solid var(--g-borde); }
+.kpi { border-top: 4px solid var(--g-marca); }
+.kpi small { color: var(--g-texto2); }
+.lpKpi { border-top-color: var(--c, var(--g-marca)); }
+.kpi > span { color: var(--g-marca); text-transform: uppercase; font-size: 10px; font-weight: 700; letter-spacing: .6px; }
+.kpi > b { color: var(--g-texto); font-weight: 800; font-variant-numeric: tabular-nums; }
+.lpKpi > b { color: var(--c, var(--g-texto)); }
+.chartHeading { border-bottom: 2px solid var(--g-marca); }
+.chartHeading h3 { text-transform: uppercase; font-size: 12px; font-weight: 800; letter-spacing: .5px; color: var(--g-marca); }
+.chartHeading span { color: var(--g-texto2); font-weight: 600; }
+.workBar { background: var(--g-claro); }
+.chartEmpty { color: var(--g-texto2); }
 
-/* Paneles de Control de obra: textos neutros y botones en negro. :where() deja estos valores por debajo de los estados
-   (seleccionado, vencido, error), que se refuerzan aparte. */
-#workspacePanel :where(p, small, summary, h3, h4, label, figcaption, dt, dd, .pagination span, .matrixOverview span) { color: #222; }
-#workspacePanel :where(button:not(.primary)) { color: #000; }
+/* Paneles de Control de obra: textos neutros y botones en azul marino. :where() deja estos valores por debajo
+   de los estados (seleccionado, vencido, error), que se refuerzan aparte. */
+#workspacePanel :where(p, small, summary, h3, h4, label, figcaption, dt, dd, .pagination span, .matrixOverview span) { color: var(--g-texto2); }
+#workspacePanel :where(button:not(.primary)) { color: var(--g-marca); }
 #workspacePanel .obsOverdue, #workspacePanel .obsError { color: #c21f1f; }
-.progressCoverage { background: #fff; border: 1px solid #000; color: #000; }
+.progressCoverage { background: #fff; border: 1px solid var(--g-borde); border-left: 6px solid var(--g-azul); color: var(--g-texto); }
 
 /* Tarjetas de pisos y paneles */
-.floorCard.available:hover { border-color: #000; outline: 2px solid #000; outline-offset: -2px; transform: none; }
-.floorPreview, .unavailable .floorPreview { background: #fff; border-bottom: 1px solid #000; }
-.floorPreviewNumber { color: #000; font-weight: 800; opacity: .9; }
-.floorCardArrow { border: 1px solid #000; color: #000; }
-.floorCardStatus { border-top: 1px solid #cfcfcf; color: #000; font-weight: 600; }
-.floorCardStatus i { background: #1a7f37; }
-.panelTitle { color: #000; font-weight: 800; }
-.panelArt { stroke: #000; }
-.panelArt .f { fill: #d4d4d4; }
-.panelArt .m { fill: #737373; }
-.panelArt .kf { fill: #000; }
-.panelArt .k { stroke: #000; }
+.floorCard.available:hover { border-color: var(--g-azul); outline: 2px solid var(--g-azul); outline-offset: -2px; transform: none; }
+.floorPreview, .unavailable .floorPreview { background: #fff; border-bottom: 1px solid var(--g-borde); }
+.floorPreviewNumber { color: var(--g-marca); font-weight: 800; opacity: .9; }
+.floorCardArrow { border: 1px solid var(--g-marca); color: var(--g-marca); }
+.floorCardStatus { border-top: 1px solid var(--g-claro); color: var(--g-texto2); font-weight: 600; }
+.floorCardStatus i { background: var(--g-cian); }
+.panelTitle { color: var(--g-marca); font-weight: 800; }
+.panelArt { stroke: var(--g-marca); }
+.panelArt .f { fill: #cfe0f1; }
+.panelArt .m { fill: var(--g-cian); }
+.panelArt .kf { fill: var(--g-marca); }
+.panelArt .k { stroke: var(--g-azul); }
 
-/* Tablas: encabezado negro, filas con regla gris */
-#workspacePanel th, dialog th { background: #000 !important; color: #fff !important; font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: .5px; border: 0; }
+/* Tablas: encabezado azul marino, filas con regla celeste */
+#workspacePanel th, dialog th { background: var(--g-marca) !important; color: #fff !important; font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: .5px; border: 0; }
 #workspacePanel th button, dialog th button { background: transparent; color: #fff; border: 0; }
-#workspacePanel td { border-color: #cfcfcf; }
-#workspacePanel tbody tr:hover > td { background: #f3f3f3; }
-.obsSelectedRow, .obsSelectedRow > td { background: #e3e3e3 !important; }
-.obsSelectedRow > td:first-child { border-left: 4px solid #000; }
+#workspacePanel td { border-color: #d3e1ef; }
+#workspacePanel tbody tr:hover > td { background: var(--g-suave); }
+.obsSelectedRow, .obsSelectedRow > td { background: var(--g-claro) !important; }
+.obsSelectedRow > td:first-child { border-left: 4px solid var(--g-azul); }
 
 /* Estados: etiqueta rectangular con franja de color */
-.obsChip { background: #fff; color: #000; border: 1px solid #000; border-left: 8px solid var(--c); text-transform: uppercase; font-size: 10px; letter-spacing: .4px; padding: 3px 8px; font-weight: 700; }
-.status, .status.valid { background: #fff; color: #000; border: 1px solid #000; font-weight: 600; }
+.obsChip { background: #fff; color: var(--g-texto); border: 1px solid var(--g-borde); border-left: 8px solid var(--c); text-transform: uppercase; font-size: 10px; letter-spacing: .4px; padding: 3px 8px; font-weight: 700; }
+.status, .status.valid { background: #fff; color: var(--g-texto); border: 1px solid var(--g-borde); font-weight: 600; }
 .status.valid { border-left: 6px solid #1a7f37; }
-.badge { border: 1px solid #000; color: #000; background: #fff; }
+.badge { border: 1px solid var(--g-borde); color: var(--g-marca); background: #fff; }
 .obsOverdue { color: #c21f1f; }
 
-/* Diálogos: barra de título negra */
-dialog { border: 2px solid #000; }
-dialog::backdrop { background: #000000a8; }
-.obsForm header, .obsDetailDrawer header { background: #000; border-bottom: 0; }
+/* Diálogos: barra de título azul marino */
+dialog { border: 1px solid var(--g-marca); }
+dialog::backdrop { background: #1b2a56b3; }
+.obsForm header, .obsDetailDrawer header { background: var(--g-marca); border-bottom: 3px solid var(--g-cian); }
 .obsForm header, .obsForm header *, .obsDetailDrawer header, .obsDetailDrawer header * { color: #fff; }
-.obsForm header small, .obsDetailDrawer header small { color: #d0d0d0; }
-.obsForm header .obsChip, .obsDetailDrawer header .obsChip { color: #000; }
+.obsForm header small, .obsDetailDrawer header small { color: #a9bbd6; }
+.obsForm header .obsChip, .obsDetailDrawer header .obsChip { color: var(--g-texto); }
 .obsForm header .obsCerrar, .obsDetailDrawer header [data-close-detail] { background: transparent; color: #fff; border: 0; }
-.obsForm header .obsCerrar:hover:not(:disabled), .obsDetailDrawer header [data-close-detail]:hover:not(:disabled) { background: #333; color: #fff; }
-.obsForm footer { border-top: 2px solid #000; }
-.obsForm label, .obsDetailBody label { color: #000; }
-.obsBotonesFoto label { background: #fff; border: 1px solid #000; color: #000; }
-.obsBotonesFoto .obsCamara { background: #000; color: #fff; }
-.obsTransiciones button { background: #fff; color: #000; border: 1px solid #000; border-left: 6px solid var(--c); }
+.obsForm header .obsCerrar:hover:not(:disabled), .obsDetailDrawer header [data-close-detail]:hover:not(:disabled) { background: #26386b; color: #fff; }
+.obsForm footer { border-top: 1px solid var(--g-borde); background: var(--g-suave); }
+.obsForm label, .obsDetailBody label { color: var(--g-texto); }
+.obsBotonesFoto label { background: #fff; border: 1px solid var(--g-marca); color: var(--g-marca); }
+.obsBotonesFoto .obsCamara { background: var(--g-azul); border-color: var(--g-azul); color: #fff; }
+.obsTransiciones button { background: #fff; color: var(--g-texto); border: 1px solid var(--g-borde); border-left: 6px solid var(--c); }
 
-/* Ficha del recinto, filtros del plano y búsqueda: el mismo criterio de textos neutros */
-#detail :where(p, small, span, b, h3, h4, label, summary, dt, dd, li), #planFilters :where(p, small, b, label, summary, .colorOrigin, .filterHelp), .left :where(p, small, label, summary) { color: #222; }
-#detail :where(button:not(.primary)), #planFilters :where(button:not(.primary)), #closeDetail, #expandDetail, #closeSearch { color: #000; }
+/* Ficha del recinto, filtros del plano y búsqueda: el mismo criterio de textos */
+#detail :where(p, small, span, b, h3, h4, label, summary, dt, dd, li), #planFilters :where(p, small, b, label, summary, .colorOrigin, .filterHelp), .left :where(p, small, label, summary) { color: var(--g-texto2); }
+#detail :where(button:not(.primary)), #planFilters :where(button:not(.primary)), #closeDetail, #expandDetail, #closeSearch { color: var(--g-marca); }
 #detail .obsError, #detail .obsLista em, #detail .obsOverdue { color: #c21f1f; }
 #detail .obsFotosFicha span span { color: #fff; }
-.codeLink { color: #000; text-decoration: underline; }
-.hint { background: #fff; color: #000; border: 1px solid #000; border-left: 6px solid #000; }
-.pmaWarning, .avancePrevio, #geometryAuthority { background: #fff; color: #000; border: 1px solid #000; border-left: 6px solid #c26a00; }
-.pmaWarning b, .avancePrevio b { color: #000; }
-header .project span, #offlineLabel, #disciplineStatus { color: #222; }
-aside.left :where(summary), aside.left #closeSearch, #planFilters #toggleCategorySearch { color: #000; }
-aside.left #search { border-color: #000; }
-aside.left .result { background: #fff; border-color: #bdbdbd; color: #000; }
-aside.left .result.active { background: #000; border-color: #000; color: #fff; }
+.codeLink { color: var(--g-azul); text-decoration: underline; }
+.hint { background: #fff; color: var(--g-texto); border: 1px solid var(--g-borde); border-left: 6px solid var(--g-azul); }
+.pmaWarning, .avancePrevio, #geometryAuthority { background: #fff; color: var(--g-texto); border: 1px solid var(--g-borde); border-left: 6px solid #c26a00; }
+.pmaWarning b, .avancePrevio b { color: var(--g-texto); }
+header .project span, #offlineLabel, #disciplineStatus { color: var(--g-texto2); }
+aside.left :where(summary), aside.left #closeSearch, #planFilters #toggleCategorySearch { color: var(--g-marca); }
+aside.left #search { border-color: var(--g-marca); }
+aside.left .result { background: #fff; border-color: var(--g-borde); color: var(--g-texto); }
+aside.left .result.active { background: var(--g-azul); border-color: var(--g-azul); color: #fff; }
 aside.left .result.active * { color: #fff; }
 
 /* Visor del plano */
-.planheader, .toolbar, #activeLegend, #planFilters { background: #fff; border: 1px solid #000; }
-.toolbar button, .toolbar #reset { color: #000; }
-.disciplineBar { border-bottom: 2px solid #000; }
-.bottomNav { border-top: 2px solid #000; }
-.bottomNav button { color: #555; }
-.bottomNav button.active, .bottomNav button:hover:not(:disabled) { color: #000; background: transparent; font-weight: 700; }
-#toast { background: #000; color: #fff; }
+.planheader, .toolbar, #activeLegend, #planFilters { background: #fff; border: 1px solid var(--g-borde); }
+.planheader { border-top: 3px solid var(--g-marca); }
+.toolbar button, .toolbar #reset { color: var(--g-marca); }
+.disciplineBar { border-bottom: 2px solid var(--g-marca); }
+.bottomNav { border-top: 3px solid var(--g-marca); }
+.bottomNav button { color: var(--g-texto2); }
+.bottomNav button.active, .bottomNav button:hover:not(:disabled) { color: var(--g-azul); background: transparent; font-weight: 700; }
+#toast { background: var(--g-marca); color: #fff; border-left: 6px solid var(--g-cian); }

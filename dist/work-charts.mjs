@@ -1,6 +1,6 @@
 // Mutually exclusive work states use a pie; overlapping documentary categories remain bars.
 import {technicalStates,dimensionNames} from './construction-store.mjs';
-const palette=['#000000','#1f4e99','#c26a00','#7a7a7a','#1a7f37','#c21f1f'];
+const palette=['#1b2a56','#0f5499','#29a8df','#c26a00','#1a7f37','#7f93ad'];
 const group=values=>{const counts=new Map();for(const value of values)counts.set(value,(counts.get(value)||0)+1);return [...counts].map(([key,n],i)=>({key,n,color:palette[i%palette.length]}));};
 export function workDistributions(zones,events,protocols){
  const unique=list=>[...new Map(list.map(row=>[row.id,row])).values()];
