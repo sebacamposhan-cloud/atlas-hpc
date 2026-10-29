@@ -16,9 +16,9 @@ button.lpKpi { cursor: pointer; white-space: normal; }
 .lpGrid > section:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .lpLinea { font-size: 13px; margin: 0 0 6px; }
 .lpPPC { width: 100%; max-height: 220px; display: block; }
-.lpPPC text { font-size: 11px; fill: var(--g-marca, #1b2a56); font-weight: 700; }
+.lpPPC text { font-size: 11px; fill: #000; font-weight: 700; }
 .lpPPC text.eje { fill: var(--g-texto2, #2c3a50); font-weight: 400; font-size: 10px; }
-.lpPPC .meta { stroke: var(--g-azul, #0f5499); stroke-dasharray: 4 3; fill: var(--g-azul, #0f5499); font-size: 9px; font-weight: 400; stroke-width: 1; }
+.lpPPC .meta { stroke: var(--g-azul, #0f5499); stroke-dasharray: 4 3; fill: #000; font-size: 9px; font-weight: 400; stroke-width: 1; }
 .lpPPC text.meta { stroke: none; }
 .lpPPC g.abierta rect:last-of-type { opacity: .45; }
 .lpPPC g[role=button] { cursor: pointer; }
@@ -37,12 +37,12 @@ button.lpKpi { cursor: pointer; white-space: normal; }
 .lpTabla small { color: #2c3a50; font-size: 11px; }
 .lpTabla .obsChip, .lpTabla td[data-label="Plazo"], .lpTabla td[data-label="Compromiso"] { white-space: nowrap; }
 .lpTabla td button:not(.obsOpenRecord) { font-size: 12px; min-height: 36px; }
-.lpGrupo { font-size: 12px; margin: 18px 0 8px; color: var(--g-marca, #1b2a56); text-transform: uppercase; letter-spacing: .5px; border-bottom: 2px solid var(--g-marca, #1b2a56); padding-bottom: 4px; }
+.lpGrupo { font-size: 12px; margin: 18px 0 8px; color: #000; text-transform: uppercase; letter-spacing: .5px; border-bottom: 2px solid var(--g-marca, #1b2a56); padding-bottom: 4px; }
 .lpGrupo small { color: #2c3a50; font-weight: 400; margin-left: 4px; }
 .lpAcuerdos { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: 12px; }
 .lpAcuerdos small { display: block; color: #2c3a50; font-size: 11px; margin-top: 2px; }
 .lpDetalle { margin-top: 6px; font-size: 11px; }
-.lpDetalle summary { color: var(--g-azul, #0f5499); text-decoration: underline; }
+.lpDetalle summary { color: #000; text-decoration: underline; }
 .lpDetalle table { margin-top: 6px; }
 .lpEstimador { margin-bottom: 16px; }
 .lpEstimador .obsFiltros { grid-template-columns: 2fr 1fr 1fr; border: 0; padding: 0; }
@@ -55,7 +55,7 @@ dialog.lpDialog.lpAncho { width: min(1000px, 96vw); }
 .lpForm .lpSeccion h3 small { color: #2c3a50; font-weight: 400; }
 .lpTres { grid-template-columns: 1fr 1.4fr 1.4fr; }
 .lpElegidos { display: flex; flex-wrap: wrap; gap: 6px; }
-.lpChip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; background: #fff; color: var(--g-marca, #1b2a56); border: 1px solid var(--g-marca, #1b2a56); padding: 2px 2px 2px 8px; }
+.lpChip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; background: #fff; color: #000; border: 1px solid var(--g-marca, #1b2a56); padding: 2px 2px 2px 8px; }
 .lpChip button { border: 0; background: transparent; min-height: 26px; width: 26px; padding: 0; font-size: 16px; border-radius: 50%; }
 .lpBuscarRecinto input { width: 100%; box-sizing: border-box; }
 .lpResultados { display: grid; gap: 4px; max-height: 220px; overflow: auto; margin-top: 6px; }
@@ -87,18 +87,18 @@ dialog.lpDialog.lpAncho { width: min(1000px, 96vw); }
 /* Reporte semanal */
 .lpReporte { position: fixed; inset: 0; z-index: 90; background: #fff; overflow: auto; padding: 0 16px 32px; }
 .lpReporteBarra { position: sticky; top: 0; z-index: 1; display: flex; gap: 8px; align-items: center; justify-content: flex-end; flex-wrap: wrap; padding: 12px 0; background: #fff; border-bottom: 3px solid var(--g-marca, #1b2a56); margin-bottom: 16px; }
-.lpReporteBarra span { margin-right: auto; font-size: 12px; color: var(--g-marca, #1b2a56); }
+.lpReporteBarra span { margin-right: auto; font-size: 12px; color: #000; }
 .lpHoja { background: white; max-width: 1050px; margin: 0 auto; padding: 32px 36px; border: 1px solid var(--g-marca, #1b2a56); color: #000; font-size: 12px; }
 .lpHoja h1 { font-size: 22px; margin: 4px 0; font-weight: 800; }
-.lpHoja h2 { font-size: 12px; margin: 22px 0 8px; color: var(--g-marca, #1b2a56); border-bottom: 2px solid var(--g-marca, #1b2a56); padding-bottom: 4px; text-transform: uppercase; letter-spacing: .6px; }
+.lpHoja h2 { font-size: 12px; margin: 22px 0 8px; color: #000; border-bottom: 2px solid var(--g-marca, #1b2a56); padding-bottom: 4px; text-transform: uppercase; letter-spacing: .6px; }
 .lpHoja h3 { font-size: 12px; margin: 12px 0 4px; }
 .lpHojaCabecera { display: flex; justify-content: space-between; gap: 16px; border-bottom: 3px solid var(--g-marca, #1b2a56); padding-bottom: 12px; }
-.lpHojaCabecera small { letter-spacing: .6px; color: var(--g-azul, #0f5499); font-weight: 700; font-size: 10px; }
+.lpHojaCabecera small { letter-spacing: .6px; color: #000; font-weight: 700; font-size: 10px; }
 .lpHojaCabecera p { margin: 0; font-size: 13px; }
 .lpHojaFecha { text-align: right; font-size: 11px; color: #2c3a50; }
 .lpDatos { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
 .lpDatos > div { border: 1px solid var(--g-marca, #1b2a56); border-top: 4px solid var(--g-marca, #1b2a56); padding: 8px 10px; }
-.lpDatos span { display: block; font-size: 9px; color: var(--g-marca, #1b2a56); font-weight: 700; text-transform: uppercase; letter-spacing: .4px; }
+.lpDatos span { display: block; font-size: 9px; color: #000; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; }
 .lpDatos b { display: block; font-size: 20px; margin-top: 2px; font-weight: 800; }
 .lpDatos small { font-size: 10px; color: #2c3a50; }
 .lpHojaPlano figure { margin: 0; }

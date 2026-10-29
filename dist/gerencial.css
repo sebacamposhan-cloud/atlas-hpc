@@ -1,5 +1,6 @@
 /* Tema gerencial con los colores de Sacyr: fondo blanco, azul marino y azul de la marca en sólido, cian como
-   acento, texto negro, ángulos rectos y sin sombras. Sin tonos claros ni pastel: lo que se distingue, se
+   acento, títulos y texto en negro, ángulos rectos y sin sombras. Los azules marcan estructura (barra lateral,
+   bordes, encabezados de tabla) y selección, nunca el texto. Sin tonos claros ni pastel: lo que se distingue, se
    distingue con bordes y colores sólidos. Los colores de estado (verde, ámbar, rojo) son los únicos otros.
    Se carga al final de index.html y manda sobre los estilos anteriores sin modificarlos; para volver
    al aspecto anterior basta quitar su <link>. Los tonos de marca se leyeron del logo: si el manual de
@@ -14,16 +15,16 @@
   --ink: #000; --muted: #262626; --line: #1b2a56; --paper: #fff; --teal: #0f5499; --navy: #1b2a56;
 }
 *, *::before, *::after { border-radius: 0 !important; box-shadow: none !important; text-shadow: none !important; }
-body { color: var(--g-texto); background: #fff; font-family: "Segoe UI", -apple-system, "Helvetica Neue", Arial, sans-serif; }
+body { color: var(--g-texto); background: #fff; font-family: "Google Sans Flex", "Google Sans", "Segoe UI", -apple-system, "Helvetica Neue", Arial, sans-serif; }
 h1, h2, h3, h4, strong, b { color: inherit; }
 p, small, .muted, .obsNota, .chartSubtitle, .panelText, .sidebarIntro, .floorIntro p, .moduleHeading p, .documentaryIntro p { color: var(--g-texto2); }
-.section-label { color: var(--g-azul) !important; font-weight: 700; letter-spacing: 1.2px; }
+.section-label { color: var(--g-texto) !important; font-weight: 700; letter-spacing: 1.2px; }
 
 /* Encabezados de página */
 .moduleHeading, .floorIntro { border-bottom: 3px solid var(--g-marca); padding-bottom: 14px; }
-.moduleHeading h1, .floorIntro h1 { color: var(--g-marca); font-weight: 800; letter-spacing: -.4px; }
-.documentaryIntro h2, #workContent h2 { color: var(--g-marca); font-weight: 800; letter-spacing: -.2px; }
-.floorIndex { color: var(--g-marca); font-weight: 700; }
+.moduleHeading h1, .floorIntro h1 { color: var(--g-texto); font-weight: 800; letter-spacing: -.4px; }
+.documentaryIntro h2, #workContent h2 { color: var(--g-texto); font-weight: 800; letter-spacing: -.2px; }
+.floorIndex { color: var(--g-texto); font-weight: 700; }
 
 /* Barra lateral azul marino */
 .appSidebar { background: var(--g-marca); border-right: 0; color: #fff; }
@@ -32,13 +33,13 @@ p, small, .muted, .obsNota, .chartSubtitle, .panelText, .sidebarIntro, .floorInt
 .brandMark { background: var(--g-cian); color: #fff; }
 .appSidebar .navGroup button { color: #fff; background: transparent; border: 0; border-left: 4px solid transparent; }
 .appSidebar .navGroup button:hover:not(:disabled) { background: var(--g-azul); color: #fff; outline: 0; }
-.appSidebar .navGroup .active, .appSidebar .navGroup .active:hover:not(:disabled) { background: #fff; color: var(--g-marca); font-weight: 700; border-left-color: var(--g-cian); }
+.appSidebar .navGroup .active, .appSidebar .navGroup .active:hover:not(:disabled) { background: #fff; color: var(--g-texto); font-weight: 700; border-left-color: var(--g-cian); }
 .appSidebar .navGroup button:disabled { color: #fff; opacity: .45; }
 .appSidebar .sideBottom button { background: transparent; color: #fff; border: 0; }
 
 /* Cabecera */
 header { background: #fff; color: var(--g-texto); border-bottom: 3px solid var(--g-marca); }
-header button { background: #fff; color: var(--g-marca); border: 1px solid var(--g-marca); font-weight: 600; }
+header button { background: #fff; color: var(--g-texto); border: 1px solid var(--g-marca); font-weight: 600; }
 header button:hover:not(:disabled) { background: var(--g-marca); color: #fff; outline: 0; }
 .globalSearchWrap input { background: #fff; border: 1px solid var(--g-marca); color: var(--g-texto); }
 .globalSearchWrap kbd { color: var(--g-texto2); }
@@ -47,30 +48,30 @@ header button:hover:not(:disabled) { background: var(--g-marca); color: #fff; ou
 #workspacePanel, #floorExplorer { background: #fff; }
 
 /* Botones y campos: al pasar el cursor se marcan con borde azul, sin fondos claros */
-button { background: #fff; color: var(--g-marca); border: 1px solid var(--g-marca); font-weight: 600; }
-button:hover:not(:disabled) { background: #fff; color: var(--g-azul); border-color: var(--g-azul); outline: 2px solid var(--g-azul); outline-offset: -2px; }
+button { background: #fff; color: var(--g-texto); border: 1px solid var(--g-marca); font-weight: 600; }
+button:hover:not(:disabled) { background: #fff; color: var(--g-texto); border-color: var(--g-azul); outline: 2px solid var(--g-azul); outline-offset: -2px; }
 button.primary { background: var(--g-azul); color: #fff; border-color: var(--g-azul); }
 button.primary:hover:not(:disabled) { background: var(--g-marca); color: #fff; border-color: var(--g-marca); outline: 0; }
 input, select, textarea { color: var(--g-texto); background: #fff; border: 1px solid var(--g-marca); }
 input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--g-cian); outline-offset: 1px; }
-.obsImportar, .avanceCarga { background: #fff; color: var(--g-marca); border: 1px solid var(--g-marca); font-weight: 600; }
+.obsImportar, .avanceCarga { background: #fff; color: var(--g-texto); border: 1px solid var(--g-marca); font-weight: 600; }
 
 /* Pestañas y selección: lo elegido va en azul sólido */
 button[aria-pressed=true], button[aria-pressed=true]:hover:not(:disabled) { background: var(--g-azul) !important; color: #fff !important; border-color: var(--g-azul); outline: 0; }
 button[aria-pressed=true] b, button[aria-pressed=true] small { color: #fff !important; }
-.planTypes button { background: #fff; color: var(--g-marca); border: 1px solid var(--g-marca); margin-right: -1px; }
+.planTypes button { background: #fff; color: var(--g-texto); border: 1px solid var(--g-marca); margin-right: -1px; }
 .subVistas { background: transparent; border-bottom: 3px solid var(--g-azul); padding: 0; gap: 0; display: flex; }
-.subVistas button { background: #fff; color: var(--g-marca); border: 1px solid var(--g-marca); border-bottom: 0; margin-right: -1px; font-weight: 600; min-height: 38px; }
+.subVistas button { background: #fff; color: var(--g-texto); border: 1px solid var(--g-marca); border-bottom: 0; margin-right: -1px; font-weight: 600; min-height: 38px; }
 .subVistas button[aria-selected=true], .subVistas button[aria-selected=true]:hover { background: var(--g-azul) !important; color: #fff !important; border-color: var(--g-azul); outline: 0; }
 .panelTrail { border-bottom: 1px solid var(--g-marca); }
 .workTabs button { color: var(--g-texto2); background: transparent; border: 0; border-bottom: 3px solid transparent; }
 .workTabs button:hover:not(:disabled) { outline: 0; border-bottom-color: var(--g-marca); background: transparent; }
-.workTabs button[aria-pressed=true], .workTabs button[aria-pressed=true]:hover:not(:disabled) { background: transparent !important; color: var(--g-marca) !important; font-weight: 800; border-bottom-color: var(--g-azul); }
+.workTabs button[aria-pressed=true], .workTabs button[aria-pressed=true]:hover:not(:disabled) { background: transparent !important; color: var(--g-texto) !important; font-weight: 800; border-bottom-color: var(--g-azul); }
 .obsCategories { background: #fff; border: 1px solid var(--g-marca); }
-.obsCategories h3 { text-transform: uppercase; font-size: 11px; letter-spacing: .6px; color: var(--g-marca); }
+.obsCategories h3 { text-transform: uppercase; font-size: 11px; letter-spacing: .6px; color: var(--g-texto); }
 .obsCategories button { color: var(--g-texto); }
 .obsCategories button b, .obsStateTabs button b { color: var(--g-texto2); }
-.obsStateTabs button { background: #fff; border: 1px solid var(--g-marca); color: var(--g-marca); }
+.obsStateTabs button { background: #fff; border: 1px solid var(--g-marca); color: var(--g-texto); }
 .obsCategories [aria-pressed=true], .obsStateTabs [aria-pressed=true], .modeSwitch button.active, .toolbar #planSettingsOpen[aria-expanded=true] { background: var(--g-azul) !important; color: #fff !important; }
 .obsCategories [aria-pressed=true] b, .obsStateTabs [aria-pressed=true] b { color: #fff; }
 .modeSwitch { background: #fff; border: 1px solid var(--g-marca); }
@@ -80,30 +81,32 @@ button[aria-pressed=true] b, button[aria-pressed=true] small { color: #fff !impo
 .kpi { border-top: 4px solid var(--g-marca); }
 .kpi small { color: var(--g-texto2); }
 .lpKpi { border-top-color: var(--c, var(--g-marca)); }
-.kpi > span { color: var(--g-marca); text-transform: uppercase; font-size: 10px; font-weight: 700; letter-spacing: .6px; }
+.kpi > span { color: var(--g-texto); text-transform: uppercase; font-size: 10px; font-weight: 700; letter-spacing: .6px; }
 .kpi > b { color: var(--g-texto); font-weight: 800; font-variant-numeric: tabular-nums; }
 .lpKpi > b { color: var(--c, var(--g-texto)); }
 .chartHeading { border-bottom: 2px solid var(--g-marca); }
-.chartHeading h3 { text-transform: uppercase; font-size: 12px; font-weight: 800; letter-spacing: .5px; color: var(--g-marca); }
+.chartHeading h3 { text-transform: uppercase; font-size: 12px; font-weight: 800; letter-spacing: .5px; color: var(--g-texto); }
 .chartHeading span { color: var(--g-texto2); font-weight: 600; }
 .workBar { background: #fff; border: 1px solid var(--g-regla); }
 .chartEmpty { color: var(--g-texto2); }
 
 /* Paneles de Control de obra: textos oscuros y botones en azul marino. :where() deja estos valores por debajo
    de los estados (seleccionado, vencido, error), que se refuerzan aparte. */
-#workspacePanel :where(p, small, summary, h3, h4, label, figcaption, dt, dd, .pagination span, .matrixOverview span) { color: var(--g-texto2); }
-#workspacePanel :where(button:not(.primary)) { color: var(--g-marca); }
+#workspacePanel :where(p, small, summary, label, figcaption, dt, dd, .pagination span, .matrixOverview span) { color: var(--g-texto2); }
+#workspacePanel :where(button:not(.primary)) { color: var(--g-texto); }
+#workspacePanel :where(h1, h2, h3, h4, b, strong), #detail :where(h1, h2, h3, h4, b, strong) { color: #000; }
+#workspacePanel .lpKpi > b { color: var(--c, #000); }
 #workspacePanel .obsOverdue, #workspacePanel .obsError { color: #c21f1f; }
 .progressCoverage { background: #fff; border: 1px solid var(--g-marca); border-left: 6px solid var(--g-azul); color: var(--g-texto); }
 
 /* Tarjetas de pisos y paneles */
 .floorCard.available:hover { border-color: var(--g-azul); outline: 2px solid var(--g-azul); outline-offset: -2px; transform: none; }
 .floorPreview, .unavailable .floorPreview { background: #fff; border-bottom: 1px solid var(--g-marca); }
-.floorPreviewNumber { color: var(--g-marca); font-weight: 800; opacity: 1; }
-.floorCardArrow { border: 1px solid var(--g-marca); color: var(--g-marca); }
+.floorPreviewNumber { color: var(--g-texto); font-weight: 800; opacity: 1; }
+.floorCardArrow { border: 1px solid var(--g-marca); color: var(--g-texto); }
 .floorCardStatus { border-top: 1px solid var(--g-regla); color: var(--g-texto2); font-weight: 600; }
 .floorCardStatus i { background: var(--g-cian); }
-.panelTitle { color: var(--g-marca); font-weight: 800; }
+.panelTitle { color: var(--g-texto); font-weight: 800; }
 .panelArt { stroke: var(--g-marca); }
 .panelArt .f { fill: none; stroke: var(--g-azul); stroke-width: 1.6; }
 .panelArt .m { fill: var(--g-cian); }
@@ -121,7 +124,7 @@ button[aria-pressed=true] b, button[aria-pressed=true] small { color: #fff !impo
 .obsChip { background: #fff; color: var(--g-texto); border: 1px solid var(--g-marca); border-left: 8px solid var(--c); text-transform: uppercase; font-size: 10px; letter-spacing: .4px; padding: 3px 8px; font-weight: 700; }
 .status, .status.valid { background: #fff; color: var(--g-texto); border: 1px solid var(--g-marca); font-weight: 600; }
 .status.valid { border-left: 6px solid #1a7f37; }
-.badge { border: 1px solid var(--g-marca); color: var(--g-marca); background: #fff; }
+.badge { border: 1px solid var(--g-marca); color: var(--g-texto); background: #fff; }
 .obsOverdue { color: #c21f1f; }
 
 /* Diálogos: barra de título azul marino */
@@ -134,21 +137,21 @@ dialog::backdrop { background: #1b2a56cc; }
 .obsForm header .obsCerrar:hover:not(:disabled), .obsDetailDrawer header [data-close-detail]:hover:not(:disabled) { background: var(--g-azul); color: #fff; outline: 0; }
 .obsForm footer { border-top: 2px solid var(--g-marca); background: #fff; }
 .obsForm label, .obsDetailBody label { color: var(--g-texto); }
-.obsBotonesFoto label { background: #fff; border: 1px solid var(--g-marca); color: var(--g-marca); }
+.obsBotonesFoto label { background: #fff; border: 1px solid var(--g-marca); color: var(--g-texto); }
 .obsBotonesFoto .obsCamara { background: var(--g-azul); border-color: var(--g-azul); color: #fff; }
 .obsTransiciones button { background: #fff; color: var(--g-texto); border: 1px solid var(--g-marca); border-left: 6px solid var(--c); }
 
 /* Ficha del recinto, filtros del plano y búsqueda: el mismo criterio de textos */
-#detail :where(p, small, span, b, h3, h4, label, summary, dt, dd, li), #planFilters :where(p, small, b, label, summary, .colorOrigin, .filterHelp), .left :where(p, small, label, summary) { color: var(--g-texto2); }
-#detail :where(button:not(.primary)), #planFilters :where(button:not(.primary)), #closeDetail, #expandDetail, #closeSearch { color: var(--g-marca); }
+#detail :where(p, small, span, label, summary, dt, dd, li), #planFilters :where(p, small, b, label, summary, .colorOrigin, .filterHelp), .left :where(p, small, label, summary) { color: var(--g-texto2); }
+#detail :where(button:not(.primary)), #planFilters :where(button:not(.primary)), #closeDetail, #expandDetail, #closeSearch { color: var(--g-texto); }
 #detail .obsError, #detail .obsLista em, #detail .obsOverdue { color: #c21f1f; }
 #detail .obsFotosFicha span span { color: #fff; }
-.codeLink { color: var(--g-azul); text-decoration: underline; }
+.codeLink { color: var(--g-texto); text-decoration: underline; }
 .hint { background: #fff; color: var(--g-texto); border: 1px solid var(--g-marca); border-left: 6px solid var(--g-azul); }
 .pmaWarning, .avancePrevio, #geometryAuthority { background: #fff; color: var(--g-texto); border: 1px solid var(--g-marca); border-left: 6px solid #c26a00; }
 .pmaWarning b, .avancePrevio b { color: var(--g-texto); }
 header .project span, #offlineLabel, #disciplineStatus { color: var(--g-texto2); }
-aside.left :where(summary), aside.left #closeSearch, #planFilters #toggleCategorySearch { color: var(--g-marca); }
+aside.left :where(summary), aside.left #closeSearch, #planFilters #toggleCategorySearch { color: var(--g-texto); }
 aside.left #search { border-color: var(--g-marca); }
 aside.left .result { background: #fff; border-color: var(--g-regla); color: var(--g-texto); }
 aside.left .result.active { background: var(--g-azul); border-color: var(--g-azul); color: #fff; }
@@ -168,9 +171,9 @@ aside.right, aside.left { border-color: var(--g-marca); }
 #viewport, main { background: #fff; }
 .planheader, .toolbar, #activeLegend, #planFilters { background: #fff; border: 1px solid var(--g-marca); }
 .planheader { border-top: 3px solid var(--g-marca); }
-.toolbar button, .toolbar #reset { color: var(--g-marca); }
+.toolbar button, .toolbar #reset { color: var(--g-texto); }
 .disciplineBar { border-bottom: 2px solid var(--g-marca); }
 .bottomNav { border-top: 3px solid var(--g-marca); }
 .bottomNav button { color: var(--g-texto2); }
-.bottomNav button.active, .bottomNav button:hover:not(:disabled) { color: var(--g-azul); background: transparent; font-weight: 700; outline: 0; }
+.bottomNav button.active, .bottomNav button:hover:not(:disabled) { color: var(--g-texto); background: transparent; font-weight: 700; outline: 0; }
 #toast { background: var(--g-marca); color: #fff; border-left: 6px solid var(--g-cian); }
