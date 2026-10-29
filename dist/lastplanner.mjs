@@ -5,6 +5,7 @@ import {nivel, pisos} from './level.mjs';
 import {registerLayer, layerNames} from './layers.mjs';
 import {workChart} from './work-charts.mjs';
 import * as M from './lastplanner-model.mjs';
+import {SUBCONTRATOS} from './subcontratos.mjs';
 import {leerActividades, leerReuniones, guardarActividades, eliminarActividad, guardarReunion, eliminarReunion, exportarPlan, importarPlan} from './lastplanner-store.mjs';
 
 export const COLOR_ESTADO = {'Planificada': '#1b2a56', 'En ejecución': '#0f5499', 'Cumplida': '#1a7f37', 'No cumplida': '#c21f1f'};
@@ -61,7 +62,16 @@ export function createLastPlanner(ctx) {
   const chip = estado => `<span class="obsChip" style="--c:${COLOR_ESTADO[estado] || COLOR_FRENTE[estado] || '#1b2a56'}">${esc(estado)}</span>`;
   const quien = () => { let v = autorGuardado(); if (!v) { v = (prompt('¿Quién registra este cambio?') || '').trim(); if (v) recordarAutor(v); } return v; };
   const sectores = () => [...new Set([...ctx.rooms().map(r => r.sector), ...(cache?.actividades || []).map(a => a.sector)].filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es', {numeric: true}));
-  const responsables = () => [...new Set([...(cache?.actividades || []).map(a => a.responsable), ...(cache?.reuniones || []).flatMap(r => [...r.frentes.map(f => f.responsable), ...r.asistentes.map(p => p.empresa)])].filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
+  const responsables = () => [...new Set([...SUBCONTRATOS.map(s => s.nombre), ...(cache?.actividades || []).map(a => a.responsable), ...(cache?.reuniones || []).flatMap(r => [...r.frentes.map(f => f.responsable), ...r.asistentes.map(p => p.empresa)])].filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
+  // Lista de responsables: subcontratos de la obra con su especialidad, otros ya usados en Atlas y «Otro» para escribir uno nuevo.
+  function opcionesResponsable(actual) {
+    const enCatalogo = new Set(SUBCONTRATOS.map(s => s.nombre)), otros = responsables().filter(r => !enCatalogo.has(r));
+    return `<option value="" disabled ${actual ? '' : 'selected'}>Elige el subcontrato…</option><optgroup label="Subcontratos">${SUBCONTRATOS.map(s => `<option value="${esc(s.nombre)}" ${s.nombre === actual ? 'selected' : ''}>${esc(s.etiqueta)}</option>`).join('')}</optgroup>`
+      + (otros.length ? `<optgroup label="Otros usados en Atlas">${otros.map(r => `<option ${r === actual ? 'selected' : ''}>${esc(r)}</option>`).join('')}</optgroup>` : '') + '<option value="__otro">Otro (escribir)…</option>';
+  }
+  // Dotación de la actividad; si con su rendimiento no alcanza en el plazo, se avisa cuántas personas se recomiendan.
+  const recomendada = a => M.dotacionRecomendada(a.cantidad, a.rendimientoPlan, M.diasDisponibles(a));
+  const dotacionTexto = a => { const r = recomendada(a); return (a.dotacion ? `<br><small>${plural(a.dotacion, 'persona', 'personas')}</small>` : '') + (r && (a.dotacion || 0) < r.personas ? `<br><small class="obsOverdue">Recomendado: ${plural(r.personas, 'persona', 'personas')}</small>` : ''); };
   const datalist = (id, valores) => `<datalist id="${id}">${valores.map(v => `<option value="${esc(v)}">`).join('')}</datalist>`;
   async function guardar(cambios, aviso) {
     try { await guardarActividades(cambios); await cargarPlan(true); ctx.toast(aviso); refrescar(); } catch (e) { ctx.toast(e.message); }
@@ -119,7 +129,7 @@ export function createLastPlanner(ctx) {
     const p = M.ppcSemana(todas, s), opcion = (lista, actual, todasTxt) => `<option value="">${todasTxt}</option>` + lista.map(v => `<option ${v === actual ? 'selected' : ''}>${esc(v)}</option>`).join('');
     const accion = a => a.estado === 'Planificada' ? `<button type="button" data-lp-iniciar="${esc(a.id)}">Iniciar</button>` : a.estado === 'En ejecución' ? `<button type="button" data-lp-act="${esc(a.id)}" data-lp-foco="cierre">Cerrar…</button>` : a.estado === 'No cumplida' && !a.reprogramada ? `<button type="button" data-lp-reprogramar="${esc(a.id)}">Reprogramar</button>` : a.reprogramada ? `<small>Reprogramada a S${nSemana(a.reprogramada)}</small>` : '';
     const fila = a => { const pend = M.pendientes(a).length; return `<tr><td data-label="N°"><b>${numero.get(a.id)}</b></td><td data-label="Actividad"><button type="button" class="obsOpenRecord" data-lp-act="${esc(a.id)}"><b>${esc(a.actividad)}</b><small>${esc([a.frente, a.recintos.length ? a.recintos.length + (a.recintos.length === 1 ? ' recinto' : ' recintos') : 'sin recintos'].filter(Boolean).join(' · '))}</small></button></td>
-      <td data-label="Ubicación">${esc(nombrePiso(a.level))}<br><small>Sector ${esc(a.sector || '—')}</small></td><td data-label="Responsable">${esc(a.responsable)}${a.dotacion ? `<br><small>${a.dotacion} personas</small>` : ''}</td>
+      <td data-label="Ubicación">${esc(nombrePiso(a.level))}<br><small>Sector ${esc(a.sector || '—')}</small></td><td data-label="Responsable">${esc(a.responsable)}${dotacionTexto(a)}</td>
       <td data-label="Cantidad">${a.cantidad == null ? '—' : `${cifra(a.cantidadEjecutada ?? 0)} / ${cifra(a.cantidad)} ${esc(a.unidad || '')}`}</td><td data-label="Plazo">${a.inicioPlan ? fecha(a.inicioPlan).slice(0, 5) : '—'}<br><small>al ${a.finPlan ? fecha(a.finPlan).slice(0, 5) : '—'}</small></td>
       <td data-label="Estado">${chip(a.estado)}${pend && !M.CERRADOS.has(a.estado) ? `<br><small class="obsOverdue">${pend} restricci${pend === 1 ? 'ón' : 'ones'}</small>` : ''}${a.causa ? `<br><small>${esc(a.causa)}</small>` : ''}</td><td data-label="Acción">${accion(a)}</td></tr>`; };
     return selectorSemana() + `<p class="lpLinea"><b style="color:${p.abiertas ? 'inherit' : colorPct(p.ppc)}">PPC ${pct(p.ppc)}${p.abiertas ? ' parcial' : ''}</b> · ${plural(p.cumplidas, 'cumplida', 'cumplidas')} · ${plural(p.noCumplidas, 'no cumplida', 'no cumplidas')} · ${p.abiertas} por cerrar · ${plural(p.comprometidas, 'comprometida', 'comprometidas')}</p>
@@ -212,7 +222,7 @@ export function createLastPlanner(ctx) {
     on('[data-lp-csv]', () => exportarCSV(datos));
     on('[data-lp-iniciar]', b => { const a = datos.actividades.find(x => x.id === b.dataset.lpIniciar), autor = quien(); if (!a || !autor) return; try { guardar([{actividad: M.cambiarEstado(a, 'En ejecución', {}, {autor, hoy: hoy()}), versionEsperada: a.version}], 'Actividad iniciada hoy.'); } catch (e) { ctx.toast(e.message); } });
     on('[data-lp-reprogramar]', b => { const a = datos.actividades.find(x => x.id === b.dataset.lpReprogramar), autor = quien(); if (!a || !autor) return; const actual = M.semanaDe(hoy()), siguiente = M.moverSemana(a.semana, 1), destino = siguiente > actual ? siguiente : actual; try { const r = M.reprogramar(a, destino, {id: crypto.randomUUID(), autor}); guardar([{actividad: r.original, versionEsperada: a.version}, {actividad: r.nueva, versionEsperada: 0}], `Saldo reprogramado en la semana ${nSemana(destino)}.`); } catch (e) { ctx.toast(e.message); } });
-    on('[data-lp-comprometer]', b => { const a = datos.actividades.find(x => x.id === b.dataset.lpComprometer), autor = quien(); if (!a || !autor) return; if (M.pendientes(a).length && !confirm(`«${a.actividad}» tiene ${M.pendientes(a).length} restricciones pendientes. En Last Planner solo se compromete lo liberado. ¿Comprometerla igual?`)) return; try { guardar([{actividad: M.editarActividad(a, {...a, semana: filtros.semana}, {autor}), versionEsperada: a.version}], `Comprometida en la semana ${nSemana(filtros.semana)}.`); } catch (e) { ctx.toast(e.message); } });
+    on('[data-lp-comprometer]', b => { const a = datos.actividades.find(x => x.id === b.dataset.lpComprometer), autor = quien(); if (!a || !autor) return; if (M.pendientes(a).length && !confirm(`«${a.actividad}» tiene ${M.pendientes(a).length} restricciones pendientes. En Last Planner solo se compromete lo liberado. ¿Comprometerla igual?`)) return; try { guardar([{actividad: M.editarActividad(a, {...a, semana: filtros.semana, ...M.ajustarFechasASemana(a, filtros.semana)}, {autor}), versionEsperada: a.version}], `Comprometida en la semana ${nSemana(filtros.semana)}.`); } catch (e) { ctx.toast(e.message); } });
     on('[data-lp-liberar]', b => { const [id, rid] = b.dataset.lpLiberar.split('|'), a = datos.actividades.find(x => x.id === id), autor = quien(); if (!a || !autor) return; try { guardar([{actividad: M.liberarRestriccion(a, rid, {autor, fecha: hoy()}), versionEsperada: a.version}], 'Restricción actualizada.'); } catch (e) { ctx.toast(e.message); } });
     on('[data-lp-nueva-reunion]', () => editarReunion(null));
     on('[data-lp-reunion]', b => editarReunion(datos.reuniones.find(r => r.id === b.dataset.lpReunion)));
@@ -223,8 +233,8 @@ export function createLastPlanner(ctx) {
 
   function exportarCSV(datos) {
     const s = filtros.semana, lista = ordenSemana(datos.actividades.filter(a => delPiso(a) && a.semana === s)), celda = v => '"' + String(v ?? '').replace(/^[=+@-]/, "'$&").replaceAll('"', '""') + '"';
-    const campos = ['N°', 'Semana', 'Piso', 'Sector', 'Frente', 'Actividad', 'Responsable', 'Recintos', 'Cantidad', 'Unidad', 'Ejecutado', 'Dotación', 'Inicio plan', 'Término plan', 'Inicio real', 'Término real', 'Días trabajados', 'HH', 'Estado', 'Causa de no cumplimiento', 'Restricciones pendientes'];
-    const filas = lista.map((a, i) => [i + 1, s, nombrePiso(a.level), a.sector, a.frente, a.actividad, a.responsable, a.recintos.map(r => r.code).join(', '), a.cantidad, a.unidad, a.cantidadEjecutada, a.dotacion, a.inicioPlan, a.finPlan, a.inicioReal, a.finReal, a.diasReales, a.hh, a.estado, a.causa, M.pendientes(a).map(r => r.tipo + ': ' + r.descripcion).join(' | ')]);
+    const campos = ['N°', 'Semana', 'Piso', 'Sector', 'Frente', 'Actividad', 'Responsable', 'Recintos', 'Cantidad', 'Unidad', 'Ejecutado', 'Rendimiento por persona al día', 'Dotación', 'Dotación recomendada', 'Inicio plan', 'Término plan', 'Inicio real', 'Término real', 'Días trabajados', 'HH', 'Estado', 'Causa de no cumplimiento', 'Restricciones pendientes'];
+    const filas = lista.map((a, i) => [i + 1, s, nombrePiso(a.level), a.sector, a.frente, a.actividad, a.responsable, a.recintos.map(r => r.code).join(', '), a.cantidad, a.unidad, a.cantidadEjecutada, a.rendimientoPlan, a.dotacion, recomendada(a)?.personas, a.inicioPlan, a.finPlan, a.inicioReal, a.finReal, a.diasReales, a.hh, a.estado, a.causa, M.pendientes(a).map(r => r.tipo + ': ' + r.descripcion).join(' | ')]);
     ctx.download(new Blob(['﻿' + [campos, ...filas].map(f => f.map(celda).join(';')).join('\r\n')], {type: 'text/csv;charset=utf-8'}), `last-planner_${s}.csv`);
   }
 
@@ -236,6 +246,8 @@ export function createLastPlanner(ctx) {
     let recintos = [...(act?.recintos || [])], restricciones = (act?.restricciones || []).map(r => ({...r}));
     const sem = act ? act.semana : semana, actual = M.semanaDe(h), opcionesSemana = [...new Set([...(sem ? [sem] : []), ...Array.from({length: 11}, (_, i) => M.moverSemana(actual, i - 2))])].sort();
     const cierre = act?.semana, nombres = [...new Set(datos.actividades.map(a => a.actividad))].sort((a, b) => a.localeCompare(b, 'es'));
+    // Una actividad nueva en una semana parte de lunes a viernes de esa semana.
+    const fechas = act ? {inicioPlan: act.inicioPlan, finPlan: act.finPlan} : sem ? {inicioPlan: M.lunesDe(sem), finPlan: M.sumarDias(M.lunesDe(sem), 4)} : {inicioPlan: null, finPlan: null};
     dialog.classList.remove('lpAncho');
     dialog.innerHTML = `<form class="obsForm lpForm" novalidate>
       <header><div><small>LAST PLANNER · ${esc(nombrePiso(level).toUpperCase())}${sem ? ' · ' + esc(etiquetaSemana(sem).toUpperCase()) : ' · PLAN INTERMEDIO'}</small><h2>${act ? esc(act.actividad) : 'Nueva actividad'}</h2>${act ? chip(act.estado) + (act.origen ? ' <small class="obsNota">Reprogramada de otra semana</small>' : '') : ''}</div><button type="button" class="obsCerrar" aria-label="Cerrar">×</button></header>
@@ -245,14 +257,16 @@ export function createLastPlanner(ctx) {
         <label>Piso<select name="level" ${act?.recintos.length ? 'disabled' : ''}>${pisos.map(p => `<option value="${esc(p.id)}" ${p.id === level ? 'selected' : ''}>${esc(p.nombre)}</option>`).join('')}</select></label>
         <label>Sector<input name="sector" list="lpSectores" maxlength="60" value="${esc(act?.sector || '')}" placeholder="Ej.: A">${datalist('lpSectores', sectores())}</label>
         <label>Frente o ubicación<input name="frente" maxlength="200" value="${esc(act?.frente || '')}" placeholder="Ej.: Pasillo ejes 5-7"></label>
-        <label>Responsable *<input name="responsable" list="lpResponsables" maxlength="160" required value="${esc(act?.responsable || '')}" placeholder="Subcontrato o cuadrilla">${datalist('lpResponsables', responsables())}</label>
-        <label>Semana<select name="semana" ${act && M.CERRADOS.has(act.estado) ? 'disabled' : ''}><option value="">Plan intermedio (sin comprometer)</option>${opcionesSemana.map(s => `<option value="${s}" ${s === sem ? 'selected' : ''}>${esc(etiquetaSemana(s))}${s === actual ? ' (en curso)' : ''}</option>`).join('')}</select></label>
-        <label>Dotación (personas)<input name="dotacion" type="number" min="0" step="1" value="${act?.dotacion ?? ''}"></label>
-        <label>Inicio planificado<input name="inicioPlan" type="date" value="${esc(act?.inicioPlan || '')}"></label>
-        <label>Término planificado<input name="finPlan" type="date" value="${esc(act?.finPlan || '')}"></label>
+        <label>Responsable *<select name="responsable" required>${opcionesResponsable(act?.responsable || '')}</select><input name="responsableOtro" maxlength="160" placeholder="Nombre del subcontrato o cuadrilla" hidden></label>
+        <label class="lpAncho2">Semana<select name="semana" ${act && M.CERRADOS.has(act.estado) ? 'disabled' : ''}><option value="">Plan intermedio (sin comprometer)</option>${opcionesSemana.map(s => `<option value="${s}" ${s === sem ? 'selected' : ''}>${esc(etiquetaSemana(s))}${s === actual ? ' (en curso)' : ''}</option>`).join('')}</select><small class="lpNotaSemana" data-lp-nota-semana></small></label>
+        <label>Inicio planificado<input name="inicioPlan" type="date" value="${esc(fechas.inicioPlan || '')}"></label>
+        <label>Término planificado<input name="finPlan" type="date" value="${esc(fechas.finPlan || '')}"></label>
         <label>Cantidad comprometida<input name="cantidad" type="number" min="0" step="any" value="${act?.cantidad ?? ''}"></label>
         <label>Unidad<input name="unidad" list="lpUnidades" maxlength="20" value="${esc(act?.unidad || '')}" placeholder="m², m, un…">${datalist('lpUnidades', M.UNIDADES)}</label>
-      </div>
+        <label><span>Rendimiento por persona al día <span data-lp-unidad-rendimiento></span></span><input name="rendimientoPlan" type="number" min="0" step="any" value="${act?.rendimientoPlan ?? ''}" placeholder="Ej.: 10"></label>
+        <label>Dotación (personas)<input name="dotacion" type="number" min="0" step="1" value="${act?.dotacion ?? ''}"></label>
+        <div class="lpRecomendacion lpAncho2" data-lp-recomendacion role="status" aria-live="polite"></div>
+      </div>${datalist('lpResponsables', responsables())}
       <section class="lpSeccion"><h3>Recintos <small data-lp-n-recintos></small></h3><div class="lpElegidos"></div>
         ${level === nivel.id ? `<div class="lpBuscarRecinto"><input type="search" data-lp-buscar placeholder="Buscar recinto por código o nombre (o filtra por sector)"><div class="lpResultados"></div></div>` : `<p class="obsNota">Para elegir recintos de ${esc(nombrePiso(level))}, abre ese piso.</p>`}</section>
       <section class="lpSeccion"><h3>Restricciones (puntos de bloqueo)</h3><ul class="lpRestricciones"></ul>
@@ -300,11 +314,48 @@ export function createLastPlanner(ctx) {
     };
     pintarRestricciones();
 
+    // Responsable: «Otro» abre un campo para escribir un subcontrato o cuadrilla que no está en la lista.
+    form.responsable.onchange = () => { form.responsableOtro.hidden = form.responsable.value !== '__otro'; if (!form.responsableOtro.hidden) form.responsableOtro.focus(); };
+    // Semana y fechas: las fechas quedan limitadas a la semana elegida y se mueven con ella al cambiarla.
+    const semanaElegida = () => form.semana.disabled ? act.semana : form.semana.value || null, ini = form.inicioPlan, fin = form.finPlan;
+    function limitesSemana() {
+      const s = semanaElegida(), nota = form.querySelector('[data-lp-nota-semana]');
+      if (s) { const {desde, hasta} = M.rangoSemana(s); for (const c of [ini, fin]) { c.min = desde; c.max = hasta; } nota.textContent = `Las fechas planificadas van del lunes ${fecha(desde)} al domingo ${fecha(hasta)}. Si el trabajo dura más, divídelo por semana.`; }
+      else { for (const c of [ini, fin]) { c.removeAttribute('min'); c.removeAttribute('max'); } nota.textContent = 'Sin semana, las fechas son libres: es el plan intermedio.'; }
+    }
+    form.semana.addEventListener('change', () => {
+      const s = semanaElegida();
+      if (s && (ini.value || fin.value)) { const f = M.ajustarFechasASemana({inicioPlan: ini.value || null, finPlan: fin.value || null}, s); ini.value = f.inicioPlan || ''; fin.value = f.finPlan || ''; }
+      else if (s) { ini.value = M.lunesDe(s); fin.value = M.sumarDias(M.lunesDe(s), 4); }
+      limitesSemana(); recomendar();
+    });
+    ini.addEventListener('change', () => { if (ini.value && fin.value && fin.value < ini.value) fin.value = ini.value; recomendar(); });
+    fin.addEventListener('change', recomendar);
+    // Dotación recomendada con el rendimiento por persona al día, y el rendimiento real si Atlas ya lo tiene registrado.
+    const grupos = M.rendimientosPorActividad(datos.actividades), clave = t => String(t || '').trim().toLocaleLowerCase('es').replace(/\s+/g, ' ');
+    function recomendar() {
+      const caja = form.querySelector('[data-lp-recomendacion]'), u = form.unidad.value.trim(), ut = esc(u || 'unidades');
+      form.querySelector('[data-lp-unidad-rendimiento]').textContent = u ? `(${u})` : '';
+      const cantidad = Number(form.cantidad.value), rendimiento = Number(form.rendimientoPlan.value), dotacion = Number(form.dotacion.value), s = semanaElegida();
+      const dias = M.diasHabiles(ini.value, fin.value) || (s ? 5 : null), r = M.dotacionRecomendada(cantidad, rendimiento, dias);
+      const real = grupos.find(g => g.porPersonaDia && clave(g.actividad) === clave(form.actividad.value) && (g.unidad || '') === u);
+      let html = r ? `<p><b>Dotación recomendada: ${plural(r.personas, 'persona', 'personas')}</b> para ${cifra(cantidad)} ${ut} en ${plural(dias, 'día hábil', 'días hábiles')}, a ${cifra(rendimiento, 2)} ${ut} por persona al día. Con ${plural(r.personas, 'persona', 'personas')} se termina en ${cifra(r.diasNecesarios)} ${r.diasNecesarios === 1 ? 'día' : 'días'}.</p>`
+        + (dotacion > 0 && dotacion < r.personas ? `<p class="lpAlerta">Con ${plural(dotacion, 'persona', 'personas')} se alcanzan ${cifra(dotacion * rendimiento * dias)} de ${cifra(cantidad)} ${ut} en el plazo.</p>` : '')
+        + (dotacion !== r.personas ? `<button type="button" data-lp-usar-dotacion="${r.personas}">Usar ${plural(r.personas, 'persona', 'personas')}</button>` : '')
+        : `<p>Indica la cantidad${dias ? '' : ', el plazo'} y el rendimiento por persona al día para calcular la dotación recomendada.</p>`;
+      if (real) html += `<p class="lpHistorico">Rendimiento real registrado en Atlas para esta actividad: <b>${cifra(real.porPersonaDia, 2)} ${ut} por persona al día</b> (${plural(real.n, 'registro', 'registros')}).${Math.abs(real.porPersonaDia - rendimiento) > .005 ? ` <button type="button" data-lp-usar-rendimiento="${real.porPersonaDia.toFixed(2)}">Usar este rendimiento</button>` : ''}</p>`;
+      caja.innerHTML = html;
+      caja.querySelector('[data-lp-usar-dotacion]')?.addEventListener('click', e => { form.dotacion.value = e.currentTarget.dataset.lpUsarDotacion; recomendar(); });
+      caja.querySelector('[data-lp-usar-rendimiento]')?.addEventListener('click', e => { form.rendimientoPlan.value = e.currentTarget.dataset.lpUsarRendimiento; recomendar(); });
+    }
+    for (const c of [form.cantidad, form.unidad, form.rendimientoPlan, form.dotacion, form.actividad]) c.addEventListener('input', recomendar);
+    limitesSemana(); recomendar();
+
     async function persistir({estado = null, reprogramarA = null} = {}) {
       if (guardando) return;
       const v = Object.fromEntries(new FormData(form)), autor = String(v.autor || '').trim(), at = new Date().toISOString();
       if (!autor) { mensaje.textContent = 'Indica quién registra.'; form.autor.focus(); return; }
-      const valores = {...v, level: form.level.value, semana: form.semana.disabled ? act.semana : v.semana, recintos, restricciones};
+      const valores = {...v, level: form.level.value, semana: form.semana.disabled ? act.semana : v.semana, responsable: v.responsable === '__otro' ? v.responsableOtro : v.responsable, recintos, restricciones};
       let cambios;
       try {
         if (!act) cambios = [{actividad: M.nuevaActividad(valores, {id: crypto.randomUUID(), autor, at}), versionEsperada: 0}];

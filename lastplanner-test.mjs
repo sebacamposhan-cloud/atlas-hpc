@@ -38,7 +38,26 @@ assert.throws(() => M.cambiarEstado(intermedia, 'En ejecución', {}, {autor, at}
 const editada = M.editarActividad(a, {...base, cantidad: 150}, {autor, at});
 assert.equal(editada.cantidad, 150); assert.match(editada.historial.at(-1).detalle, /Editó cantidad/);
 assert.equal(M.editarActividad(a, base, {autor, at}), a, 'sin cambios devuelve la misma actividad');
-assert.equal(M.editarActividad(intermedia, {...base, semana: '2026-W45', restricciones: intermedia.restricciones}, {autor, at}).historial.at(-1).detalle, 'Comprometida en la semana 2026-W45');
+const comprometida = M.editarActividad(intermedia, {...base, semana: '2026-W45', ...M.ajustarFechasASemana(base, '2026-W45'), restricciones: intermedia.restricciones}, {autor, at});
+assert.equal(comprometida.historial.at(-1).detalle, 'Comprometida en la semana 2026-W45');
+assert.deepEqual([comprometida.inicioPlan, comprometida.finPlan], ['2026-11-02', '2026-11-04'], 'las fechas se mueven con la semana');
+
+// Semana y fechas coherentes: lo comprometido se planifica dentro de su semana.
+assert.throws(() => M.nuevaActividad({...base, inicioPlan: '2026-11-02', finPlan: '2026-11-03'}, {id: 'x', autor, at}), /dentro de la semana 44 \(26-10-2026 al 01-11-2026\)/);
+assert.throws(() => M.editarActividad(a, {...base, semana: '2026-W45'}, {autor, at}), /dentro de la semana 45/, 'cambiar de semana sin mover las fechas no pasa');
+assert.equal(M.nuevaActividad({...base, semana: null, inicioPlan: '2026-12-01', finPlan: '2026-12-20'}, {id: 'x', autor, at}).finPlan, '2026-12-20', 'en el plan intermedio las fechas son libres');
+assert.deepEqual(M.ajustarFechasASemana({inicioPlan: '2026-10-29', finPlan: '2026-11-03'}, '2026-W50'), {inicioPlan: '2026-12-10', finPlan: '2026-12-13'}, 'conserva el día de la semana y no pasa del domingo');
+assert.deepEqual(M.ajustarFechasASemana({inicioPlan: '2026-10-27', finPlan: '2026-10-28'}, '2026-W44'), {inicioPlan: '2026-10-27', finPlan: '2026-10-28'});
+assert.deepEqual(M.ajustarFechasASemana({inicioPlan: null, finPlan: null}, '2026-W50'), {inicioPlan: null, finPlan: null});
+
+// Dotación recomendada a partir del rendimiento por persona al día y los días hábiles disponibles.
+assert.deepEqual(M.dotacionRecomendada(30, 10, 5), {personas: 1, exacta: 0.6, dias: 5, diasNecesarios: 3}, '30 m² a 10 m² por persona al día: 1 persona, 3 días');
+assert.equal(M.dotacionRecomendada(120, 10, 3).personas, 4); assert.equal(M.dotacionRecomendada(150, 10, 5).personas, 3, 'justo al límite no suma una persona más');
+assert.equal(M.dotacionRecomendada(30, 0, 5), null); assert.equal(M.dotacionRecomendada(null, 10, 5), null);
+assert.equal(M.diasDisponibles(a), 3, 'lunes a miércoles'); assert.equal(M.diasDisponibles({...a, inicioPlan: null, finPlan: null}), 5, 'sin fechas, la semana completa'); assert.equal(M.diasDisponibles({...a, semana: null, inicioPlan: null, finPlan: null}), null);
+const conRendimiento = M.editarActividad(a, {...base, rendimientoPlan: '12.5'}, {autor, at});
+assert.equal(conRendimiento.rendimientoPlan, 12.5); assert.match(conRendimiento.historial.at(-1).detalle, /rendimiento por persona/);
+assert.throws(() => M.nuevaActividad({...base, rendimientoPlan: '-3'}, {id: 'x', autor, at}), /rendimiento/);
 
 // Cierre: cumplida exige el 100 %, fechas reales y calcula días hábiles; no cumplida exige causa.
 const enCurso = M.cambiarEstado(a, 'En ejecución', {}, {autor, at, hoy: '2026-10-26'});

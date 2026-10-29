@@ -23,6 +23,14 @@ El panel tiene cinco vistas.
   - Los promedios son ponderados: total ejecutado ÷ total de días.
   - El rendimiento por persona-día usa solo los registros que tienen dotación, y el rendimiento por HH solo los que tienen horas.
 - **Semanas:** son semanas ISO, de lunes a domingo, en la hora de Chile (America/Santiago).
+- **Semana y fechas:** en una actividad comprometida, las fechas planificadas deben quedar dentro de su semana. Un trabajo más largo se divide por semanas; las actividades sin semana (plan intermedio) tienen fechas libres.
+  - Una actividad nueva parte de lunes a viernes de la semana elegida.
+  - Al cambiarla de semana, o al comprometerla desde el intermedio, las fechas se mueven con ella: mismo día de la semana y misma duración, sin pasar del domingo.
+- **Responsable:** se elige de la lista de subcontratos de la obra (`dist/subcontratos.mjs`, con su especialidad) o se escribe con «Otro…». La lista viene de las capturas que se usaron para Estados de pago, más Valcompany; no lleva precios.
+- **Dotación recomendada:** con la cantidad, el rendimiento por persona al día y los días hábiles del plazo (de lunes a viernes de la semana si no hay fechas), se calcula `personas = cantidad ÷ (rendimiento × días)`, redondeado hacia arriba.
+  - Ejemplo: 30 m² a 10 m² por persona al día en 5 días da 1 persona, que termina en 3 días.
+  - Si la dotación ingresada no alcanza, el formulario dice cuánto se lograría, y el plan semanal marca la dotación recomendada en rojo.
+  - Si Atlas ya tiene rendimientos reales de esa actividad y unidad, los propone con «Usar este rendimiento».
 
 ## En el plano
 

@@ -54,6 +54,14 @@ dialog.lpDialog.lpAncho { width: min(1000px, 96vw); }
 .lpForm .lpSeccion h3 { font-size: 12px; margin: 0; text-transform: uppercase; letter-spacing: .5px; }
 .lpForm .lpSeccion h3 small { color: #2c3a50; font-weight: 400; }
 .lpTres { grid-template-columns: 1fr 1.4fr 1.4fr; }
+.lpForm .lpAncho2 { grid-column: 1 / -1; }
+.lpNotaSemana { font-weight: 400; font-size: 11px; color: #262626; }
+.lpForm input[name=responsableOtro] { margin-top: 6px; }
+.lpRecomendacion { border: 1px solid var(--g-marca, #1b2a56); border-left: 6px solid var(--g-azul, #0f5499); background: #fff; padding: 10px 12px; font-size: 13px; display: grid; gap: 6px; justify-items: start; }
+.lpRecomendacion p { margin: 0; line-height: 1.5; color: #000; }
+.lpRecomendacion button { font-size: 12px; min-height: 34px; }
+.lpRecomendacion .lpAlerta { color: #c21f1f; font-weight: 600; }
+.lpRecomendacion .lpHistorico { border-top: 1px solid #8c8c8c; padding-top: 6px; }
 .lpElegidos { display: flex; flex-wrap: wrap; gap: 6px; }
 .lpChip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; background: #fff; color: #000; border: 1px solid var(--g-marca, #1b2a56); padding: 2px 2px 2px 8px; }
 .lpChip button { border: 0; background: transparent; min-height: 26px; width: 26px; padding: 0; font-size: 16px; border-radius: 50%; }
