@@ -25,10 +25,10 @@ export async function renderRoomProgress(root,room,esc,afterSave=()=>{}){
  form.onsubmit=async e=>{e.preventDefault();const button=form.querySelector('[type=submit]');button.disabled=true;try{const value={...values(),version:version+1,at:new Date().toISOString()};await saveProgress(value,version);sessionStorage.removeItem(draftKey);await renderRoomProgress(root,room,esc,afterSave);if(root.isConnected)root.querySelector('.progressFeedback').textContent='Avance guardado con historial.';afterSave();}catch(error){feedback.textContent=error.message;button.disabled=false;}};
  }catch(error){if(root.isConnected){root.textContent=error.message;const b=document.createElement('button');b.textContent='Reintentar';b.onclick=()=>renderRoomProgress(root,room,esc,afterSave);root.append(b);}}
 }
-export async function renderProgressControl(root,ctx){
+export async function renderProgressControl(root,ctx,initial={}){
  if(!progressFloors[nivel.id]){root.textContent='Elige un piso de trabajo.';return;}
  root.textContent='Cargando avance de '+nivel.nombre+'…';
- try{const model=await loadPma();let snapshot=await readProgress(),query='',sector='',status='',family='',asepsis='',filtersOpen=false,selected=null,focus=null,detailPage=0;const esc=ctx.esc;
+ try{const model=await loadPma();let snapshot=await readProgress(),query='',sector='',status=initial.status||'',family='',asepsis='',filtersOpen=false,selected=null,focus=initial.focus||null,detailPage=0;const esc=ctx.esc;
  const refresh=async()=>{snapshot=await readProgress();if(root.isConnected)draw();};
  function draw(){if(!root.isConnected)return;const all=reportProgress(model,ctx.rooms(),snapshot.records,nivel.id);let rows=all.rows.filter(r=>(!sector||r.room.sector===sector)&&(!asepsis||r.tasks.some(t=>t.asepsis===asepsis))&&(!query||[r.room.code,r.room.name].join(' ').toLowerCase().includes(query.toLowerCase()))&&(!status||(status==='complete'?r.complete:status==='observed'?r.tasks.some(t=>t.quality==='Con observaciones'):status==='unregistered'?r.tasks.some(t=>t.installation==='Sin registrar'):!r.complete)));
  const tasks=rows.flatMap(r=>r.tasks).filter(t=>t.documented&&(!family||t.field===family)),installed=tasks.filter(t=>t.installation==='Instalado').length,accepted=tasks.filter(t=>t.installation==='Instalado'&&t.quality==='Conforme').length;
@@ -62,5 +62,6 @@ export async function renderProgressControl(root,ctx){
  if(selected)renderRoomProgress(root.querySelector('#progressEditor'),selected,esc);
  }
  draw();
- }catch(error){if(root.isConnected){root.textContent=error.message;const b=document.createElement('button');b.textContent='Reintentar';b.onclick=()=>renderProgressControl(root,ctx);root.append(b);}}
+ if(root.isConnected&&initial.focus)root.querySelector('#progressEvidence')?.scrollIntoView({block:'start'});
+ }catch(error){if(root.isConnected){root.textContent=error.message;const b=document.createElement('button');b.textContent='Reintentar';b.onclick=()=>renderProgressControl(root,ctx,initial);root.append(b);}}
 }
