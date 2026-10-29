@@ -41,7 +41,8 @@ Para sumar un piso desde sus láminas DWG, sigue `scripts/dwg-plano/LEEME.md` (e
 - azul marino de la marca en la barra lateral, los bordes, los encabezados de tabla y los títulos de diálogo;
 - azul sólido en lo seleccionado y en los botones principales;
 - cian como acento;
-- texto negro, ángulos rectos y sin sombras.
+- títulos y texto en negro, ángulos rectos y sin sombras;
+- fuente Google Sans Flex, guardada en `dist/fonts/` para que funcione sin conexión (licencia SIL OFL 1.1 en `dist/fonts/OFL.txt`).
 
 El verde, el ámbar y el rojo quedan solo para estados. Los tonos de marca se leyeron del logo y están como variables al inicio del archivo: si el manual de Sacyr da otros códigos, se cambian ahí. No modifica los estilos de cada módulo; para volver al aspecto anterior basta quitar su `<link>` de `dist/index.html`.
 

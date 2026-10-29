@@ -427,7 +427,7 @@ export function createLastPlanner(ctx) {
       g.globalAlpha = .5; g.fillStyle = c; g.fill(new Path2D(d), 'evenodd'); g.globalAlpha = 1; g.strokeStyle = c; g.lineWidth = 2 / f; g.stroke(new Path2D(d));
     }
     // Número de cada actividad sobre sus recintos (el mismo del listado).
-    g.setTransform(1, 0, 0, 1, 0, 0); g.font = '600 15px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.setTransform(1, 0, 0, 1, 0, 0); g.font = '600 15px "Google Sans Flex", "Segoe UI", system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
     for (const e of porRecinto.values()) {
       const [px, py] = ctx.position(e.room), x = (px - x0) * f, y = (py - y0) * f, t = e.acts.map(a => a.n).join(','), ancho = g.measureText(t).width + 12;
       g.fillStyle = '#ffffffee'; g.strokeStyle = '#1b2a56'; g.lineWidth = 1.2; g.beginPath(); if (g.roundRect) g.roundRect(x - ancho / 2, y - 11, ancho, 22, 6); else g.rect(x - ancho / 2, y - 11, ancho, 22); g.fill(); g.stroke();
