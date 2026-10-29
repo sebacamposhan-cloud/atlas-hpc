@@ -2,3 +2,4 @@
 * text=auto
 # Preserve vendored upstream bytes used by provenance and offline SHA-256 checks.
 dist/vendor/contour/** -text
+*.woff2 binary

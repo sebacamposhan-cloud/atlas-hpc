@@ -34,6 +34,30 @@ Validación de navegación: `PLAYWRIGHT_MODULE=<ruta-a-playwright-core> node flo
 
 Para sumar un piso desde sus láminas DWG, sigue `scripts/dwg-plano/LEEME.md` (extraer, recintos, mosaicos e `scripts/import-dwg.mjs`). Después agrega una línea en `dist/pisos.js`, en `otherLevels` de `server/groq-server.mjs` y en `pmaLevels` de `dist/pma-model.mjs`, y ejecuta `node scripts/prepare-offline.mjs` y `node pisos-test.mjs`.
 
+## Aspecto gerencial
+
+`dist/gerencial.css` se carga al final y da a toda la app un aspecto de informe de gestión con los colores de Sacyr:
+- fondo blanco, sin tonos claros ni pastel;
+- azul marino de la marca en la barra lateral, los bordes, los encabezados de tabla y los títulos de diálogo;
+- azul sólido en lo seleccionado y en los botones principales;
+- cian como acento;
+- títulos y texto en negro, ángulos rectos y sin sombras;
+- fuente Google Sans Flex, guardada en `dist/fonts/` para que funcione sin conexión (licencia SIL OFL 1.1 en `dist/fonts/OFL.txt`).
+
+El verde, el ámbar y el rojo quedan solo para estados. Los tonos de marca se leyeron del logo y están como variables al inicio del archivo: si el manual de Sacyr da otros códigos, se cambian ahí. No modifica los estilos de cada módulo; para volver al aspecto anterior basta quitar su `<link>` de `dist/index.html`.
+
+## Last Planner · plan de producción
+
+Control de obra → **Last Planner** reúne la planificación semanal de la obra:
+- plan intermedio con restricciones (puntos de bloqueo) por liberar;
+- compromisos por semana con sector, frente, recintos, responsable y cantidad;
+- cierre al 100 % o con causa de no cumplimiento, y reprogramación del saldo;
+- PPC con gráficos por semana, responsable y sector;
+- reuniones de producción con asistencia, frentes de trabajo y acuerdos;
+- rendimientos reales (por día, persona-día y HH) con un estimador de duración.
+
+«Ver en el plano» pinta los recintos de la semana. «Reporte con plano» arma una hoja imprimible o en PDF con el plano numerado. Los datos se guardan en el equipo, con respaldo JSON. [Reglas y uso](docs/LAST_PLANNER.md). Prueba: `node lastplanner-test.mjs`.
+
 ## Observaciones en terreno con fotos
 
 Desde la ficha de cualquier recinto, «+ Observación con foto» abre la cámara del celular (solo cámara, fotos tomadas en el lugar) y registra qué se observa, terminación, categoría, prioridad, responsable y plazo. Tocando el recinto se ven sus observaciones con las miniaturas de sus fotos.

@@ -121,7 +121,7 @@ body.floorHome .bottomNav button:not(#bottomMap):not(#bottomOffline){display:non
 @media(max-width:700px){.avanceMontos,.avanceCampos{grid-template-columns:1fr 1fr}.avanceCabecera{grid-template-columns:1fr}}
 
 /* Control de obra: paneles con el formato de tarjeta del explorador de pisos. */
-.panelGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.panelGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;max-width:1100px}
 .panelCard .floorCardLink,.panelCard .floorCardLink:hover{width:100%;border:0;border-radius:0;background:none;padding:0;margin:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-height:0;white-space:normal;box-shadow:none}
 .panelCard .floorCardLink{display:flex;flex-direction:column}.panelCard .floorCardInfo{flex:1;align-items:flex-start}.panelCard .floorCardInfo>span:first-child{display:block;min-width:0}.panelTitle{display:block;font-size:19px;margin:0 0 5px;letter-spacing:-.4px;font-weight:650;color:#1d2a33;line-height:1.25}.panelText{display:block;font-size:11px;color:#74818d;line-height:1.5}
 .panelCard .floorPreview{height:clamp(112px,16dvh,150px)}.panelArt{width:min(66%,190px);height:auto;fill:none;stroke:#8395a2;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}

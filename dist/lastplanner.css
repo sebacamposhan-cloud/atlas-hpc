@@ -1,0 +1,164 @@
+/* Last Planner: panel de Control de obra, formularios (pantalla completa en el celular) y reporte semanal imprimible. */
+.lpIntro { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.lpIntro > div:first-child { flex: 1 1 340px; }
+.lpBarra { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+.lpBarra label:not(.obsImportar) { display: grid; gap: 4px; font-size: 11px; }
+.lpBarra button, .lpBarra .obsImportar { font-size: 12px; }
+.lpSemana { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 16px; }
+.lpSemana strong { font-size: 15px; min-width: 230px; text-align: center; }
+.lpSemana button[data-lp-semana="-1"], .lpSemana button[data-lp-semana="1"] { width: 40px; min-height: 40px; font-size: 20px; padding: 0; }
+.lpHoy { font-size: 10px; color: #fff; background: var(--g-cian, #29a8df); padding: 5px 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+.lpKpi { text-align: left; color: inherit; font: inherit; border-left: 4px solid var(--c, var(--line)); }
+button.lpKpi { cursor: pointer; white-space: normal; }
+.lpKpi > b { color: var(--c, inherit); }
+.lpKpi small { display: block; font-size: 11px; color: #687784; margin-top: 6px; line-height: 1.4; }
+.lpGrid { margin-top: 6px; }
+.lpGrid > section:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.lpLinea { font-size: 13px; margin: 0 0 6px; }
+.lpPPC { width: 100%; max-height: 220px; display: block; }
+.lpPPC text { font-size: 11px; fill: #000; font-weight: 700; }
+.lpPPC text.eje { fill: var(--g-texto2, #2c3a50); font-weight: 400; font-size: 10px; }
+.lpPPC .meta { stroke: var(--g-azul, #0f5499); stroke-dasharray: 4 3; fill: #000; font-size: 9px; font-weight: 400; stroke-width: 1; }
+.lpPPC text.meta { stroke: none; }
+.lpPPC g.abierta rect:last-of-type { opacity: .45; }
+.lpPPC g[role=button] { cursor: pointer; }
+.lpPPC g[role=button]:hover rect:nth-of-type(2), .lpPPC g[role=button]:focus-visible rect:nth-of-type(2) { stroke: var(--g-marca, #1b2a56); stroke-width: 1.5; }
+.lpPPC g:focus { outline: none; }
+.lpPctRow { grid-template-columns: 9px minmax(0, 1fr) 46px; }
+.lpPctRow small { color: #2c3a50; font-size: 10px; }
+.lpScroll { overflow: auto; }
+.lpTabla { width: 100%; border-collapse: collapse; font-size: 12px; }
+.lpTabla th { background: #f7fafb; text-align: left; color: #627480; font-weight: 650; padding: 11px; white-space: nowrap; }
+.lpTabla td { padding: 11px; border-top: 1px solid var(--line); vertical-align: top; }
+.lpTabla td:nth-child(2) { min-width: 200px; }
+.lpTablaCorta td:nth-child(2) { min-width: 140px; }
+.lpTabla td:first-child { min-width: 0; }
+.lpTablaCorta td:first-child { min-width: 200px; }
+.lpTabla small { color: #2c3a50; font-size: 11px; }
+.lpTabla .obsChip, .lpTabla td[data-label="Plazo"], .lpTabla td[data-label="Compromiso"] { white-space: nowrap; }
+.lpTabla td button:not(.obsOpenRecord) { font-size: 12px; min-height: 36px; }
+.lpGrupo { font-size: 12px; margin: 18px 0 8px; color: #000; text-transform: uppercase; letter-spacing: .5px; border-bottom: 2px solid var(--g-marca, #1b2a56); padding-bottom: 4px; }
+.lpGrupo small { color: #2c3a50; font-weight: 400; margin-left: 4px; }
+.lpAcuerdos { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: 12px; }
+.lpAcuerdos small { display: block; color: #2c3a50; font-size: 11px; margin-top: 2px; }
+.lpDetalle { margin-top: 6px; font-size: 11px; }
+.lpDetalle summary { color: #000; text-decoration: underline; }
+.lpDetalle table { margin-top: 6px; }
+.lpEstimador { margin-bottom: 16px; }
+.lpEstimador .obsFiltros { grid-template-columns: 2fr 1fr 1fr; border: 0; padding: 0; }
+.lpEstimador .lpLinea { margin-top: 12px; }
+
+/* Formularios */
+dialog.lpDialog.lpAncho { width: min(1000px, 96vw); }
+.lpForm .lpSeccion { border-top: 2px solid var(--g-marca, #1b2a56); padding-top: 10px; display: grid; gap: 8px; }
+.lpForm .lpSeccion h3 { font-size: 12px; margin: 0; text-transform: uppercase; letter-spacing: .5px; }
+.lpForm .lpSeccion h3 small { color: #2c3a50; font-weight: 400; }
+.lpTres { grid-template-columns: 1fr 1.4fr 1.4fr; }
+.lpElegidos { display: flex; flex-wrap: wrap; gap: 6px; }
+.lpChip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; background: #fff; color: #000; border: 1px solid var(--g-marca, #1b2a56); padding: 2px 2px 2px 8px; }
+.lpChip button { border: 0; background: transparent; min-height: 26px; width: 26px; padding: 0; font-size: 16px; border-radius: 50%; }
+.lpBuscarRecinto input { width: 100%; box-sizing: border-box; }
+.lpResultados { display: grid; gap: 4px; max-height: 220px; overflow: auto; margin-top: 6px; }
+.lpResultados button { text-align: left; white-space: normal; font-size: 12px; min-height: 38px; }
+.lpResultados button small { color: #2c3a50; margin-left: 4px; }
+.lpResultados .lpTodos { background: var(--g-azul, #0f5499); color: #fff; font-weight: 700; }
+.lpRestricciones { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.lpRestricciones li { display: flex; gap: 8px; align-items: center; border: 1px solid var(--g-marca, #1b2a56); border-left: 6px solid #c26a00; padding: 8px 10px; font-size: 12px; background: #fff; }
+.lpRestricciones li > div { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.lpRestricciones li small { display: block; color: #2c3a50; font-size: 11px; margin-top: 2px; }
+.lpRestricciones li.vencida { border-left-color: #c21f1f; }
+.lpRestricciones li.liberada { border-left-color: #1a7f37; color: #2c3a50; }
+.lpRestricciones li.lpVacio { border: 0; padding: 0; color: #2c3a50; font-size: 11px; }
+.lpRestricciones button { font-size: 12px; min-height: 36px; flex: none; }
+.lpNuevaRestriccion { display: grid; grid-template-columns: 1.2fr 2fr 1.2fr 1fr auto; gap: 6px; }
+.lpNuevaRestriccion input, .lpNuevaRestriccion select { font-size: 14px !important; min-width: 0; }
+.lpQuitar { width: 36px; min-height: 36px; padding: 0; font-size: 18px; flex: none; }
+.lpReprogramar { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; margin-top: 10px; }
+.lpReprogramar label { flex: 1 1 220px; }
+.lpFila { display: grid; gap: 6px; align-items: center; margin-bottom: 6px; }
+.lpFila input, .lpFila select { font-size: 14px !important; min-width: 0; width: 100%; box-sizing: border-box; }
+.lpFila .check { display: flex; flex-direction: row; gap: 5px; align-items: center; font-weight: 400; white-space: nowrap; }
+.lpFilaAsistente { grid-template-columns: 1.4fr 1.2fr 1fr auto auto; }
+.lpFilaFrente { grid-template-columns: 1fr .6fr 1.6fr 1.2fr .7fr 1fr 1.2fr auto; }
+.lpFilaAcuerdo { grid-template-columns: 2.4fr 1.2fr 1fr auto auto; }
+.lpBotones { display: flex; gap: 8px; flex-wrap: wrap; }
+.lpForm footer [data-lp-eliminar] { margin-left: auto; color: #c21f1f; border-color: #c21f1f; }
+
+/* Reporte semanal */
+.lpReporte { position: fixed; inset: 0; z-index: 90; background: #fff; overflow: auto; padding: 0 16px 32px; }
+.lpReporteBarra { position: sticky; top: 0; z-index: 1; display: flex; gap: 8px; align-items: center; justify-content: flex-end; flex-wrap: wrap; padding: 12px 0; background: #fff; border-bottom: 3px solid var(--g-marca, #1b2a56); margin-bottom: 16px; }
+.lpReporteBarra span { margin-right: auto; font-size: 12px; color: #000; }
+.lpHoja { background: white; max-width: 1050px; margin: 0 auto; padding: 32px 36px; border: 1px solid var(--g-marca, #1b2a56); color: #000; font-size: 12px; }
+.lpHoja h1 { font-size: 22px; margin: 4px 0; font-weight: 800; }
+.lpHoja h2 { font-size: 12px; margin: 22px 0 8px; color: #000; border-bottom: 2px solid var(--g-marca, #1b2a56); padding-bottom: 4px; text-transform: uppercase; letter-spacing: .6px; }
+.lpHoja h3 { font-size: 12px; margin: 12px 0 4px; }
+.lpHojaCabecera { display: flex; justify-content: space-between; gap: 16px; border-bottom: 3px solid var(--g-marca, #1b2a56); padding-bottom: 12px; }
+.lpHojaCabecera small { letter-spacing: .6px; color: #000; font-weight: 700; font-size: 10px; }
+.lpHojaCabecera p { margin: 0; font-size: 13px; }
+.lpHojaFecha { text-align: right; font-size: 11px; color: #2c3a50; }
+.lpDatos { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+.lpDatos > div { border: 1px solid var(--g-marca, #1b2a56); border-top: 4px solid var(--g-marca, #1b2a56); padding: 8px 10px; }
+.lpDatos span { display: block; font-size: 9px; color: #000; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; }
+.lpDatos b { display: block; font-size: 20px; margin-top: 2px; font-weight: 800; }
+.lpDatos small { font-size: 10px; color: #2c3a50; }
+.lpHojaPlano figure { margin: 0; }
+.lpPlanoImagen img { width: 100%; height: auto; max-height: 75vh; object-fit: contain; display: block; border: 1px solid var(--g-marca, #1b2a56); background: #fff; }
+.lpHojaPlano figcaption { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 11px; margin-top: 6px; align-items: center; }
+.lpHojaPlano figcaption i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+.lpHojaPlano figcaption small { flex-basis: 100%; color: #2c3a50; }
+.lpHojaTabla { width: 100%; border-collapse: collapse; font-size: 11px; }
+.lpHojaTabla th { text-align: left; background: var(--g-marca, #1b2a56); color: #fff; padding: 6px; font-weight: 700; text-transform: uppercase; font-size: 9.5px; letter-spacing: .4px; }
+.lpHojaTabla td { padding: 6px; border-bottom: 1px solid var(--g-regla, #8c8c8c); vertical-align: top; }
+.lpHojaTabla small { color: #2c3a50; }
+.lpPunto { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--c); margin-right: 5px; }
+.lpHojaDos { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.lpHojaDos .lpPPC { max-height: 180px; }
+.lpFirmas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-top: 56px; }
+.lpFirmas div { border-top: 1px solid var(--g-marca, #1b2a56); padding-top: 6px; text-align: center; font-size: 11px; }
+
+@media (max-width: 1000px) {
+  .lpFilaFrente { grid-template-columns: 1fr 1fr 2fr; }
+  .lpFilaFrente .lpQuitar { justify-self: end; }
+}
+@media (max-width: 700px) {
+  .lpSemana strong { min-width: 0; flex: 1; font-size: 13px; }
+  .lpEstimador .obsFiltros, .lpTres { grid-template-columns: 1fr; }
+  .lpNuevaRestriccion { grid-template-columns: 1fr 1fr; }
+  .lpNuevaRestriccion input[data-r="descripcion"] { grid-column: 1 / -1; order: -1; }
+  .lpFilaAsistente { grid-template-columns: 1fr 1fr auto; }
+  .lpFilaAsistente input[data-k="nombre"] { grid-column: 1 / -1; }
+  .lpFilaFrente { grid-template-columns: 1fr 1fr auto; }
+  .lpFilaFrente input[data-k="frente"] { grid-column: 1 / -1; order: -1; }
+  .lpFilaAcuerdo { grid-template-columns: 1fr 1fr auto; }
+  .lpFilaAcuerdo input[data-k="texto"] { grid-column: 1 / -1; }
+  .lpFila { border-bottom: 1px solid var(--g-marca, #1b2a56); padding-bottom: 8px; }
+  .lpTabla, .lpTabla tbody { display: block; }
+  .lpTabla thead { display: none; }
+  .lpTabla tr { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; background: white; border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+  .lpTabla td, .lpTabla td:nth-child(2), .lpTablaCorta td:first-child { display: block; padding: 0; border: 0; min-width: 0; overflow-wrap: anywhere; }
+  .lpTabla td::before { content: attr(data-label); display: block; font-size: 10px; color: #71838e; margin-bottom: 3px; }
+  .lpTabla td[data-label="Actividad"], .lpTabla td[data-label="Restricción"] { grid-column: 1 / -1; }
+  .lpTabla td[data-label="N°"]::before, .lpTabla td[data-label="Actividad"]::before { display: none; }
+  .lpReporte { padding: 0 6px 20px; }
+  .lpHoja { padding: 16px 12px; }
+  .lpDatos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lpHojaDos { grid-template-columns: 1fr; }
+  .lpHojaTabla { display: block; overflow-x: auto; }
+}
+/* Impresión: solo la hoja del reporte, en A4. */
+@media print {
+  @page { size: A4; margin: 12mm; }
+  html:has(body.lpReporteAbierto), body.lpReporteAbierto { height: auto !important; overflow: visible !important; background: white !important; }
+  body.lpReporteAbierto > *:not(#lpReporte) { display: none !important; }
+  body.lpReporteAbierto #lpReporte { position: static; padding: 0; background: none; overflow: visible; }
+  .lpReporteBarra { display: none !important; }
+  .lpHoja { box-shadow: none; max-width: none; padding: 0; font-size: 10.5px; }
+  .lpHoja section, .lpDatos, .lpFirmas { break-inside: avoid; }
+  .lpHoja section:has(.lpHojaTabla) { break-inside: auto; }
+  .lpHojaTabla tr { break-inside: avoid; }
+  .lpHojaTabla { display: table; }
+  .lpPlanoImagen img { max-height: 165mm; }
+  .lpDatos { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .lpHojaDos { grid-template-columns: 1fr 1fr; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
