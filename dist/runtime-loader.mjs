@@ -18,9 +18,10 @@ export function loadRuntime() {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 15000);
     try {
-      const response = await fetch(datos('runtime.json'), {signal: controller.signal});
+      // contornos.json: correcciones del editor interno de contornos; si falta, el plano usa sus contornos originales.
+      const [response, contornos] = await Promise.all([fetch(datos('runtime.json'), {signal: controller.signal}), fetch(datos('contornos.json'), {signal: controller.signal}).then(r => r.ok ? r.json() : null).catch(() => null)]);
       if (!response.ok) throw new Error('No se pudieron cargar las fichas. Reintenta con conexión.');
-      return decodeRuntime(await response.json());
+      return {...decodeRuntime(await response.json()), contornos: contornos?.recintos || []};
     } catch (error) {
       pending = null;
       if (error.name === 'AbortError') throw new Error('La conexión está tardando. Reintenta; el plano guardado se abre sin internet.');

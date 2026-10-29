@@ -3,7 +3,7 @@ import {documentedLayerColors} from './documented-layer-colors.mjs';
 // Shared documentary categories. Empty fields never acquire a fabricated finish.
 export const UNKNOWN='Pendiente de identificación';
 export const layerNames={asepsis:'Asepsia',PAV:'Pavimentos',paint:'Pinturas',CIE:'Cielos',walls:'Muros',status:'Validación',sector:'Sectores',selected:'Selección'};
-// Capas calculadas por otros módulos (p. ej. liberacion.mjs): {nombre, categories(r), color(key), opacity}.
+// Capas calculadas por otros módulos (p. ej. avance de obra u observaciones): {nombre, categories(r), color(key), opacity}.
 export const dynamicLayers={};
 export function registerLayer(type,layer){dynamicLayers[type]=layer;layerNames[type]=layer.nombre;}
 export function categories(r,type){

@@ -1,6 +1,6 @@
 # Control de obra y búsqueda dentro del plano
 
-La navegación principal contiene Control de obra, Explorador de planos y Liberación de frentes. La selección de piso mantiene las cuatro tarjetas existentes. No se añade un visor nuevo.
+La navegación principal contiene Control de obra y Explorador de planos. Liberación de frentes se archivó el 28 de octubre de 2026 ([archivo/semaforo-liberacion/](../archivo/semaforo-liberacion/LEEME.md)); el enlace antiguo `#modulo=liberacion` abre el plano. La selección de piso mantiene las cuatro tarjetas existentes. No se añade un visor nuevo.
 
 ## Filtros en el plano
 
@@ -9,7 +9,7 @@ El botón «Filtros» de la barra derecha abre un panel junto al plano en escrit
 - Consulta por código, nombre o terminación, sincronizada con la búsqueda superior.
 - Búsqueda de categorías por texto, sin distinguir tildes; selección múltiple por familia.
 - Unión dentro de una familia e intersección entre familias, asepsia, sector y revisión.
-- Muros, pavimentos, cielos, liberación, asepsia, pinturas, sectores y estado de revisión. Los datos disponibles determinan las categorías.
+- Muros, pavimentos, cielos, asepsia, pinturas, sectores y estado de revisión. Los datos disponibles determinan las categorías.
 - Total de coincidencias de la consulta; conteos de categoría identificados como totales del piso completo.
 - Encendido/apagado de colores, preferencias personales, procedencia documental y restablecimiento de paleta compartidos con el modelo existente.
 - Zoom conservado durante el ajuste; filtros conservados al cerrar/reabrir. Una coincidencia no interrumpe la configuración abriendo una ficha. Seleccionar un recinto en el mapa cierra el panel y permite consultar su ficha.
@@ -23,7 +23,7 @@ El botón «Filtros» de la barra derecha abre un panel junto al plano en escrit
 
 - El panel **Avances y protocolos** se retiró de Control de obra (octubre de 2026).
 - `construction-dashboard.mjs` queda en el repositorio sin usarse, y los registros locales de ese panel siguen en IndexedDB: no se borran.
-- **Características del piso** y **Estados de pago** se retiraron de Control de obra el 28 de octubre de 2026, por decisión del jefe de producción. Los atributos documentales (pavimentos, cielos, muros, asepsia, sector, liberación) siguen disponibles en el plano desde **Filtros**. El enlace antiguo `#modulo=dashboard` abre la lista de paneles de Control de obra. Estados de pago se eliminó de la app completa ([PAYMENTS.md](PAYMENTS.md)).
+- **Características del piso** y **Estados de pago** se retiraron de Control de obra el 28 de octubre de 2026, por decisión del jefe de producción. Los atributos documentales (pavimentos, cielos, muros, asepsia, sector) siguen disponibles en el plano desde **Filtros**. El enlace antiguo `#modulo=dashboard` abre la lista de paneles de Control de obra. Estados de pago se eliminó de la app completa ([PAYMENTS.md](PAYMENTS.md)).
 
 Las tortas se usan para categorías excluyentes. Las terminaciones que pueden solaparse conservan barras. El denominador es el conjunto de registros, nunca un total previsto de obra no documentado. Sin eventos, el estado es «Sin registrar»; sin registros, el gráfico indica que no hay datos. No se calculan m² ejecutados, avance global ni cumplimiento sin bases suficientes.
 

@@ -1,10 +1,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import {createRequire} from 'node:module';
 import {createAtlasServer} from './server/groq-server.mjs';
 import {decodeRuntime} from './dist/runtime-loader.mjs';
-import {leerLibro,calcular} from './dist/liberacion.mjs';
 
 // Cada piso de pisos.js debe traer datos completos en el formato de Atlas.
 const sandbox = {window: {}, location: {search: ''}, URLSearchParams, document: {currentScript: {src: 'http://x/pisos.js'}, querySelectorAll: () => []}};
@@ -55,20 +53,11 @@ for (const piso of pisos) {
   resumen[piso.id] = data.rooms.length;
 }
 const offline = JSON.parse(fs.readFileSync('dist/sw.js', 'utf8').match(/self\.ATLAS_OFFLINE = (.*);\n/)[1]);
-for (const core of ['/pisos.js', '/level.mjs', '/liberacion.mjs']) assert(offline.files.some(f => f.url === core && f.core), core + ' debe estar en el núcleo sin conexión');
+for (const core of ['/pisos.js', '/level.mjs']) assert(offline.files.some(f => f.url === core && f.core), core + ' debe estar en el núcleo sin conexión');
+// El semáforo de liberación se archivó en archivo/semaforo-liberacion/ (28-10-2026): no se publica ni se guarda sin conexión.
+assert(!offline.files.some(f => f.url === '/liberacion.mjs' || f.url.startsWith('/liberacion/')), 'el semáforo de liberación no debe estar en el paquete sin conexión');
 for (const piso of pisos.filter(p => p.datos)) assert(offline.files.some(f => f.url === '/' + piso.datos + 'runtime.json'), piso.id + ': sus datos deben poder guardarse sin conexión');
 assert(!offline.files.some(f => f.url !== '/index.html' && f.url.endsWith('.html')), 'el service worker solo guarda la portada como HTML');
-
-// Semáforo de liberación con el Excel de ejemplo.
-const XLSX = createRequire(import.meta.url)('./dist/vendor/xlsx.full.min.js');
-const ejemplo = leerLibro(XLSX.read(fs.readFileSync('dist/liberacion/datos-ejemplo.xlsx'), {type: 'buffer', cellDates: true}), XLSX);
-assert(ejemplo.solicitudes.length > 0 && Object.keys(ejemplo.recintos).length > 0, 'el ejemplo debe traer solicitudes y recintos');
-const n02 = decodeRuntime(JSON.parse(fs.readFileSync('dist/n02/runtime.json', 'utf8'))).data.rooms;
-const estados = {}; for (const [, c] of calcular(ejemplo, n02)) estados[c.estado] = (estados[c.estado] || 0) + 1;
-assert(estados.bloqueado > 0 && estados.restriccion > 0 && estados.liberado > 0, 'el ejemplo debe producir los tres estados: ' + JSON.stringify(estados));
-// El ejemplo solo lista recintos del nivel 2: el nivel −1 queda sin datos aunque comparta terminaciones.
-const n1 = decodeRuntime(JSON.parse(fs.readFileSync('dist/runtime.json', 'utf8'))).data.rooms;
-assert([...calcular(ejemplo, n1).values()].every(c => c.estado === 'sin-dato'), 'recintos fuera del Excel deben quedar «Sin datos»');
 
 const server = await createAtlasServer({env: {ATLAS_ACCESS_PASSWORD: 'isolated-test-password'}});
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -84,6 +73,7 @@ try {
   const sinBarra = await fetch(base + '/n02?x=1', {headers, redirect: 'manual'});
   assert.equal(sinBarra.status, 301);
   assert.equal(sinBarra.headers.get('location'), '/n02/?x=1');
-  for (const file of ['/pisos.js', '/level.mjs', '/liberacion.mjs', '/n02/runtime.json', '/n02/map/overview.webp', '/n02/map/2/8_10.webp', '/liberacion/datos-ejemplo.xlsx']) assert.equal((await fetch(base + file, {headers})).status, 200, file);
-  console.log(JSON.stringify({checks: 'passed', recintosPorPiso: resumen, semaforoEjemploN02: estados, scope: 'Datos de cada piso, plano y capas, geometrías, misma portada, redirección /n02/, contraseña, paquete sin conexión y semáforo de liberación.'}));
+  for (const file of ['/pisos.js', '/level.mjs', '/n02/runtime.json', '/n02/map/overview.webp', '/n02/map/2/8_10.webp']) assert.equal((await fetch(base + file, {headers})).status, 200, file);
+  for (const file of ['/liberacion.mjs', '/liberacion/datos-ejemplo.xlsx']) assert.equal((await fetch(base + file, {headers})).status, 404, file + ' archivado, no se publica');
+  console.log(JSON.stringify({checks: 'passed', recintosPorPiso: resumen, scope: 'Datos de cada piso, plano y capas, geometrías, misma portada, redirección /n02/, contraseña, paquete sin conexión y semáforo de liberación archivado (no se publica).'}));
 } finally { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); }
