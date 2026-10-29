@@ -7,9 +7,9 @@ import {workChart} from './work-charts.mjs';
 import * as M from './lastplanner-model.mjs';
 import {leerActividades, leerReuniones, guardarActividades, eliminarActividad, guardarReunion, eliminarReunion, exportarPlan, importarPlan} from './lastplanner-store.mjs';
 
-export const COLOR_ESTADO = {'Planificada': '#6f8faa', 'En ejecución': '#2f7fb5', 'Cumplida': '#2e9e5b', 'No cumplida': '#c62f2f'};
-export const COLORES_RECINTO = {'No cumplida': '#c62f2f', 'Con restricción': '#e0882a', 'En ejecución': '#2f7fb5', 'Planificada': '#8aa4b8', 'Cumplida': '#2e9e5b', 'Sin actividades': '#cfd5da'};
-const COLOR_FRENTE = {'Activo': '#2e9e5b', 'Detenido': '#c62f2f', 'Sin iniciar': '#8aa4b8', 'Terminado': '#6f7d88'};
+export const COLOR_ESTADO = {'Planificada': '#5c5c5c', 'En ejecución': '#1f4e99', 'Cumplida': '#1a7f37', 'No cumplida': '#c21f1f'};
+export const COLORES_RECINTO = {'No cumplida': '#c21f1f', 'Con restricción': '#c26a00', 'En ejecución': '#1f4e99', 'Planificada': '#8c8c8c', 'Cumplida': '#1a7f37', 'Sin actividades': '#d9d9d9'};
+const COLOR_FRENTE = {'Activo': '#1a7f37', 'Detenido': '#c21f1f', 'Sin iniciar': '#8c8c8c', 'Terminado': '#000000'};
 const ACCION = {'En ejecución': 'Iniciar', 'Cumplida': 'Marcar cumplida', 'No cumplida': 'No cumplida', 'Planificada': 'Volver a planificada'};
 const VISTAS = {resumen: 'Resumen', semanal: 'Plan semanal', intermedio: 'Intermedio y restricciones', reuniones: 'Reuniones y frentes', rendimientos: 'Rendimientos'};
 const hoy = () => new Intl.DateTimeFormat('en-CA', {timeZone: 'America/Santiago', year: 'numeric', month: '2-digit', day: '2-digit'}).format(new Date());
@@ -21,7 +21,7 @@ const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
 const nSemana = s => +s.slice(6);
 const etiquetaSemana = s => { const {desde, hasta} = M.rangoSemana(s); return `Semana ${nSemana(s)} · ${fecha(desde).slice(0, 5)} al ${fecha(hasta)}`; };
 // Verde desde 80 %, ámbar desde 60 %: referencia habitual del PPC en obras que aplican Last Planner.
-const colorPct = v => v == null ? '#cfd5da' : v >= .8 ? '#2e9e5b' : v >= .6 ? '#c9a21b' : '#c62f2f';
+const colorPct = v => v == null ? '#d9d9d9' : v >= .8 ? '#1a7f37' : v >= .6 ? '#b58500' : '#c21f1f';
 const CLAVE_AUTOR = 'atlas-autor';
 const autorGuardado = () => { try { return localStorage.getItem(CLAVE_AUTOR) || ''; } catch { return ''; } };
 const recordarAutor = v => { try { localStorage.setItem(CLAVE_AUTOR, v); } catch {} };
@@ -43,7 +43,7 @@ export function cargarPlan(forzar = false) {
   if (!cargando) cargando = Promise.all([leerActividades(), leerReuniones()]).then(([actividades, reuniones]) => { cache = {actividades, reuniones}; indexar(); return cache; }).catch(e => { cargando = null; throw e; });
   return cargando;
 }
-registerLayer('lastplanner', {nombre: 'Last Planner · semana', categories: r => [M.estadoRecinto(cache?.porCodigo?.get(String(r.code).trim()))], color: k => COLORES_RECINTO[k] || '#cfd5da', opacity: .55});
+registerLayer('lastplanner', {nombre: 'Last Planner · semana', categories: r => [M.estadoRecinto(cache?.porCodigo?.get(String(r.code).trim()))], color: k => COLORES_RECINTO[k] || '#d9d9d9', opacity: .55});
 export function iniciarCapaLastPlanner(alCambiar) {
   const recargar = () => cargarPlan(true).then(alCambiar).catch(() => {});
   recargar(); window.addEventListener('atlas-lastplanner-changed', recargar);
@@ -57,7 +57,7 @@ export function createLastPlanner(ctx) {
   const filtros = {semana: M.semanaDe(hoy()), piso: nivel.id, estado: '', sector: '', responsable: '', texto: '', restricciones: 'Pendientes', estimar: {grupo: 0, cantidad: '', dotacion: ''}};
   const refrescar = () => { if (raiz?.isConnected) panel(raiz, opciones); };
   const delPiso = a => !filtros.piso || a.level === filtros.piso;
-  const chip = estado => `<span class="obsChip" style="--c:${COLOR_ESTADO[estado] || COLOR_FRENTE[estado] || '#6f7d88'}">${esc(estado)}</span>`;
+  const chip = estado => `<span class="obsChip" style="--c:${COLOR_ESTADO[estado] || COLOR_FRENTE[estado] || '#000000'}">${esc(estado)}</span>`;
   const quien = () => { let v = autorGuardado(); if (!v) { v = (prompt('¿Quién registra este cambio?') || '').trim(); if (v) recordarAutor(v); } return v; };
   const sectores = () => [...new Set([...ctx.rooms().map(r => r.sector), ...(cache?.actividades || []).map(a => a.sector)].filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es', {numeric: true}));
   const responsables = () => [...new Set([...(cache?.actividades || []).map(a => a.responsable), ...(cache?.reuniones || []).flatMap(r => [...r.frentes.map(f => f.responsable), ...r.asistentes.map(p => p.empresa)])].filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
@@ -73,7 +73,7 @@ export function createLastPlanner(ctx) {
   const barrasPct = filas => filas.length ? `<div class="workChartRows">${filas.map(f => `<div class="workChartRow lpPctRow"><i style="background:${colorPct(f.pct)}"></i><span>${esc(f.key)} <small>${esc(f.detalle)}</small></span><b>${pct(f.pct)}</b><em class="workBar"><span style="width:${(f.pct ?? 0) * 100}%;background:${colorPct(f.pct)}"></span></em></div>`).join('')}</div>` : '<p class="chartEmpty">Sin registros cerrados todavía.</p>';
   function graficoPPC(serie, interactivo = true) {
     const w = 336, izq = 30, paso = (w - izq) / serie.length;
-    return `<svg viewBox="0 0 ${w} 150" class="lpPPC" role="group" aria-label="PPC por semana"><line x1="${izq}" x2="${w}" y1="37" y2="37" class="meta"/><text x="${izq - 4}" y="40" text-anchor="end" class="meta">80 %</text><line x1="${izq}" x2="${w}" y1="125" y2="125" stroke="#d5dde3"/>${serie.map((s, i) => {
+    return `<svg viewBox="0 0 ${w} 150" class="lpPPC" role="group" aria-label="PPC por semana"><line x1="${izq}" x2="${w}" y1="37" y2="37" class="meta"/><text x="${izq - 4}" y="40" text-anchor="end" class="meta">80 %</text><line x1="${izq}" x2="${w}" y1="125" y2="125" stroke="#000000"/>${serie.map((s, i) => {
       const alto = (s.ppc ?? 0) * 110, x = izq + i * paso + 6, ancho = paso - 12, attrs = interactivo ? `data-lp-ir-semana="${s.semana}" tabindex="0" role="button"` : '';
       return `<g class="${s.cerrada || !s.comprometidas ? '' : 'abierta'}" ${attrs} aria-label="${esc(etiquetaSemana(s.semana))}: PPC ${pct(s.ppc)}, ${s.cumplidas} de ${s.comprometidas}"><title>${esc(etiquetaSemana(s.semana))} · ${s.cumplidas}/${s.comprometidas}${s.abiertas ? ' · ' + s.abiertas + ' por cerrar' : ''}</title><rect x="${x}" y="15" width="${ancho}" height="110" fill="transparent"/><rect x="${x}" y="${125 - alto}" width="${ancho}" height="${alto}" rx="3" fill="${colorPct(s.ppc)}"/><text x="${x + ancho / 2}" y="${(s.ppc == null ? 125 : 125 - alto) - 5}" text-anchor="middle">${s.ppc == null ? (s.comprometidas ? '' : '—') : Math.round(s.ppc * 100)}</text><text class="eje" x="${x + ancho / 2}" y="142" text-anchor="middle">S${nSemana(s.semana)}</text></g>`;
     }).join('')}</svg>`;
@@ -94,7 +94,7 @@ export function createLastPlanner(ctx) {
       // El PPC se mide al cerrar la semana: mientras queden actividades abiertas se muestra parcial y sin color.
       kpi(p.abiertas ? 'PPC de la semana (parcial)' : 'PPC de la semana', pct(p.ppc), p.comprometidas ? `${p.cumplidas} de ${p.comprometidas} cumplidas${p.abiertas ? ` · ${plural(p.abiertas, 'por cerrar', 'por cerrar')}` : ''}` : 'Sin compromisos esta semana', 'semanal', p.abiertas ? '' : colorPct(p.ppc)),
       kpi('PPC últimas 4 semanas', pct(M.ppcAcumulado(lista, cuatro)), 'solo actividades cerradas', '', colorPct(M.ppcAcumulado(lista, cuatro))),
-      kpi('Restricciones pendientes', rr.pendientes, `${rr.vencidas ? `<em class="obsOverdue">${plural(rr.vencidas, 'vencida', 'vencidas')}</em> · ` : ''}${plural(rr.listas, 'actividad lista', 'actividades listas')}, ${plural(rr.bloqueadas, 'bloqueada', 'bloqueadas')}`, 'intermedio', rr.vencidas ? '#c62f2f' : ''),
+      kpi('Restricciones pendientes', rr.pendientes, `${rr.vencidas ? `<em class="obsOverdue">${plural(rr.vencidas, 'vencida', 'vencidas')}</em> · ` : ''}${plural(rr.listas, 'actividad lista', 'actividades listas')}, ${plural(rr.bloqueadas, 'bloqueada', 'bloqueadas')}`, 'intermedio', rr.vencidas ? '#c21f1f' : ''),
       kpi('Asistencia a reunión', asis?.pct == null ? '—' : pct(asis.pct), reunion ? `${asis.presentes} de ${asis.convocados} · ${fecha(reunion.fecha)}` : 'Sin reuniones registradas', 'reuniones', asis ? colorPct(asis.pct) : '')].join('')}</div>
       <div class="obsAcciones"><button type="button" data-lp-nueva>+ Nueva actividad</button><button type="button" data-lp-capa>Ver semana en el plano</button><button type="button" class="primary" data-lp-reporte>Reporte con plano</button></div>
       <div class="chartGrid lpGrid">
@@ -103,7 +103,7 @@ export function createLastPlanner(ctx) {
       ${tarjeta('Causas de no cumplimiento', M.causas(lista, semanas).reduce((n, c) => n + c.n, 0) + ' veces', tablaCausas(M.causas(lista, semanas)), 'Pareto de las últimas 8 semanas.')}
       ${tarjeta('Cumplimiento por responsable', porResp.length, barrasPct(porResp), 'PPC de las últimas 4 semanas (cumplidas / cerradas).')}
       ${tarjeta('Cumplimiento por sector', porSector.length, barrasPct(porSector), 'PPC de las últimas 4 semanas.')}
-      ${workChart({title: 'Restricciones pendientes por tipo', items: rr.porTipo.map(([key, n], i) => ({key, n, color: ['#e0882a', '#c9a21b', '#8a76a7', '#527f6b', '#356e88', '#a26b68', '#8a9eaa', '#bd944e', '#788650', '#697c88'][i % 10]})), emptyText: 'Sin restricciones pendientes.'}, esc)}
+      ${workChart({title: 'Restricciones pendientes por tipo', items: rr.porTipo.map(([key, n], i) => ({key, n, color: ['#c26a00', '#b58500', '#5c5c5c', '#1a7f37', '#1f4e99', '#c21f1f', '#8c8c8c', '#000000', '#4d4d4d', '#a3a3a3'][i % 10]})), emptyText: 'Sin restricciones pendientes.'}, esc)}
       ${tarjeta('Frentes de trabajo', frentes.length ? `${dotacion} personas en frentes activos` : '—', tablaFrentes(frentes), reunion ? `Según la reunión del ${fecha(reunion.fecha)}.` : '')}
       </div>`;
   }
@@ -135,13 +135,13 @@ export function createLastPlanner(ctx) {
     const planificadas = lista.filter(a => a.estado === 'Planificada' && (!a.semana || ventana.includes(a.semana)));
     const grupos = [[null, 'Sin semana asignada'], ...ventana.map(s => [s, etiquetaSemana(s)])].map(([s, t]) => [s, t, ordenSemana(planificadas.filter(a => a.semana === s))]).filter(g => g[2].length);
     const fila = a => { const pend = M.pendientes(a), vencidas = pend.filter(r => M.restriccionVencida(r, h)).length; return `<tr><td data-label="Actividad"><button type="button" class="obsOpenRecord" data-lp-act="${esc(a.id)}"><b>${esc(a.actividad)}</b><small>${esc(nombrePiso(a.level))} · Sector ${esc(a.sector || '—')}${a.frente ? ' · ' + esc(a.frente) : ''}</small></button></td><td data-label="Responsable">${esc(a.responsable)}</td>
-      <td data-label="Restricciones">${pend.length ? `<span class="obsChip" style="--c:${vencidas ? '#c62f2f' : '#e0882a'}">${pend.length} pendiente${pend.length === 1 ? '' : 's'}</span>${vencidas ? `<br><small class="obsOverdue">${vencidas} vencida${vencidas === 1 ? '' : 's'}</small>` : ''}` : `<span class="obsChip" style="--c:#2e9e5b">Liberada</span>`}<br><small>${a.restricciones.length} en total</small></td>
+      <td data-label="Restricciones">${pend.length ? `<span class="obsChip" style="--c:${vencidas ? '#c21f1f' : '#c26a00'}">${pend.length} pendiente${pend.length === 1 ? '' : 's'}</span>${vencidas ? `<br><small class="obsOverdue">${vencidas} vencida${vencidas === 1 ? '' : 's'}</small>` : ''}` : `<span class="obsChip" style="--c:#1a7f37">Liberada</span>`}<br><small>${a.restricciones.length} en total</small></td>
       <td data-label="Comprometer">${a.semana ? `<small>${esc(etiquetaSemana(a.semana))}</small>` : `<button type="button" data-lp-comprometer="${esc(a.id)}" ${pend.length ? 'title="Tiene restricciones pendientes"' : ''}>Comprometer en S${nSemana(s0)}</button>`}</td></tr>`; };
     const todas = lista.filter(a => !M.CERRADOS.has(a.estado)).flatMap(a => a.restricciones.map(r => ({r, a})));
     const filtrosR = {Pendientes: x => x.r.estado === 'Pendiente', Vencidas: x => M.restriccionVencida(x.r, h), Liberadas: x => x.r.estado === 'Liberada', Todas: () => true};
     const restricciones = todas.filter(filtrosR[filtros.restricciones]).sort((x, y) => (x.r.compromiso || '9999').localeCompare(y.r.compromiso || '9999'));
-    return selectorSemana() + `<div class="kpiGrid lpKpis">${[kpi('Listas para comprometer', rr.listas, 'sin restricciones pendientes', '', '#2e9e5b'), kpi('Bloqueadas', rr.bloqueadas, 'con restricciones por liberar', '', rr.bloqueadas ? '#e0882a' : ''),
-      kpi('Restricciones pendientes', rr.pendientes, rr.liberadas + ' liberadas'), kpi('Vencidas', rr.vencidas, 'compromiso de liberación cumplido', '', rr.vencidas ? '#c62f2f' : '')].join('')}</div>
+    return selectorSemana() + `<div class="kpiGrid lpKpis">${[kpi('Listas para comprometer', rr.listas, 'sin restricciones pendientes', '', '#1a7f37'), kpi('Bloqueadas', rr.bloqueadas, 'con restricciones por liberar', '', rr.bloqueadas ? '#c26a00' : ''),
+      kpi('Restricciones pendientes', rr.pendientes, rr.liberadas + ' liberadas'), kpi('Vencidas', rr.vencidas, 'compromiso de liberación cumplido', '', rr.vencidas ? '#c21f1f' : '')].join('')}</div>
       <div class="obsAcciones"><button type="button" class="primary" data-lp-nueva="intermedio">+ Actividad al intermedio</button></div>
       <h3 class="obsTitulo">Plan intermedio · 6 semanas desde la S${nSemana(s0)}</h3>
       <p class="obsNota">Antes de comprometer una actividad en el plan semanal, libera sus restricciones (puntos de bloqueo): planos, materiales, mano de obra, frente previo, etc.</p>
@@ -161,7 +161,7 @@ export function createLastPlanner(ctx) {
     for (const r of reuniones) for (const c of r.acuerdos) { const k = c.texto.trim().toLocaleLowerCase('es') + '|' + (c.responsable || ''); if (vistos.has(k)) continue; vistos.add(k); if (!c.cumplido) acuerdos.push({...c, reunion: r}); }
     const porEmpresa = M.asistenciaPor(reuniones.slice(0, 8)).map(g => ({key: g.key, pct: g.pct, detalle: `${g.presente}/${g.convocado}`}));
     return `<div class="kpiGrid lpKpis">${[kpi('Reuniones registradas', reuniones.length, ultima ? 'última el ' + fecha(ultima.fecha) : 'aún sin reuniones'), kpi('Asistencia promedio', pct(promedio), conLista.length + ' reuniones con lista', '', colorPct(promedio)),
-      kpi('Frentes activos', activos.length, `${plural(activos.reduce((n, f) => n + (f.dotacion || 0), 0), 'persona', 'personas')} · ${plural(frentes.filter(f => f.estado === 'Detenido').length, 'detenido', 'detenidos')}`), kpi('Acuerdos pendientes', acuerdos.length, 'sin marcar como cumplidos', '', acuerdos.length ? '#e0882a' : '')].join('')}</div>
+      kpi('Frentes activos', activos.length, `${plural(activos.reduce((n, f) => n + (f.dotacion || 0), 0), 'persona', 'personas')} · ${plural(frentes.filter(f => f.estado === 'Detenido').length, 'detenido', 'detenidos')}`), kpi('Acuerdos pendientes', acuerdos.length, 'sin marcar como cumplidos', '', acuerdos.length ? '#c26a00' : '')].join('')}</div>
       <div class="obsAcciones"><button type="button" class="primary" data-lp-nueva-reunion>+ Nueva reunión</button><span class="obsNota">La nueva reunión trae los convocados, frentes y acuerdos pendientes de la anterior.</span></div>
       ${reuniones.length ? `<div class="obsTableScroll"><table class="lpTabla lpTablaCorta"><thead><tr><th>Fecha</th><th>Reunión</th><th>Asistencia</th><th>Frentes</th><th>Acuerdos</th></tr></thead><tbody>${reuniones.map(r => { const a = M.asistencia(r); return `<tr><td data-label="Fecha"><b>${fecha(r.fecha)}</b><br><small>S${nSemana(M.semanaDe(r.fecha))}</small></td><td data-label="Reunión"><button type="button" class="obsOpenRecord" data-lp-reunion="${esc(r.id)}"><b>${esc(r.tipo)}</b><small>${esc(r.lugar || '')}</small></button></td><td data-label="Asistencia"><b style="color:${colorPct(a.pct)}">${pct(a.pct)}</b><br><small>${a.presentes} de ${a.convocados}</small></td><td data-label="Frentes">${r.frentes.length}<br><small>${r.frentes.filter(f => f.estado === 'Activo').length} activos</small></td><td data-label="Acuerdos">${r.acuerdos.length}<br><small>${r.acuerdos.filter(c => !c.cumplido).length} pendientes</small></td></tr>`; }).join('')}</tbody></table></div>` : '<p class="obsNota">Registra la reunión semanal de producción: asistencia de cada empresa, estado de los frentes de trabajo y acuerdos.</p>'}
       <div class="chartGrid lpGrid">${tarjeta('Asistencia por empresa', porEmpresa.length, barrasPct(porEmpresa), 'Últimas 8 reuniones (presentes / convocados).')}
@@ -172,7 +172,7 @@ export function createLastPlanner(ctx) {
   function vistaRendimientos(datos) {
     const grupos = M.rendimientosPorActividad(datos.actividades.filter(delPiso)), e = filtros.estimar, g = grupos[e.grupo] || grupos[0];
     const est = g && M.estimarDias(g, Number(e.cantidad), Number(e.dotacion));
-    const desvio = v => v == null ? '—' : `<span style="color:${v > .1 ? '#c62f2f' : v < -.1 ? '#2e9e5b' : 'inherit'}">${v > 0 ? '+' : ''}${Math.round(v * 100)} %</span>`;
+    const desvio = v => v == null ? '—' : `<span style="color:${v > .1 ? '#c21f1f' : v < -.1 ? '#1a7f37' : 'inherit'}">${v > 0 ? '+' : ''}${Math.round(v * 100)} %</span>`;
     return `<div class="documentaryIntro"><p>Se calculan con lo ejecutado: cantidad ejecutada ÷ días trabajados (lunes a viernes entre inicio y término real, o los días que se registren). Con dotación se obtiene el rendimiento por persona-día; con horas, por HH. Los promedios son ponderados (total ejecutado ÷ total de días). Desvío: días reales frente a los planificados.</p></div>
       ${grupos.length ? `<section class="chartCard lpEstimador"><div class="chartHeading"><h3>Estimar duración</h3><span>con rendimientos reales</span></div><div class="obsFiltros"><label>Actividad<select data-lp-est="grupo">${grupos.map((x, i) => `<option value="${i}" ${x === g ? 'selected' : ''}>${esc(x.actividad)}${x.unidad ? ' (' + esc(x.unidad) + ')' : ''}</option>`).join('')}</select></label><label>Cantidad${g.unidad ? ' (' + esc(g.unidad) + ')' : ''}<input type="number" min="0" step="any" data-lp-est="cantidad" value="${esc(e.cantidad)}"></label><label>Dotación (personas)<input type="number" min="0" step="1" data-lp-est="dotacion" value="${esc(e.dotacion)}"></label></div>
         <p class="lpLinea" data-lp-estimacion>${est ? `<b>${cifra(est)} días hábiles</b> · con ${g.porPersonaDia && Number(e.dotacion) > 0 ? cifra(g.porPersonaDia, 2) + ' ' + esc(g.unidad || '') + ' por persona-día' : cifra(g.porDia, 2) + ' ' + esc(g.unidad || '') + ' por día'} (${g.n} registro${g.n === 1 ? '' : 's'})` : 'Indica la cantidad (y la dotación si la conoces) para estimar los días.'}</p></section>
@@ -429,8 +429,8 @@ export function createLastPlanner(ctx) {
     g.setTransform(1, 0, 0, 1, 0, 0); g.font = '600 15px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
     for (const e of porRecinto.values()) {
       const [px, py] = ctx.position(e.room), x = (px - x0) * f, y = (py - y0) * f, t = e.acts.map(a => a.n).join(','), ancho = g.measureText(t).width + 12;
-      g.fillStyle = '#ffffffee'; g.strokeStyle = '#12343a'; g.lineWidth = 1.2; g.beginPath(); if (g.roundRect) g.roundRect(x - ancho / 2, y - 11, ancho, 22, 6); else g.rect(x - ancho / 2, y - 11, ancho, 22); g.fill(); g.stroke();
-      g.fillStyle = '#12343a'; g.fillText(t, x, y + 1);
+      g.fillStyle = '#ffffffee'; g.strokeStyle = '#000000'; g.lineWidth = 1.2; g.beginPath(); if (g.roundRect) g.roundRect(x - ancho / 2, y - 11, ancho, 22, 6); else g.rect(x - ancho / 2, y - 11, ancho, 22); g.fill(); g.stroke();
+      g.fillStyle = '#000000'; g.fillText(t, x, y + 1);
     }
     return {url: canvas.toDataURL('image/png'), conteo, recintos: porRecinto.size, faltan: [...new Set(faltan)]};
   }

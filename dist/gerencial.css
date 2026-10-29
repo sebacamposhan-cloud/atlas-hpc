@@ -1,0 +1,155 @@
+/* Tema gerencial: negro real, ángulos rectos, sin sombras ni tintes pastel.
+   Se carga al final de index.html y manda sobre los estilos anteriores sin modificarlos;
+   para volver al aspecto anterior basta quitar su <link>. Los colores de estado son los únicos acentos. */
+:root { --ink: #000; --muted: #3a3a3a; --line: #bdbdbd; --paper: #ebebeb; --teal: #000; --navy: #000; }
+*, *::before, *::after { border-radius: 0 !important; box-shadow: none !important; text-shadow: none !important; }
+body { color: #000; background: #ebebeb; font-family: "Segoe UI", -apple-system, "Helvetica Neue", Arial, sans-serif; }
+h1, h2, h3, h4, strong, b { color: inherit; }
+p, small, .muted, .obsNota, .chartSubtitle, .panelText, .sidebarIntro, .floorIntro p, .moduleHeading p, .documentaryIntro p { color: #333; }
+.section-label { color: #000 !important; font-weight: 700; letter-spacing: 1.2px; }
+
+/* Encabezados de página */
+.moduleHeading, .floorIntro { border-bottom: 3px solid #000; padding-bottom: 14px; }
+.moduleHeading h1, .floorIntro h1 { color: #000; font-weight: 800; letter-spacing: -.4px; }
+.documentaryIntro h2, #workContent h2 { color: #000; font-weight: 800; letter-spacing: -.2px; }
+.floorIndex { color: #000; font-weight: 700; }
+
+/* Barra lateral negra */
+.appSidebar { background: #000; border-right: 0; color: #fff; }
+.appSidebar small, .appSidebar .sideBrand small { color: #a6a6a6; }
+.appSidebar .sideBrand b, .appSidebar .sideProject, .appSidebar .sideBottom small { color: #fff; }
+.appSidebar .sideProject { background: #000; border: 1px solid #4d4d4d; }
+.brandMark { background: #fff; color: #000; }
+.appSidebar .navGroup button { color: #c8c8c8; background: transparent; border: 0; border-left: 4px solid transparent; }
+.appSidebar .navGroup button:hover:not(:disabled) { background: #1c1c1c; color: #fff; }
+.appSidebar .navGroup .active, .appSidebar .navGroup .active:hover:not(:disabled) { background: #fff; color: #000; font-weight: 700; border-left-color: #fff; }
+.appSidebar .navGroup button:disabled { color: #5c5c5c; opacity: 1; }
+.appSidebar .sideBottom button { background: transparent; color: #fff; border: 0; }
+
+/* Cabecera */
+header { background: #fff; color: #000; border-bottom: 2px solid #000; }
+header button { background: #fff; color: #000; border: 1px solid #000; font-weight: 600; }
+header button:hover:not(:disabled) { background: #000; color: #fff; }
+.globalSearchWrap input { background: #fff; border: 1px solid #000; color: #000; }
+.globalSearchWrap kbd { color: #555; }
+
+/* Lienzo */
+#workspacePanel, #floorExplorer { background: #ebebeb; }
+
+/* Botones y campos */
+button { background: #fff; color: #000; border: 1px solid #000; font-weight: 600; }
+button:hover:not(:disabled) { background: #e2e2e2; color: #000; border-color: #000; }
+button.primary { background: #000; color: #fff; border-color: #000; }
+button.primary:hover:not(:disabled) { background: #2e2e2e; color: #fff; }
+input, select, textarea { color: #000; background: #fff; border: 1px solid #6e6e6e; }
+input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid #000; outline-offset: 1px; }
+.obsImportar, .avanceCarga { background: #fff; color: #000; border: 1px solid #000; font-weight: 600; }
+
+/* Pestañas y selección: lo elegido va en negro */
+button[aria-pressed=true], button[aria-pressed=true]:hover:not(:disabled) { background: #000 !important; color: #fff !important; border-color: #000; }
+button[aria-pressed=true] b, button[aria-pressed=true] small { color: #fff !important; }
+.planTypes button { background: #fff; color: #000; border: 1px solid #000; margin-right: -1px; }
+.subVistas { background: transparent; border-bottom: 2px solid #000; padding: 0; gap: 0; display: flex; }
+.subVistas button { background: #fff; color: #000; border: 1px solid #000; border-bottom: 0; margin-right: -1px; font-weight: 600; min-height: 38px; }
+.subVistas button[aria-selected=true], .subVistas button[aria-selected=true]:hover { background: #000 !important; color: #fff !important; }
+.panelTrail { border-bottom: 2px solid #000; }
+.workTabs button { color: #444; background: transparent; border: 0; border-bottom: 3px solid transparent; }
+.workTabs button[aria-pressed=true], .workTabs button[aria-pressed=true]:hover:not(:disabled) { background: transparent !important; color: #000 !important; font-weight: 800; border-bottom-color: #000; }
+.obsCategories { background: #fff; border: 1px solid #000; }
+.obsCategories h3 { text-transform: uppercase; font-size: 11px; letter-spacing: .6px; }
+.obsCategories button { color: #000; }
+.obsCategories button b, .obsStateTabs button b { color: #444; }
+.obsStateTabs button { background: #fff; border: 1px solid #000; color: #000; }
+.obsCategories [aria-pressed=true], .obsStateTabs [aria-pressed=true], .modeSwitch button.active, .toolbar #planSettingsOpen[aria-expanded=true] { background: #000 !important; color: #fff !important; }
+.obsCategories [aria-pressed=true] b, .obsStateTabs [aria-pressed=true] b { color: #fff; }
+.modeSwitch { background: #fff; border: 1px solid #000; }
+
+/* Tarjetas, indicadores y gráficos */
+.kpi, .chartCard, .floorCard, .obsTableScroll, .obsFiltros, .obsNew, .documentGrid .chartCard { background: #fff; border: 1px solid #000; }
+.kpi { border-top: 4px solid #000; }
+.kpi > span { color: #000; text-transform: uppercase; font-size: 10px; font-weight: 700; letter-spacing: .6px; }
+.kpi > b { color: #000; font-weight: 800; font-variant-numeric: tabular-nums; }
+.kpi small { color: #333; }
+.lpKpi { border-top-color: var(--c, #000); }
+.lpKpi > b { color: var(--c, #000); }
+.chartHeading { border-bottom: 2px solid #000; }
+.chartHeading h3 { text-transform: uppercase; font-size: 12px; font-weight: 800; letter-spacing: .5px; color: #000; }
+.chartHeading span { color: #000; font-weight: 600; }
+.workBar { background: #e3e3e3; }
+.chartEmpty { color: #444; }
+
+/* Paneles de Control de obra: textos neutros y botones en negro. :where() deja estos valores por debajo de los estados
+   (seleccionado, vencido, error), que se refuerzan aparte. */
+#workspacePanel :where(p, small, summary, h3, h4, label, figcaption, dt, dd, .pagination span, .matrixOverview span) { color: #222; }
+#workspacePanel :where(button:not(.primary)) { color: #000; }
+#workspacePanel .obsOverdue, #workspacePanel .obsError { color: #c21f1f; }
+.progressCoverage { background: #fff; border: 1px solid #000; color: #000; }
+
+/* Tarjetas de pisos y paneles */
+.floorCard.available:hover { border-color: #000; outline: 2px solid #000; outline-offset: -2px; transform: none; }
+.floorPreview, .unavailable .floorPreview { background: #fff; border-bottom: 1px solid #000; }
+.floorPreviewNumber { color: #000; font-weight: 800; opacity: .9; }
+.floorCardArrow { border: 1px solid #000; color: #000; }
+.floorCardStatus { border-top: 1px solid #cfcfcf; color: #000; font-weight: 600; }
+.floorCardStatus i { background: #1a7f37; }
+.panelTitle { color: #000; font-weight: 800; }
+.panelArt { stroke: #000; }
+.panelArt .f { fill: #d4d4d4; }
+.panelArt .m { fill: #737373; }
+.panelArt .kf { fill: #000; }
+.panelArt .k { stroke: #000; }
+
+/* Tablas: encabezado negro, filas con regla gris */
+#workspacePanel th, dialog th { background: #000 !important; color: #fff !important; font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: .5px; border: 0; }
+#workspacePanel th button, dialog th button { background: transparent; color: #fff; border: 0; }
+#workspacePanel td { border-color: #cfcfcf; }
+#workspacePanel tbody tr:hover > td { background: #f3f3f3; }
+.obsSelectedRow, .obsSelectedRow > td { background: #e3e3e3 !important; }
+.obsSelectedRow > td:first-child { border-left: 4px solid #000; }
+
+/* Estados: etiqueta rectangular con franja de color */
+.obsChip { background: #fff; color: #000; border: 1px solid #000; border-left: 8px solid var(--c); text-transform: uppercase; font-size: 10px; letter-spacing: .4px; padding: 3px 8px; font-weight: 700; }
+.status, .status.valid { background: #fff; color: #000; border: 1px solid #000; font-weight: 600; }
+.status.valid { border-left: 6px solid #1a7f37; }
+.badge { border: 1px solid #000; color: #000; background: #fff; }
+.obsOverdue { color: #c21f1f; }
+
+/* Diálogos: barra de título negra */
+dialog { border: 2px solid #000; }
+dialog::backdrop { background: #000000a8; }
+.obsForm header, .obsDetailDrawer header { background: #000; border-bottom: 0; }
+.obsForm header, .obsForm header *, .obsDetailDrawer header, .obsDetailDrawer header * { color: #fff; }
+.obsForm header small, .obsDetailDrawer header small { color: #d0d0d0; }
+.obsForm header .obsChip, .obsDetailDrawer header .obsChip { color: #000; }
+.obsForm header .obsCerrar, .obsDetailDrawer header [data-close-detail] { background: transparent; color: #fff; border: 0; }
+.obsForm header .obsCerrar:hover:not(:disabled), .obsDetailDrawer header [data-close-detail]:hover:not(:disabled) { background: #333; color: #fff; }
+.obsForm footer { border-top: 2px solid #000; }
+.obsForm label, .obsDetailBody label { color: #000; }
+.obsBotonesFoto label { background: #fff; border: 1px solid #000; color: #000; }
+.obsBotonesFoto .obsCamara { background: #000; color: #fff; }
+.obsTransiciones button { background: #fff; color: #000; border: 1px solid #000; border-left: 6px solid var(--c); }
+
+/* Ficha del recinto, filtros del plano y búsqueda: el mismo criterio de textos neutros */
+#detail :where(p, small, span, b, h3, h4, label, summary, dt, dd, li), #planFilters :where(p, small, b, label, summary, .colorOrigin, .filterHelp), .left :where(p, small, label, summary) { color: #222; }
+#detail :where(button:not(.primary)), #planFilters :where(button:not(.primary)), #closeDetail, #expandDetail, #closeSearch { color: #000; }
+#detail .obsError, #detail .obsLista em, #detail .obsOverdue { color: #c21f1f; }
+#detail .obsFotosFicha span span { color: #fff; }
+.codeLink { color: #000; text-decoration: underline; }
+.hint { background: #fff; color: #000; border: 1px solid #000; border-left: 6px solid #000; }
+.pmaWarning, .avancePrevio, #geometryAuthority { background: #fff; color: #000; border: 1px solid #000; border-left: 6px solid #c26a00; }
+.pmaWarning b, .avancePrevio b { color: #000; }
+header .project span, #offlineLabel, #disciplineStatus { color: #222; }
+aside.left :where(summary), aside.left #closeSearch, #planFilters #toggleCategorySearch { color: #000; }
+aside.left #search { border-color: #000; }
+aside.left .result { background: #fff; border-color: #bdbdbd; color: #000; }
+aside.left .result.active { background: #000; border-color: #000; color: #fff; }
+aside.left .result.active * { color: #fff; }
+
+/* Visor del plano */
+.planheader, .toolbar, #activeLegend, #planFilters { background: #fff; border: 1px solid #000; }
+.toolbar button, .toolbar #reset { color: #000; }
+.disciplineBar { border-bottom: 2px solid #000; }
+.bottomNav { border-top: 2px solid #000; }
+.bottomNav button { color: #555; }
+.bottomNav button.active, .bottomNav button:hover:not(:disabled) { color: #000; background: transparent; font-weight: 700; }
+#toast { background: #000; color: #fff; }

@@ -34,6 +34,10 @@ Validación de navegación: `PLAYWRIGHT_MODULE=<ruta-a-playwright-core> node flo
 
 Para sumar un piso desde sus láminas DWG, sigue `scripts/dwg-plano/LEEME.md` (extraer, recintos, mosaicos e `scripts/import-dwg.mjs`). Después agrega una línea en `dist/pisos.js`, en `otherLevels` de `server/groq-server.mjs` y en `pmaLevels` de `dist/pma-model.mjs`, y ejecuta `node scripts/prepare-offline.mjs` y `node pisos-test.mjs`.
 
+## Aspecto gerencial
+
+`dist/gerencial.css` se carga al final y da a toda la app un aspecto de informe de gestión: texto negro, ángulos rectos, sin sombras ni tintes pastel, barra lateral negra, encabezados de tabla negros y lo seleccionado en negro. Los únicos acentos son los colores de estado (verde, ámbar, rojo y azul). No modifica los estilos de cada módulo; para volver al aspecto anterior basta quitar su `<link>` de `dist/index.html`.
+
 ## Last Planner · plan de producción
 
 Control de obra → **Last Planner** reúne la planificación semanal de la obra:
