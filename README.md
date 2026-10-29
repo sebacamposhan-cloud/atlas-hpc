@@ -34,6 +34,18 @@ Validación de navegación: `PLAYWRIGHT_MODULE=<ruta-a-playwright-core> node flo
 
 Para sumar un piso desde sus láminas DWG, sigue `scripts/dwg-plano/LEEME.md` (extraer, recintos, mosaicos e `scripts/import-dwg.mjs`). Después agrega una línea en `dist/pisos.js`, en `otherLevels` de `server/groq-server.mjs` y en `pmaLevels` de `dist/pma-model.mjs`, y ejecuta `node scripts/prepare-offline.mjs` y `node pisos-test.mjs`.
 
+## Last Planner · plan de producción
+
+Control de obra → **Last Planner** reúne la planificación semanal de la obra:
+- plan intermedio con restricciones (puntos de bloqueo) por liberar;
+- compromisos por semana con sector, frente, recintos, responsable y cantidad;
+- cierre al 100 % o con causa de no cumplimiento, y reprogramación del saldo;
+- PPC con gráficos por semana, responsable y sector;
+- reuniones de producción con asistencia, frentes de trabajo y acuerdos;
+- rendimientos reales (por día, persona-día y HH) con un estimador de duración.
+
+«Ver en el plano» pinta los recintos de la semana. «Reporte con plano» arma una hoja imprimible o en PDF con el plano numerado. Los datos se guardan en el equipo, con respaldo JSON. [Reglas y uso](docs/LAST_PLANNER.md). Prueba: `node lastplanner-test.mjs`.
+
 ## Observaciones en terreno con fotos
 
 Desde la ficha de cualquier recinto, «+ Observación con foto» abre la cámara del celular (solo cámara, fotos tomadas en el lugar) y registra qué se observa, terminación, categoría, prioridad, responsable y plazo. Tocando el recinto se ven sus observaciones con las miniaturas de sus fotos.

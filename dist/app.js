@@ -5,6 +5,7 @@ import {markingItems} from './marking-model.mjs';
 import {renderRoomProgress} from './room-progress.mjs';
 import {renderAvanceRecinto,iniciarCapaAvance} from './avance.mjs';
 import {createObservaciones,iniciarCapaObservaciones} from './observaciones.mjs';
+import {createLastPlanner,iniciarCapaLastPlanner} from './lastplanner.mjs';
 import {mountPmaRoom} from './pma.mjs';
 import {loadSourceImage} from './source-image.mjs';
 import {createDiamondCatalog,diamondBox} from './diamonds.mjs';
@@ -22,7 +23,7 @@ import {startPan,panView,startPinch,pinchView} from './gestures.mjs';
 import './offline.mjs';
 'use strict';
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let marking,markingOverlay,protocolPlan,ui,disciplines,assistant,diamondCatalog,observaciones,avanceCapa=false,obsCapa=false,showDiamonds=false;let undoGeometry=[],redoGeometry=[];
+let marking,markingOverlay,protocolPlan,ui,disciplines,assistant,diamondCatalog,observaciones,lastplanner,avanceCapa=false,obsCapa=false,lpCapa=false,showDiamonds=false;let undoGeometry=[],redoGeometry=[];
 function rememberGeometry(){undoGeometry.push(structuredClone(edit));if(undoGeometry.length>100)undoGeometry.shift();redoGeometry=[];}
 
 let atlas,aliases=new Map(),data,doc,selected=null,results=[],filtered=false,view=[0,0,3971,2384],previousView=null,isolation=false,edit=null,drag=null,searchTimer,querySerial=0;
@@ -151,7 +152,9 @@ async function initialize(){
   if(!avanceCapa){avanceCapa=true;iniciarCapaAvance(()=>render());}
   observaciones ||= createObservaciones({esc,toast,levelName:nivel.nombre,rooms:()=>uniqueRooms(data.rooms),source:r=>data.documents.find(d=>d.id===r.document_id),download:downloadBlob,locate:async id=>{await disciplines?.switchMode('architecture');ui?.show('map');selectRoom(id);}});
   if(!obsCapa){obsCapa=true;iniciarCapaObservaciones(()=>render());}
-  ui ||= createWorkspace({esc,observaciones,rooms:()=>uniqueRooms(data.rooms),results:()=>results,data:()=>data,selected:()=>selected,editing:()=>!!edit,architecture:()=>disciplines?.switchMode('architecture'),resize:()=>requestAnimationFrame(updateTiles),toast,modal,hasGeometry:id=>!!footprint(id),footprint,redraw:render,refresh:runSearch,search:()=>{clearTimeout(searchTimer);searchTimer=setTimeout(runSearch,160);},reset,select:selectRoom,excel,download:downloadBlob,scope:()=>atlas.scope,verProtocolos:datos=>protocolPlan?.mostrar(datos)});
+  lastplanner ||= createLastPlanner({esc,toast,rooms:()=>uniqueRooms(data.rooms),download:downloadBlob,fondo:()=>{const m=mapa();return {url:m.overview,export:m.export,origin:m.origin,width:m.width,height:m.height};},position:r=>world(r).position,path:footprintPath});
+  if(!lpCapa){lpCapa=true;iniciarCapaLastPlanner(()=>render());}
+  ui ||= createWorkspace({esc,observaciones,lastplanner,rooms:()=>uniqueRooms(data.rooms),results:()=>results,data:()=>data,selected:()=>selected,editing:()=>!!edit,architecture:()=>disciplines?.switchMode('architecture'),resize:()=>requestAnimationFrame(updateTiles),toast,modal,hasGeometry:id=>!!footprint(id),footprint,redraw:render,refresh:runSearch,search:()=>{clearTimeout(searchTimer);searchTimer=setTimeout(runSearch,160);},reset,select:selectRoom,excel,download:downloadBlob,scope:()=>atlas.scope,verProtocolos:datos=>protocolPlan?.mostrar(datos)});
   if(!assistant){createAssistant({selected:()=>selected});assistant=true;}
   // Catálogo de rombos original del nivel −1 (recortes de las láminas PDF). En pisos importados desde DWG el rombo va dibujado en el plano y en la ficha.
   if(!diamondCatalog&&data.documents.some(d=>d.kind!=='dwg')&&data.rooms.some(r=>r.diamond_bbox)){createDiamondCatalog({esc,loadImage:r=>diamondURL(r,data.documents),data:()=>data,inScope,editing:()=>!!edit,toast,showing:()=>showDiamonds,toggle:()=>{disciplines.switchMode('architecture');ui.show('map');showDiamonds=!showDiamonds;render();},openRoom:id=>{disciplines.switchMode('architecture');ui.show('map');selectRoom(id);}});diamondCatalog=true;}

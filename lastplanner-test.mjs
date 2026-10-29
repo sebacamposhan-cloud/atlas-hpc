@@ -1,0 +1,124 @@
+import assert from 'node:assert/strict';
+import * as M from './dist/lastplanner-model.mjs';
+
+// Semanas ISO, días hábiles y desplazamiento entre semanas.
+assert.equal(M.semanaDe('2026-10-29'), '2026-W44'); assert.equal(M.lunesDe('2026-W44'), '2026-10-26');
+assert.equal(M.semanaDe('2027-01-01'), '2026-W53', 'el 1 de enero de 2027 pertenece a la semana 53 de 2026');
+assert.equal(M.semanaDe('2026-01-01'), '2026-W01'); assert.equal(M.lunesDe('2026-W01'), '2025-12-29');
+assert.equal(M.moverSemana('2026-W52', 2), '2027-W01'); assert.equal(M.moverSemana('2026-W01', -1), '2025-W52');
+assert(M.esSemana('2026-W53')); assert(!M.esSemana('2025-W53'), '2025 no tiene semana 53'); assert(!M.esSemana('2026-44'));
+assert.equal(M.diasHabiles('2026-10-26', '2026-11-01'), 5, 'lunes a domingo = 5 días hábiles'); assert.equal(M.diasHabiles('2026-10-31', '2026-11-01'), 0); assert.equal(M.diasHabiles('2026-10-30', '2026-10-26'), null);
+
+// Alta de actividades: datos obligatorios, recintos del plano y restricciones.
+const at = '2026-10-26T12:00:00.000Z', autor = 'Jefe de producción';
+const recintos = [{id: 'n01-a501:1', code: '5.1.1.1.1-1', name: 'Oficina'}, {id: 'n01-a501:2', code: '5.1.1.1.2-1', name: 'Bodega'}];
+const base = {actividad: ' Pintura asepsia media ', level: 'N01', sector: 'A', frente: 'Eje 5-7', recintos, responsable: ' Pinturas Sur ', semana: '2026-W44', inicioPlan: '2026-10-26', finPlan: '2026-10-28', cantidad: '120', unidad: 'm²', dotacion: '3', restricciones: []};
+const a = M.nuevaActividad(base, {id: 'a1', autor, at});
+assert.equal(a.actividad, 'Pintura asepsia media'); assert.equal(a.responsable, 'Pinturas Sur'); assert.equal(a.cantidad, 120); assert.equal(a.dotacion, 3); assert.equal(a.estado, 'Planificada');
+assert.equal(a.historial[0].detalle, 'Comprometida en la semana 2026-W44');
+for (const [campo, valor] of [['actividad', 'ab'], ['responsable', ' '], ['semana', '2026-W60'], ['finPlan', '2026-10-20'], ['dotacion', '2.5'], ['cantidad', '-1']]) assert.throws(() => M.nuevaActividad({...base, [campo]: valor}, {id: 'x', autor, at}), undefined, campo);
+assert.throws(() => M.nuevaActividad({...base, recintos: [recintos[0], recintos[0]]}, {id: 'x', autor, at}), /repetido/);
+assert.throws(() => M.nuevaActividad(base, {id: 'x', autor: '', at}), /quién registra/);
+
+// Restricciones: pendiente → liberada con fecha; vencida si pasó el compromiso.
+const r1 = M.nuevaRestriccion({tipo: 'Materiales', descripcion: 'Pintura epóxica en bodega', responsable: 'Bodega', compromiso: '2026-10-20'}, 'r1');
+const r2 = M.nuevaRestriccion({tipo: 'Frente previo', descripcion: 'Retiro de andamios'}, 'r2');
+assert.throws(() => M.nuevaRestriccion({tipo: 'Inventada', descripcion: 'x y'}, 'r3'), /tipo y descripción/);
+const intermedia = M.nuevaActividad({...base, semana: null, restricciones: [r1, r2]}, {id: 'a2', autor, at});
+assert.equal(intermedia.historial[0].detalle, 'Registrada en el plan intermedio');
+assert(!M.liberada(intermedia)); assert(M.restriccionVencida(r1, '2026-10-27')); assert(!M.restriccionVencida(r2, '2026-10-27'), 'sin compromiso no vence');
+const liberada1 = M.liberarRestriccion(intermedia, 'r1', {autor, fecha: '2026-10-27', at});
+assert.equal(liberada1.restricciones[0].estado, 'Liberada'); assert.equal(liberada1.restricciones[0].liberada, '2026-10-27'); assert.equal(liberada1.version, 2);
+const lista = M.liberarRestriccion(liberada1, 'r2', {autor, at});
+assert(M.liberada(lista)); assert.equal(M.liberarRestriccion(lista, 'r2', {autor, at}).restricciones[1].estado, 'Pendiente', 'liberar de nuevo la reabre');
+assert.throws(() => M.validarActividad({...lista, restricciones: [{...r1, estado: 'Liberada', liberada: null}]}), /fecha de liberación/);
+assert.throws(() => M.cambiarEstado(intermedia, 'En ejecución', {}, {autor, at}), /compromete la actividad/, 'sin semana no se inicia');
+
+// Edición: el historial nombra lo cambiado; una actividad cerrada no cambia de semana.
+const editada = M.editarActividad(a, {...base, cantidad: 150}, {autor, at});
+assert.equal(editada.cantidad, 150); assert.match(editada.historial.at(-1).detalle, /Editó cantidad/);
+assert.equal(M.editarActividad(a, base, {autor, at}), a, 'sin cambios devuelve la misma actividad');
+assert.equal(M.editarActividad(intermedia, {...base, semana: '2026-W45', restricciones: intermedia.restricciones}, {autor, at}).historial.at(-1).detalle, 'Comprometida en la semana 2026-W45');
+
+// Cierre: cumplida exige el 100 %, fechas reales y calcula días hábiles; no cumplida exige causa.
+const enCurso = M.cambiarEstado(a, 'En ejecución', {}, {autor, at, hoy: '2026-10-26'});
+assert.equal(enCurso.inicioReal, '2026-10-26');
+assert.throws(() => M.cambiarEstado(enCurso, 'Cumplida', {finReal: '2026-10-29', cantidadEjecutada: 100}, {autor, at}), /100 %/);
+const cumplida = M.cambiarEstado(enCurso, 'Cumplida', {finReal: '2026-10-29'}, {autor, at});
+assert.equal(cumplida.cantidadEjecutada, 120, 'sin cantidad ejecutada se toma la comprometida'); assert.equal(cumplida.diasReales, 4);
+assert.throws(() => M.cambiarEstado(cumplida, 'En ejecución', {}, {autor, at}), /por qué se reabre/);
+assert.equal(M.cambiarEstado(cumplida, 'En ejecución', {}, {autor, comentario: 'Faltó segunda mano', at}).finReal, null, 'reabrir borra el término');
+assert.throws(() => M.cambiarEstado(a, 'No cumplida', {}, {autor, at}), /causa/);
+assert.throws(() => M.validarActividad({...a, causa: 'Clima'}), /Solo una actividad no cumplida/);
+const b = M.nuevaActividad({...base, actividad: 'Pintura asepsia media', responsable: 'Pinturas Sur', sector: 'B', cantidad: 80}, {id: 'a3', autor, at});
+const noCumplida = M.cambiarEstado(M.cambiarEstado(b, 'En ejecución', {}, {autor, at, hoy: '2026-10-27'}), 'No cumplida', {causa: 'Material no disponible', cantidadEjecutada: 30, finReal: '2026-10-28'}, {autor, at});
+assert.equal(noCumplida.causa, 'Material no disponible'); assert.equal(noCumplida.diasReales, 2); assert.match(noCumplida.historial.at(-1).detalle, /Material no disponible/);
+
+// Avance sin cambio de estado: cantidades y fechas con historial; la causa solo en las no cumplidas.
+const avance = M.registrarEjecucion(enCurso, {cantidadEjecutada: '60', hh: '24', causa: 'Clima'}, {autor, at});
+assert.equal(avance.cantidadEjecutada, 60); assert.equal(avance.hh, 24); assert.equal(avance.causa, null, 'en ejecución no lleva causa'); assert.match(avance.historial.at(-1).detalle, /cantidad ejecutada, HH/);
+assert.equal(M.registrarEjecucion(enCurso, {cantidadEjecutada: ''}, {autor, at}), enCurso, 'sin cambios devuelve la misma actividad');
+assert.throws(() => M.registrarEjecucion(cumplida, {cantidadEjecutada: 50}, {autor, at}), /100 %/);
+assert.equal(M.registrarEjecucion(noCumplida, {causa: 'Clima'}, {autor, at}).causa, 'Clima');
+assert.throws(() => M.registrarEjecucion(noCumplida, {causa: ''}, {autor, at}), /causa/);
+
+// Reprogramar: lo pendiente pasa a otra semana como actividad nueva; la original conserva su causa.
+assert.throws(() => M.reprogramar(cumplida, '2026-W45', {id: 'x', autor, at}), /no cumplida/);
+assert.throws(() => M.reprogramar(noCumplida, '2026-W44', {id: 'x', autor, at}), /posterior/);
+const {original, nueva} = M.reprogramar(noCumplida, '2026-W45', {id: 'a4', autor, at});
+assert.equal(original.reprogramada, '2026-W45'); assert.equal(original.estado, 'No cumplida');
+assert.equal(nueva.cantidad, 50, 'se reprograma el saldo'); assert.equal(nueva.origen, 'a3'); assert.equal(nueva.inicioPlan, '2026-11-02'); assert.equal(nueva.estado, 'Planificada');
+assert.throws(() => M.reprogramar(original, '2026-W46', {id: 'x', autor, at}), /Ya se reprogramó/);
+
+// PPC, causas y cumplimiento por responsable/sector.
+const c = M.cambiarEstado(M.nuevaActividad({...base, actividad: 'Sello perimetral', responsable: 'Sellos SpA', cantidad: null}, {id: 'a5', autor, at}), 'Cumplida', {inicioReal: '2026-10-27', finReal: '2026-10-27'}, {autor, at});
+const d = M.cambiarEstado(M.nuevaActividad({...base, actividad: 'Cielo modular', responsable: 'Cielos Ltda', sector: 'B'}, {id: 'a6', autor, at}), 'No cumplida', {causa: 'Frente no liberado'}, {autor, at});
+const e = M.nuevaActividad({...base, actividad: 'Guardapolvo', responsable: 'Pinturas Sur'}, {id: 'a7', autor, at});
+const semana = [cumplida, original, c, d, e, nueva, lista];
+const p = M.ppcSemana(semana, '2026-W44');
+assert.deepEqual([p.comprometidas, p.cumplidas, p.noCumplidas, p.abiertas, p.cerrada], [5, 2, 2, 1, false]); assert.equal(p.ppc, 0.4);
+assert.equal(M.ppcSemana(semana, '2026-W43').ppc, null, 'semana sin compromisos no tiene PPC');
+assert.equal(M.ppcAcumulado(semana, ['2026-W44']), 0.5, 'el acumulado solo cuenta cerradas');
+const serie = M.seriePPC(semana, '2026-W45', 3); assert.deepEqual(serie.map(s => s.semana), ['2026-W43', '2026-W44', '2026-W45']); assert.equal(serie[2].comprometidas, 1);
+assert.deepEqual(M.causas(semana).map(x => [x.causa, x.n, x.acumulado]), [['Frente no liberado', 1, 0.5], ['Material no disponible', 1, 1]]);
+const porResp = M.cumplimientoPor(semana, 'responsable', ['2026-W44']);
+assert.deepEqual(porResp.map(g => [g.key, g.comprometidas, g.cumplidas, g.ppc]), [['Pinturas Sur', 3, 1, 0.5], ['Cielos Ltda', 1, 0, 0], ['Sellos SpA', 1, 1, 1]]);
+const rr = M.resumenRestricciones([intermedia, {...lista, id: 'a8'}, cumplida], '2026-10-27');
+assert.deepEqual([rr.pendientes, rr.vencidas, rr.liberadas, rr.bloqueadas, rr.listas], [2, 1, 2, 1, 1]);
+
+// Rendimientos: por día, por persona-día y por HH; promedio ponderado por actividad; estimación de días.
+const r = M.rendimiento(cumplida);
+assert.equal(r.porDia, 30); assert.equal(r.porPersonaDia, 10); assert.equal(r.diasPlan, 3); assert.equal(Math.round(r.desvio * 100), 33);
+assert.equal(M.rendimiento(e), null, 'sin ejecución no hay rendimiento');
+const conHH = M.cambiarEstado(M.nuevaActividad({...base, cantidad: 60, dotacion: null}, {id: 'a9', autor, at}), 'Cumplida', {inicioReal: '2026-10-26', finReal: '2026-10-26', hh: 20}, {autor, at});
+const grupos = M.rendimientosPorActividad([cumplida, noCumplida, conHH, c]);
+const pintura = grupos.find(g => g.actividad === 'Pintura asepsia media');
+assert.equal(pintura.n, 3); assert.equal(pintura.cantidad, 210); assert.equal(pintura.dias, 7); assert.equal(pintura.porDia, 30);
+assert.equal(pintura.porPersonaDia, 150 / 18, 'solo pondera los registros con dotación'); assert.equal(pintura.porHH, 3);
+assert.equal(Math.round(M.estimarDias(pintura, 100, 2) * 10) / 10, 6, 'con dotación usa el rendimiento por persona-día');
+assert.equal(M.estimarDias({porDia: 25, porPersonaDia: null}, 100, 2), 4); assert.equal(M.estimarDias(pintura, 0, 2), null);
+
+// Capa del plano: la peor condición manda.
+assert.equal(M.estadoRecinto([]), 'Sin actividades');
+assert.equal(M.estadoRecinto([cumplida, d]), 'No cumplida');
+assert.equal(M.estadoRecinto([cumplida, {...intermedia, semana: '2026-W44'}]), 'Con restricción');
+assert.equal(M.estadoRecinto([cumplida, enCurso]), 'En ejecución');
+assert.equal(M.estadoRecinto([cumplida, a]), 'Planificada');
+assert.equal(M.estadoRecinto([cumplida]), 'Cumplida');
+
+// Reuniones de producción: asistencia, frentes y plantilla para la siguiente.
+const reunion = {schema: 1, id: 'r1', fecha: '2026-10-26', tipo: 'Semanal (Last Planner)', lugar: 'Oficina técnica', notas: null, autor, creada: at, actualizada: at, version: 1,
+  asistentes: [{nombre: 'Ana', empresa: 'Pinturas Sur', cargo: 'Capataz', asistio: true}, {nombre: 'Luis', empresa: 'Cielos Ltda', cargo: null, asistio: false}, {nombre: 'Rosa', empresa: 'Pinturas Sur', cargo: null, asistio: true}],
+  frentes: [{level: 'N01', sector: 'A', frente: 'Eje 5-7', responsable: 'Pinturas Sur', dotacion: 3, estado: 'Activo', nota: null}, {level: 'N01', sector: 'B', frente: 'Pabellón', responsable: 'Cielos Ltda', dotacion: 0, estado: 'Terminado', nota: null}],
+  acuerdos: [{texto: 'Liberar andamios', responsable: 'Obra gruesa', plazo: '2026-10-28', cumplido: false}, {texto: 'Enviar RFI', responsable: null, plazo: null, cumplido: true}]};
+M.validarReunion(reunion);
+assert.throws(() => M.validarReunion({...reunion, asistentes: [...reunion.asistentes, {nombre: ' ana', empresa: null, cargo: null, asistio: true}]}), /repetido/);
+assert.throws(() => M.validarReunion({...reunion, frentes: [{...reunion.frentes[0], estado: 'Otro'}]}), /frentes/);
+assert.throws(() => M.validarReunion({...reunion, fecha: '2026-02-30'}), /fecha y tipo/);
+assert.deepEqual(M.asistencia(reunion), {convocados: 3, presentes: 2, pct: 2 / 3});
+const segunda = {...reunion, id: 'r2', fecha: '2026-11-02', asistentes: reunion.asistentes.map(p => ({...p, asistio: p.nombre !== 'Ana'}))};
+assert.deepEqual(M.asistenciaPor([reunion, segunda]).map(g => [g.key, g.convocado, g.presente]), [['Cielos Ltda', 2, 1], ['Pinturas Sur', 4, 3]]);
+assert.equal(M.ultimaReunion([reunion, segunda]).id, 'r2');
+const plantilla = M.plantillaReunion(reunion);
+assert(plantilla.asistentes.every(p => !p.asistio)); assert.equal(plantilla.frentes.length, 1, 'los frentes terminados no pasan'); assert.equal(plantilla.acuerdos.length, 1, 'los acuerdos cumplidos no pasan');
+console.log(JSON.stringify({checks: 'passed', scope: 'Last Planner: semanas ISO y días hábiles, alta y edición de actividades, restricciones (liberar, vencidas), cierre al 100 % o con causa, reprogramación del saldo, PPC semanal y acumulado, Pareto de causas, cumplimiento por responsable, rendimientos ponderados y estimación de días, estado del recinto para la capa, reuniones con asistencia, frentes y acuerdos.'}));
