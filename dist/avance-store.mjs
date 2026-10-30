@@ -1,5 +1,5 @@
-// Avance valorizado: registros por recinto con historial append-only e itemizado cargado en este dispositivo.
-// El itemizado (con precios unitarios) no se publica en el sitio ni viaja en los respaldos de avance.
+// Avance por partida: registros por recinto (clave piso|código) con historial append-only.
+// El itemizado con precios ya no se usa en la plataforma: borrarItemizado quita la copia que quedara en el equipo.
 import {keyFor} from './avance-model.mjs';
 const DB = 'atlas-avance-partidas';
 const abrir = () => new Promise((resolve, reject) => {
@@ -19,7 +19,7 @@ export async function leerAvance() { return conDb(['rooms', 'history'], 'readonl
 
 // Guardado atómico con versión esperada: evita sobrescribir lo guardado en otra pestaña.
 export async function guardarAvance(registro, versionEsperada) {
-  if (registro.key !== keyFor(registro.code) || registro.version !== versionEsperada + 1) throw Error('Versión inválida');
+  if (registro.key !== keyFor(registro.code, registro.level) || registro.version !== versionEsperada + 1) throw Error('Versión inválida');
   await conDb(['rooms', 'history'], 'readwrite', (tx, ok, falla) => {
     const q = tx.objectStore('rooms').get(registro.key);
     q.onsuccess = () => {
@@ -34,8 +34,8 @@ export async function exportarAvance() { return {format: 'atlas-avance-partidas-
 // Importación aditiva: agrega lo nuevo y rechaza todo si un registro existente difiere (no se fusionan ediciones divergentes).
 export async function importarAvance(valor) {
   if (valor?.format !== 'atlas-avance-partidas-v1' || !Array.isArray(valor.registros) || !Array.isArray(valor.historial)) throw Error('Respaldo de avance no válido.');
-  for (const r of valor.registros) if (r?.key !== keyFor(r?.code) || !Number.isInteger(r.version)) throw Error('Registro de avance no válido en el respaldo.');
-  for (const h of valor.historial) if (typeof h?.id !== 'string' || h.registro?.key !== keyFor(h.registro?.code)) throw Error('Historial no válido en el respaldo.');
+  for (const r of valor.registros) if (r?.key !== keyFor(r?.code, r?.level) || !Number.isInteger(r.version)) throw Error('Registro de avance no válido en el respaldo.');
+  for (const h of valor.historial) if (typeof h?.id !== 'string' || h.registro?.key !== keyFor(h.registro?.code, h.registro?.level)) throw Error('Historial no válido en el respaldo.');
   let conflicto = false;
   try {
     await conDb(['rooms', 'history'], 'readwrite', (tx, ok, falla) => {

@@ -73,9 +73,9 @@ Botón **Nube** en la cabecera: con la cuenta personal de Atlas (Supabase) los p
 
 Control de obra → **Avance y observaciones** sigue 330 recintos y 1.940 partidas PMA aplicables: instalación, condición, faltantes, observaciones, responsable, fecha e historial. Se marca tocando el **rombo** del recinto (en su ficha o desde la tabla): cada sección es una partida con el color de su estado y sus observaciones en terreno. Gráficos de instalación, conformidad, avance por partida y pendientes por sector; tabla de recintos con filtros por columna como en Excel. Datos locales al dispositivo con respaldo/importación y funcionamiento offline. [Alcance y validación](docs/ROOM_PROGRESS.md).
 
-## Avance valorizado por partida · piloto nivel −1
+## Avance por partida (m²) · pisos −1, 1, 2 y 3
 
-Control de obra → Avance valorizado y la ficha de cada recinto: los 414 recintos A-S01 del PMA RevB reciben sus partidas del itemizado (Formulario n°11A) según terminaciones y asepsia, con cadena de protocolos previos (una partida no se aprueba sin su previo liberado). Estado, %, conformidad, faltantes y observaciones con fecha y autor. Valor ejecutado = superficie PMA × % × precio unitario; totales por partida, recinto, asepsia y piso; cinco gráficos de decisión y capa «Avance de obra» en el plano. El itemizado con precios se carga en el dispositivo y no se publica. [Reglas, cadena, gráficos y listas para revisar](docs/AVANCE_VALORIZADO.md).
+Control de obra → Avance y observaciones → **Avance por partida** y la ficha de cada recinto (bajo el rombo): cada recinto del PMA RevB de su piso recibe sus partidas según terminaciones y asepsia, con cadena de protocolos previos (una partida no se aprueba sin su previo liberado). Estado, %, conformidad, faltantes y observaciones con fecha y autor. **m² ejecutados y pendientes** = superficie PMA × %; el rombo muestra los de cada terminación. Sin valorización: los precios no se manejan en la plataforma. Gráficos de decisión y capa «Avance de obra» en el plano. [Reglas, cadena, gráficos y listas para revisar](docs/AVANCE_VALORIZADO.md).
 
 ## PMA de terminaciones RevB
 

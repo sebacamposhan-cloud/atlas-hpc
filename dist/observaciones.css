@@ -123,3 +123,4 @@ dialog.phEditor::backdrop, dialog.phVisor::backdrop { background: #000; }
 .obsRoom .obsFotosFicha > span > span { font-size: 11px; padding: 3px 6px; }
 .obsRoom .obsFotosFicha .obsMas { font-size: 16px; font-weight: 700; color: #000; background: #fff; }
 .obsRoom .obsLista button > span { flex: 1; min-width: 0; }
+.obsCerradas { margin-top: 8px; font-size: 12px; } .obsCerradas > summary { cursor: pointer; font-weight: 700; padding: 6px 0; text-decoration: underline; text-underline-offset: 3px; } .obsCerradas .obsLista { margin-top: 6px; }

@@ -1,12 +1,18 @@
-# Avance valorizado por recinto y partida · piloto nivel −1
+# Avance por recinto y partida (m²) · pisos −1, 1, 2 y 3
 
-Control de obra → Avance por recinto → **Avance valorizado** (una vista del mismo panel desde octubre de 2026) y la ficha de cada recinto del plano (sección **Avance valorizado por partida**). El objetivo pasa de documentar a controlar y valorizar el avance. Piloto: solo nivel −1.
+Control de obra → Avance y observaciones → **Avance por partida** y la ficha de cada recinto del plano (sección **Avance por partida · terminaciones PMA**, bajo el rombo). Nació como piloto valorizado del −1.
+
+**Desde el 30-10-2026:**
+- **Sin valorización.** El jefe de producción no debe manejar precios en la plataforma, así que se retiró la carga del itemizado y todos los montos. La copia del itemizado que quedara en un equipo se borra al abrir el avance.
+- **Avance físico en m².** Ejecutado = superficie PMA × % de avance; pendiente = el resto.
+- **Los cuatro pisos.** Cada uno se cruza con su nivel del PMA (A-S01, A-N01, A-N02, A-N03). Los registros se guardan con la clave «piso|código», y los del −1 conservan la suya.
+- **En el rombo.** Cada sección muestra las partidas de su terminación con sus m² ejecutados y pendientes, y lleva a este registro.
 
 ## Fuentes
 
 - **PMA RevB** (`dist/pma/catalog.json`): 414 recintos activos A-S01 con superficie escrita, PAV, CIE, M1–M4 y asepsia. Es la fuente de cantidades por recinto.
 - **Itemizado** `HPC-5-GEN-GEN-PRE-01-RevE_UT-SSMSO_Sacyr.xlsx`, hoja «Formulario n°11A»: A = ITEM, B = descripción, C = unidad, K / AB / AR = cantidad del piso −1 (módulos A, B y D), BA = precio unitario. Las partidas se identifican por código ITEM (6.2.3 y 6.4.2.1 aparecen fuera de orden en el archivo); se ignoran los «Ítem eliminado…» y las filas de título sin unidad.
-- **El itemizado no se publica.** El repositorio es público y el archivo trae precios: se carga en la app con «Cargar itemizado…», se interpreta en el navegador y queda solo en ese dispositivo (IndexedDB `atlas-avance-partidas`, tabla `fuentes`). Tampoco viaja en los respaldos de avance. Sin itemizado el checklist funciona igual, sin montos.
+- **El itemizado no se usa en la plataforma** (30-10-2026). Sirvió para definir el enlace terminación → partida (códigos ITEM) que se describe abajo. `leerItemizado` y la valorización siguen en el modelo solo para las pruebas.
 
 La conciliación PMA ↔ plano (330 / 414 / 22 diferencias) queda para después. La ficha avisa cuando PMA y plano difieren; las partidas y cantidades usan el PMA.
 
@@ -52,11 +58,20 @@ Una partida no puede quedar **Aprobada** si su previo no está liberado (partida
 
 Los protocolos de la matriz REV1 se registran por ejes (p. ej. «AD-AG/A3-A5»), no por recinto. Por eso aquí los protocolos previos se marcan por recinto (Pendiente / Liberado) con su tipo REV1 como referencia. Los ejes ya se ubican en los pisos −1, 1, 2 y 3 (Protocolos de la matriz → Ver en el plano; [PROTOCOL_MATRIX.md](PROTOCOL_MATRIX.md#ubicación-en-el-plano-por-ejes)). Cruzar ejes con recintos de forma automática sigue pendiente.
 
-## Checklist y valorización
+## Checklist y m²
 
 Por partida: estado (No iniciado 0 % · En ejecución 1–99 % · Instalado 100 % · Observado · Aprobado 100 %), % de avance, conformidad, qué falta y observaciones con fecha y autor. Observado o No conforme exigen observación o faltante; Aprobado exige Conforme, sin faltantes y previo liberado.
 
-**Avance $ = cantidad del recinto (superficie PMA) × % × precio unitario (BA).** Totales por partida, recinto, asepsia y piso. Las partidas sin cantidad registran avance físico pero no se valorizan. El avance físico promedio pesa cada partida por igual.
+**m² ejecutados = superficie PMA del recinto × % de avance; pendientes = el resto.** Totales de pavimentos y cielos por piso, y m² por partida. Las partidas sin cantidad por recinto (muros, sobrelosa, sellos, cenefas) registran solo su %. El avance físico promedio pesa cada partida por igual.
+
+**Terminaciones sin ítem del itemizado** (sobre todo en los pisos 1 a 3): se registran como partida de la terminación, por ejemplo «PMA 109 Pavimento caucho virgen disipativo», con el nombre del PMA, sus m² y la cadena de previos de su familia.
+- caucho y vinílico acústico: nivelación de pavimentos resilientes;
+- cielos: instalaciones sobre cielo;
+- muro 13 epóxico de asepsia alta: tabique → sellos → empaste;
+- pintura de cielo de asepsia alta: después de su cielo;
+- paneles autoportantes: inician su cadena.
+
+En el −1 esto incluye los cielos 213, 215, 216 y 219, los muros 20 y 21 y los pavimentos 119 y 120, que antes quedaban fuera. Siguen sin ítem del itemizado. Solo quedan sin partida las terminaciones S/E o N/A.
 
 Registros en IndexedDB `atlas-avance-partidas` con versión esperada (no se sobrescribe lo guardado en otra pestaña) e historial append-only. Exportar/importar respaldo JSON: importación aditiva que rechaza todo si un registro existente difiere. Módulos en el núcleo sin conexión. **Los avances son locales al dispositivo; no hay sincronización entre usuarios.**
 
@@ -64,11 +79,11 @@ En el plano, «Filtros → Colorear por → Avance de obra» o el botón «Ver a
 
 ## Gráficos (los 5 priorizados)
 
-1. **Avance por partida, $ ejecutado y pendiente**, ordenado por monto pendiente → dónde concentrar cuadrillas.
+1. **Avance por partida, m² ejecutados y pendientes**, ordenado por m² pendientes → dónde concentrar cuadrillas.
 2. **Embudo de estados** (no iniciado → en ejecución → instalado → aprobado, más observado) → si el cuello está en la ejecución o en la inspección/aprobación.
-3. **Partidas con avance bloqueado por protocolo previo**, con el $ ejecutado que no puede aprobarse → qué protocolo liberar primero. Las partidas sin iniciar que esperan su previo se informan aparte.
+3. **Partidas con avance bloqueado por protocolo previo** → qué protocolo liberar primero. Las partidas sin iniciar que esperan su previo se informan aparte.
 4. **Avance por nivel de asepsia** → si la cadena empaste → pintura de asepsia media se atrasa.
-5. **Control de cubicación, PMA contra itemizado** (diferencias > 5 % destacadas) → qué partidas no cuadrarán en el estado de pago.
+5. ~~Control de cubicación, PMA contra itemizado~~: retirado con la valorización (30-10-2026); el análisis de abajo queda como registro.
 
 El mapa de calor es la capa «Avance de obra» del plano. No se implementan aún: **curva S planificada vs real** (requiere el programa de obra cargado) y **ritmo semanal con proyección** (requiere semanas de registros).
 
@@ -107,4 +122,5 @@ Superan 5 %: 6.1.3.1 (+27 %), 6.1.4.4 (−8 %), 6.3.2 (−10 %), 6.3.3 (−20 %)
 - `dist/avance-model.mjs`: reglas de enlace, cadena, validación, valorización, lectura del itemizado y listas de revisión.
 - `dist/avance-store.mjs`: persistencia, historial, respaldos e itemizado local.
 - `dist/avance.mjs`: editor de recinto (ficha y Control), panel, gráficos y capa del plano.
+- `avance-pisos-test.mjs` (en el build): los cuatro pisos sin precios, clave por piso, m² ejecutados y pendientes, partidas de cada terminación del rombo y terminaciones sin ítem.
 - `avance-test.mjs` (en el build de Render): itemizado sintético con precios ficticios (desorden, eliminados, títulos, duplicados), PMA real, cadena, reglas de estado, valorización, estados de recinto y listas.
