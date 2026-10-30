@@ -48,15 +48,15 @@ El verde, el ámbar y el rojo quedan solo para estados. Los tonos de marca se le
 
 ## Last Planner · plan de producción
 
-Control de obra → **Last Planner** reúne la planificación semanal de la obra:
-- plan intermedio con restricciones (puntos de bloqueo) por liberar, con acción, departamento, intervención de la ITO y seguimiento semanal (nuevos, resueltos, retrasados, abiertos y eficacia de cierre);
-- compromisos por semana con sector, frente, recintos, responsable y cantidad;
-- cierre al 100 % o con causa de no cumplimiento, y reprogramación del saldo;
-- PPC con gráficos por semana, responsable y sector;
-- reuniones de producción con asistencia, frentes de trabajo y acuerdos;
-- rendimientos reales (por día, persona-día y HH) con un estimador de duración.
+Control de obra → **Last Planner** integra cuatro apartados: Resumen ejecutivo, Planificación semanal, Ejecución y seguimiento, y Revisión y cierre.
 
-«Ver en el plano» pinta los recintos de la semana. «Reporte con plano» arma una hoja imprimible o en PDF con el plano numerado. Los datos se guardan en el equipo, con respaldo JSON. [Reglas y uso](docs/LAST_PLANNER.md). Prueba: `node lastplanner-test.mjs`.
+- Semana ISO automática desde las fechas, tramos semanales sin duplicar cantidades y selección de recintos, pasillos y superficies en el visor existente.
+- Borradores, publicación con compromiso original conservado y revisiones autorizadas con historial.
+- Asistencia diaria única por persona/turno, avances medidos, fotografías/documentos y restricciones compartidas con planificación.
+- Verificación del compromiso completo, PPC separado del avance físico y reprogramación del saldo pendiente.
+- Plano de ejecución, gráficos operativos, reporte con plano, CSV y respaldo JSON con archivos.
+
+Se amplía la misma base local y se sincroniza con la cuenta personal de **Nube**. **Antes de desplegar:** ejecutar `supabase/lastplanner-cycle.sql` después de `supabase/campo.sql` en el mismo proyecto Supabase. [Uso, migración, permisos y pruebas](docs/LAST_PLANNER.md).
 
 ## Observaciones en terreno con fotos
 

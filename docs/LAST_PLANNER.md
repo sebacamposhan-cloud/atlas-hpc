@@ -1,79 +1,108 @@
-# Last Planner en Control de obra
+# Last Planner: ciclo de producción integrado
 
-Control de obra → **Last Planner** reúne el plan de producción de la obra según el Last Planner System. Las funciones vienen del pedido del jefe de producción (29-10-2026); la organización en tarjetas, la navegación por estados con contadores y los indicadores en cuadros siguen la estructura de plataformas como FunBIM.
+Control de obra → **Last Planner** utiliza el visor de arquitectura, los recintos y la cuenta personal de Nube de ATLAS. Se amplía el módulo existente; no se agrega una aplicación ni una base local paralela.
 
-El panel abre con tres tarjetas, una por sección, y cada tarjeta muestra el dato del momento (PPC, actividades de la semana, restricciones pendientes). Dentro de una sección, los gráficos van a la izquierda y la tabla a la derecha:
-- tocar una barra, una porción de torta o una semana del PPC filtra la tabla;
-- tocar una fila despliega su detalle: plazo, avance, rendimiento planificado y real, dotación recomendada, recintos, restricciones y últimos cambios. Desde ahí se abre la actividad para editarla.
+## Uso
 
-| Sección | Gráficos (izquierda) | Tabla (derecha) |
-|---|---|---|
-| **Resumen** | PPC por semana, estado de la semana, causas de no cumplimiento, cumplimiento por responsable y por sector. Arriba, el PPC de la semana y de 4 semanas, las restricciones y la asistencia. | Actividades de la semana, o las que corresponden a lo elegido en un gráfico. |
-| **Plan semanal y rendimientos** | Estado de la semana, actividades por responsable (en rojo si la dotación no alcanza), rendimiento real por persona al día y estimador de días. | Pestañas «Actividades de la semana», con iniciar, cerrar y reprogramar, y «Rendimientos» por actividad con sus registros. |
-| **Restricciones y reuniones** | Puntos de bloqueo por semana (gráfico y tabla como la planilla de obra), estado de las restricciones (vencidas, por vencer, liberadas), pendientes por departamento y por tipo, asistencia por empresa y frentes de trabajo. Arriba, las pendientes (y cuántas requieren a la ITO) y la eficacia de cierre. | Pestañas «Restricciones» (qué falta y su acción, a quién bloquea, quién la levanta, compromiso y eficacia, con liberar), «Plan intermedio» (6 semanas, con comprometer) y «Reuniones» (presentes, ausentes, frentes y acuerdos). Tocar una semana del gráfico muestra sus puntos de bloqueo. |
+1. **Planificación semanal:** crear un borrador con responsable, especialidad, contratista, fechas, cantidad y unidad. La semana ISO se deriva de las fechas (lunes a domingo); no existe un campo editable «Semana» en el formulario. La cabecera cambia al período guardado. Un trabajo que cruza semanas exige distribuir su cantidad entre tramos vinculados; la suma debe coincidir con el total. «Redistribuir grupo» permite ajustar los tramos mientras todos sean borradores.
+2. **Ubicación:** «Seleccionar recintos en plano» habilita un modo de selección sobre el mismo SVG, motor de geometría y mosaicos del visor principal. Admite recintos y pasillos, pisos, múltiples selecciones, zoom, desplazamiento, gestos táctiles, aplicar/cancelar y etiquetas removibles. El formulario conserva sus datos al volver.
+3. **Superficies:** elegir recinto, muros, cielos o pavimentos. En muros, tocar un recinto lo acerca y presenta sus tramos de contorno; se pueden seleccionar segmentos individuales o delimitar una intervención parcial. También se pueden dibujar áreas parciales, respetando los límites y huecos. La actividad guarda coordenadas, recinto, piso y referencia a la fuente.
+4. Agregar restricciones previas con categoría, acción, responsable, departamento, fecha, ámbito, criticidad e intervención ITO. Se incorporan al mismo registro que se utiliza durante la ejecución.
+5. **Publicar planificación semanal:** congela la versión original y genera una emisión auditable. Las modificaciones posteriores requieren permiso de revisión y motivo; conservan valores anteriores, autor y fecha. La unidad publicada se mantiene para poder comparar cantidades. No se cambia retrospectivamente una verificación final.
+6. **Ejecución y seguimiento:** abrir la actividad ya publicada. Su checklist conduce a asistencia, avances, comprobación de mediciones, restricciones, evidencias y revisión. Los estados del checklist se calculan desde registros existentes.
+7. Registrar personas presentes o ausentes por fecha y turno, con cuadrilla, jornada y asignaciones a una o varias actividades. El identificador personal debe ser estable; se normaliza el RUT con y sin puntos/guion. Las horas asignadas no pueden superar la jornada. La asistencia histórica a reuniones se conserva separada del control laboral.
+8. Registrar **cantidades incrementales** ejecutadas, fechas reales, distribución por superficie, avance acumulado y asistencia vinculada. Se pueden delimitar los tramos reales en el mismo visor. Una corrección agrega un registro que sustituye al anterior, con motivo; conserva ambos en el historial.
+9. Adjuntar fotos de cámara/galería o documentos a la actividad, recinto o superficie. Los archivos se guardan realmente, con fecha, autor y huella SHA-256; formatos JPEG, PNG, PDF, texto y DOCX, hasta 15 MB por archivo. Las imágenes se procesan mediante la función fotográfica existente.
+10. **Revisión y cierre:** comprobar mediciones y registrar el resultado usando los datos diarios. Una cantidad parcial no cumple el compromiso. Al incumplir se exige causa principal y explicación; se admiten causas adicionales. El saldo puede reprogramarse una sola vez hacia una semana posterior. El cierre semanal exige que termine el domingo y que todas las actividades tengan revisión final.
+11. **Resumen ejecutivo:** consulta de PPC, avance por unidad, asistencia diaria, dotación, restricciones, bloqueos, causas, responsables y evolución semanal. Incluye filtros por piso, fecha de consulta, especialidad, contratista y responsable. No contiene formularios de captura. Se conservan reporte imprimible con plano, exportación CSV y respaldo JSON con archivos.
 
-## Reglas
+## Reglas de cálculo y representación
 
-- **Estados de una actividad:** Planificada → En ejecución → Cumplida o No cumplida. Solo se inicia o se cierra una actividad comprometida en una semana. Para reabrir una actividad cerrada hay que escribir el motivo.
-- **Cumplida:** se marca solo si se completó el 100 % de la cantidad comprometida. Lo parcial se cierra como **No cumplida**, con su causa (CNC). El saldo se **reprograma** en otra semana como una actividad nueva; la original conserva su causa para el PPC.
-- **PPC** = cumplidas ÷ comprometidas de la semana. Mientras la semana tenga actividades abiertas, el indicador dice «parcial» y no lleva color. El PPC de 4 semanas cuenta solo las actividades cerradas. El color es verde desde 80 %, ámbar desde 60 % y rojo bajo 60 %.
-- **Restricciones:** son de tipo diseño, información, materiales, mano de obra, equipos, subcontrato, frente previo, calidad, permisos u otro. Cada una tiene responsable y fecha compromiso, y se marca vencida cuando pasa esa fecha sin liberarse. Comprometer una actividad con restricciones pendientes pide confirmación.
-- **Puntos de bloqueo:** son las restricciones vistas semana a semana, con los campos de la planilla de obra: acción para levantarla, departamento que la levanta (oficina técnica, compras, producción, instalaciones, calidad, prevención, subcontrato, ITO / mandante u otro), si requiere intervención de la ITO y fecha de registro. Los campos son opcionales; las restricciones anteriores siguen valiendo y se cuentan desde la fecha en que se creó su actividad.
-  - Cada semana cuenta los **anteriores** (abiertos al empezar), los **nuevos** (registrados en la semana), los **resueltos** (liberados en la semana), los **abiertos** al cierre (o a hoy en la semana en curso) y los **retrasados** (abiertos con el compromiso vencido). % resuelto = resueltos ÷ (anteriores + nuevos).
-  - Un punto se cierra al liberarse o, si nadie lo liberó, cuando su actividad se cumple. Al reprogramar, el saldo hereda los puntos y se cuentan una sola vez.
-  - **Eficacia de cierre** = liberados a tiempo ÷ liberados con compromiso en las últimas 8 semanas; las atrasadas muestran los días de atraso.
-- **Rendimientos:** se calculan como cantidad ejecutada ÷ días trabajados.
-  - Los días trabajados son los días hábiles de lunes a viernes entre el inicio y el término real. Se pueden corregir a mano, por ejemplo por feriados o sábados trabajados.
-  - Los promedios son ponderados: total ejecutado ÷ total de días.
-  - El rendimiento por persona-día usa solo los registros que tienen dotación, y el rendimiento por HH solo los que tienen horas.
-- **Semanas:** son semanas ISO, de lunes a domingo, en la hora de Chile (America/Santiago).
-- **Semana y fechas:** en una actividad comprometida, las fechas planificadas deben quedar dentro de su semana. Un trabajo más largo se divide por semanas; las actividades sin semana (plan intermedio) tienen fechas libres.
-  - Una actividad nueva parte de lunes a viernes de la semana elegida.
-  - Al cambiarla de semana, o al comprometerla desde el intermedio, las fechas se mueven con ella: mismo día de la semana y misma duración, sin pasar del domingo.
-- **Responsable:** se elige de la lista de subcontratos de la obra (`dist/subcontratos.mjs`, con su especialidad) o se escribe con «Otro…». La lista viene de las capturas que se usaron para Estados de pago, más Valcompany; no lleva precios.
-- **Dotación recomendada:** con la cantidad, el rendimiento por persona al día y los días hábiles del plazo (de lunes a viernes de la semana si no hay fechas), se calcula `personas = cantidad ÷ (rendimiento × días)`, redondeado hacia arriba.
-  - Ejemplo: 30 m² a 10 m² por persona al día en 5 días da 1 persona, que termina en 3 días.
-  - Si la dotación ingresada no alcanza, el formulario dice cuánto se lograría, y el plan semanal marca la dotación recomendada en rojo.
-  - Si Atlas ya tiene rendimientos reales de esa actividad y unidad, los propone con «Usar este rendimiento».
+- `02-11-2026` a `08-11-2026` corresponde a **2026-W45**. Se usa la misma regla ISO en cliente y PostgreSQL, incluidos cambios de año.
+- **PPC:** actividades verificadas como cumplidas / todas las actividades publicadas del período. Los borradores no entran; las pendientes de verificación siguen en el denominador y se identifican por separado. Cada emisión conserva su base. Los datos `demo-` anteriores se conservan pero se excluyen de la operación y del PPC real.
+- **Avance físico:** cantidades informadas y verificadas se muestran por separado. No se suman m² con ml, unidades u otras magnitudes. `90 / 120 m² = 75 %` físico, con resultado incumplido al vencer el plazo y PPC 0 para ese compromiso.
+- Cumplir requiere cantidad original completa, plazo original, todas las superficies verificadas, ausencia de restricciones críticas pendientes y evidencia. Revisar una medición o registrar asistencia no genera cumplimiento automáticamente. Mientras siga vigente el plazo no se puede cerrar definitivamente como incumplida.
+- Las restricciones pasan por Identificada, En gestión, Bloqueando ejecución, Liberada y Cerrada mediante transiciones auditadas. Si una PRE empieza a bloquear, se actualiza la misma identidad. Se conserva cada intervalo de bloqueo. Las críticas pendientes impiden iniciar o informar ejecución y muestran la advertencia correspondiente.
+- El plano distingue pendiente, parcial, por verificar, verificado y bloqueo. Se superponen las geometrías **realmente registradas** en ejecución; seleccionar una superficie en planificación no la pinta como ejecutada. Un porcentaje sin delimitación real no inventa un límite parcial.
+- Para medir se exige contorno con autoridad `validated`/`dwg_corrected` y escala documentada en `ejes.json`. Se calcula área de planta descontando huecos o longitud de segmento. No se infiere la altura de un muro ni el área real de un cielo inclinado. Los m² de pintura sin altura documentada se ingresan manualmente. El origen medido/manual queda guardado.
+- Los tramos de muro proceden de los límites disponibles del recinto; no se presentan como elementos BIM individuales inexistentes. Los contornos auxiliares permiten localizar, pero no certifican dimensiones. Una fuente que cambió de SHA-256 no se superpone silenciosamente sobre un plano nuevo; el reporte identifica el cotejo pendiente.
 
-## En el plano
+## Activación de Nube y migración
 
-- **Ver en el plano** pinta los recintos de la semana elegida según la peor condición de sus actividades, en este orden: No cumplida, Con restricción, En ejecución, Planificada, Cumplida. «Exportar plano» respeta esa capa.
-- **Reporte con plano** arma una hoja imprimible de la semana, que se guarda como PDF desde «Imprimir». Contiene:
-  - los indicadores de la semana;
-  - el plano del piso abierto con los recintos coloreados y el número de cada actividad;
-  - la tabla de actividades, con la misma numeración del plano;
-  - el PPC de las últimas 8 semanas y el Pareto de causas;
-  - los puntos de bloqueo de las últimas 5 semanas y la eficacia de cierre;
-  - las restricciones pendientes, con su acción, departamento, ITO y atraso;
-  - la última reunión: asistencia, frentes y acuerdos;
-  - líneas de firma.
+Antes de desplegar esta versión, ejecutar **`supabase/lastplanner-cycle.sql`** en el SQL Editor del **mismo proyecto Supabase de Nube**, después de `supabase/campo.sql`. Es una migración aditiva y repetible: crea sus propias tablas, políticas, RPC y bucket privado; no borra tablas de ATLAS ni modifica los estados de pago.
 
-## Datos de ejemplo para presentar
+Reutiliza `SUPABASE_URL`, `SUPABASE_ANON_KEY` y la sesión personal `atlas-nube-sesion`. No se requiere una service-role key ni compartir una contraseña de base de datos. El servicio Node verifica la sesión con Supabase; PostgreSQL aplica permisos y versiones aun al invocar directamente el RPC.
 
-«Datos de ejemplo», en la barra del panel, carga un plan de terminaciones ficticio en los cuatro pisos. Lo genera `dist/lastplanner-ejemplo.mjs` y siempre parte de la semana actual.
-- **Contenido:** ocho semanas cerradas, la semana en curso (con saldos reprogramados), las dos siguientes, el plan intermedio, puntos de bloqueo con acción, departamento e ITO (vencidos, pendientes y liberados a tiempo o tarde: los que explican una no cumplida se liberaron tarde) y ocho reuniones semanales con asistencia, frentes y acuerdos.
-- **Un carácter por piso:**
-  - Piso −1: PPC estable, frenado por mano de obra y materiales.
-  - Piso 1: PPC que mejora al liberarse los frentes.
-  - Piso 2: PPC alto, con Grupsa en puertas correderas de los cubículos UTI rindiendo sobre lo planificado. La mejor eficacia de cierre, pero con recepciones pendientes de la ITO.
-  - Piso 3: PPC que cae por material y frente y se recupera, con Protego en puertas cortafuego rindiendo sobre lo planificado. La caída coincide con puntos de material liberados tarde.
-- **Responsables:** son los subcontratos de terminaciones: Spotless, STI, Valencia, DAC-Controls, Grupsa, Protego, Miranda, Construlyl, Teisa y Pavitec. Los recintos son los reales de cada piso y las personas son inventadas.
-- **Cómo se quitan:** los registros llevan id `demo-`. «Quitar datos de ejemplo» borra solo esos y deja intacto lo ingresado por el equipo. Mientras estén cargados, el panel lo avisa.
-- **Prueba:** `node lastplanner-ejemplo-test.mjs`.
+Tablas nuevas:
 
-## Datos
+| Tabla | Contenido |
+| --- | --- |
+| `atlas_lp_records` | Actividades, emisiones semanales, restricciones, asistencia, evidencia y reuniones, con versiones |
+| `atlas_lp_operaciones` | Recibos de operaciones para reintentos idempotentes |
+| `atlas_lp_historial` | Auditoría inalterable de valores anteriores/nuevos con actor autenticado |
+| Storage privado `atlas-lp` | Bytes de fotos y documentos, sin sobrescritura |
 
-- Todo se guarda en este equipo, en la base IndexedDB `atlas-lastplanner`.
-  - Las actividades de todos los pisos van en una sola lista; el filtro «Piso» del panel elige cuáles se ven.
-  - Las reuniones son de toda la obra.
-- **Respaldo JSON** exporta el plan completo, e **Importar respaldo** lo agrega en otro equipo. Si un registro existente difiere del respaldo, la importación no se aplica.
-- Todavía no se sincroniza con la **Nube**. Para sincronizarlo hay que ampliar `supabase/campo.sql` y `server/campo.mjs` con un tipo de registro nuevo.
-- Cada actividad guarda su historial de cambios, con autor y fecha. El nombre de quien registra se recuerda en el equipo; es el mismo de Observaciones.
+IndexedDB **`atlas-lastplanner` pasa de v1 a v2**, manteniendo las colecciones originales `actividades` y `reuniones`. Agrega restricciones, asistencias, semanas, evidencias, archivos, cola de sincronización y metadatos. Conserva el registro original, versión, autoría, resultados y cantidades históricas. No fabrica jornadas, fotografías ni cantidades desconocidas. Los compromisos anteriores obtienen una emisión histórica consultable. El respaldo anterior también puede importarse.
 
-## Archivos y pruebas
+Cada operación local y sus archivos se guardan en una transacción junto con su envío pendiente. La sincronización se ejecuta desde Nube, respetando el orden de creación y la versión remota. Un envío repetido no duplica actividad, cantidad ni archivo. Ante un conflicto se conserva el lote local y se informa; **no hay fusión automática de cantidades o compromisos**. Descargar el respaldo y cotejar las versiones antes de resolver administrativamente el conflicto. La importación es aditiva y rechaza versiones distintas o archivos alterados sin reemplazar los datos locales. Cada lote admite hasta 500 registros nuevos y 10 MB de metadatos (2 MB por registro), además de sus archivos. Una semana cerrada conserva también la jornada de asistencia y sus horas; puede agregarse una asignación abierta sin alterar esos valores.
 
-- `dist/lastplanner-model.mjs`: reglas puras (semanas, estados, PPC, causas, rendimientos, asistencia).
-- `dist/lastplanner-store.mjs`: IndexedDB, guardado con versión esperada, respaldo e importación.
-- `dist/lastplanner.mjs` y `dist/lastplanner.css`: panel, formularios, capa del plano y reporte.
-- `node lastplanner-test.mjs`: prueba las reglas del modelo y corre en el build de Render.
+Si falta la migración o la configuración de Supabase, la interfaz muestra el error de Nube y conserva lo guardado localmente. El almacenamiento entre equipos solo queda operativo después de ejecutar el SQL y desplegar el servidor de esta versión. Para seleccionar planos sin red se debe descargar previamente el paquete de planos desde «Sin conexión».
+
+### Permisos
+
+Se reutilizan `app_metadata.campo_role`: `lector` consulta y `editor` puede operar. Opcionalmente, una lista `app_metadata.lastplanner_permissions` limita al editor a operaciones concretas:
+
+`draft`, `publish`, `execution`, `attendance`, `restriction`, `evidence`, `verify`, `close`, `revision`.
+
+Sin lista explícita se conservan los permisos del editor existente. La restauración/migración histórica exige `revision`. Después de cambiar metadatos de cuenta, renovar la sesión para recibir los permisos nuevos. No se solicita escribir nuevamente el nombre del usuario.
+
+## Archivos principales
+
+| Grupo | Archivos |
+| --- | --- |
+| Reglas y compatibilidad | `dist/lastplanner-cycle-model.mjs`, `lastplanner-geometry.mjs`; se conserva `lastplanner-model.mjs` |
+| Formularios, cuatro áreas, gráficos y reportes | `dist/lastplanner-workflow.mjs`, `lastplanner-report.mjs`, `lastplanner-cycle.css` |
+| Visor existente y geometrías | `dist/app.js`, `lastplanner-spatial.mjs`, `lastplanner-map.mjs`, `lastplanner.mjs`, `workspace.mjs` |
+| Persistencia y sesión | `dist/lastplanner-store.mjs`, `lastplanner-cycle-store.mjs`, `lastplanner-session.mjs` |
+| Nube | `dist/lastplanner-sync.mjs`, `dist/nube.mjs`, `server/lastplanner.mjs`, `server/groq-server.mjs` |
+| Base y distribución sin conexión | `supabase/lastplanner-cycle.sql`, `scripts/prepare-offline.mjs`, `dist/sw.js`, `dist/index.html` |
+
+ATLAS conserva sus módulos ES existentes; este cambio no agrega un framework ni reescribe los demás módulos.
+
+## Verificación
+
+Las pruebas operan con datos de ensayo en contextos aislados. No se envían registros de prueba al proyecto de producción.
+
+```sh
+node lastplanner-cycle-test.mjs
+node lastplanner-api-test.mjs
+```
+
+La prueba PostgreSQL y el recorrido completo de navegador requieren herramientas de desarrollo externas al servidor productivo:
+
+```sh
+npm install --prefix /tmp/atlas-lp-test-tools @electric-sql/pglite@0.3.14 playwright-core
+PGLITE_MODULE=/tmp/atlas-lp-test-tools/node_modules/@electric-sql/pglite/dist/index.js node lastplanner-sql-test.mjs
+PGLITE_MODULE=/tmp/atlas-lp-test-tools/node_modules/@electric-sql/pglite/dist/index.js PLAYWRIGHT_MODULE=/tmp/atlas-lp-test-tools/node_modules/playwright-core/index.mjs CHROMIUM_PATH=/usr/bin/chromium node lastplanner-browser-test.mjs
+```
+
+El proveedor de prueba usa **PostgreSQL real en PGlite** para tablas, RLS, transacciones y el RPC; sustituye los endpoints de Supabase y el transporte de Storage. No certifica la configuración del proyecto Supabase de producción. La interfaz se prueba en Chromium real de escritorio y en viewport móvil táctil 390 × 844; no sustituye una comprobación final en Safari de un iPhone físico.
+
+| Prueba solicitada | Cobertura ejecutada |
+| --- | --- |
+| 1. Semana automática | W45 del 02–08 de noviembre; cambios de año ISO; sin campo manual |
+| 2. Selección espacial | Tres recintos reales del Nivel −1, incluyendo circulación/pasillo, clics sobre el índice geométrico existente |
+| 3. Pintura parcial | Un recinto, dos muros; delimitación de un tramo real parcial |
+| 4. Persistencia | Guardado, recarga, reapertura, respaldo con archivos y restauración repetible; rechazo de bytes alterados |
+| 5. Restricción previa | PRE en borrador y ficha de ejecución; misma identidad al convertirse en bloqueo |
+| 6. Bloqueo durante | Humedad asociada a la actividad y al muro seleccionado |
+| 7. Asistencia | Una persona en dos actividades, un solo registro; formatos equivalentes de RUT |
+| 8. Avance parcial | 90/120, 75%; rechazo de cumplimiento antes de comprobar el 100% |
+| 9. Reprogramación | Solo 30 m²; relación con el compromiso e incumplimiento anterior intactos |
+| 10. Resumen | Indicadores con datos operativos, cierre, reporte y sincronización entre dos navegadores |
+| 11. Móvil | Selección táctil, formularios, checklist, asistencia, evidencia, guardado y cierre |
+| 12. Integridad | Batería `buildCommand` de Render, rutas/sesión, migración local v1, y prueba de Puertas en escritorio/móvil |
+
+Las pruebas antiguas `room-progress-browser-test.mjs`, `source-contours-browser-test.mjs` y `floor-explorer-browser-test.mjs` todavía esperan controles anteriores a cambios ya presentes en `main` (`room-progress`, `geometryAuthority`, dos pisos habilitados). Se ejecutaron y fallan por esas expectativas obsoletas; no se cuentan como verificaciones aprobadas. La batería de despliegue, los tests nuevos del ciclo y el navegador de Puertas sí se ejecutan contra la interfaz actual.
+
+Queda aplicar el SQL en el proyecto real y desplegar esta rama mediante la revisión de GitHub/Render. No se han modificado los datos de producción ni se ha desplegado automáticamente.

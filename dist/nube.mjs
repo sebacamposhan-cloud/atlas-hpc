@@ -1,3 +1,4 @@
+import {syncLastPlanner} from './lastplanner-sync.mjs';
 // Nube: sesión con la cuenta personal de Atlas (Supabase) y sincronización de proyectos y observaciones
 // con fotos entre equipos. Sin conexión todo sigue guardándose en este equipo; se sincroniza al volver la señal,
 // después de cada guardado y cada 3 minutos con la app abierta.
@@ -7,7 +8,7 @@ import {leerParaNube, idsFotos, leerFoto, guardarDesdeNube, guardarFotoDesdeNube
 
 const SESION = 'atlas-nube-sesion';
 const leerSesion = () => { try { return JSON.parse(localStorage.getItem(SESION)); } catch { return null; } };
-const guardarSesion = s => { try { if (s) localStorage.setItem(SESION, JSON.stringify(s)); else localStorage.removeItem(SESION); } catch {} };
+const guardarSesion = s => { try { if (s) localStorage.setItem(SESION, JSON.stringify(s)); else localStorage.removeItem(SESION);window.dispatchEvent(new Event('atlas-session-changed')); } catch {} };
 const error = (mensaje, status, data) => Object.assign(Error(mensaje), {status, data});
 
 // Lo último sincronizado: versión y huella de cada registro, fotos ya en la nube y desde cuándo pedir cambios.
@@ -119,8 +120,9 @@ export function iniciarNube({toast = aviso, esc = escapar} = {}) {
     try {
       const resumen = await bloquear(async () => {
         await renovar();
-        try { return await motor(leerSesion().user.role); }
-        catch (e) { if (e.status !== 401) throw e; await renovar(true); return motor(leerSesion().user.role); }
+        const sincronizar = async () => {const resultado=await motor(leerSesion().user.role),lp=await syncLastPlanner(api,leerSesion().user.role);if(lp.conflictos)throw error('Last Planner tiene conflictos con otro equipo. Los datos locales se conservan; descarga un respaldo antes de resolverlos.',409);return {...resultado,lastPlanner:lp};};
+        try { return await sincronizar(); }
+        catch (e) { if (e.status !== 401) throw e; await renovar(true); return sincronizar(); }
       });
       mostrar({fase: 'listo', ultimo: new Date(), resumen});
     } catch (e) {
@@ -144,7 +146,7 @@ export function iniciarNube({toast = aviso, esc = escapar} = {}) {
     const s = leerSesion();
     if (!s) {
       dialog.innerHTML = `<h2>Guardar en la nube</h2>
-        <p>Entra con tu cuenta de Atlas para que los proyectos y las observaciones con fotos queden en la nube y se vean en los demás equipos. Sin conexión todo se sigue guardando en este equipo y se sube al volver la señal.</p>
+        <p>Entra con tu cuenta de Atlas para que los proyectos, Last Planner y las observaciones con fotos queden en la nube y se vean en los demás equipos. Sin conexión todo se sigue guardando en este equipo y se sube al volver la señal.</p>
         <form id="nubeLogin"><label>Correo<input type="email" name="username" autocomplete="username" required></label>
         <label>Contraseña<input type="password" name="password" autocomplete="current-password" required></label>
         <p id="nubeError" role="alert">${esc(estado.mensaje || '')}</p>
@@ -153,7 +155,7 @@ export function iniciarNube({toast = aviso, esc = escapar} = {}) {
         e.preventDefault();
         const form = e.target, datos = new FormData(form), enviar = form.querySelector('.primary');
         enviar.disabled = true; dialog.querySelector('#nubeError').textContent = 'Entrando…';
-        try { await entrar(String(datos.get('username')).trim(), String(datos.get('password'))); form.reset(); estado.mensaje = ''; panel(); toast('Sesión iniciada. Sincronizando proyectos y observaciones…'); await sincronizar(); }
+        try { await entrar(String(datos.get('username')).trim(), String(datos.get('password'))); form.reset(); estado.mensaje = ''; panel(); toast('Sesión iniciada. Sincronizando proyectos, observaciones y Last Planner…'); await sincronizar(); }
         catch (failure) { enviar.disabled = false; dialog.querySelector('#nubeError').textContent = failure.status ? failure.message : 'Sin conexión: inténtalo con señal.'; }
       };
     } else {
@@ -161,7 +163,7 @@ export function iniciarNube({toast = aviso, esc = escapar} = {}) {
       dialog.innerHTML = `<h2>Nube</h2>
         <p>Conectado como <b>${esc(s.user.username)}</b> · ${s.user.role === 'editor' ? 'puede editar' : 'solo lectura (tus cambios quedan en este equipo)'}.</p>
         <p class="nubeEstado" role="status">${esc(fase)}</p>
-        <p class="nubeNota">Proyectos y observaciones se guardan primero en este equipo y se sincronizan solos después de cada cambio, al volver la conexión y cada 3 minutos. Las fotos se suben a la nube y también quedan aquí.</p>
+        <p class="nubeNota">Proyectos, observaciones y Last Planner se guardan primero en este equipo y se sincronizan solos después de cada cambio, al volver la conexión y cada 3 minutos. Las fotos se suben a la nube y también quedan aquí.</p>
         <div class="nubeAcciones"><button type="button" data-salir>Cerrar sesión</button><button type="button" data-cerrar>Cerrar</button><button type="button" class="primary" data-ahora ${estado.fase === 'sincronizando' ? 'disabled' : ''}>Sincronizar ahora</button></div>`;
       dialog.querySelector('[data-ahora]').onclick = () => sincronizar();
       dialog.querySelector('[data-salir]').onclick = async () => {
@@ -173,7 +175,7 @@ export function iniciarNube({toast = aviso, esc = escapar} = {}) {
   }
   boton.onclick = () => { panel(); if (!dialog.open) dialog.showModal(); };
 
-  for (const nombre of ['atlas-observaciones-changed', 'atlas-markings-changed']) window.addEventListener(nombre, e => { if (e.detail?.origen !== 'nube' && leerSesion()) programar(); });
+  for (const nombre of ['atlas-observaciones-changed', 'atlas-markings-changed','atlas-lastplanner-changed']) window.addEventListener(nombre, e => { if (e.detail?.origen !== 'nube' && leerSesion()) programar(); });
   window.addEventListener('online', () => programar(1000));
   window.addEventListener('offline', () => { if (leerSesion()) mostrar({fase: 'sin-conexion'}); });
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && leerSesion()) programar(1000); });

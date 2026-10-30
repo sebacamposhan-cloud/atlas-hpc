@@ -2,20 +2,30 @@
 // Guardado atómico con versión esperada: no se sobrescribe lo que otra pestaña guardó entretanto.
 // El respaldo JSON lleva todo el plan para pasarlo a otro equipo.
 import {validarActividad, validarReunion, RESPALDO} from './lastplanner-model.mjs';
+import {migrateActivity,migrateRestrictions,migrateWeeks} from './lastplanner-cycle-model.mjs';
 
-function abrir() {
-  return new Promise((resolve, reject) => {
-    const r = indexedDB.open('atlas-lastplanner', 1);
-    r.onupgradeneeded = () => {
-      const db = r.result;
-      const actividades = db.createObjectStore('actividades', {keyPath: 'id'});
-      actividades.createIndex('level', 'level'); actividades.createIndex('semana', 'semana');
-      db.createObjectStore('reuniones', {keyPath: 'id'}).createIndex('fecha', 'fecha');
+export function abrirLP() {
+  return new Promise((resolve,reject)=>{
+    const r=indexedDB.open('atlas-lastplanner',2);
+    r.onupgradeneeded=()=>{
+      const db=r.result,tx=r.transaction;
+      if(!db.objectStoreNames.contains('actividades')){const t=db.createObjectStore('actividades',{keyPath:'id'});t.createIndex('level','level');t.createIndex('semana','semana');}
+      if(!db.objectStoreNames.contains('reuniones'))db.createObjectStore('reuniones',{keyPath:'id'}).createIndex('fecha','fecha');
+      for(const table of ['restricciones','asistencias','semanas','evidencias','archivos','pendientes','sync'])if(!db.objectStoreNames.contains(table))db.createObjectStore(table,table==='pendientes'?{keyPath:'order',autoIncrement:true}:{keyPath:'id'});
+      const q=tx.objectStore('actividades').getAll();q.onsuccess=()=>{
+        const activities=q.result.map(migrateActivity);for(const a of activities)tx.objectStore('actividades').put(a);
+        const weeks=migrateWeeks(activities);for(const item of weeks)tx.objectStore('semanas').put(item);
+        const restrictions=migrateRestrictions(activities);for(const item of restrictions)tx.objectStore('restricciones').put(item);
+        const rq=tx.objectStore('reuniones').getAll();rq.onsuccess=()=>{
+          const ops=[...activities.filter(a=>!a.id.startsWith('demo-')).map(data=>({table:'actividades',data,expected:0})),...restrictions.filter(r=>!r.id.startsWith('demo-')).map(data=>({table:'restricciones',data,expected:0})),...rq.result.filter(r=>!r.id.startsWith('demo-')).map(data=>({table:'reuniones',data,expected:0})),...weeks.map(data=>({table:'semanas',data,expected:0}))];
+          if(ops.length)tx.objectStore('pendientes').add({id:crypto.randomUUID(),at:new Date().toISOString(),action:'migration',ops});
+        };
+      };
     };
-    r.onsuccess = () => resolve(r.result);
-    r.onerror = () => reject(r.error);
+    r.onsuccess=()=>{r.result.onversionchange=()=>r.result.close();resolve(r.result);};r.onerror=()=>reject(r.error);r.onblocked=()=>reject(Error('Cierra otras pestañas de Atlas para actualizar la base sin perder datos.'));
   });
 }
+const abrir=abrirLP;
 async function transaccion(modo, tablas, run) {
   const db = await abrir();
   try {
@@ -90,26 +100,12 @@ export async function reemplazarEjemplo({actividades = [], reuniones = []}, pref
   return quitados;
 }
 
-export async function exportarPlan() {
-  return {format: RESPALDO, at: new Date().toISOString(), actividades: await leerActividades(), reuniones: await leerReuniones()};
-}
+export async function exportarPlan() { return (await import('./lastplanner-cycle-store.mjs')).exportWorkflow(); }
 // Importación aditiva: agrega lo que no existe; si un registro existente difiere, no se importa nada.
 export async function importarPlan(respaldo) {
-  if (respaldo?.format !== RESPALDO || !Array.isArray(respaldo.actividades) || !Array.isArray(respaldo.reuniones)) throw Error('Respaldo del Last Planner inválido.');
-  respaldo.actividades.forEach(validarActividad); respaldo.reuniones.forEach(validarReunion);
-  const registros = [...respaldo.actividades.map(v => ['actividades', v]), ...respaldo.reuniones.map(v => ['reuniones', v])];
-  if (new Set(registros.map(([t, v]) => t + ':' + v.id)).size !== registros.length) throw Error('Registros repetidos en el respaldo.');
-  let nuevos = 0;
-  await transaccion('readwrite', ['actividades', 'reuniones'], (s, listo, abortar) => {
-    let pendientes = registros.length;
-    if (!pendientes) return listo(0);
-    for (const [tabla, v] of registros) s[tabla].get(v.id).onsuccess = e => {
-      const actual = e.target.result;
-      if (actual && JSON.stringify(actual) !== JSON.stringify(v)) return abortar('El respaldo trae otra versión de un registro existente. No se importó nada.');
-      if (!actual) { nuevos++; s[tabla].add(v); }
-      if (--pendientes === 0) listo(nuevos);
-    };
-  });
-  avisar();
-  return nuevos;
+ if(respaldo?.format!==RESPALDO||!Array.isArray(respaldo.actividades)||!Array.isArray(respaldo.reuniones))throw Error('Respaldo del Last Planner inválido.');
+ if(respaldo.schema===2)return (await import('./lastplanner-cycle-store.mjs')).importWorkflow(respaldo);
+ respaldo.actividades.forEach(validarActividad);respaldo.reuniones.forEach(validarReunion);
+ const actividades=respaldo.actividades.map(migrateActivity);
+ return (await import('./lastplanner-cycle-store.mjs')).importWorkflow({...respaldo,schema:2,actividades,restricciones:migrateRestrictions(actividades),asistencias:[],semanas:migrateWeeks(actividades),evidencias:[],archivos:[]});
 }
