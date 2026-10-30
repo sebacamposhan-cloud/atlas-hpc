@@ -42,6 +42,23 @@ for (const [quien, plan] of [['Grupsa', 1.5], ['Protego', 1.2]]) {
 }
 const rr = M.resumenRestricciones(actividades, hoy);
 assert(rr.vencidas > 0 && rr.pendientes > rr.vencidas && rr.liberadas > 0 && rr.bloqueadas > 0 && rr.listas > 0, 'restricciones vencidas, pendientes y liberadas');
+// Puntos de bloqueo como la planilla de obra: acción, departamento, ITO y registro en todos; nunca liberados después de hoy.
+const puntos = M.puntosBloqueo(actividades);
+assert(puntos.every(({r}) => r.accion && M.DEPARTAMENTOS.includes(r.departamento) && typeof r.requiereITO === 'boolean' && r.registrada <= hoy && (!r.liberada || (r.liberada <= hoy && r.registrada <= r.liberada))), 'campos completos y fechas coherentes');
+assert(rr.conITO > 0 && rr.porDepartamento.length >= 4, 'pendientes de varios departamentos y con ITO');
+const seriePB = {};
+for (const piso of Object.keys(PISOS_EJEMPLO)) {
+  const delPiso = actividades.filter(a => a.level === piso), serie = M.seriePuntosBloqueo(delPiso, semana, 8, hoy);
+  assert(serie.every(s => s.nuevos + s.anteriores > 0), piso + ': puntos de bloqueo todas las semanas');
+  assert(serie.some(s => s.retrasados > 0) && serie.reduce((n, s) => n + s.resueltos, 0) > 8, piso + ': con retrasados y resueltos');
+  // Las no cumplidas por material, frente o diseño se explican con puntos liberados tarde: la eficacia no es perfecta.
+  const ef = M.eficaciaPuntosBloqueo(delPiso, M.lunesDe(serie[0].semana), hoy);
+  assert(ef.cerrados > 5 && ef.atrasados > 0 && ef.pct > .4 && ef.pct < 1, `${piso}: eficacia ${ef.aTiempo}/${ef.cerrados}`);
+  seriePB[piso] = serie.map(s => `${s.nuevos}/${s.resueltos}/${s.abiertos}`).join(' ');
+}
+// En el piso 3 la caída del PPC (semanas 3 y 4) coincide con puntos de material liberados tarde.
+const caidaN03 = [M.moverSemana(semana, -6), M.moverSemana(semana, -5)];
+assert(actividades.some(a => a.level === 'N03' && caidaN03.includes(a.semana) && a.estado === 'No cumplida' && a.restricciones.some(r => r.tipo === 'Materiales' && M.atrasoRestriccion(r, hoy) > 0)), 'N03: caída explicada por materiales atrasados');
 
 // Reuniones: ocho lunes con asistencia realista, frentes de los cuatro pisos y acuerdos que pasan hasta cumplirse.
 assert.equal(reuniones.length, 8);
@@ -51,5 +68,5 @@ assert(reuniones.at(-1).acuerdos.some(c => !c.cumplido) && reuniones.some(r => r
 // Personas inventadas: ningún nombre del LPS real de obra gruesa entregado como referencia.
 const texto = JSON.stringify({actividades, reuniones});
 for (const nombre of ['Juan Torres', 'Juan González', 'Rodrigo Rojas', 'Sergio', 'Efrain', 'Katherinne', 'Milenka', 'Miriam']) assert(!texto.includes(nombre), nombre);
-console.log(JSON.stringify({checks: 'passed', scope: 'Ejemplo del Last Planner: válido y determinista, prefijo demo-, recintos reales y subcontratos de terminaciones por piso, curva de PPC propia de cada piso, Grupsa y Protego sobre su rendimiento, semana en curso con reprogramaciones, restricciones vencidas/pendientes/liberadas, plan intermedio y reuniones con asistencia, frentes y acuerdos.',
-  actividades: actividades.length, reuniones: reuniones.length, ppc: seriePorPiso}));
+console.log(JSON.stringify({checks: 'passed', scope: 'Ejemplo del Last Planner: válido y determinista, prefijo demo-, recintos reales y subcontratos de terminaciones por piso, curva de PPC propia de cada piso, Grupsa y Protego sobre su rendimiento, semana en curso con reprogramaciones, restricciones vencidas/pendientes/liberadas, puntos de bloqueo semanales con acción, departamento, ITO y eficacia, plan intermedio y reuniones con asistencia, frentes y acuerdos.',
+  actividades: actividades.length, reuniones: reuniones.length, ppc: seriePorPiso, puntosBloqueo: seriePB}));

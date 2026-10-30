@@ -12,6 +12,8 @@ export const TRANSICIONES = {
 };
 // Puntos de bloqueo que se levantan en el plan intermedio antes de comprometer la actividad.
 export const TIPOS_RESTRICCION = ['Diseño / planos', 'Información / RFI', 'Materiales', 'Mano de obra', 'Equipos y herramientas', 'Subcontrato', 'Frente previo', 'Calidad / protocolo', 'Permisos / inspección', 'Otro'];
+// Quién levanta el punto de bloqueo, como en el seguimiento de la obra.
+export const DEPARTAMENTOS = ['Oficina técnica', 'Compras', 'Producción', 'Instalaciones', 'Calidad', 'Prevención de riesgos', 'Subcontrato', 'ITO / Mandante', 'Otro'];
 // Causas de no cumplimiento (CNC) del plan semanal.
 export const CAUSAS = ['Programación / planificación', 'Frente no liberado', 'Material no disponible', 'Mano de obra insuficiente', 'Equipos', 'Subcontrato', 'Diseño / información', 'Calidad / rehacer trabajo', 'Clima', 'Mandante / ITO', 'Otro'];
 export const UNIDADES = ['m²', 'm', 'm³', 'un', 'kg', 'pto', 'gl'];
@@ -55,6 +57,8 @@ function validarRestriccion(r) {
   if (!opcional(r.responsable, 160) || (r.compromiso != null && !esFecha(r.compromiso))) throw Error('Responsable o fecha compromiso de la restricción no válidos.');
   if (!['Pendiente', 'Liberada'].includes(r.estado)) throw Error('Estado de restricción no válido.');
   if ((r.estado === 'Liberada') !== esFecha(r.liberada)) throw Error('Una restricción liberada requiere su fecha de liberación.');
+  // Campos del seguimiento de puntos de bloqueo; opcionales para que los registros anteriores sigan siendo válidos.
+  if (!opcional(r.accion, 500) || (r.departamento != null && !DEPARTAMENTOS.includes(r.departamento)) || (r.requiereITO != null && typeof r.requiereITO !== 'boolean') || (r.registrada != null && !esFecha(r.registrada))) throw Error('Acción, departamento, intervención de la ITO o fecha de registro de la restricción no válidos.');
 }
 export function validarActividad(a) {
   if (!a || a.schema !== 1 || !texto(a.id, 100) || !texto(a.level, 30)) throw Error('Actividad inválida.');
@@ -195,9 +199,45 @@ export function reprogramar(a, semana, {id, autor, at = new Date().toISOString()
 export const pendientes = a => a.restricciones.filter(r => r.estado === 'Pendiente');
 export const liberada = a => !pendientes(a).length;
 export const restriccionVencida = (r, hoy) => r.estado === 'Pendiente' && !!r.compromiso && r.compromiso < hoy;
-export function nuevaRestriccion(v, id) {
-  const r = {id, tipo: v.tipo, descripcion: String(v.descripcion ?? '').trim(), responsable: limpio(v.responsable), compromiso: v.compromiso || null, estado: 'Pendiente', liberada: null};
+// registrada: fecha en que se levantó el punto de bloqueo (por omisión, hoy); con ella se cuentan los nuevos de cada semana.
+export function nuevaRestriccion(v, id, hoy = new Date().toISOString().slice(0, 10)) {
+  const r = {id, tipo: v.tipo, descripcion: String(v.descripcion ?? '').trim(), responsable: limpio(v.responsable), compromiso: v.compromiso || null, estado: 'Pendiente', liberada: null,
+    accion: limpio(v.accion), departamento: v.departamento || null, requiereITO: v.requiereITO === true || v.requiereITO === 'on', registrada: v.registrada || hoy};
   validarRestriccion(r); return r;
+}
+// Eficacia del cierre: días entre el compromiso y la liberación (positivo = atraso, negativo = antes de plazo).
+// Si sigue pendiente, días de atraso a hoy; null mientras no venza o si no tiene compromiso.
+export function atrasoRestriccion(r, hoy) {
+  if (!r.compromiso) return null;
+  if (r.estado === 'Liberada') return Math.round((Date.parse(r.liberada) - Date.parse(r.compromiso)) / 864e5);
+  return r.compromiso < hoy ? Math.round((Date.parse(hoy) - Date.parse(r.compromiso)) / 864e5) : null;
+}
+// Puntos de bloqueo con su actividad, fecha de registro y de cierre. Sin fecha de registro (anteriores a este seguimiento)
+// cuenta la creación de la actividad; una actividad cumplida cierra los puntos que nadie liberó.
+// Al reprogramar, el saldo hereda las restricciones con el mismo id: cada punto se cuenta una vez, en el saldo.
+export function puntosBloqueo(actividades) {
+  const enSaldo = new Set(actividades.filter(a => !a.reprogramada).flatMap(a => a.restricciones.map(r => r.id)));
+  return actividades.flatMap(a => a.restricciones.filter(r => !a.reprogramada || !enSaldo.has(r.id)).map(r => ({r, a, registrada: r.registrada || a.creada.slice(0, 10), cierre: r.estado === 'Liberada' ? r.liberada : a.estado === 'Cumplida' ? a.finReal : null})));
+}
+// Seguimiento semanal, como la planilla de obra: anteriores (abiertos al empezar la semana), nuevos, resueltos,
+// retrasados (abiertos con el compromiso vencido) y abiertos al cerrar la semana (o a hoy en la semana en curso).
+export function seriePuntosBloqueo(actividades, hasta, n = 8, hoy = rangoSemana(hasta).hasta) {
+  const todos = puntosBloqueo(actividades);
+  return Array.from({length: n}, (_, i) => {
+    const semana = moverSemana(hasta, i - n + 1), {desde, hasta: domingo} = rangoSemana(semana), corte = domingo > hoy ? hoy : domingo;
+    const abierto = (x, f) => x.registrada <= f && (!x.cierre || x.cierre > f);
+    const anteriores = todos.filter(x => x.registrada < desde && (!x.cierre || x.cierre >= desde)).length, nuevos = todos.filter(x => x.registrada >= desde && x.registrada <= domingo).length;
+    const resueltos = todos.filter(x => x.cierre && x.cierre >= desde && x.cierre <= domingo).length, abiertos = todos.filter(x => abierto(x, corte)).length;
+    const retrasados = todos.filter(x => abierto(x, corte) && x.r.compromiso && x.r.compromiso < corte).length;
+    return {semana, anteriores, nuevos, resueltos, retrasados, abiertos, resuelto: anteriores + nuevos ? resueltos / (anteriores + nuevos) : null};
+  });
+}
+// Eficacia de las liberaciones del período: a tiempo, atrasadas y atraso promedio de las atrasadas.
+export function eficaciaPuntosBloqueo(actividades, desde, hasta) {
+  const cerrados = puntosBloqueo(actividades).filter(x => x.r.estado === 'Liberada' && x.r.compromiso && x.r.liberada >= desde && x.r.liberada <= hasta);
+  const atrasos = cerrados.map(x => atrasoRestriccion(x.r)), tarde = atrasos.filter(d => d > 0);
+  return {cerrados: cerrados.length, aTiempo: atrasos.length - tarde.length, atrasados: tarde.length, pct: cerrados.length ? (atrasos.length - tarde.length) / cerrados.length : null,
+    atrasoPromedio: tarde.length ? tarde.reduce((s, d) => s + d, 0) / tarde.length : null};
 }
 export function liberarRestriccion(a, rid, {autor, fecha, at = new Date().toISOString()}) {
   const r = a.restricciones.find(r => r.id === rid);
@@ -239,11 +279,12 @@ export function cumplimientoPor(lista, campo, semanas) {
 }
 export function resumenRestricciones(lista, hoy) {
   const abiertas = lista.filter(a => !CERRADOS.has(a.estado)), todas = abiertas.flatMap(a => a.restricciones.map(r => ({...r, actividad: a})));
-  const porTipo = new Map();
-  for (const r of todas) if (r.estado === 'Pendiente') porTipo.set(r.tipo, (porTipo.get(r.tipo) || 0) + 1);
+  const porTipo = new Map(), porDepartamento = new Map();
+  for (const r of todas) if (r.estado === 'Pendiente') { porTipo.set(r.tipo, (porTipo.get(r.tipo) || 0) + 1); const d = r.departamento || 'Sin departamento'; porDepartamento.set(d, (porDepartamento.get(d) || 0) + 1); }
   const intermedio = abiertas.filter(a => !a.semana || a.estado === 'Planificada');
   return {pendientes: todas.filter(r => r.estado === 'Pendiente').length, vencidas: todas.filter(r => restriccionVencida(r, hoy)).length, liberadas: todas.filter(r => r.estado === 'Liberada').length,
-    porTipo: [...porTipo].sort((a, b) => b[1] - a[1]), bloqueadas: intermedio.filter(a => !liberada(a)).length, listas: intermedio.filter(liberada).length};
+    porTipo: [...porTipo].sort((a, b) => b[1] - a[1]), porDepartamento: [...porDepartamento].sort((a, b) => b[1] - a[1]), conITO: todas.filter(r => r.estado === 'Pendiente' && r.requiereITO).length,
+    bloqueadas: intermedio.filter(a => !liberada(a)).length, listas: intermedio.filter(liberada).length};
 }
 
 // ---------- Rendimientos de lo ejecutado ----------

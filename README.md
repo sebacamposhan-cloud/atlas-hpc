@@ -49,7 +49,7 @@ El verde, el ámbar y el rojo quedan solo para estados. Los tonos de marca se le
 ## Last Planner · plan de producción
 
 Control de obra → **Last Planner** reúne la planificación semanal de la obra:
-- plan intermedio con restricciones (puntos de bloqueo) por liberar;
+- plan intermedio con restricciones (puntos de bloqueo) por liberar, con acción, departamento, intervención de la ITO y seguimiento semanal (nuevos, resueltos, retrasados, abiertos y eficacia de cierre);
 - compromisos por semana con sector, frente, recintos, responsable y cantidad;
 - cierre al 100 % o con causa de no cumplimiento, y reprogramación del saldo;
 - PPC con gráficos por semana, responsable y sector;

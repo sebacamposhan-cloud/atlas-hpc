@@ -8,6 +8,7 @@
 .lpSemana strong { font-size: 15px; min-width: 230px; text-align: center; }
 .lpSemana button[data-lp-semana="-1"], .lpSemana button[data-lp-semana="1"] { width: 40px; min-height: 40px; font-size: 20px; padding: 0; }
 .lpHoy { font-size: 10px; color: #fff; background: var(--g-cian, #29a8df); padding: 5px 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+.lpKpis { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 .lpKpi { text-align: left; color: inherit; font: inherit; border-left: 4px solid var(--c, var(--line)); }
 button.lpKpi { cursor: pointer; white-space: normal; }
 .lpKpi > b { color: var(--c, inherit); }
@@ -78,8 +79,19 @@ dialog.lpDialog.lpAncho { width: min(1000px, 96vw); }
 .lpRestricciones li.liberada { border-left-color: #1a7f37; color: #2c3a50; }
 .lpRestricciones li.lpVacio { border: 0; padding: 0; color: #2c3a50; font-size: 11px; }
 .lpRestricciones button { font-size: 12px; min-height: 36px; flex: none; }
-.lpNuevaRestriccion { display: grid; grid-template-columns: 1.2fr 2fr 1.2fr 1fr auto; gap: 6px; }
+/* Dos filas: tipo, qué falta, quién y compromiso; debajo departamento, acción, ITO y Agregar. */
+.lpNuevaRestriccion { display: grid; grid-template-columns: 1.2fr 2fr 1.2fr 1fr; gap: 6px; }
 .lpNuevaRestriccion input, .lpNuevaRestriccion select { font-size: 14px !important; min-width: 0; }
+.lpNuevaRestriccion input[data-r="accion"] { order: 1; }
+.lpNuevaRestriccion .lpITO { order: 2; display: flex; flex-direction: row; gap: 6px; align-items: center; font-weight: 400; font-size: 13px; white-space: nowrap; }
+.lpNuevaRestriccion [data-lp-agregar-restriccion] { order: 3; }
+.lpEtiquetaITO { display: inline-block; font-size: 9px; font-weight: 700; letter-spacing: .4px; color: #fff; background: var(--g-marca, #1b2a56); padding: 1px 5px; vertical-align: 1px; }
+.lpLeyendaPB { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 11px; margin: 4px 0 10px; color: #000; }
+.lpLeyendaPB i { display: inline-block; width: 10px; height: 10px; margin-right: 5px; vertical-align: -1px; }
+.lpPPC text.lpRetrasados { fill: #c21f1f; font-size: 11px; }
+.lpTablaPB td, .lpTablaPB th { text-align: center; white-space: nowrap; }
+.lpTablaPB td:first-child, .lpTablaPB th:first-child { text-align: left; }
+.lpTablaPB tr:last-child td { font-weight: 700; border-top: 2px solid var(--g-marca, #1b2a56); }
 .lpQuitar { width: 36px; min-height: 36px; padding: 0; font-size: 18px; flex: none; }
 .lpReprogramar { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; margin-top: 10px; }
 .lpReprogramar label { flex: 1 1 220px; }
@@ -133,6 +145,7 @@ dialog.lpDialog.lpAncho { width: min(1000px, 96vw); }
   .lpEstimador .obsFiltros, .lpTres { grid-template-columns: 1fr; }
   .lpNuevaRestriccion { grid-template-columns: 1fr 1fr; }
   .lpNuevaRestriccion input[data-r="descripcion"] { grid-column: 1 / -1; order: -1; }
+  .lpNuevaRestriccion input[data-r="accion"] { grid-column: 1 / -1; }
   .lpFilaAsistente { grid-template-columns: 1fr 1fr auto; }
   .lpFilaAsistente input[data-k="nombre"] { grid-column: 1 / -1; }
   .lpFilaFrente { grid-template-columns: 1fr 1fr auto; }

@@ -125,6 +125,36 @@ assert.equal(M.estadoRecinto([cumplida, enCurso]), 'En ejecución');
 assert.equal(M.estadoRecinto([cumplida, a]), 'Planificada');
 assert.equal(M.estadoRecinto([cumplida]), 'Cumplida');
 
+// Puntos de bloqueo con los campos del seguimiento de obra: acción, departamento, ITO, fecha de registro y eficacia.
+const pb = M.nuevaRestriccion({tipo: 'Diseño / planos', descripcion: 'Plano de puertas correderas aprobado', responsable: 'Camila Rojas', compromiso: '2026-10-20', accion: 'Gestionar aprobación con la ITO', departamento: 'Oficina técnica', requiereITO: 'on'}, 'pb1', '2026-10-14');
+assert.deepEqual([pb.accion, pb.departamento, pb.requiereITO, pb.registrada], ['Gestionar aprobación con la ITO', 'Oficina técnica', true, '2026-10-14']);
+assert.equal(M.nuevaRestriccion({tipo: 'Materiales', descripcion: 'Rollos de vinílico'}, 'pb0', '2026-10-01').requiereITO, false);
+assert.throws(() => M.nuevaRestriccion({tipo: 'Materiales', descripcion: 'Rollos de vinílico', departamento: 'Gerencia'}, 'x'), /departamento/);
+M.validarActividad({...a, restricciones: [{id: 'antigua', tipo: 'Materiales', descripcion: 'Registro anterior al seguimiento', responsable: null, compromiso: null, estado: 'Pendiente', liberada: null}]});
+assert.equal(M.atrasoRestriccion(pb, '2026-10-19'), null, 'pendiente sin vencer: sin atraso');
+assert.equal(M.atrasoRestriccion(pb, '2026-10-24'), 4, 'pendiente vencida: días de atraso a hoy');
+assert.equal(M.atrasoRestriccion({...pb, estado: 'Liberada', liberada: '2026-10-27'}), 7, 'liberada 7 días tarde');
+assert.equal(M.atrasoRestriccion({...pb, estado: 'Liberada', liberada: '2026-10-18'}), -2, 'liberada antes de plazo');
+assert.equal(M.atrasoRestriccion({...pb, compromiso: null}, '2026-10-24'), null);
+// Serie semanal: un punto registrado en la S42 y liberado tarde en la S44, otro nuevo de la S43 aún abierto y vencido,
+// y uno de una actividad cumplida que nadie liberó (se cierra con el término real).
+const conPB = (id, restricciones, extra = {}) => ({...a, id, restricciones, ...extra});
+const lista1 = [conPB('p1', [{...pb, estado: 'Liberada', liberada: '2026-10-27'}]), conPB('p2', [M.nuevaRestriccion({tipo: 'Materiales', descripcion: 'Placas RH', compromiso: '2026-10-22'}, 'pb2', '2026-10-21')]),
+  conPB('p3', [M.nuevaRestriccion({tipo: 'Frente previo', descripcion: 'Cielo tapado', compromiso: '2026-10-23'}, 'pb3', '2026-10-21')], {estado: 'Cumplida', finReal: '2026-10-28'})];
+const serieBloqueo = M.seriePuntosBloqueo(lista1, '2026-W44', 3, '2026-10-29');
+assert.deepEqual(serieBloqueo.map(s => [s.semana, s.anteriores, s.nuevos, s.resueltos, s.retrasados, s.abiertos]), [
+  ['2026-W42', 0, 1, 0, 0, 1], ['2026-W43', 1, 2, 0, 3, 3], ['2026-W44', 3, 0, 2, 1, 1]]);
+assert.equal(serieBloqueo[2].resuelto, 2 / 3);
+// Una actividad no cumplida y reprogramada pasa su punto de bloqueo al saldo: se cuenta una sola vez.
+const noCumplidaPB = M.cambiarEstado(conPB('p6', [M.nuevaRestriccion({tipo: 'Materiales', descripcion: 'Puertas en fábrica', compromiso: '2026-10-22'}, 'pb6', '2026-10-21')]), 'No cumplida', {causa: 'Material no disponible'}, {autor, at});
+const repPB = M.reprogramar(noCumplidaPB, '2026-W45', {id: 'p6b', autor, at});
+assert.deepEqual(M.puntosBloqueo([repPB.original, repPB.nueva]).map(x => [x.a.id, x.r.id]), [['p6b', 'pb6']]);
+assert.equal(M.puntosBloqueo([noCumplidaPB]).length, 1, 'sin reprogramar sigue contando en la original');
+const ef = M.eficaciaPuntosBloqueo([...lista1, conPB('p4', [{...pb, id: 'pb4', estado: 'Liberada', liberada: '2026-10-19'}])], '2026-10-12', '2026-10-31');
+assert.deepEqual([ef.cerrados, ef.aTiempo, ef.atrasados, ef.pct, ef.atrasoPromedio], [2, 1, 1, .5, 7]);
+const rrDep = M.resumenRestricciones([conPB('p5', [pb, M.nuevaRestriccion({tipo: 'Materiales', descripcion: 'Rollos', departamento: 'Compras'}, 'pb5')])], '2026-10-29');
+assert.deepEqual([rrDep.porDepartamento, rrDep.conITO], [[['Oficina técnica', 1], ['Compras', 1]], 1]);
+
 // Reuniones de producción: asistencia, frentes y plantilla para la siguiente.
 const reunion = {schema: 1, id: 'r1', fecha: '2026-10-26', tipo: 'Semanal (Last Planner)', lugar: 'Oficina técnica', notas: null, autor, creada: at, actualizada: at, version: 1,
   asistentes: [{nombre: 'Ana', empresa: 'Pinturas Sur', cargo: 'Capataz', asistio: true}, {nombre: 'Luis', empresa: 'Cielos Ltda', cargo: null, asistio: false}, {nombre: 'Rosa', empresa: 'Pinturas Sur', cargo: null, asistio: true}],
@@ -140,4 +170,4 @@ assert.deepEqual(M.asistenciaPor([reunion, segunda]).map(g => [g.key, g.convocad
 assert.equal(M.ultimaReunion([reunion, segunda]).id, 'r2');
 const plantilla = M.plantillaReunion(reunion);
 assert(plantilla.asistentes.every(p => !p.asistio)); assert.equal(plantilla.frentes.length, 1, 'los frentes terminados no pasan'); assert.equal(plantilla.acuerdos.length, 1, 'los acuerdos cumplidos no pasan');
-console.log(JSON.stringify({checks: 'passed', scope: 'Last Planner: semanas ISO y días hábiles, alta y edición de actividades, restricciones (liberar, vencidas), cierre al 100 % o con causa, reprogramación del saldo, PPC semanal y acumulado, Pareto de causas, cumplimiento por responsable, rendimientos ponderados y estimación de días, estado del recinto para la capa, reuniones con asistencia, frentes y acuerdos.'}));
+console.log(JSON.stringify({checks: 'passed', scope: 'Last Planner: semanas ISO y días hábiles, alta y edición de actividades, restricciones (liberar, vencidas), puntos de bloqueo semanales con acción, departamento, ITO y eficacia, cierre al 100 % o con causa, reprogramación del saldo, PPC semanal y acumulado, Pareto de causas, cumplimiento por responsable, rendimientos ponderados y estimación de días, estado del recinto para la capa, reuniones con asistencia, frentes y acuerdos.'}));
