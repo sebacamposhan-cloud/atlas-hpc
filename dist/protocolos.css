@@ -51,3 +51,14 @@ body.protocolOpen .toolbar, body.protocolOpen main > footer { right: 352px; }
   .protocolScroll { padding: 0 12px 8px; }
   .protocolLista button { min-height: 44px; }
 }
+/* Protocolos de la matriz que caen en el recinto (ficha): resumen, filtro por estado y folios agrupados por tipo. */
+.protRecResumen { font-size: 12px; margin: 6px 0; }
+.protRecFiltros { margin: 6px 0 10px; }
+.protRecGrupo { border: 1px solid var(--line); margin: 6px 0; background: #fff; }
+.protRecGrupo summary { padding: 8px 10px; font-size: 12px; cursor: pointer; line-height: 1.4; }
+.protRecGrupo summary small { float: right; font-weight: 700; margin-left: 8px; }
+.protRecGrupo ul { list-style: none; margin: 0; padding: 0 6px 6px; display: grid; gap: 4px; }
+.protRecGrupo li button { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; gap: 8px; align-items: center; width: 100%; text-align: left; white-space: normal; padding: 6px 8px; font-weight: 400; font-size: 12px; }
+.protRecGrupo li small { display: block; font-size: 10.5px; margin-top: 2px; }
+.protRecFolio { font-weight: 800; font-variant-numeric: tabular-nums; }
+.protRecNota { font-size: 10.5px; margin-top: 8px; line-height: 1.5; }
