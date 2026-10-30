@@ -2,15 +2,15 @@
 
 Control de obra → **Last Planner** reúne el plan de producción de la obra según el Last Planner System. Las funciones vienen del pedido del jefe de producción (29-10-2026); la organización en tarjetas, la navegación por estados con contadores y los indicadores en cuadros siguen la estructura de plataformas como FunBIM.
 
-El panel tiene cinco vistas.
+El panel abre con tres tarjetas, una por sección, y cada tarjeta muestra el dato del momento (PPC, actividades de la semana, restricciones pendientes). Dentro de una sección, los gráficos van a la izquierda y la tabla a la derecha:
+- tocar una barra, una porción de torta o una semana del PPC filtra la tabla;
+- tocar una fila despliega su detalle: plazo, avance, rendimiento planificado y real, dotación recomendada, recintos, restricciones y últimos cambios. Desde ahí se abre la actividad para editarla.
 
-| Vista | Para qué sirve |
-|---|---|
-| **Resumen** | Indicadores de la semana: PPC de la semana y de las últimas 4, restricciones pendientes y asistencia a la última reunión. Gráficos de PPC por semana, estado de la semana, causas de no cumplimiento, cumplimiento por responsable y por sector, restricciones por tipo y frentes de trabajo. |
-| **Plan semanal** | Compromisos de la semana. Cada actividad registra sector, frente, recintos, responsable, cantidad, dotación y plazo. Se filtran por estado, sector y responsable. Desde aquí se inicia, se cierra o se reprograma una actividad, y se puede exportar a CSV. |
-| **Intermedio y restricciones** | Seis semanas hacia adelante: actividades sin comprometer y sus restricciones (puntos de bloqueo), que se liberan una a una. Una actividad liberada se compromete en la semana elegida con un toque. |
-| **Reuniones y frentes** | Reuniones de producción con asistencia por persona y empresa, frentes de trabajo (dotación y estado) y acuerdos. Cada reunión nueva trae los convocados, los frentes vigentes y los acuerdos pendientes de la anterior. |
-| **Rendimientos** | Rendimiento real de lo ejecutado por actividad: por día, por persona-día y por HH, y el desvío frente al plazo planificado. Incluye un estimador de días para una cantidad y una dotación. |
+| Sección | Gráficos (izquierda) | Tabla (derecha) |
+|---|---|---|
+| **Resumen** | PPC por semana, estado de la semana, causas de no cumplimiento, cumplimiento por responsable y por sector. Arriba, el PPC de la semana y de 4 semanas, las restricciones y la asistencia. | Actividades de la semana, o las que corresponden a lo elegido en un gráfico. |
+| **Plan semanal y rendimientos** | Estado de la semana, actividades por responsable (en rojo si la dotación no alcanza), rendimiento real por persona al día y estimador de días. | Pestañas «Actividades de la semana», con iniciar, cerrar y reprogramar, y «Rendimientos» por actividad con sus registros. |
+| **Restricciones y reuniones** | Estado de las restricciones (vencidas, por vencer, liberadas), pendientes por tipo, asistencia por empresa y frentes de trabajo. | Pestañas «Restricciones» (con liberar), «Plan intermedio» (6 semanas, con comprometer) y «Reuniones» (presentes, ausentes, frentes y acuerdos). |
 
 ## Reglas
 

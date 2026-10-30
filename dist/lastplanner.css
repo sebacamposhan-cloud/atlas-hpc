@@ -170,3 +170,43 @@ dialog.lpDialog.lpAncho { width: min(1000px, 96vw); }
   .lpHojaDos { grid-template-columns: 1fr 1fr; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* Secciones como tarjetas y vistas en dos columnas: gráficos a la izquierda, tabla interactiva a la derecha. */
+.lpSecciones { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: none; }
+.lpVolver { font-size: 12px; margin-bottom: 8px; }
+.lpTabsSeccion { margin: 0 0 16px; }
+.lpDosCol { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 20px; align-items: start; }
+.lpIzq { display: grid; gap: 16px; min-width: 0; }
+.lpDer { position: sticky; top: 0; min-width: 0; }
+.lpTablaCard { padding: 16px; }
+.lpTablaCard .obsTableScroll { max-height: calc(100dvh - 260px); overflow: auto; }
+.lpFiltroActivo { font-size: 12px; margin: 0 0 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.lpFiltroActivo button { font-size: 11px; min-height: 30px; padding: 4px 10px; }
+.lpPestanas { margin-bottom: 12px; }
+.lpBuscar { grid-template-columns: 1fr; border: 0; padding: 0; margin-bottom: 10px; }
+.lpBarras .workChartRow { width: 100%; text-align: left; cursor: pointer; padding: 7px 8px; border: 1px solid transparent; font-weight: 400; min-height: 0; }
+.lpBarras .workChartRow:hover:not(:disabled) { outline: 2px solid var(--g-azul, #0f5499); outline-offset: -2px; }
+.lpBarras .workChartRow[aria-pressed=true] .workBar { background: #fff; }
+.lpInteractiva .lpFilaTabla { cursor: pointer; }
+.lpInteractiva .lpFilaTabla:hover, .lpInteractiva .lpFilaTabla:focus-visible { outline: 2px solid var(--g-azul, #0f5499); outline-offset: -2px; }
+.lpInteractiva .lpFilaTabla td small { display: block; }
+.lpInteractiva .lpFilaAbierta > td { border-bottom: 0; font-weight: 600; }
+.lpInteractiva .lpFilaAbierta > td:first-child { border-left: 5px solid var(--g-azul, #0f5499); }
+.lpFilaDetalle > td { border-top: 0; padding: 0 11px 14px; border-left: 5px solid var(--g-azul, #0f5499); }
+.lpDetalleAct { border: 1px solid var(--g-marca, #1b2a56); padding: 12px; background: #fff; display: grid; gap: 10px; }
+.lpDetalleAct dl { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; }
+.lpDetalleAct dt { font-size: 10px; text-transform: uppercase; letter-spacing: .4px; font-weight: 700; color: #000; }
+.lpDetalleAct dd { margin: 2px 0 0; font-size: 12px; overflow-wrap: anywhere; }
+.lpDetalleHist { display: grid; gap: 2px; border-top: 1px solid #8c8c8c; padding-top: 8px; }
+.lpDetalleHist small { font-size: 11px; }
+.lpDetalleAcc { display: flex; gap: 8px; justify-content: flex-end; }
+@media (max-width: 1100px) {
+  .lpDosCol { grid-template-columns: 1fr; }
+  .lpDer { position: static; }
+  .lpTablaCard .obsTableScroll { max-height: none; }
+}
+@media (max-width: 800px) { .lpSecciones { grid-template-columns: 1fr; } }
+@media (max-width: 700px) {
+  .lpDetalleAct dl { grid-template-columns: 1fr; }
+  .lpFilaDetalle > td { padding: 0; border-left: 0; }
+}

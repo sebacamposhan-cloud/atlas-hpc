@@ -105,6 +105,11 @@ Fuente: `dist/source/matriz-control-protocolos-rev1-hpc.xlsx`. Para regenerar lo
 
 En Protocolos de la matriz se puede filtrar por elaboración o cierre con límites Desde/Hasta inclusivos. «Pendiente de cierre (abiertos)» es una vista de ABIERTO, ya que la fuente no contiene un estado PENDIENTE. «Cerrados (incluye autocontrol)» agrupa ambos estados de cierre sin modificar las filas originales.
 
+**Protocolos en la ficha del recinto:** el desplegable «Protocolos en este recinto» lista los folios de la matriz que caen en él, agrupados por tipo y con filtro Abiertos/Cerrados.
+- Cada folio se ubica por sus ejes y se cruza con el contorno del recinto.
+- Una zona entre ejes cuenta si se superpone con el recinto (AA-AW/A1-A12 abarca todo el piso), sin sumar al vecino que solo toca el eje. Un tramo o un pilar cuenta si queda a menos de 60 cm.
+- Tocar un folio lo muestra en el plano. Prueba: `node protocolos-recinto-test.mjs`.
+
 **En el plano por ejes (pisos −1, 1, 2 y 3):** al elegir un protocolo, **Ver en el plano** encuadra cada folio entre sus ejes (por ejemplo, «AD-AG/A3-A5»). Cada folio lleva su número (001, 002…), cualquiera sea su estado. Los anulados no se dibujan: se listan a la derecha. [Detalle](docs/PROTOCOL_MATRIX.md#ubicación-en-el-plano-por-ejes).
 
 Control de obra → Protocolos de la matriz → **Críticos · más de un año** muestra abiertos con fecha de elaboración válida, sin dato de cierre y con más de un año calendario a la fecha de evaluación. El aniversario exacto no es crítico. El análisis usa Hoy en America/Santiago por defecto; permite una fecha personalizada y distingue el estado de la matriz al corte de la antigüedad calculada.
