@@ -73,6 +73,23 @@ export async function eliminarReunion(id) {
   avisar();
 }
 
+// Datos de ejemplo (id con prefijo «demo-»): se reemplazan o se quitan de una vez, sin tocar los registros reales.
+export async function reemplazarEjemplo({actividades = [], reuniones = []}, prefijo = 'demo-') {
+  actividades.forEach(validarActividad); reuniones.forEach(validarReunion);
+  if ([...actividades, ...reuniones].some(r => !r.id.startsWith(prefijo))) throw Error('Los datos de ejemplo deben llevar el prefijo ' + prefijo + '.');
+  let quitados = 0;
+  await transaccion('readwrite', ['actividades', 'reuniones'], (s, listo) => {
+    let pendientes = 2;
+    for (const tabla of ['actividades', 'reuniones']) s[tabla].getAllKeys().onsuccess = e => {
+      for (const k of e.target.result) if (String(k).startsWith(prefijo)) { s[tabla].delete(k); quitados++; }
+      for (const r of tabla === 'actividades' ? actividades : reuniones) s[tabla].put(r);
+      if (--pendientes === 0) listo();
+    };
+  });
+  avisar();
+  return quitados;
+}
+
 export async function exportarPlan() {
   return {format: RESPALDO, at: new Date().toISOString(), actividades: await leerActividades(), reuniones: await leerReuniones()};
 }
