@@ -1,12 +1,15 @@
 // Rombo interactivo del recinto: avance y observaciones juntos. Cada sección es una partida, ubicada como en el rombo de
 // las láminas (M1 arriba, M2 derecha, M3 abajo, M4 izquierda, cielo al centro arriba y pavimento al centro abajo). Su
 // color es el estado de ejecución y un número rojo cuenta las observaciones pendientes de ese elemento. Tocar una sección
-// despliega su checklist (instalación, revisión, qué falta) y sus observaciones; cambiar el estado lo guarda al instante.
+// despliega su checklist (instalación, revisión, qué falta), sus partidas con m² ejecutados y pendientes (avance por
+// partida, sin montos) y sus observaciones; cambiar el estado lo guarda al instante.
 import {loadPma} from './pma.mjs';
 import {nivel} from './level.mjs';
 import {tasksFor, reportProgress, keyFor, fields, ESTADOS_PARTIDA, COLOR_PARTIDA, estadoPartida, actualizarPartida} from './room-progress-model.mjs';
 import {readProgress, saveProgress} from './room-progress-store.mjs';
 import {progressFloors, progressFloor} from './progress-scope.mjs';
+import {cargarAvance, m2, unidad} from './avance.mjs';
+import {partidasDeTerminacion} from './avance-model.mjs';
 
 const ZONAS = {
   M1: {puntos: '75,85 150,10 225,85 205,105 95,105', texto: [150, 66], aviso: [180, 54]},
@@ -38,7 +41,8 @@ export function romboSVG(partes, elegido, esc = String, interactivo = true) {
   return `<svg class="romboSVG" viewBox="0 0 300 300" role="group" aria-label="Rombo del recinto: toca una partida"><defs><pattern id="romboNA" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" fill="#fff"/><line x1="0" y1="0" x2="0" y2="8" stroke="#8c8c8c" stroke-width="2"/></pattern></defs>${orden.map(parte).join('')}</svg>`;
 }
 
-// ctx: {esc, toast, observaciones: () => Promise<{porCodigo}>, nuevaObservacion(room, campo, alGuardar), abrirObservacion(id, alCambiar), modalOriginal?()}
+// ctx: {esc, toast, observaciones: () => Promise<{porCodigo}>, nuevaObservacion(room, campo, alGuardar), abrirObservacion(id, alCambiar),
+//       verCodigo?(campo, codigo) para ver en el plano los recintos con ese código, irAvance?() para abrir el avance por partida}
 export function createRombo(ctx) {
   const esc = ctx.esc;
   let elegido = 'PAV';
@@ -49,6 +53,7 @@ export function createRombo(ctx) {
     let model = null, snapshot = {records: []}, obs = [];
     try { [model, snapshot] = enPiso ? await Promise.all([loadPma(), readProgress()]) : [null, {records: []}]; } catch (e) { model = null; }
     try { obs = ((await ctx.observaciones?.())?.porCodigo.get(String(room.code).trim()) || []); } catch {}
+    let avance = null; try { avance = enPiso ? (await cargarAvance()).porCodigo.get(String(room.code).trim()) || null : null; } catch {}
     if (!vigente()) return;
     const actual = snapshot.records.find(r => r.key === keyFor(room.code, nivel.id));
     const todas = model ? tasksFor(model, room, nivel.id) : [], fila = model ? reportProgress(model, [room], snapshot.records, nivel.id).rows[0] : null;
@@ -60,13 +65,14 @@ export function createRombo(ctx) {
     const registrable = !!(model && todas.length);
     const t = tarea(elegido), estado = partes[elegido].estado, editable = registrable && t?.applicable && t?.documented;
     const lista = obs.filter(o => o.terminacion === elegido).sort((a, b) => b.actualizada.localeCompare(a.actualizada));
+    const partidas = avance ? partidasDeTerminacion(avance.nodos, elegido, avance.row) : [];
     const boton = (campo, valor, actualV, extra = '') => `<button type="button" data-rombo-${campo}="${esc(valor)}" aria-pressed="${valor === actualV}" ${extra}>${esc(valor)}</button>`;
     root.innerHTML = `<div class="romboCaja">${romboSVG(partes, elegido, esc, true)}
       <div class="romboLeyenda">${ESTADOS_PARTIDA.filter(e => e !== 'Sin definición').map(e => `<span><i class="${e === 'No aplica' ? 'na' : ''}" style="background:${COLOR_PARTIDA[e]}"></i>${esc(e)}</span>`).join('')}<span><i class="obs"></i>Observaciones pendientes</span></div></div>
       ${registrable ? '' : `<p class="romboNota">${enPiso ? 'Este recinto no tiene correspondencia en el PMA: el rombo muestra los códigos, pero el avance no se puede registrar.' : 'El recinto no pertenece al piso activo.'}</p>`}
       ${avisos.map(w => `<p class="pmaWarning">${esc(w)}</p>`).join('')}
       <section class="romboPartida" aria-live="polite"><div class="romboTitulo"><span class="romboChip" style="--c:${COLOR_PARTIDA[estado]}">${esc(estado)}</span><h4>${esc(fields[elegido])} · ${esc(elegido)} · ${esc(partes[elegido].codigo)}</h4></div>
-        <p class="romboDesc">${esc(t?.description || room.finishes?.find(f => f.field === elegido)?.description || 'Sin descripción en el PMA')}${t && elegido !== 'PAV' && t.asepsis ? ` · Asepsia ${esc(t.asepsis)}` : ''}</p>
+        <p class="romboDesc">${esc(t?.description || room.finishes?.find(f => f.field === elegido)?.description || 'Sin descripción en el PMA')}${t && elegido !== 'PAV' && t.asepsis ? ` · Asepsia ${esc(t.asepsis)}` : ''}${ctx.verCodigo && !['—', 'N/A', '-'].includes(partes[elegido].codigo) ? ` <button type="button" class="romboVerCodigo" data-rombo-ver-codigo>Ver en el plano los recintos con ${esc(elegido)} ${esc(partes[elegido].codigo)}</button>` : ''}</p>
         ${editable ? `<div class="romboFila"><span>Ejecución</span><div class="romboBotones">${['No iniciado', 'En proceso', 'Instalado'].map(v => boton('inst', v, t.installation)).join('')}</div></div>
           <div class="romboFila"><span>Revisión</span><div class="romboBotones">${['Sin revisar', 'Con observaciones', 'Conforme'].map(v => boton('cal', v, t.quality, v === 'Conforme' && t.installation !== 'Instalado' ? 'disabled title="Primero márcala instalada"' : '')).join('')}</div></div>
           <label>Qué falta<textarea data-rombo-texto="missing" maxlength="5000" rows="2">${esc(t.missing || '')}</textarea></label>
@@ -74,12 +80,16 @@ export function createRombo(ctx) {
           <div class="romboFila romboFirma"><label>Responsable *<input data-rombo-resp maxlength="200" value="${esc(actual?.responsible || autor())}" autocomplete="name"></label>${avisos.length ? '<label class="check"><input type="checkbox" data-rombo-cotejo> Cotejé las diferencias documentales</label>' : ''}<button type="button" class="primary" data-rombo-guardar>Guardar notas</button></div>
           <p class="romboMensaje" role="status">${t.stale ? 'La fuente cambió desde el último registro: revisa y vuelve a guardar.' : actual ? `Último registro: ${esc(actual.date)} · ${esc(actual.responsible)}` : 'Sin registros todavía.'}</p>`
         : registrable ? `<p class="romboNota">${t && !t.applicable ? 'No aplica según el PMA: fuera del cálculo de avance.' : 'Requiere definición documental en el PMA: fuera del porcentaje.'}</p>` : ''}
+        ${avance ? `<div class="romboM2"><div class="romboTitulo"><h4>Partidas de ${esc(fields[elegido])} · m² <small>${partidas.length}</small></h4>${ctx.irAvance && partidas.length ? '<button type="button" data-rombo-ir-avance>Registrar avance por partida</button>' : ''}</div>
+          ${partidas.length ? `<ul class="romboPartidas">${partidas.map(n => `<li><span><b>${esc(n.item)}</b> ${esc(n.nombre)}</span><span class="romboPct">${esc(n.estado)} · ${n.pct} %</span><small>${n.cantidad != null ? `${m2(n.m2Ejecutado)} de ${m2(n.cantidad)} ${esc(unidad(n.unidad))} ejecutados · <b>${m2(n.m2Pendiente)} ${esc(unidad(n.unidad))} pendientes</b>` : 'Sin superficie por recinto en el PMA: avance en %'}</small></li>`).join('')}</ul>` : '<p class="romboNota">Esta terminación no genera partidas en el avance.</p>'}</div>` : ''}
         <div class="romboObs"><div class="romboTitulo"><h4>Observaciones en ${esc(NOMBRE_OBS[elegido])} <small>${lista.length}</small></h4><button type="button" data-rombo-obs-nueva>+ Observación con foto</button></div>
           ${lista.length ? `<ul class="romboObsLista">${lista.map(o => `<li><button type="button" data-rombo-obs="${esc(o.id)}"><b>${esc(o.descripcion)}</b><small>${esc(o.estado === 'Corregida' ? 'Por validar' : o.estado)} · ${esc(o.responsable || 'Sin responsable')}${o.plazo ? ' · plazo ' + esc(o.plazo.split('-').reverse().join('-')) : ''}${o.fotos.length ? ` · ${o.fotos.length} foto${o.fotos.length === 1 ? '' : 's'}` : ''}</small></button></li>`).join('')}</ul>` : '<p class="romboNota">Sin observaciones en este elemento.</p>'}</div></section>`;
     const volver = () => ficha(root, room, {alGuardar});
     const elegir = campo => { elegido = campo; volver(); };
     root.querySelectorAll('[data-rombo]').forEach(g => { g.addEventListener('click', () => elegir(g.dataset.rombo)); g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); elegir(g.dataset.rombo); } }); });
     root.querySelector('[data-rombo-obs-nueva]').onclick = () => ctx.nuevaObservacion(room, elegido, volver);
+    root.querySelector('[data-rombo-ver-codigo]')?.addEventListener('click', () => ctx.verCodigo(elegido, partes[elegido].codigo));
+    root.querySelector('[data-rombo-ir-avance]')?.addEventListener('click', () => ctx.irAvance());
     root.querySelectorAll('[data-rombo-obs]').forEach(b => b.onclick = () => ctx.abrirObservacion(b.dataset.romboObs, volver));
     if (!editable) return;
     const mensaje = root.querySelector('.romboMensaje'), texto = k => root.querySelector(`[data-rombo-texto="${k}"]`).value;

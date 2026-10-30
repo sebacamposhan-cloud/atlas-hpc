@@ -1,7 +1,10 @@
-// Avance valorizado por recinto y partida · piloto del nivel −1.
-// Cada recinto del PMA RevB (A-S01) recibe las partidas del itemizado (Formulario n°11A) que corresponden a sus
-// terminaciones y asepsia. Valor ejecutado = cantidad del recinto (superficie PMA) × % de avance × precio unitario (BA).
+// Avance por recinto y partida en los cuatro pisos (−1, 1, 2 y 3).
+// Cada recinto del PMA RevB de su piso (A-S01, A-N01, A-N02, A-N03) recibe las partidas del itemizado que corresponden
+// a sus terminaciones y asepsia. Avance físico en m²: ejecutado = superficie PMA × % de avance; pendiente = el resto.
+// Sin valorización en la plataforma (decisión de obra, 2026-10-30): los precios del itemizado no se cargan; las funciones
+// que aceptan un itemizado siguen calculando montos solo si se les entrega uno (pruebas y análisis fuera de la app).
 // Las partidas se identifican siempre por su código ITEM, nunca por número de fila.
+import {progressFloors} from './progress-scope.mjs';
 
 export const CAPITULOS_PILOTO = ['2.6', '4.3', '5.1', '5.3', '6.1', '6.2', '6.3', '6.4', '6.5', '6.6', '6.8', '6.10'];
 export const CAPITULOS_POSTERIORES = ['7', '9']; // artefactos e instalaciones: preparados, fuera del piloto
@@ -9,7 +12,8 @@ export const ESTADOS = ['No iniciado', 'En ejecución', 'Instalado', 'Observado'
 export const CONFORMIDAD = ['Sin revisar', 'Conforme', 'No conforme'];
 export const ESTADOS_PROTOCOLO = ['Pendiente', 'Liberado'];
 export const ESTADOS_RECINTO = ['Sin iniciar', 'En curso', 'Completo', 'Observado', 'Sin datos'];
-export const keyFor = code => 'N-1|' + String(code).trim();
+// Clave piso|código; los registros del −1 conservan su clave «N-1|código».
+export const keyFor = (code, level = 'N-1') => level + '|' + String(code).trim();
 const enCapitulo = (code, caps) => caps.some(c => code === c || code.startsWith(c + '.'));
 
 // Nombres de respaldo: el checklist funciona aunque el itemizado aún no se haya cargado en el dispositivo.
@@ -33,6 +37,9 @@ const CIE_PINTADO = new Set(['200', '201', '202']), CIE_CENEFA = new Set(['204',
 const MUROS_PINTURA = {'11': 'BAJA', '12': 'MEDIA'}; // el código de muro ya fija la asepsia de la pintura
 const MURO_REVESTIMIENTO = {'14': '6.2.3', '15': '6.2.3', '16': '6.2.4', '19': '6.2.7'};
 const PINTURA_MURO = {BAJA: '6.4.1.1', MEDIA: '6.4.1.2'}, PINTURA_CIELO = {BAJA: '6.4.2.1', MEDIA: '6.4.2.2'};
+// Terminaciones del PMA sin ítem conocido del itemizado (sobre todo en los pisos 1 a 3): se registran igual, como
+// partida de la terminación («PMA 109»), con el nombre del PMA, sus m² y la cadena de previos de su familia.
+const PAV_RESILIENTE = new Set(['103', '109', '110']), MURO_PANEL = new Set(['20', '21', '24']), MURO_EPOXICO = '13';
 
 // Protocolos previos que no son partidas del itemizado. «ref» es el tipo de protocolo de la matriz REV1.
 export const PROTOCOLOS = {
@@ -60,7 +67,7 @@ export const area = row => parseFloat(String(row?.area ?? '').replace(/\./g, '')
 const limpio = v => String(v ?? '').trim();
 
 // Nodos (partidas y protocolos) de un recinto, con sus prerrequisitos. Cantidad = superficie PMA solo para partidas en m².
-export function nodosRecinto(row, items = new Map()) {
+export function nodosRecinto(row, items = new Map(), materiales = null) {
   const nodos = new Map(), asepsia = limpio(row.asepsis).toUpperCase(), m2 = area(row), sinPartida = [];
   const unidad = id => items.get(id)?.unit || (/^6\.(1|3)\.|^6\.4\.(2|3)|^4\.3\.1/.test(id) ? 'm2' : '');
   const partida = (id, origen, prereq = [], porSuperficie = true) => {
@@ -68,6 +75,13 @@ export function nodosRecinto(row, items = new Map()) {
     const it = items.get(id), u = unidad(id);
     nodos.set(id, {id, tipo: 'partida', item: id, nombre: it?.desc || NOMBRES[id] || id, unidad: u, cantidad: porSuperficie && /^m2$/i.test(u) && m2 > 0 ? m2 : null, pu: it?.pu ?? null, origen: [origen], prereq: [...prereq]});
   };
+  // inicio: inicia su propia cadena (paneles autoportantes), no se informa como «sin protocolo previo».
+  const terminacion = (campo, codigo, origen, prereq, porSuperficie, inicio = false, nombre = null) => {
+    const id = 'T-' + campo + '-' + codigo;
+    if (nodos.has(id)) { const n = nodos.get(id); n.origen.push(origen); return; }
+    nodos.set(id, {id, tipo: 'partida', item: 'PMA ' + codigo, nombre: nombre || materiales?.get(codigo) || 'Terminación ' + codigo + ' del PMA', unidad: porSuperficie && m2 > 0 ? 'm2' : '', cantidad: porSuperficie && m2 > 0 ? m2 : null, pu: null, origen: [origen], prereq: [...prereq], generica: true, inicio});
+  };
+  const conocido = codigo => codigo !== 'S/E' && !!materiales?.has(codigo);
   const protocolo = (id, prereq = []) => { if (!nodos.has(id)) nodos.set(id, {id, tipo: 'protocolo', nombre: PROTOCOLOS[id].nombre, ref: PROTOCOLOS[id].ref, origen: [], prereq: [...prereq]}); };
   const pav = limpio(row.PAV), cie = limpio(row.CIE), muros = ['M1', 'M2', 'M3', 'M4'].map(k => limpio(row[k])), humedo = cie === CIE_HUMEDO;
   // Pavimento
@@ -80,17 +94,28 @@ export function nodosRecinto(row, items = new Map()) {
     if (VINILICOS_CAUCHO.has(pav) || pav === '112') { protocolo('P-NIV-RES', ['2.6']); partida(id, 'Pavimento ' + pav, ['P-NIV-RES', ...impermeable]); }
     else if (pav === '116' || pav === '115') { protocolo('P-SUSTRATO', ['2.6']); partida(id, 'Pavimento ' + pav, ['P-SUSTRATO', ...impermeable]); if (pav === '116') partida('6.10.2.8', 'Retorno de resina PU', ['6.1.5.2'], false); }
     else partida(id, 'Pavimento ' + pav, humedo ? impermeable : ['2.6']);
-  } else if (pav && !['N/A', '-'].includes(pav)) sinPartida.push('Pavimento ' + pav);
+  } else if (pav && !['N/A', '-'].includes(pav)) {
+    if (conocido(pav)) {
+      const impermeable = humedo ? ['4.3.1'] : [];
+      protocolo('P-SOBRELOSA'); partida('2.6', 'Pavimento ' + pav, ['P-SOBRELOSA'], false);
+      if (humedo) partida('4.3.1', 'Recinto húmedo (cielo 202)', ['2.6']);
+      if (PAV_RESILIENTE.has(pav)) { protocolo('P-NIV-RES', ['2.6']); terminacion('PAV', pav, 'Pavimento ' + pav, ['P-NIV-RES', ...impermeable], true); }
+      else terminacion('PAV', pav, 'Pavimento ' + pav, humedo ? impermeable : ['2.6'], true);
+    } else sinPartida.push('Pavimento ' + pav);
+  }
   // Cielo
   if (CIE[cie]) {
     protocolo('P-INST-CIELO');
     const id = CIE[cie];
     partida(id, 'Cielo ' + cie, ['P-INST-CIELO']);
-    if (CIE_PINTADO.has(cie)) { if (PINTURA_CIELO[asepsia]) partida(PINTURA_CIELO[asepsia], 'Cielo ' + cie + ' · asepsia ' + asepsia, [id]); else sinPartida.push('Pintura de cielo con asepsia ' + (asepsia || 'sin dato')); }
+    if (CIE_PINTADO.has(cie)) { if (PINTURA_CIELO[asepsia]) partida(PINTURA_CIELO[asepsia], 'Cielo ' + cie + ' · asepsia ' + asepsia, [id]); else if (asepsia === 'ALTA' && materiales) terminacion('CIE', 'PINTURA-ALTA', 'Cielo ' + cie + ' · asepsia ALTA', [id], true, false, 'Pintura de cielo asepsia alta'); else sinPartida.push('Pintura de cielo con asepsia ' + (asepsia || 'sin dato')); }
     if (CIE_CENEFA.has(cie)) partida('6.10.4.2', 'Cenefa de cielo ' + cie, [id], false);
-  } else if (cie && !['N/A', '-'].includes(cie)) sinPartida.push('Cielo ' + cie);
+  } else if (cie && !['N/A', '-'].includes(cie)) {
+    if (conocido(cie)) { protocolo('P-INST-CIELO'); terminacion('CIE', cie, 'Cielo ' + cie, ['P-INST-CIELO'], true); }
+    else sinPartida.push('Cielo ' + cie);
+  }
   // Muros: tabique → sellos de juntas → empaste. El tabique es la base de cualquier revestimiento o pintura de muro.
-  const conMuro = muros.filter(c => MUROS_PINTURA[c] || MURO_REVESTIMIENTO[c]);
+  const conMuro = muros.filter(c => MUROS_PINTURA[c] || MURO_REVESTIMIENTO[c] || (c === MURO_EPOXICO && conocido(c)));
   if (conMuro.length) { partida('5.1', 'Muros', [], false); partida('5.3', 'Muros', ['5.1'], false); }
   for (const c of new Set(muros)) {
     if (MURO_REVESTIMIENTO[c]) partida(MURO_REVESTIMIENTO[c], 'Muro ' + c, ['5.1'], false);
@@ -100,6 +125,9 @@ export function nodosRecinto(row, items = new Map()) {
       if (PINTURA_MURO[pintura]) partida(PINTURA_MURO[pintura], 'Muro ' + c + ' · asepsia ' + pintura, ['6.2.2'], false);
       else sinPartida.push('Pintura de muro ' + c + ' con asepsia ' + (pintura || 'sin dato'));
     }
+    // Epóxica de asepsia alta: misma cadena que la pintura (tabique → sellos → empaste). Paneles: inician su cadena.
+    if (c === MURO_EPOXICO && conocido(c)) { partida('6.2.2', 'Muro ' + c, ['5.3'], false); terminacion('MURO', c, 'Muro ' + c, ['6.2.2'], false); continue; }
+    if (MURO_PANEL.has(c) && conocido(c)) { terminacion('MURO', c, 'Muro ' + c, [], false, true); continue; }
     if (c && !MUROS_PINTURA[c] && !MURO_REVESTIMIENTO[c] && !['N/A', '-'].includes(c)) sinPartida.push('Muro ' + c);
   }
   return {nodos: [...nodos.values()], sinPartida: [...new Set(sinPartida)], asepsia, superficie: m2};
@@ -135,7 +163,7 @@ export function validarPartida(nodo, v, bloqueadoPor = []) {
 }
 export function validarRegistro(r, nodos) {
   const e = [];
-  if (r?.level !== 'N-1' || r.key !== keyFor(r.code) || !Number.isInteger(r.version) || r.version < 1 || typeof r.at !== 'string') e.push('Registro incompleto.');
+  if (!progressFloors[r?.level] || r.key !== keyFor(r.code, r.level) || !Number.isInteger(r.version) || r.version < 1 || typeof r.at !== 'string') e.push('Registro incompleto.');
   if (!r?.responsable?.trim()) e.push('Indica el responsable.');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(r?.fecha || '') || new Date(r.fecha).toISOString?.().slice(0, 10) !== r.fecha) e.push('Fecha inválida.');
   if (e.length || !nodos) return e;
@@ -159,15 +187,16 @@ export function estadoRecinto(nodos, registro) {
 }
 
 // Reporte completo: filas por recinto, totales por partida, recinto, asepsia y piso; bloqueos; control de cubicación.
-export function reporteAvance(pma, items, registros) {
+export function reporteAvance(pma, items, registros, level = 'N-1') {
   const porClave = new Map(registros.map(r => [r.key, r])), filas = [];
-  for (const row of pma.main.filter(r => r.level === 'A-S01')) {
-    const {nodos, sinPartida, asepsia, superficie} = nodosRecinto(row, items), registro = porClave.get(keyFor(row.code));
+  for (const row of pma.main.filter(r => r.level === progressFloors[level])) {
+    const {nodos, sinPartida, asepsia, superficie} = nodosRecinto(row, items, pma.materials), registro = porClave.get(keyFor(row.code, level));
     const detalle = nodos.map(n => {
       const s = estadoNodo(n, registro), bloq = bloqueos(n, nodos, registro);
       const total = n.tipo === 'partida' && n.cantidad != null && n.pu != null ? n.cantidad * n.pu : null;
       const ejecutado = total != null ? total * (s.pct || 0) / 100 : null;
-      return {...n, ...s, bloqueadoPor: bloq, total, ejecutado, pendiente: total != null ? total - ejecutado : null};
+      const m2Ejecutado = n.tipo === 'partida' && n.cantidad != null ? n.cantidad * (s.pct || 0) / 100 : null;
+      return {...n, ...s, bloqueadoPor: bloq, total, ejecutado, pendiente: total != null ? total - ejecutado : null, m2Ejecutado, m2Pendiente: m2Ejecutado != null ? n.cantidad - m2Ejecutado : null};
     });
     filas.push({code: limpio(row.code), name: row.name, unit: row.unit, asepsia: asepsia || 'Sin dato', superficie, row, registro, nodos: detalle, sinPartida, estado: estadoRecinto(nodos, registro),
       total: suma(detalle, 'total'), ejecutado: suma(detalle, 'ejecutado')});
@@ -178,7 +207,7 @@ export function reporteAvance(pma, items, registros) {
   // Bloqueada: ya tiene avance pero no puede aprobarse porque su protocolo previo no está liberado. Su monto ejecutado queda detenido.
   const bloqueadas = partidas.filter(n => n.bloqueadoPor.length && !['No iniciado', 'Aprobado'].includes(n.estado));
   return {
-    filas, partidas,
+    level, filas, partidas,
     porPartida: [...porPartida.entries()].map(([id, ns]) => resumen(id, ns)).sort((a, b) => (b.pendiente ?? -1) - (a.pendiente ?? -1)),
     porAsepsia: [...porAsepsia.entries()].map(([id, ns]) => resumen(id, ns)),
     porRecinto: filas.map(f => ({code: f.code, name: f.name, estado: f.estado, total: f.total, ejecutado: f.ejecutado})),
@@ -198,8 +227,21 @@ function resumen(id, ns) {
   const valorizables = ns.filter(n => n.total != null);
   return {id, nombre: ns[0].nombre, n: ns.length, aprobadas: ns.filter(n => n.estado === 'Aprobado').length, total: valorizables.length ? suma(valorizables, 'total') : null,
     ejecutado: valorizables.length ? suma(valorizables, 'ejecutado') : null, pendiente: valorizables.length ? suma(valorizables, 'pendiente') : null,
+    cantidad: ns.some(n => n.cantidad != null) ? suma(ns, 'cantidad') : null, m2Ejecutado: ns.some(n => n.cantidad != null) ? suma(ns, 'm2Ejecutado') : null, unidad: ns[0].unidad,
     fisico: ns.reduce((a, n) => a + (n.pct || 0), 0) / ns.length};
 }
+
+// Partidas de una terminación del rombo (PAV, CIE, M1–M4), según de dónde salió cada partida al generarse.
+// El pavimento incluye su impermeabilización de recinto húmedo y su retorno; el cielo, su pintura y cenefa; un muro, su
+// tabique y sellos comunes y lo que corresponde a su código.
+export function partidasDeTerminacion(nodos, campo, row) {
+  const codigo = limpio(row?.[campo]), es = (o, base) => o === base || o.startsWith(base + ' ');
+  const propia = o => campo === 'PAV' ? es(o, 'Pavimento') || o.startsWith('Recinto húmedo') || o.startsWith('Retorno')
+    : campo === 'CIE' ? es(o, 'Cielo') || o.startsWith('Cenefa') : !!codigo && (o === 'Muros' || es(o, 'Muro ' + codigo));
+  return nodos.filter(n => n.tipo === 'partida' && n.origen.some(propia));
+}
+// Avance físico de un recinto: promedio del % de sus partidas (cada partida pesa igual).
+export const avanceFisico = nodos => { const ps = nodos.filter(n => n.tipo === 'partida'); return ps.length ? ps.reduce((a, n) => a + (n.pct || 0), 0) / ps.length : 0; };
 
 // Itemizado (Formulario n°11A). Cantidades del piso −1 en K (módulo A), AB (módulo B) y AR (módulo D); precio unitario en BA.
 export function leerItemizado(libro, XLSX) {
@@ -227,7 +269,7 @@ export function leerItemizado(libro, XLSX) {
 // Listas para revisión: partidas del piloto sin cantidad por recinto, sin protocolo previo y terminaciones sin partida.
 export function revision(reporte, items) {
   const generadas = new Map();
-  for (const n of reporte.partidas) { const g = generadas.get(n.item) || {id: n.item, nombre: n.nombre, recintos: 0, sinCantidad: 0, sinProtocolo: !n.prereq.length && !INICIO_CADENA.has(n.item)}; g.recintos++; if (n.cantidad == null) g.sinCantidad++; generadas.set(n.item, g); }
+  for (const n of reporte.partidas) { const g = generadas.get(n.item) || {id: n.item, nombre: n.nombre, recintos: 0, sinCantidad: 0, sinProtocolo: !n.prereq.length && !INICIO_CADENA.has(n.item) && !n.inicio}; g.recintos++; if (n.cantidad == null) g.sinCantidad++; generadas.set(n.item, g); }
   const piloto = [...items.values()].filter(i => i.piloto && i.p1 > 0);
   const cubiertas = id => generadas.has(id) || [...generadas.keys()].some(g => id.startsWith(g + '.'));
   return {
