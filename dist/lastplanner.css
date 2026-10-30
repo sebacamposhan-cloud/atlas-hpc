@@ -227,3 +227,8 @@ dialog.lpDialog.lpAncho { width: min(1000px, 96vw); }
 .lpAvisoEjemplo { border: 1px solid var(--g-marca, #1b2a56); border-left: 6px solid var(--g-cian, #29a8df); background: #fff; padding: 8px 12px; font-size: 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 14px; }
 .lpAvisoEjemplo button { font-size: 12px; min-height: 32px; }
 .lpListaEjemplo { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 13px; }
+
+/* Tablas con filtros por columna: conteo y «Quitar filtros» sobre la tabla; la selección de un gráfico que cambia lo
+   listado (otras semanas) va en una línea con un enlace, sin recuadro. */
+.lpTituloTabla { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 12px; margin: 0 0 6px; }
+.lpFiltroActivo { border: 0; padding: 0; background: transparent; }

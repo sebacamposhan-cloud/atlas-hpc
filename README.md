@@ -62,7 +62,7 @@ Control de obra → **Last Planner** reúne la planificación semanal de la obra
 
 Desde la ficha de cualquier recinto, «+ Observación con foto» abre la cámara del celular (solo cámara, fotos tomadas en el lugar) y registra qué se observa, terminación, categoría, prioridad, responsable y plazo. Tocando el recinto se ven sus observaciones con las miniaturas de sus fotos.
 - **Seguimiento:** Abierta → En corrección → Corregida (con foto «después» o comentario) → Cerrada, con historial completo.
-- **Control de obra → Observaciones en terreno:** pendientes, vencidas, corregidas por verificar y cierres, pendientes por responsable, filtros, capa del plano y respaldo JSON para llevarlas a otro equipo.
+- **Control de obra → Avance y observaciones → Observaciones en terreno:** pendientes, vencidas, corregidas por verificar y cierres, pendientes por responsable, tabla con filtros por columna como en Excel, capa del plano y respaldo JSON para llevarlas a otro equipo.
 - **Se guardan en el equipo** y, con la sesión de **Nube**, se sincronizan con los demás equipos. [Uso y límites](docs/OBSERVACIONES_TERRENO.md).
 
 ## Nube de proyectos y observaciones
@@ -71,7 +71,7 @@ Botón **Nube** en la cabecera: con la cuenta personal de Atlas (Supabase) los p
 
 ## Avance por recinto · piloto nivel −1
 
-Control de obra → **Avance por recinto** sigue 330 recintos y 1.940 partidas PMA aplicables: instalación, condición, faltantes, observaciones, responsable, fecha e historial. Se registra desde Control o la ficha del plano. Gráficos de instalación, conformidad, avance por partida y pendientes por sector; filtros por asepsia, sector y estado. Datos locales al dispositivo con respaldo/importación y funcionamiento offline. [Alcance y validación](docs/ROOM_PROGRESS.md).
+Control de obra → **Avance y observaciones** sigue 330 recintos y 1.940 partidas PMA aplicables: instalación, condición, faltantes, observaciones, responsable, fecha e historial. Se marca tocando el **rombo** del recinto (en su ficha o desde la tabla): cada sección es una partida con el color de su estado y sus observaciones en terreno. Gráficos de instalación, conformidad, avance por partida y pendientes por sector; tabla de recintos con filtros por columna como en Excel. Datos locales al dispositivo con respaldo/importación y funcionamiento offline. [Alcance y validación](docs/ROOM_PROGRESS.md).
 
 ## Avance valorizado por partida · piloto nivel −1
 
@@ -95,7 +95,7 @@ Detalles, capturas y validación en [PLAN_FILTERS_CONTROL.md](docs/PLAN_FILTERS_
 
 Control de obra → **Protocolos de la matriz** permite desplegar especialidades, buscar y seleccionar un proceso, consultar folios y abrir su ficha documental. Incluye los **20.233 registros, 154 códigos y 38 agrupaciones textuales de especialidad** de la hoja principal, con corte del Excel al 26-10-2026. Pintura de asepsia baja/media y planchas XR-RH se encuentran por sus nombres y códigos originales.
 
-El detalle se carga por código bajo demanda y se pagina en 25 filas. Estado, nivel, persona que recibe y búsqueda filtran el proceso seleccionado. La selección y los filtros se recuerdan en este navegador; los registros locales de obra se conservan aparte. El original puede descargarse íntegro y forma parte de la descarga opcional de originales offline.
+El detalle se carga por código bajo demanda y se pagina en 25 filas. Los encabezados de la tabla (folio, nivel, elemento, ejes, fechas, estado, antigüedad y quién recibe) filtran y ordenan como en Excel. La selección y los filtros se recuerdan en este navegador; los registros locales de obra se conservan aparte. El original puede descargarse íntegro y forma parte de la descarga opcional de originales offline.
 
 El recuento normalizado da 5.678 abiertos, frente a 5.675 del resumen: tres estados tienen espacios finales. Se conservan esos valores originales y las 17 combinaciones repetidas de código/folio; cada fila mantiene su identidad y procedencia. No se asignan las letras de RECINTOS a geometrías ni se transforma CERRADO en aprobación técnica.
 

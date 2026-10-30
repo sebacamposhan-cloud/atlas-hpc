@@ -1,4 +1,5 @@
 import {loadSourceImage} from './source-image.mjs';
+import {crearFiltrosColumna} from './column-filters.mjs';
 export const diamondFields=['M1','M2','M3','M4','CIE','PAV'];
 const normalize=value=>String(value??'').normalize('NFD').replace(/\p{M}/gu,'').toLowerCase();
 export function findDiamonds(rooms,{query='',documentId=''}={}){
@@ -13,13 +14,16 @@ export function diamondBox(room,atlas){
 export function createDiamondCatalog(ctx){
  const esc=ctx.esc,button=document.createElement('button');button.id='diamondCatalogOpen';button.textContent='Rombos';button.type='button';document.querySelector('body>header').append(button);
  const dialog=document.createElement('dialog');dialog.id='diamondCatalog';dialog.setAttribute('aria-label','Catálogo documental de rombos');
- dialog.innerHTML='<div class="diamondHead"><h2>Rombos documentales</h2><button id="diamondClose" aria-label="Cerrar catálogo">×</button></div><section id="diamondListPanel"><p>Observaciones de las láminas de Arquitectura de este piso, incluidas las que quedan fuera del recorte del plano. No equivalen a recintos físicos únicos.</p><div class="diamondFilters"><label>Buscar código, nombre o terminación<input id="diamondSearch" type="search"></label><label>Lámina<select id="diamondDocument"><option value="">Todas las láminas</option></select></label></div><button id="diamondMapToggle" type="button">Mostrar rombos en el plano</button><p id="diamondCount" aria-live="polite"></p><div id="diamondRows"></div><div class="diamondPagination"><button id="diamondPrev">Anterior</button><span id="diamondPage"></span><button id="diamondNext">Siguiente</button></div></section><section id="diamondDetail" hidden></section>';
+ dialog.innerHTML='<div class="diamondHead"><h2>Rombos documentales</h2><button id="diamondClose" aria-label="Cerrar catálogo">×</button></div><section id="diamondListPanel"><p>Observaciones de las láminas de Arquitectura de este piso, incluidas las que quedan fuera del recorte del plano. No equivalen a recintos físicos únicos.</p><button id="diamondMapToggle" type="button">Mostrar rombos en el plano</button><p id="diamondCount" aria-live="polite"></p><p class="dataNote">Toca un encabezado para ordenar o filtrar, como en Excel (también por terminación).</p><div id="diamondRows"></div><div class="diamondPagination"><button id="diamondPrev">Anterior</button><span id="diamondPage"></span><button id="diamondNext">Siguiente</button></div></section><section id="diamondDetail" hidden></section>';
  document.body.append(dialog);const $=id=>dialog.querySelector('#'+id);let page=0;
+ const tabla={filtros:{},orden:null},ambito=r=>ctx.inScope(r)?'En el ámbito del plano':'Fuera del recorte del plano';
+ const cf=crearFiltrosColumna({id:'rombos',estado:tabla,esc,alCambiar:()=>{page=0;list();},columnas:[{key:'codigo',titulo:'Código',valor:r=>r.code},{key:'nombre',titulo:'Nombre',valor:r=>r.name},{key:'lamina',titulo:'Lámina',valor:r=>r.document_id.split('-')[0]},{key:'terminacion',titulo:'Terminaciones',valor:r=>(r.finishes||[]).map(f=>f.field+' '+f.code+' · '+(f.description||''))},{key:'campos',titulo:'Campos',valor:r=>(r.finishes?.length||0)+'/6'},{key:'ambito',titulo:'Ámbito',valor:ambito}]});
  function list(){
   $('diamondListPanel').hidden=false;$('diamondDetail').hidden=true;
-  const rows=findDiamonds(ctx.data().rooms,{query:$('diamondSearch').value,documentId:$('diamondDocument').value}),pages=Math.max(1,Math.ceil(rows.length/24));page=Math.min(page,pages-1);
-  $('diamondCount').textContent=rows.length+' observaciones con rombo · '+ctx.data().rooms.length+' en total';
-  $('diamondRows').innerHTML=rows.slice(page*24,(page+1)*24).map(r=>`<button class="diamondRow" data-diamond-open="${esc(r.id)}"><strong>${esc(r.code)}</strong><span>${esc(r.name)}</span><small>Lámina ${esc(r.document_id.split('-')[0])} · ${r.finishes?.length||0}/6 campos · ${ctx.inScope(r)?'En el ámbito del plano':'Fuera del recorte del plano'}</small></button>`).join('')||'<p>No hay coincidencias. Prueba otro código o lámina.</p>';
+  const todos=findDiamonds(ctx.data().rooms),rows=cf.aplicar(todos),pages=Math.max(1,Math.ceil(rows.length/24));page=Math.min(page,pages-1);
+  $('diamondCount').innerHTML=rows.length+' de '+todos.length+' observaciones con rombo · '+ctx.data().rooms.length+' en total '+cf.limpiar();
+  $('diamondRows').innerHTML=`${cf.barra()}<div class="tableScroll"><table class="masterTable diamondTabla"><thead><tr>${cf.cabecera()}</tr></thead><tbody>${rows.slice(page*24,(page+1)*24).map(r=>`<tr><td data-label="Código"><button class="codeLink" data-diamond-open="${esc(r.id)}">${esc(r.code)}</button></td><td data-label="Nombre">${esc(r.name)}</td><td data-label="Lámina">${esc(r.document_id.split('-')[0])}</td><td data-label="Terminaciones"><small>${esc((r.finishes||[]).map(f=>f.field+' '+f.code).join(' · '))}</small></td><td data-label="Campos">${r.finishes?.length||0}/6</td><td data-label="Ámbito">${ambito(r)}</td></tr>`).join('')||'<tr><td colspan="6">No hay coincidencias. Cambia los filtros desde los encabezados.</td></tr>'}</tbody></table></div>`;
+  cf.conectar(dialog,todos);
   $('diamondPrev').disabled=page===0;$('diamondNext').disabled=page+1>=pages;$('diamondPage').textContent=(page+1)+' / '+pages;
   $('diamondMapToggle').textContent=ctx.showing()?'Ocultar marcas de rombos en el plano':'Mostrar rombos en el plano';
  }
@@ -31,7 +35,7 @@ export function createDiamondCatalog(ctx){
   $('diamondBack').onclick=list;
   if($('diamondLocate'))$('diamondLocate').onclick=()=>{if(ctx.editing())return ctx.toast('Guarda o cancela el contorno antes de cambiar de recinto.');dialog.close();ctx.openRoom(r.id);};
  }
- button.onclick=()=>{const old=$('diamondDocument').value;$('diamondDocument').innerHTML='<option value="">Todas las láminas</option>'+ctx.data().documents.map(d=>`<option value="${esc(d.id)}">${esc(d.code)} · ${esc(d.revision)}</option>`).join('');$('diamondDocument').value=old;list();dialog.showModal();};
- $('diamondClose').onclick=()=>dialog.close();$('diamondSearch').oninput=()=>{page=0;list();};$('diamondDocument').onchange=()=>{page=0;list();};$('diamondPrev').onclick=()=>{page--;list();};$('diamondNext').onclick=()=>{page++;list();};$('diamondRows').onclick=e=>{const b=e.target.closest('[data-diamond-open]');if(b)detail(b.dataset.diamondOpen);};
+ button.onclick=()=>{dialog.showModal();list();};
+ $('diamondClose').onclick=()=>dialog.close();$('diamondPrev').onclick=()=>{page--;list();};$('diamondNext').onclick=()=>{page++;list();};$('diamondRows').onclick=e=>{const b=e.target.closest('[data-diamond-open]');if(b)detail(b.dataset.diamondOpen);};
  $('diamondMapToggle').onclick=()=>{if(ctx.editing())return ctx.toast('Guarda o cancela el contorno antes de cambiar.');dialog.close();ctx.toggle();};
 }
