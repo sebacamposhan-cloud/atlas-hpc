@@ -10,7 +10,7 @@ El panel abre con tres tarjetas, una por sección, y cada tarjeta muestra el dat
 |---|---|---|
 | **Resumen** | PPC por semana, estado de la semana, causas de no cumplimiento, cumplimiento por responsable y por sector. Arriba, el PPC de la semana y de 4 semanas, las restricciones y la asistencia. | Actividades de la semana, o las que corresponden a lo elegido en un gráfico. |
 | **Plan semanal y rendimientos** | Estado de la semana, actividades por responsable (en rojo si la dotación no alcanza), rendimiento real por persona al día y estimador de días. | Pestañas «Actividades de la semana», con iniciar, cerrar y reprogramar, y «Rendimientos» por actividad con sus registros. |
-| **Restricciones y reuniones** | Estado de las restricciones (vencidas, por vencer, liberadas), pendientes por tipo, asistencia por empresa y frentes de trabajo. | Pestañas «Restricciones» (con liberar), «Plan intermedio» (6 semanas, con comprometer) y «Reuniones» (presentes, ausentes, frentes y acuerdos). |
+| **Restricciones y reuniones** | Puntos de bloqueo por semana (gráfico y tabla como la planilla de obra), estado de las restricciones (vencidas, por vencer, liberadas), pendientes por departamento y por tipo, asistencia por empresa y frentes de trabajo. Arriba, las pendientes (y cuántas requieren a la ITO) y la eficacia de cierre. | Pestañas «Restricciones» (qué falta y su acción, a quién bloquea, quién la levanta, compromiso y eficacia, con liberar), «Plan intermedio» (6 semanas, con comprometer) y «Reuniones» (presentes, ausentes, frentes y acuerdos). Tocar una semana del gráfico muestra sus puntos de bloqueo. |
 
 ## Reglas
 
@@ -18,6 +18,10 @@ El panel abre con tres tarjetas, una por sección, y cada tarjeta muestra el dat
 - **Cumplida:** se marca solo si se completó el 100 % de la cantidad comprometida. Lo parcial se cierra como **No cumplida**, con su causa (CNC). El saldo se **reprograma** en otra semana como una actividad nueva; la original conserva su causa para el PPC.
 - **PPC** = cumplidas ÷ comprometidas de la semana. Mientras la semana tenga actividades abiertas, el indicador dice «parcial» y no lleva color. El PPC de 4 semanas cuenta solo las actividades cerradas. El color es verde desde 80 %, ámbar desde 60 % y rojo bajo 60 %.
 - **Restricciones:** son de tipo diseño, información, materiales, mano de obra, equipos, subcontrato, frente previo, calidad, permisos u otro. Cada una tiene responsable y fecha compromiso, y se marca vencida cuando pasa esa fecha sin liberarse. Comprometer una actividad con restricciones pendientes pide confirmación.
+- **Puntos de bloqueo:** son las restricciones vistas semana a semana, con los campos de la planilla de obra: acción para levantarla, departamento que la levanta (oficina técnica, compras, producción, instalaciones, calidad, prevención, subcontrato, ITO / mandante u otro), si requiere intervención de la ITO y fecha de registro. Los campos son opcionales; las restricciones anteriores siguen valiendo y se cuentan desde la fecha en que se creó su actividad.
+  - Cada semana cuenta los **anteriores** (abiertos al empezar), los **nuevos** (registrados en la semana), los **resueltos** (liberados en la semana), los **abiertos** al cierre (o a hoy en la semana en curso) y los **retrasados** (abiertos con el compromiso vencido). % resuelto = resueltos ÷ (anteriores + nuevos).
+  - Un punto se cierra al liberarse o, si nadie lo liberó, cuando su actividad se cumple. Al reprogramar, el saldo hereda los puntos y se cuentan una sola vez.
+  - **Eficacia de cierre** = liberados a tiempo ÷ liberados con compromiso en las últimas 8 semanas; las atrasadas muestran los días de atraso.
 - **Rendimientos:** se calculan como cantidad ejecutada ÷ días trabajados.
   - Los días trabajados son los días hábiles de lunes a viernes entre el inicio y el término real. Se pueden corregir a mano, por ejemplo por feriados o sábados trabajados.
   - Los promedios son ponderados: total ejecutado ÷ total de días.
@@ -40,19 +44,20 @@ El panel abre con tres tarjetas, una por sección, y cada tarjeta muestra el dat
   - el plano del piso abierto con los recintos coloreados y el número de cada actividad;
   - la tabla de actividades, con la misma numeración del plano;
   - el PPC de las últimas 8 semanas y el Pareto de causas;
-  - las restricciones pendientes;
+  - los puntos de bloqueo de las últimas 5 semanas y la eficacia de cierre;
+  - las restricciones pendientes, con su acción, departamento, ITO y atraso;
   - la última reunión: asistencia, frentes y acuerdos;
   - líneas de firma.
 
 ## Datos de ejemplo para presentar
 
 «Datos de ejemplo», en la barra del panel, carga un plan de terminaciones ficticio en los cuatro pisos. Lo genera `dist/lastplanner-ejemplo.mjs` y siempre parte de la semana actual.
-- **Contenido:** ocho semanas cerradas, la semana en curso (con saldos reprogramados), las dos siguientes, el plan intermedio, restricciones (vencidas, pendientes y liberadas) y ocho reuniones semanales con asistencia, frentes y acuerdos.
+- **Contenido:** ocho semanas cerradas, la semana en curso (con saldos reprogramados), las dos siguientes, el plan intermedio, puntos de bloqueo con acción, departamento e ITO (vencidos, pendientes y liberados a tiempo o tarde: los que explican una no cumplida se liberaron tarde) y ocho reuniones semanales con asistencia, frentes y acuerdos.
 - **Un carácter por piso:**
   - Piso −1: PPC estable, frenado por mano de obra y materiales.
   - Piso 1: PPC que mejora al liberarse los frentes.
-  - Piso 2: PPC alto, con Grupsa en puertas correderas de los cubículos UTI rindiendo sobre lo planificado.
-  - Piso 3: PPC que cae por material y frente y se recupera, con Protego en puertas cortafuego rindiendo sobre lo planificado.
+  - Piso 2: PPC alto, con Grupsa en puertas correderas de los cubículos UTI rindiendo sobre lo planificado. La mejor eficacia de cierre, pero con recepciones pendientes de la ITO.
+  - Piso 3: PPC que cae por material y frente y se recupera, con Protego en puertas cortafuego rindiendo sobre lo planificado. La caída coincide con puntos de material liberados tarde.
 - **Responsables:** son los subcontratos de terminaciones: Spotless, STI, Valencia, DAC-Controls, Grupsa, Protego, Miranda, Construlyl, Teisa y Pavitec. Los recintos son los reales de cada piso y las personas son inventadas.
 - **Cómo se quitan:** los registros llevan id `demo-`. «Quitar datos de ejemplo» borra solo esos y deja intacto lo ingresado por el equipo. Mientras estén cargados, el panel lo avisa.
 - **Prueba:** `node lastplanner-ejemplo-test.mjs`.
