@@ -44,6 +44,19 @@ El panel abre con tres tarjetas, una por sección, y cada tarjeta muestra el dat
   - la última reunión: asistencia, frentes y acuerdos;
   - líneas de firma.
 
+## Datos de ejemplo para presentar
+
+«Datos de ejemplo», en la barra del panel, carga un plan de terminaciones ficticio en los cuatro pisos. Lo genera `dist/lastplanner-ejemplo.mjs` y siempre parte de la semana actual.
+- **Contenido:** ocho semanas cerradas, la semana en curso (con saldos reprogramados), las dos siguientes, el plan intermedio, restricciones (vencidas, pendientes y liberadas) y ocho reuniones semanales con asistencia, frentes y acuerdos.
+- **Un carácter por piso:**
+  - Piso −1: PPC estable, frenado por mano de obra y materiales.
+  - Piso 1: PPC que mejora al liberarse los frentes.
+  - Piso 2: PPC alto, con Grupsa en puertas correderas de los cubículos UTI rindiendo sobre lo planificado.
+  - Piso 3: PPC que cae por material y frente y se recupera, con Protego en puertas cortafuego rindiendo sobre lo planificado.
+- **Responsables:** son los subcontratos de terminaciones: Spotless, STI, Valencia, DAC-Controls, Grupsa, Protego, Miranda, Construlyl, Teisa y Pavitec. Los recintos son los reales de cada piso y las personas son inventadas.
+- **Cómo se quitan:** los registros llevan id `demo-`. «Quitar datos de ejemplo» borra solo esos y deja intacto lo ingresado por el equipo. Mientras estén cargados, el panel lo avisa.
+- **Prueba:** `node lastplanner-ejemplo-test.mjs`.
+
 ## Datos
 
 - Todo se guarda en este equipo, en la base IndexedDB `atlas-lastplanner`.

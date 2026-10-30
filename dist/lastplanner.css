@@ -210,3 +210,7 @@ dialog.lpDialog.lpAncho { width: min(1000px, 96vw); }
   .lpDetalleAct dl { grid-template-columns: 1fr; }
   .lpFilaDetalle > td { padding: 0; border-left: 0; }
 }
+/* Aviso y diálogo de los datos de ejemplo para presentación. */
+.lpAvisoEjemplo { border: 1px solid var(--g-marca, #1b2a56); border-left: 6px solid var(--g-cian, #29a8df); background: #fff; padding: 8px 12px; font-size: 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 14px; }
+.lpAvisoEjemplo button { font-size: 12px; min-height: 32px; }
+.lpListaEjemplo { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 13px; }

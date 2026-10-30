@@ -6,7 +6,9 @@ import {registerLayer, layerNames} from './layers.mjs';
 import {workChart} from './work-charts.mjs';
 import * as M from './lastplanner-model.mjs';
 import {SUBCONTRATOS} from './subcontratos.mjs';
-import {leerActividades, leerReuniones, guardarActividades, eliminarActividad, guardarReunion, eliminarReunion, exportarPlan, importarPlan} from './lastplanner-store.mjs';
+import {leerActividades, leerReuniones, guardarActividades, eliminarActividad, guardarReunion, eliminarReunion, exportarPlan, importarPlan, reemplazarEjemplo} from './lastplanner-store.mjs';
+import {generarEjemplo, esEjemplo} from './lastplanner-ejemplo.mjs';
+import {decodeRuntime} from './runtime-loader.mjs';
 
 export const COLOR_ESTADO = {'Planificada': '#1b2a56', 'En ejecución': '#0f5499', 'Cumplida': '#1a7f37', 'No cumplida': '#c21f1f'};
 // «Sin actividades» es blanco: la capa del plano mezcla en modo multiplicar, así que esos recintos quedan sin teñir.
@@ -265,7 +267,8 @@ export function createLastPlanner(ctx) {
     const seccion = SECCIONES.find(([id]) => id === opts.vista), vista = seccion?.[0] || null;
     const cuerpo = vista ? {resumen: vistaResumen, semanal: vistaSemanal, restricciones: vistaRestricciones}[vista](datos) : vistaSecciones(datos);
     root.innerHTML = `<div class="documentaryIntro lpIntro"><div>${vista ? '<button type="button" class="lpVolver" data-lp-secciones>← Secciones del Last Planner</button>' : ''}<h2>Last Planner${vista ? ' · ' + esc(seccion[1]) : ''}</h2><p>${vista ? esc(seccion[2]) + '.' : 'Plan de producción de la obra. Elige una sección.'} Se guarda en este equipo; respáldalo para pasarlo a otro.</p></div>
-      <div class="lpBarra"><label>Piso<select data-lp-piso><option value="">Todos los pisos</option>${pisos.map(p => `<option value="${esc(p.id)}" ${filtros.piso === p.id ? 'selected' : ''}>${esc(p.nombre)}</option>`).join('')}</select></label><button type="button" data-lp-respaldo ${datos.actividades.length || datos.reuniones.length ? '' : 'disabled'}>Respaldo JSON</button><label class="obsImportar">Importar respaldo<input type="file" accept=".json,application/json" data-lp-importar></label></div></div>
+      <div class="lpBarra"><label>Piso<select data-lp-piso><option value="">Todos los pisos</option>${pisos.map(p => `<option value="${esc(p.id)}" ${filtros.piso === p.id ? 'selected' : ''}>${esc(p.nombre)}</option>`).join('')}</select></label><button type="button" data-lp-respaldo ${datos.actividades.length || datos.reuniones.length ? '' : 'disabled'}>Respaldo JSON</button><label class="obsImportar">Importar respaldo<input type="file" accept=".json,application/json" data-lp-importar></label><button type="button" data-lp-ejemplo>Datos de ejemplo</button></div></div>
+      ${datos.actividades.some(esEjemplo) || datos.reuniones.some(esEjemplo) ? '<p class="lpAvisoEjemplo">Se están mostrando <b>datos de ejemplo ficticios</b> para presentación. <button type="button" data-lp-ejemplo>Cargar de nuevo o quitar</button></p>' : ''}
       ${vista ? `<div class="workTabs lpTabsSeccion">${SECCIONES.map(([id, t]) => `<button type="button" data-lp-ir="${id}" aria-pressed="${vista === id}">${esc(t)}</button>`).join('')}</div>` : ''}${cuerpo}`;
     const on = (sel, fn, evento = 'click') => root.querySelectorAll(sel).forEach(el => el.addEventListener(evento, e => fn(el, e)));
     on('[data-lp-semana]', b => { const n = +b.dataset.lpSemana; filtros.semana = n ? M.moverSemana(filtros.semana, n) : M.semanaDe(hoy()); refrescar(); });
@@ -299,6 +302,7 @@ export function createLastPlanner(ctx) {
     on('[data-lp-nueva-reunion]', () => editarReunion(null));
     on('[data-lp-reunion]', b => editarReunion(datos.reuniones.find(r => r.id === b.dataset.lpReunion)));
     root.querySelectorAll('[data-lp-est]').forEach(c => c.addEventListener(c.tagName === 'SELECT' ? 'change' : 'input', () => { filtros.estimar[c.dataset.lpEst] = c.tagName === 'SELECT' ? +c.value : c.value; if (c.tagName === 'SELECT') refrescar(); else { const lista = M.rendimientosPorActividad(datos.actividades.filter(delPiso)), g = lista[filtros.estimar.grupo] || lista[0]; root.querySelector('[data-lp-estimacion]').innerHTML = textoEstimacion(g, g && M.estimarDias(g, Number(filtros.estimar.cantidad), Number(filtros.estimar.dotacion))); } }));
+    on('[data-lp-ejemplo]', () => gestionarEjemplo(datos));
     on('[data-lp-respaldo]', async () => { try { ctx.download(new Blob([JSON.stringify(await exportarPlan())], {type: 'application/json'}), `last-planner_${hoy()}.json`); } catch (e) { ctx.toast(e.message); } });
     on('[data-lp-importar]', async input => { try { const f = input.files[0]; if (!f) return; const n = await importarPlan(JSON.parse(await f.text())); ctx.toast(`Respaldo importado: ${n} registros nuevos.`); refrescar(); } catch (e) { ctx.toast(e.message); } }, 'change');
   }
@@ -308,6 +312,41 @@ export function createLastPlanner(ctx) {
     const campos = ['N°', 'Semana', 'Piso', 'Sector', 'Frente', 'Actividad', 'Responsable', 'Recintos', 'Cantidad', 'Unidad', 'Ejecutado', 'Rendimiento por persona al día', 'Dotación', 'Dotación recomendada', 'Inicio plan', 'Término plan', 'Inicio real', 'Término real', 'Días trabajados', 'HH', 'Estado', 'Causa de no cumplimiento', 'Restricciones pendientes'];
     const filas = lista.map((a, i) => [i + 1, s, nombrePiso(a.level), a.sector, a.frente, a.actividad, a.responsable, a.recintos.map(r => r.code).join(', '), a.cantidad, a.unidad, a.cantidadEjecutada, a.rendimientoPlan, a.dotacion, recomendada(a)?.personas, a.inicioPlan, a.finPlan, a.inicioReal, a.finReal, a.diasReales, a.hh, a.estado, a.causa, M.pendientes(a).map(r => r.tipo + ': ' + r.descripcion).join(' | ')]);
     ctx.download(new Blob(['﻿' + [campos, ...filas].map(f => f.map(celda).join(';')).join('\r\n')], {type: 'text/csv;charset=utf-8'}), `last-planner_${s}.csv`);
+  }
+
+  // ---------- Datos de ejemplo para presentar: se cargan en los cuatro pisos y se quitan sin tocar lo real ----------
+  function gestionarEjemplo(datos) {
+    const hay = datos.actividades.filter(esEjemplo).length + datos.reuniones.filter(esEjemplo).length;
+    dialog.classList.remove('lpAncho');
+    dialog.innerHTML = `<form class="obsForm lpForm" novalidate><header><div><small>LAST PLANNER · PRESENTACIÓN</small><h2>Datos de ejemplo</h2></div><button type="button" class="obsCerrar" aria-label="Cerrar">×</button></header>
+      <div class="obsCuerpo"><p>Carga un plan de terminaciones ficticio en los cuatro pisos para mostrar cómo funciona el Last Planner: ocho semanas de historia, la semana en curso, las dos siguientes, el plan intermedio, restricciones y reuniones semanales con asistencia, frentes y acuerdos.</p>
+      <ul class="lpListaEjemplo"><li><b>Piso −1</b> · Spotless, Valencia, DAC-Controls, Miranda, Teisa, Pavitec y STI. PPC estable, entre 60 % y 80 %, frenado por mano de obra y materiales.</li>
+        <li><b>Piso 1</b> · Construlyl en vinílico de boxes de urgencia, más tabiques, cielos, HPL y artefactos. PPC que mejora de 55 % a cerca de 85 % al liberarse los frentes.</li>
+        <li><b>Piso 2</b> · Grupsa en puertas correderas de los cubículos UTI, con rendimiento sobre lo planificado; Miranda en vinílico. PPC alto, entre 80 % y 93 %.</li>
+        <li><b>Piso 3</b> · Protego en puertas cortafuego de pabellones y circulaciones, rindiendo sobre lo planificado; Construlyl en vinílico conductivo. PPC que cae cerca de 60 % por material y frente, y se recupera sobre 85 %.</li></ul>
+      <p class="obsNota">Las personas son inventadas y los registros llevan la marca «demo». Quitar el ejemplo borra solo esos registros: lo que hayas ingresado tú no se toca. Se guarda solo en este equipo y no se sube a la Nube.</p>
+      <p class="obsMensaje" role="status">${hay ? `Hay ${plural(hay, 'registro', 'registros')} de ejemplo cargados.` : ''}</p></div>
+      <footer><button type="button" data-quitar ${hay ? '' : 'disabled'}>Quitar datos de ejemplo</button><button type="button" class="primary" data-cargar>${hay ? 'Volver a cargar el ejemplo' : 'Cargar ejemplo'}</button></footer></form>`;
+    const form = dialog.querySelector('form'), mensaje = form.querySelector('.obsMensaje'), botones = () => form.querySelectorAll('button');
+    form.querySelector('.obsCerrar').onclick = () => { if (!guardando) dialog.close(); };
+    const ejecutar = async (trabajo, aviso) => {
+      guardando = true; botones().forEach(b => { b.disabled = true; });
+      try { const n = await trabajo(); guardando = false; dialog.close(); await cargarPlan(true); ctx.toast(aviso(n)); refrescar(); }
+      catch (e) { guardando = false; botones().forEach(b => { b.disabled = false; }); mensaje.textContent = 'No se pudo: ' + e.message; }
+    };
+    form.querySelector('[data-cargar]').onclick = () => ejecutar(async () => {
+      mensaje.textContent = 'Preparando los recintos de los cuatro pisos…';
+      const salasPorPiso = {};
+      for (const p of pisos) {
+        const r = await fetch(p.datos + 'runtime.json'); if (!r.ok) throw Error('no se pudo leer ' + p.nombre + '.');
+        salasPorPiso[p.id] = [...new Map(decodeRuntime(await r.json()).data.rooms.map(s => [s.id, {id: s.id, code: s.code, name: s.name, sector: s.sector}])).values()];
+      }
+      const ejemplo = generarEjemplo(salasPorPiso, hoy());
+      await reemplazarEjemplo(ejemplo);
+      return ejemplo;
+    }, e => `Ejemplo cargado: ${e.actividades.length} actividades en los cuatro pisos y ${e.reuniones.length} reuniones.`);
+    form.querySelector('[data-quitar]').onclick = () => ejecutar(() => reemplazarEjemplo({}), n => `Se quitaron ${plural(n, 'registro', 'registros')} de ejemplo.`);
+    if (!dialog.open) dialog.showModal();
   }
 
   // ---------- Formulario de actividad ----------
