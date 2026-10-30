@@ -79,7 +79,7 @@ Control de obra → Avance valorizado y la ficha de cada recinto: los 414 recint
 
 ## PMA de terminaciones RevB
 
-Control de obra → **PMA de terminaciones** incorpora los 3.107 registros del Excel, sus revisiones de pavimentos/cielos/muros, filtros, gráficos y detalle con hoja/fila. Las fichas del plano muestran un desplegable PMA para cotejar terminaciones y superficies declaradas. Los conflictos de nivel/eliminación se señalan sin sobrescribir rombos ni contornos. Original intacto, catálogo offline y SQLite documental independiente: [alcance, datos y verificación](docs/PMA_REVB.md).
+Control de obra → **PMA de terminaciones** incorpora los 3.107 registros del Excel, sus revisiones de pavimentos/cielos/muros, filtros, gráficos y detalle con hoja/fila. Los conflictos de nivel/eliminación se señalan sin sobrescribir rombos ni contornos. Original intacto, catálogo offline y SQLite documental independiente: [alcance, datos y verificación](docs/PMA_REVB.md).
 
 ## Control de obra y filtros del plano
 
@@ -147,7 +147,7 @@ Visor web del nivel −1 del Hospital Provincia Cordillera. Se usa desde el nave
 ## Consulta del plano
 
 - Plano base monocromático, sin marcadores circulares. Pulsar dentro de una superficie abre su ficha; arrastrar mueve el plano.
-- 330 recintos únicos dentro del área solicitada tienen superficies auxiliares de selección. La ficha conserva nombre, código, seis terminaciones, rombo original y referencia documental.
+- 330 recintos únicos dentro del área solicitada tienen superficies auxiliares de selección. La ficha conserva nombre, código, seis terminaciones (rombo interactivo y leyenda) y referencia documental.
 - Cinco etiquetas cuyo nombre ocupaba varias líneas se recuperaron de las fuentes. El conjunto contiene ahora 443 etiquetas documentales, antes de consolidar solapes y aplicar el recorte.
 - Panel lateral en escritorio y ficha inferior ampliable en móvil. Búsqueda por nombre, código, materiales y consultas compatibles; filtros plegables, aislamiento, documentos, resumen y exportaciones PDF/XLSX.
 
