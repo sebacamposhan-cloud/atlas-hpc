@@ -1,3 +1,4 @@
+import {createSpatialSelector} from './lastplanner-spatial.mjs';
 import {createMarking} from './marking.mjs';
 import {createMarkingOverlay,markingLegend} from './marking-overlay.mjs';
 import {createProtocolPlan} from './protocolos-plano.mjs';
@@ -15,11 +16,12 @@ import {matchesLayers} from './layers.mjs';
 import {prepareViewer,footprint,footprintPath,hitRoom,updateFootprint,mapView,flushView,updateTiles,exportMapURL,mapa,overlays,showOverlay,capasDibujo,mostrarCapa} from './viewer.mjs';
 import {nivel,archivo} from './level.mjs';
 import {localAPI,ensureDocumentGeometry,renderRegion,diamondURL,backup,restore,excel,roomPDF,loadVendor,downloadBlob,downloadRecovery} from './web-store.mjs';
-import {loadRuntime} from './runtime-loader.mjs';
+import {loadRuntime,decodeRuntime} from './runtime-loader.mjs';
 import {startPan,panView,startPinch,pinchView} from './gestures.mjs';
 import './offline.mjs';
 'use strict';
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let spatial,spatialSnapshot,spatialScale;
 let marking,markingOverlay,protocolPlan,ui,disciplines,assistant,diamondCatalog,observaciones,romboAvance,lastplanner,protocolosRecinto,protocolosAbiertos=false,avanceCapa=false,obsCapa=false,lpCapa=false,showDiamonds=false;let undoGeometry=[],redoGeometry=[];
 function rememberGeometry(){undoGeometry.push(structuredClone(edit));if(undoGeometry.length>100)undoGeometry.shift();redoGeometry=[];}
 
@@ -44,12 +46,12 @@ function group(r){const by=$('colorBy').value;if(by==='asepsis')return r.asepsis
 function color(){return '#49575d';}
 function render(){if(!data||!doc)return;const rooms=uniqueRooms(data.rooms),ids=new Set(results.map(r=>r.id));let shapes=[],labels=[];for(const r of rooms){const active=selected?.id===r.id,match=ids.has(r.id),dim=(isolation&&!active)||(filtered&&!match);const appearance=marking?.active()?null:ui?.appearance(r),fill=appearance?.fill;{const d=footprintPath(r.id);if(d)shapes.push(`<path class="roomshape" data-geometry-quality="${esc(footprint(r.id)?.quality)}" data-id="${esc(r.id)}" d="${d}" fill="${fill||'#425158'}" fill-opacity="${!dim&&fill?appearance.opacity:!marking?.active()&&!dim&&filtered?.16:0}" stroke="#111" stroke-opacity="${dim?.2:.6}" style="mix-blend-mode:${appearance?.blend||'normal'}" fill-rule="evenodd"><title>${esc(r.code+' · '+r.name)}</title></path>`);}if(!dim&&($('layerCodes').checked||$('layerNames').checked)){const w=world(r);labels.push(`<text class="roomLabel" x="${w.position[0]}" y="${w.position[1]-14}" text-anchor="middle">${esc(($('layerCodes').checked?r.code:'')+($('layerNames').checked?' '+r.name:''))}</text>`);}}
 if(showDiamonds&&!edit)for(const r of rooms){const box=diamondBox(r,atlas);if(box)labels.push(`<rect class="diamondHit" data-diamond-id="${esc(r.id)}" x="${box[0]}" y="${box[1]}" width="${box[2]}" height="${box[3]}" tabindex="0" role="button" aria-label="Abrir rombo ${esc(r.code)}"><title>Rombo ${esc(r.code)} · selección documental, no contorno</title></rect>`);}
-syncPaths(shapes);$('labels').innerHTML=labels.join('');const selectedPath=selected&&footprintPath(selected.id);$('selectionHighlight').innerHTML=selectedPath?`<path class="selectionHalo" d="${selectedPath}"/><path class="selectionOutline" d="${selectedPath}"/>`:'';$('selectedRoomBadge').hidden=!selected;$('selectedRoomBadge').textContent=selected?'Seleccionado · '+selected.code:'';$('background').style.opacity=isolation?'.35':'1';$('detailImage').style.opacity=$('background').style.opacity;$('background').style.display=$('layerOriginal').checked?'':'none';$('detailImage').style.display=$('layerOriginal').checked?'':'none';$('emptyState').hidden=!(filtered&&!results.length);$('isolate').disabled=!selected;$('back').hidden=!isolation;$('backResults').hidden=!(selected&&filtered);$('coverage').textContent=`${rooms.length} recintos · ${rooms.filter(r=>footprint(r.id)).length} superficies seleccionables`;$('colorLegend').textContent='Toca el interior de un recinto para abrir su ficha.';ui?.legend();renderEdit();markingOverlay?.render();}
+syncPaths(shapes);$('labels').innerHTML=labels.join('');const selectedPath=selected&&footprintPath(selected.id);$('selectionHighlight').innerHTML=selectedPath?`<path class="selectionHalo" d="${selectedPath}"/><path class="selectionOutline" d="${selectedPath}"/>`:'';$('selectedRoomBadge').hidden=!selected;$('selectedRoomBadge').textContent=selected?'Seleccionado · '+selected.code:'';$('background').style.opacity=isolation?'.35':'1';$('detailImage').style.opacity=$('background').style.opacity;$('background').style.display=$('layerOriginal').checked?'':'none';$('detailImage').style.display=$('layerOriginal').checked?'':'none';$('emptyState').hidden=!(filtered&&!results.length);$('isolate').disabled=!selected;$('back').hidden=!isolation;$('backResults').hidden=!(selected&&filtered);$('coverage').textContent=`${rooms.length} recintos · ${rooms.filter(r=>footprint(r.id)).length} superficies seleccionables`;$('colorLegend').textContent='Toca el interior de un recinto para abrir su ficha.';ui?.legend();renderEdit();markingOverlay?.render();spatial?.render();lastplanner?.renderOverlay?.();}
 function changeDoc(id,fit=true){doc=data.documents.find(d=>d.id===id);$('document').value=id;$('planTitle').textContent=nivel.nombre;$('revision').textContent=atlas.scope.name;if(fit)setView(fullView(),false);render();}
 function listResults(){ $('count').textContent=`${results.length} resultados`;$('scopeSummary').textContent=filtered?'Dentro de '+atlas.scope.name:'Toca cualquier punto del recinto';$('results').innerHTML=results.map(r=>`<button class="result ${selected?.id===r.id?'active':''}" data-id="${esc(r.id)}"><strong>${esc(r.code)}</strong><span>${esc(r.name)}</span><small>${esc(nivel.corto)} · Sector ${esc(r.sector)} · ${footprint(r.id)?'Selección por superficie':'Revisar superficie'}${r.status==='Validado'?' · Validado':''}</small></button>`).join('');}
 async function runSearch(){const serial=++querySerial;try{const r=await api('/api/search?'+params());if(serial!==querySerial)return;results=uniqueRooms(r.rooms).filter(r=>matchesLayers(r,ui?.filters()||{}));filtered=!!(Object.values(ui?.filters()||{}).some(v=>v.length)||$('search').value||$('asepsis').value||$('material').value||$('pending').checked||$('geometryOnly').checked);if(filtered&&selected&&!results.some(room=>room.id===selected.id)){selected=null;document.body.classList.add('hideRight');}if(filtered&&results.length>1){selected=null;isolation=false;if(!ui?.filtersOpen())setView(fullView());document.body.classList.add('hideRight');}listResults();render();ui?.refresh();if(filtered&&results.length===1&&!ui?.filtersOpen())selectRoom(results[0].id); }catch(e){toast(e.message);}}
 function markResultActive(){for(const el of $('results').querySelectorAll('.active'))el.classList.remove('active');if(selected)$('results').querySelector('[data-id="'+selected.id+'"]')?.classList.add('active');}
-async function selectRoom(id,center=true){if(marking?.active()){const r=roomById.get(aliases.get(id)||id);if(r&&center)setView(bounds(r,100));return;}if(edit){toast('Guarda o cancela la edición de geometría antes de cambiar de recinto.');return;}selected=data.rooms.find(r=>r.id===id);if(!selected)return;ui?.closeFilters();isolation=false;previousView=null;if(selected.document_id!==doc.id){doc=data.documents.find(d=>d.id===selected.document_id);$('document').value=doc.id;}if(center)setView(bounds(selected,100));document.body.classList.remove('hideRight');document.body.classList.add('hideLeft');document.body.classList.remove('sheetExpanded');render();markResultActive();renderDetail();if(center&&innerWidth<700){const b=bounds(selected,100);setView([b[0]-b[2]*.15,b[1]-b[3]*.1,b[2]*1.3,b[3]*1.85]);}}
+async function selectRoom(id,center=true){if(spatial?.active()){const r=roomById.get(aliases.get(id)||id);if(r)spatial.choose(r.id,{x:world(r).position[0],y:world(r).position[1]});return;}if(marking?.active()){const r=roomById.get(aliases.get(id)||id);if(r&&center)setView(bounds(r,100));return;}if(edit){toast('Guarda o cancela la edición de geometría antes de cambiar de recinto.');return;}selected=data.rooms.find(r=>r.id===id);if(!selected)return;ui?.closeFilters();isolation=false;previousView=null;if(selected.document_id!==doc.id){doc=data.documents.find(d=>d.id===selected.document_id);$('document').value=doc.id;}if(center)setView(bounds(selected,100));document.body.classList.remove('hideRight');document.body.classList.add('hideLeft');document.body.classList.remove('sheetExpanded');render();markResultActive();renderDetail();if(center&&innerWidth<700){const b=bounds(selected,100);setView([b[0]-b[2]*.15,b[1]-b[3]*.1,b[2]*1.3,b[3]*1.85]);}}
 function clearArchitectureSelection(code){
   selected=null;isolation=false;previousView=null;
   render();markResultActive();
@@ -99,15 +101,13 @@ $('svg').addEventListener('pointermove',e=>{
   if(drag.moved){setView(panView(drag,current));$('svg').classList.add('dragging');}
 });
 $('svg').addEventListener('pointerup',e=>{
-  pointers.delete(e.pointerId);
-  if(pinch){
-    if(pointers.size>=2){beginPinch();return;}
-    pinch=null;flushView();
-    drag=pointers.size?{...startPan(view,$('svg').getScreenCTM(),[...pointers.values()][0]),vertex:null,moved:true}:null;
-    if(!drag)$('svg').classList.remove('dragging');loadDetail();return;
-  }
-  if(!drag)return;const d=drag;drag=null;$('svg').classList.remove('dragging');
-  if(!d.moved){if(edit){if(d.vertex===null){const p=point(e);rememberGeometry();edit.points.push([+p.x.toFixed(2),+p.y.toFixed(2)]);renderEdit();}}else{const id=d.diamondId||hitRoom(point(e));if(id){if(marking?.active())marking.choose(roomById.get(aliases.get(id)||id));else selectRoom(id,false);}}}else loadDetail();
+ pointers.delete(e.pointerId);
+ if(pinch){if(pointers.size>=2){beginPinch();return;}pinch=null;flushView();drag=pointers.size?{...startPan(view,$('svg').getScreenCTM(),[...pointers.values()][0]),vertex:null,moved:true}:null;if(!drag)$('svg').classList.remove('dragging');loadDetail();return;}
+ if(!drag)return;const d=drag;drag=null;$('svg').classList.remove('dragging');
+ if(!d.moved){
+  if(edit){if(d.vertex===null){const p=point(e);rememberGeometry();edit.points.push([+p.x.toFixed(2),+p.y.toFixed(2)]);renderEdit();}}
+  else{const p=point(e),id=d.diamondId||hitRoom(p);if(spatial?.active())spatial.choose(id,p);else if(id){if(marking?.active())marking.choose(roomById.get(aliases.get(id)||id));else selectRoom(id,false);}}
+ }else loadDetail();
 });
 $('svg').addEventListener('keydown',e=>{const id=e.target.dataset.diamondId;if(id&&(e.key==='Enter'||e.key===' ')){e.preventDefault();if(marking?.active())marking.choose(roomById.get(aliases.get(id)||id));else selectRoom(id,false);}});
 $('svg').addEventListener('pointercancel',()=>{drag=null;pinch=null;pointers.clear();$('svg').classList.remove('dragging');loadDetail();});
@@ -150,7 +150,8 @@ async function initialize(){
   romboAvance ||= createRombo({esc,toast,verCodigo:(campo,codigo)=>ui?.apply(/^M/.test(campo)?'walls':campo,codigo),irAvance:()=>{const s=$('detail')?.querySelector('.avanceRoom');if(s){s.open=true;s.scrollIntoView({block:'start',behavior:'smooth'});}},observaciones:()=>cargarObservaciones(),nuevaObservacion:(room,campo,listo)=>observaciones?.editor(room,null,listo,{terminacion:campo}),abrirObservacion:(id,listo)=>observaciones?.abrir(id,listo)});
   observaciones ||= createObservaciones({esc,toast,levelName:nivel.nombre,rooms:()=>uniqueRooms(data.rooms),source:r=>data.documents.find(d=>d.id===r.document_id),download:downloadBlob,locate:async id=>{await disciplines?.switchMode('architecture');ui?.show('map');selectRoom(id);}});
   if(!obsCapa){obsCapa=true;iniciarCapaObservaciones(()=>render());}
-  lastplanner ||= createLastPlanner({esc,toast,rooms:()=>uniqueRooms(data.rooms),download:downloadBlob,fondo:()=>{const m=mapa();return {url:m.overview,export:m.export,origin:m.origin,width:m.width,height:m.height};},position:r=>world(r).position,path:footprintPath});
+  spatial ||= createSpatialSelector({esc,toast,zoom,fit:()=>setView(fullView()),enter:enterSpatial,loadFloor:loadSpatialFloor,restore:restoreSpatial,room:id=>roomById.get(aliases.get(id)||id),source:r=>data.documents.find(d=>d.id===r.document_id),footprint,path:footprintPath,focus:r=>setView(bounds(r,60)),scale:()=>spatialScale,floorRoomLevel:()=>data.rooms[0]?.level});
+  lastplanner ||= createLastPlanner({esc,toast,spatial:options=>spatial.select(options),onPlan:activity=>{if(activity&&activity.level!==nivel.id){if(window.dispatchEvent(new Event('atlas-before-floor-change',{cancelable:true})))location.assign((globalThis.ATLAS_RAIZ||'/')+'?nivel='+encodeURIComponent(activity.level)+'#lastplanner='+encodeURIComponent(activity.id));return;}ui.closeFilters();ui.setLayer('lastplanner');const points=activity?.alcances.flatMap(s=>s.geometry?.points||[])||[];if(points.length){const xs=points.map(p=>p[0]),ys=points.map(p=>p[1]);setView([Math.min(...xs)-70,Math.min(...ys)-70,Math.max(...xs)-Math.min(...xs)+140,Math.max(...ys)-Math.min(...ys)+140]);}},plannerVisible:()=>ui?.enabled()&&ui?.layer?.()==='lastplanner',footprint,source:r=>data.documents.find(d=>d.id===r.document_id),rooms:()=>uniqueRooms(data.rooms),download:downloadBlob,fondo:()=>{const m=mapa();return {url:m.overview,export:m.export,origin:m.origin,width:m.width,height:m.height};},position:r=>world(r).position,path:footprintPath});
   if(!lpCapa){lpCapa=true;iniciarCapaLastPlanner(()=>render());}
   protocolosRecinto ||= createProtocolosRecinto({esc,footprint,verProtocolos:datos=>protocolPlan?.mostrar(datos)});
   ui ||= createWorkspace({esc,observaciones,lastplanner,rooms:()=>uniqueRooms(data.rooms),results:()=>results,data:()=>data,selected:()=>selected,editing:()=>!!edit,architecture:()=>disciplines?.switchMode('architecture'),resize:()=>requestAnimationFrame(updateTiles),toast,modal,hasGeometry:id=>!!footprint(id),footprint,redraw:render,refresh:runSearch,search:()=>{clearTimeout(searchTimer);searchTimer=setTimeout(runSearch,160);},reset,select:selectRoom,excel,download:downloadBlob,scope:()=>atlas.scope,verProtocolos:datos=>protocolPlan?.mostrar(datos)});
@@ -168,7 +169,7 @@ async function initialize(){
   openFromLink();
 }
 // Enlaces directos: #modulo=dashboard conserva el módulo al cambiar de piso; #<código> o #r=<código> abre un recinto (QR).
-function openFromLink(){const h=decodeURIComponent(location.hash.slice(1));if(!h)return;const m=h.match(/^modulo=(\w+)$/);if(m){ui?.show(m[1]);history.replaceState(null,'',location.pathname+location.search);return;}const code=h.replace(/^r=/,''),r=uniqueRooms(data.rooms).find(r=>r.code===code);if(r)selectRoom(r.id);else toast('El recinto '+code+' no está en '+nivel.nombre+'.');}
+function openFromLink(){const h=decodeURIComponent(location.hash.slice(1));if(!h)return;if(h.startsWith('lastplanner=')){lastplanner?.showActivityOnPlan(h.slice(12)).catch(e=>toast(e.message));history.replaceState(null,'',location.pathname+location.search);return;}const m=h.match(/^modulo=(\w+)$/);if(m){ui?.show(m[1]);history.replaceState(null,'',location.pathname+location.search);return;}const code=h.replace(/^r=/,''),r=uniqueRooms(data.rooms).find(r=>r.code===code);if(r)selectRoom(r.id);else toast('El recinto '+code+' no está en '+nivel.nombre+'.');}
 window.addEventListener('hashchange',()=>{if(data)openFromLink();});
 function loadFailed(e){$('loading').innerHTML=`<span>${esc(e.message||'No se pudieron abrir las fichas.')}</span><button id="retryLoad">Reintentar</button>`;$('retryLoad').onclick=()=>location.reload();}
 document.body.classList.add('hideRight','hideLeft');initialize().catch(loadFailed);
@@ -214,3 +215,30 @@ for(const eventName of ['atlas-before-update','atlas-before-floor-change'])windo
 window.addEventListener('atlas-floor-resume',()=>{ui?.show('map');requestAnimationFrame(()=>{setView(view);updateTiles();});});
 
 for(const evento of ['atlas-room-progress-changed','atlas-observaciones-changed','atlas-avance-changed'])window.addEventListener(evento,()=>{if(selected&&$('romboEvidence'))romboAvance?.ficha($('romboEvidence'),selected);});
+
+async function enterSpatial(){
+ marking?.close?.();
+ if(edit)throw Error('Guarda el contorno antes de seleccionar superficies.');
+ await disciplines?.switchMode('architecture');
+ spatialSnapshot={data,atlas,doc,roomById,aliases,canonicalRooms,results,selected,filtered,view:[...view],runtime:await loadRuntime()};
+ ui.closeFilters();ui.show('map');selected=null;filtered=false;isolation=false;
+}
+async function loadSpatialFloor(levelId){
+ const floor=(globalThis.ATLAS_PISOS||[]).find(p=>p.id===levelId);if(!floor)throw Error('Piso no disponible.');const prefix=floor.datos||'';
+ const response=await fetch(prefix+'runtime.json');if(!response.ok)throw Error('Guarda el plano de este piso para seleccionarlo sin conexión.');const runtime=decodeRuntime(await response.json());
+ const next=structuredClone(runtime.data),index=new Map(next.rooms.map(r=>[r.id,r]));
+ const resultsGeometry=await Promise.allSettled(next.documents.map(async d=>{const response=await fetch(prefix+'geometry/'+encodeURIComponent(d.id)+'.json');if(!response.ok)return;const geometry=await response.json();for(const r of geometry.rooms||[])if(index.has(r.id))Object.assign(index.get(r.id),r);}));
+ if(resultsGeometry.some(r=>r.status==='rejected'))toast('No se pudieron cargar algunos contornos del piso. Revisa la conexión o descarga sus planos para trabajar sin red.');
+ let saved={};try{saved=JSON.parse(localStorage.getItem('atlas-hpc-web-v1'+(levelId==='N-1'?'':'-'+levelId))||'{}');}catch{throw Error('No se pueden leer las correcciones locales del piso.');}
+ next.rooms=next.rooms.map(r=>structuredClone(saved[r.id]||r));
+ try{const contours=await fetch(prefix+'contornos.json');const value=contours.ok?await contours.json():[];runtime.contornos=Array.isArray(value)?value:value.rooms||value.contornos||[];}catch{runtime.contornos=[];}
+ try{const grid=await fetch(prefix+'ejes.json');spatialScale=grid.ok?await grid.json():null;}catch{spatialScale=null;}
+ data=next;atlas=runtime.atlas;roomById=new Map(data.rooms.map(r=>[r.id,r]));aliases=new Map();canonicalRooms=null;worldCache=new WeakMap();
+ const placed=new Map();for(const r of [...data.rooms].sort((a,b)=>Number(b.version>1&&b.geometry_method==='Edición manual en navegador')-Number(a.version>1&&a.geometry_method==='Edición manual en navegador')||(b.status==='Validado')-(a.status==='Validado')||Number(b.has_polygon||!!b.polygon)-Number(a.has_polygon||!!a.polygon))){const w=world(r),key=r.code+'|'+r.name,candidates=placed.get(key)||[],same=candidates.find(v=>Math.hypot(v.position[0]-w.position[0],v.position[1]-w.position[1])<5);if(same)aliases.set(r.id,same.id);else{candidates.push(w);placed.set(key,candidates);}}
+ doc=data.documents[0];results=uniqueRooms(data.rooms);selected=null;mountAtlas();await prepareViewer(atlas,results,aliases,runtime);setView(fullView());render();
+}
+async function restoreSpatial(){
+ const previous=spatialSnapshot;if(!previous)return;
+ ({data,atlas,doc,roomById,aliases,canonicalRooms,results,selected,filtered}=previous);worldCache=new WeakMap();mountAtlas();await prepareViewer(atlas,uniqueRooms(data.rooms),aliases,previous.runtime);setView(previous.view);spatialSnapshot=null;ui.show('work');render();
+}
+window.addEventListener('atlas-before-floor-change',event=>{if(spatial?.active()){event.preventDefault();toast('Aplica o cancela la selección en el plano antes de salir.');}});
