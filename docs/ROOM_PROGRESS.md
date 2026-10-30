@@ -11,14 +11,14 @@ La ficha del recinto abre con su **rombo**, dibujado como en las láminas: M1 ar
 - **Color = estado de ejecución** de la partida: blanco sin registrar, gris no iniciado, ámbar en proceso, azul instalado por revisar, rojo con observaciones, verde instalado y conforme, rayado no aplica. Un número rojo cuenta las observaciones en terreno pendientes de ese elemento.
 - **Tocar una sección** despliega su checklist: Ejecución (No iniciado, En proceso, Instalado) y Revisión (Sin revisar, Con observaciones, Conforme). Tocar un estado **lo guarda al instante** y el rombo cambia de color; Qué falta y la observación de la partida se guardan con «Guardar notas». Mismas reglas del registro: conforme solo instalada y sin faltantes; con observaciones exige la nota (se pide y se aplica al guardarla); bajar de instalada quita la conformidad.
 - Cada guardado es una nueva versión del registro del recinto con el responsable (se recuerda en el equipo) y la fecha de hoy; las demás partidas conservan lo guardado. Si hay diferencias documentales, se pide marcar el cotejo antes.
-- Debajo del checklist están las observaciones de ese elemento y «+ Observación con foto» con el elemento ya elegido. «Ver rombo original de la lámina» muestra el recorte del PDF.
-- El formulario completo con observaciones generales, borrador e historial sigue en «Checklist completo e historial».
+- Debajo del checklist están las observaciones de ese elemento y «+ Observación con foto» con el elemento ya elegido.
+- **Ficha del recinto (desde octubre de 2026):** arriba las observaciones en terreno, con sus fotos en grande, y debajo el rombo interactivo; luego protocolos y la leyenda de terminaciones. Se retiraron el rombo estático (imagen y «ver original»), el checklist completo con su formulario, el desplegable PMA, la asepsia documentada y el aviso de contorno técnico: el rombo cumple la función del checklist. El historial de versiones se sigue guardando y viaja en el respaldo de avance.
 
 En **Avance por recinto**, los recintos van en una tabla con una columna por partida, con los colores del rombo, más sector, situación, observaciones pendientes y asepsia. Los encabezados filtran y ordenan como en Excel, y los indicadores y gráficos siguen a la tabla. Tocar un recinto abre su rombo debajo. Las pruebas están en `rombo-test.mjs`.
 
 ## Registro en terreno
 
-Desde el rombo, desde la tabla de Control de obra o desde **Checklist completo e historial** en la ficha del plano se usa el mismo registro:
+Desde el rombo (en la ficha del plano o desde la tabla de Control de obra) se usa este registro:
 
 - Pavimento, cielo y muros norte, oriente, sur y poniente, con código/material PMA y asepsia requerida de pintura.
 - Instalación: Sin registrar, No iniciado, En proceso, Instalado.

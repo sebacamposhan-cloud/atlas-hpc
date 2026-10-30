@@ -115,3 +115,11 @@ dialog.phEditor::backdrop, dialog.phVisor::backdrop { background: #000; }
 @media (max-width: 700px) and (orientation: portrait) { .phPaneles.phDoble { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; } }
 @media (max-width: 700px) { .phBarra > b { flex-basis: 100%; } .phFin { margin-left: 0; } .phGrupo { flex-wrap: wrap; } }
 .obsPendingPhotos .phMini { width: 72px; height: 62px; }
+
+/* Ficha del recinto: las fotos de cada observación en grande (una sola ocupa todo el ancho). */
+.obsRoom .obsFotosFicha { gap: 6px; }
+.obsRoom .obsFotosFicha > span { width: calc(50% - 3px); height: auto; aspect-ratio: 4 / 3; border: 1px solid var(--g-marca, #1b2a56); }
+.obsRoom .obsFotosFicha > span:only-child { width: 100%; }
+.obsRoom .obsFotosFicha > span > span { font-size: 11px; padding: 3px 6px; }
+.obsRoom .obsFotosFicha .obsMas { font-size: 16px; font-weight: 700; color: #000; background: #fff; }
+.obsRoom .obsLista button > span { flex: 1; min-width: 0; }
