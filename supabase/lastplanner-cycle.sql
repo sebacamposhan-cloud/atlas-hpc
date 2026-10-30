@@ -210,12 +210,6 @@ begin
    for s in select value from jsonb_array_elements(d->'activityIds') loop
     if not exists(select 1 from public.atlas_lp_records a where a.tipo='actividades' and a.id=s#>>'{}' and a.data->'restrictionIds' ? clave) then raise exception 'Restriction activity link is missing';end if;
    end loop;
-   if p_accion='close' then
-    if jsonb_array_length(d->'cierre'->'resultados')<>jsonb_array_length(d->'activityIds') then raise exception 'Weekly closure must retain every actual result';end if;
-    for s in select value from jsonb_array_elements(d->'cierre'->'resultados') loop
-     if not exists(select 1 from public.atlas_lp_records a where a.tipo='actividades' and a.id=s->>'id' and a.data->'verificacion'=s->'resultado' and a.data->'compromisoOriginal'=s->'original' and d->'activityIds' ? a.id) then raise exception 'Closure snapshot differs from actual results';end if;
-    end loop;
-   end if;
   elsif tipo='asistencias' then
    select h.antes into old from public.atlas_lp_historial h where h.operacion=p_id and h.tipo=tipo and h.registro=clave;
    if p_accion<>'migration' and exists(select 1 from public.atlas_lp_records a where a.tipo='actividades' and old->'activityIds' ? a.id and a.data->>'fase'='cerrada') then
@@ -231,6 +225,12 @@ begin
    for s in select value from jsonb_array_elements(d->'activityIds') loop
     if not exists(select 1 from public.atlas_lp_records a where a.tipo='actividades' and a.id=s#>>'{}' and a.data->>'level'=d->>'level' and a.data->>'semana'=d->>'semana' and a.data->>'fase'<>'borrador') then raise exception 'Weekly plan contains an unrelated or unpublished activity';end if;
    end loop;
+   if p_accion='close' then
+    if jsonb_array_length(d->'cierre'->'resultados')<>jsonb_array_length(d->'activityIds') then raise exception 'Weekly closure must retain every actual result';end if;
+    for s in select value from jsonb_array_elements(d->'cierre'->'resultados') loop
+     if not exists(select 1 from public.atlas_lp_records a where a.tipo='actividades' and a.id=s->>'id' and a.data->'verificacion'=s->'resultado' and a.data->'compromisoOriginal'=s->'original' and d->'activityIds' ? a.id) then raise exception 'Closure snapshot differs from actual results';end if;
+    end loop;
+   end if;
   end if;
  end loop;
  insert into public.atlas_lp_operaciones(id,actor,huella,resultado) values(p_id,actor,p_huella,result);
