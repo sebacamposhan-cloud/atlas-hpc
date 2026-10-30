@@ -4,9 +4,21 @@ Control de obra muestra el checklist y los indicadores de los recintos del piso 
 
 El panel local Avances y protocolos (retirado de Control de obra en octubre de 2026) también limitaba zonas, eventos y protocolos a los recintos del piso. Los registros antiguos solo se asignan cuando la lámina o una identidad de recinto única permite determinar el piso; los ambiguos se excluyen con aviso. El avance valorizado conserva su alcance documental de nivel −1.
 
+## Rombo interactivo: avance y observaciones juntos
+
+La ficha del recinto abre con su **rombo**, dibujado como en las láminas: M1 arriba, M2 a la derecha, M3 abajo, M4 a la izquierda, cielo al centro arriba y pavimento al centro abajo, cada sección con su código. Desde octubre de 2026 las tarjetas de Avance y de Observaciones de Control de obra son una sola, **Avance y observaciones**.
+
+- **Color = estado de ejecución** de la partida: blanco sin registrar, gris no iniciado, ámbar en proceso, azul instalado por revisar, rojo con observaciones, verde instalado y conforme, rayado no aplica. Un número rojo cuenta las observaciones en terreno pendientes de ese elemento.
+- **Tocar una sección** despliega su checklist: Ejecución (No iniciado, En proceso, Instalado) y Revisión (Sin revisar, Con observaciones, Conforme). Tocar un estado **lo guarda al instante** y el rombo cambia de color; Qué falta y la observación de la partida se guardan con «Guardar notas». Mismas reglas del registro: conforme solo instalada y sin faltantes; con observaciones exige la nota (se pide y se aplica al guardarla); bajar de instalada quita la conformidad.
+- Cada guardado es una nueva versión del registro del recinto con el responsable (se recuerda en el equipo) y la fecha de hoy; las demás partidas conservan lo guardado. Si hay diferencias documentales, se pide marcar el cotejo antes.
+- Debajo del checklist están las observaciones de ese elemento y «+ Observación con foto» con el elemento ya elegido. «Ver rombo original de la lámina» muestra el recorte del PDF.
+- El formulario completo con observaciones generales, borrador e historial sigue en «Checklist completo e historial».
+
+En **Avance por recinto**, los recintos van en una tabla con una columna por partida, con los colores del rombo, más sector, situación, observaciones pendientes y asepsia. Los encabezados filtran y ordenan como en Excel, y los indicadores y gráficos siguen a la tabla. Tocar un recinto abre su rombo debajo. Las pruebas están en `rombo-test.mjs`.
+
 ## Registro en terreno
 
-Desde la lista de Control de obra o desde **Checklist y observaciones de avance** en la ficha del plano se usa el mismo registro:
+Desde el rombo, desde la tabla de Control de obra o desde **Checklist completo e historial** en la ficha del plano se usa el mismo registro:
 
 - Pavimento, cielo y muros norte, oriente, sur y poniente, con código/material PMA y asepsia requerida de pintura.
 - Instalación: Sin registrar, No iniciado, En proceso, Instalado.
@@ -29,7 +41,7 @@ Los indicadores, estados de la torta/barras, familias y sectores permiten abrir 
 
 **Cobertura del levantamiento:** partidas con estado de instalación distinto de Sin registrar / partidas aplicables documentadas del conjunto. Distingue falta de datos de trabajo expresamente no iniciado. Los registros de fuente cambiada quedan Sin registrar hasta cotejar; no cuentan como ejecución ni muestran una fecha vigente en el detalle. Las partidas desconocidas o sin correspondencia PMA se mantienen fuera de la base y con aviso. El estado de pagos permanece en su acceso personal protegido y no se consulta desde este dashboard.
 
-Indicadores: partidas instaladas, instaladas y conformes, recintos completos y conformes, partidas con observaciones. Filtros por código/nombre, sector, partida, asepsia requerida y recintos completos/pendientes/con observaciones/sin registrar. Los filtros se despliegan para dejar visibles los indicadores en móvil.
+Indicadores: partidas instaladas, instaladas y conformes, recintos completos y conformes, partidas con observaciones. Los filtros (recinto, sector, estado de cada partida, situación del recinto, observaciones pendientes y asepsia) están en los encabezados de la tabla de recintos, como en Excel; la partida se elige tocándola en «Avance por partida» (otra vez para volver a todas).
 
 El porcentaje usa partidas aplicables documentadas como denominador, con el mismo peso por partida. **No es porcentaje físico ponderado por m², costo ni esfuerzo.** En proceso no se convierte en un 50%. Un recinto completo exige todas sus terminaciones aplicables instaladas y conformes; seleccionar una familia no cambia esa definición. No se reutilizan los estados Revisado OK del Excel como avance ejecutado y no se cierran protocolos automáticamente.
 

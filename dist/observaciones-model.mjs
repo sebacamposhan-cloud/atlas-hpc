@@ -16,6 +16,21 @@ export const PRIORIDADES = ['Alta', 'Media', 'Baja'];
 export const TERMINACIONES = {GENERAL: 'General del recinto', PAV: 'Pavimento', CIE: 'Cielo', M1: 'Muro M1', M2: 'Muro M2', M3: 'Muro M3', M4: 'Muro M4'};
 export const TIPOS_FOTO = {antes: 'Antes', despues: 'Después'};
 export const MAX_FOTOS = 12;
+// Marcas dibujadas sobre una foto para señalar dónde está lo observado. Se guardan como figuras con coordenadas 0–1
+// de la foto (p) junto a su referencia en la observación: la foto original no se modifica y viaja igual a la Nube.
+// g = grosor del trazo en milésimas del ancho de la foto.
+export const TIPOS_MARCA = {circulo: 'Círculo', rect: 'Rectángulo', flecha: 'Flecha', trazo: 'Mano alzada'};
+export const COLORES_MARCA = ['#e3262f', '#ffd400', '#2fd84a', '#ffffff'];
+export const MAX_MARCAS = 30;
+export function validarMarcas(marcas) {
+  if (!Array.isArray(marcas) || marcas.length > MAX_MARCAS) throw Error(`Máximo ${MAX_MARCAS} marcas por foto.`);
+  for (const m of marcas) {
+    const [min, max] = m?.t === 'trazo' ? [2, 400] : [2, 2];
+    if (!(m?.t in TIPOS_MARCA) || !COLORES_MARCA.includes(m.c) || !Number.isFinite(m.g) || m.g < 2 || m.g > 30 || !Array.isArray(m.p) || m.p.length < min || m.p.length > max
+      || !m.p.every(q => Array.isArray(q) && q.length === 2 && q.every(v => Number.isFinite(v) && v >= 0 && v <= 1))) throw Error('Marca de foto mal registrada.');
+  }
+  return marcas;
+}
 
 const texto = (v, max, min = 1) => typeof v === 'string' && v.trim().length >= min && v.length <= max;
 const fecha = v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && new Date(v + 'T00:00:00Z').toISOString().slice(0, 10) === v;
@@ -41,6 +56,7 @@ export function validarObservacion(o) {
   const ids = new Set();
   for (const f of o.fotos) {
     if (!texto(f.id, 100) || ids.has(f.id) || !(f.tipo in TIPOS_FOTO) || !instante(f.at) || !texto(f.autor, 160)) throw Error('Foto mal registrada.');
+    if (f.marcas != null) validarMarcas(f.marcas);
     ids.add(f.id);
   }
   return o;
@@ -85,6 +101,17 @@ export function registrarSeguimiento(o, {autor, comentario = '', estado = null, 
   else if (nota) historial.push(entrada(o.id, autor, 'comentario', 'Añadió un comentario', nota, at));
   if (fotos.length) historial.push({...entrada(o.id, autor, 'foto', `Agregó ${fotos.length} foto${fotos.length === 1 ? '' : 's'}`, '', at), fotoIds: fotos.map(f => f.id)});
   return {observacion, historial};
+}
+
+// Dibujar o quitar las marcas de una foto ya guardada: nueva versión de la observación con su entrada de historial.
+export function marcarFoto(o, fotoId, marcas, {autor, at = new Date().toISOString()} = {}) {
+  if (!texto(autor || '', 160)) throw Error('Indica quién marca la foto.');
+  if (!o.fotos.some(f => f.id === fotoId)) throw Error('La foto ya no está en la observación.');
+  validarMarcas(marcas);
+  const fotos = o.fotos.map(f => { if (f.id !== fotoId) return f; const {marcas: _, ...resto} = f; return marcas.length ? {...resto, marcas} : resto; });
+  const observacion = validarObservacion({...o, fotos, actualizada: at, version: o.version + 1});
+  const detalle = marcas.length ? `Marcó una foto (${marcas.length} figura${marcas.length === 1 ? '' : 's'})` : 'Quitó las marcas de una foto';
+  return {observacion, historial: {...entrada(o.id, autor, 'foto', detalle, '', at), fotoIds: [fotoId]}};
 }
 
 // El plazo es para corregir: una observación ya corregida (por verificar) no cuenta como vencida.

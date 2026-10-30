@@ -1,0 +1,54 @@
+/* Rombo interactivo de la ficha del recinto (rombo.mjs): secciones tocables con el color del estado de ejecución,
+   contorno negro, la elegida con borde cian, y debajo su checklist y sus observaciones. */
+.romboAvance { border-top: 3px solid var(--g-marca, #1b2a56); padding-top: 10px; margin: 14px 0; }
+.romboCaja { display: grid; gap: 8px; justify-items: center; }
+.romboSVG { width: min(280px, 100%); height: auto; display: block; overflow: visible; }
+.romboParte polygon { stroke: #000; stroke-width: 2; cursor: pointer; }
+.romboParte text { font: 800 22px "Google Sans Flex", "Segoe UI", sans-serif; fill: #000; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
+.romboParte text.romboCampo { font-size: 10px; font-weight: 700; letter-spacing: .5px; }
+.romboParte text.claro { fill: #fff; }
+.romboParte:hover polygon, .romboParte:focus-visible polygon { stroke: var(--g-azul, #0f5499); stroke-width: 4; }
+.romboParte:focus { outline: none; }
+.romboElegida polygon, .romboElegida:hover polygon { stroke: var(--g-cian, #29a8df); stroke-width: 6; }
+.romboAviso rect { fill: #c21f1f; stroke: #fff; stroke-width: 1.5; }
+.romboParte .romboAviso text { font-size: 12px; fill: #fff; }
+.romboLeyenda { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 10px; justify-content: center; color: #000; }
+.romboLeyenda i { display: inline-block; width: 10px; height: 10px; border: 1px solid #000; margin-right: 4px; vertical-align: -1px; }
+.romboLeyenda i.na { background: repeating-linear-gradient(45deg, #fff 0 3px, #8c8c8c 3px 4px) !important; }
+.romboLeyenda i.obs { background: #c21f1f; }
+.romboPartida { border: 1px solid var(--g-marca, #1b2a56); border-top: 4px solid var(--g-marca, #1b2a56); padding: 10px; display: grid; gap: 8px; margin-top: 10px; }
+.romboTitulo { display: flex; align-items: center; justify-content: space-between; gap: 6px 8px; flex-wrap: wrap; }
+.romboTitulo h4 { margin: 0; font-size: 13px; color: #000; }
+.romboTitulo h4 small { font-weight: 400; margin-left: 4px; }
+.romboChip { order: 2; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; border: 1px solid #000; border-left: 10px solid var(--c); padding: 3px 6px; background: #fff; color: #000; }
+.romboDesc { margin: 0; font-size: 12px; }
+.romboFila { display: grid; gap: 4px; }
+.romboFila > span { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: #000; }
+.romboBotones { display: grid; grid-template-columns: repeat(3, 1fr); }
+.romboBotones button { min-height: 42px; font-size: 12px; padding: 4px; margin-right: -1px; white-space: normal; line-height: 1.2; }
+.romboPartida label { display: grid; gap: 4px; font-size: 11px; font-weight: 600; }
+.romboPartida label.check { display: flex; align-items: center; gap: 6px; font-weight: 400; }
+.romboPartida textarea, .romboPartida input:not([type=checkbox]) { font-size: 14px; width: 100%; box-sizing: border-box; }
+.romboFirma { grid-template-columns: 1fr; }
+.romboMensaje { margin: 0; font-size: 11px; }
+.romboObs { border-top: 1px solid var(--g-marca, #1b2a56); padding-top: 8px; display: grid; gap: 6px; }
+.romboObs .romboTitulo button { font-size: 12px; min-height: 34px; }
+.romboObsLista { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.romboObsLista button { width: 100%; text-align: left; display: grid; gap: 2px; padding: 8px; font-size: 12px; white-space: normal; }
+.romboObsLista small { font-weight: 400; color: #262626; }
+.romboNota { font-size: 12px; margin: 4px 0; }
+.romboOriginal { margin-top: 8px; font-size: 12px; width: 100%; }
+
+/* Tabla de Avance por recinto: cada partida con el color de su estado en el rombo. */
+.partidaEstado { display: inline-grid; place-items: center; min-width: 34px; height: 24px; padding: 0 4px; background: var(--c); color: #fff; font-size: 10px; font-weight: 800; border: 1px solid #000; box-sizing: border-box; white-space: nowrap; }
+.partidaEstado.clara { color: #000; }
+.partidaEstado.na { background: repeating-linear-gradient(45deg, #fff 0 3px, #8c8c8c 3px 4px); }
+.progressLeyenda { justify-content: flex-start; margin: 6px 0 10px; gap: 6px 12px; font-size: 11px; }
+.progressLeyenda > span { display: inline-flex; align-items: center; gap: 5px; }
+.progressRooms td { vertical-align: middle; }
+.progressRooms td small { color: #262626; }
+.progressTabla .chartHeading { align-items: center; }
+.progressEditor { margin-top: 16px; }
+.progressEditor .chartHeading > span { display: flex; gap: 6px; }
+.progressEditor #progressRombo { max-width: 560px; margin: 0 auto; }
+.progressCompleto { margin-top: 12px; }

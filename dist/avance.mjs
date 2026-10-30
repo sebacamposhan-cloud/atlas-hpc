@@ -6,6 +6,7 @@ import {nivel} from './level.mjs';
 import {registerLayer} from './layers.mjs';
 import {loadVendor} from './web-store.mjs';
 import * as M from './avance-model.mjs';
+import {crearFiltrosColumna} from './column-filters.mjs';
 import {leerAvance, guardarAvance, exportarAvance, importarAvance, guardarItemizado, leerItemizadoGuardado, borrarItemizado} from './avance-store.mjs';
 
 export const COLORES_RECINTO = {'Sin iniciar': '#9aa3ad', 'En curso': '#d9a21b', 'Completo': '#2e9e5b', 'Observado': '#d64545', 'Sin datos': '#cfd5da'};
@@ -116,24 +117,31 @@ function graficos(rep, items, esc) {
 }
 
 // ---------- Panel de Control de obra ----------
+// Recintos con filtros por columna (como Excel); el estado del filtro sobrevive a los redibujos del panel.
+const tablaValorizado = {filtros: {}, orden: null};
 export async function renderAvanceControl(root, ctx) {
   if (nivel.id !== 'N-1') { root.innerHTML = '<p>El avance valorizado por partida es un piloto del nivel −1.</p>'; return; }
   const esc = ctx.esc; root.textContent = 'Cargando avance valorizado…';
-  let consulta = '', estado = '', asepsia = '', unidad = '', elegido = null;
+  let elegido = null, pagina = 0;
   try {
     let c = await cargarAvance(true);
     const dibujar = () => {
       if (!root.isConnected) return;
       const rep = c.reporte, rev = M.revision(rep, c.items), piso = rep.piso;
-      const filas = rep.filas.filter(f => (!estado || f.estado === estado) && (!asepsia || f.asepsia === asepsia) && (!unidad || f.unit === unidad) && (!consulta || (f.code + ' ' + f.name).toLowerCase().includes(consulta.toLowerCase())));
+      const aprobadas = f => f.nodos.filter(n => n.tipo === 'partida' && n.estado === 'Aprobado').length;
+      const cf = crearFiltrosColumna({id: 'valorizado', estado: tablaValorizado, esc, alCambiar: () => { pagina = 0; dibujar(); }, columnas: [
+        {key: 'recinto', titulo: 'Recinto', valor: f => f.code + ' · ' + f.name, orden: f => f.code}, {key: 'estado', titulo: 'Estado', valor: f => f.estado, opciones: M.ESTADOS_RECINTO},
+        {key: 'asepsia', titulo: 'Asepsia', valor: f => f.asepsia}, {key: 'unidad', titulo: 'Unidad PMA', valor: f => f.unit},
+        {key: 'aprobadas', titulo: 'Aprobadas', valor: f => aprobadas(f) ? 'Con aprobadas' : 'Sin aprobadas', orden: f => aprobadas(f), ordenTextos: ['Menos aprobadas primero', 'Más aprobadas primero']},
+        {key: 'ejecutado', titulo: 'Ejecutado', valor: f => f.ejecutado ? 'Con avance valorizado' : 'Sin avance valorizado', orden: f => f.ejecutado || 0, ordenTextos: ['Menor monto primero', 'Mayor monto primero']}]});
+      const filas = cf.aplicar(rep.filas), paginas = Math.max(1, Math.ceil(filas.length / 30)); pagina = Math.min(pagina, paginas - 1);
       const detenido = rep.bloqueadas.reduce((a, n) => a + (n.ejecutado || 0), 0);
       root.innerHTML = `<div class="documentaryIntro"><h2>Avance valorizado por partida · Nivel −1</h2><p>${rep.filas.length} recintos activos del PMA RevB (A-S01) con sus partidas del itemizado. Valor ejecutado = superficie PMA × % de avance × precio unitario. Registros de este dispositivo: exporta el respaldo para conservarlos o trasladarlos.</p></div>
         <section class="chartCard avanceFuente">${c.itemizado ? `<p><b>Itemizado cargado:</b> ${esc(c.itemizado.nombre)} · hoja ${esc(c.itemizado.hoja)} · ${c.items.size.toLocaleString('es-CL')} partidas · ${esc(new Date(c.itemizado.fecha).toLocaleString('es-CL'))}</p><p class="dataNote">Los precios quedan solo en este dispositivo; no se publican en el sitio ni van en los respaldos de avance.</p><button id="avanceQuitarItemizado">Quitar itemizado</button>` : '<p><b>Carga el itemizado</b> (HPC-5-GEN-GEN-PRE-01, hoja «Formulario n°11A») para valorizar. Los precios quedan solo en este dispositivo.</p>'}<label class="primary avanceCarga">${c.itemizado ? 'Reemplazar itemizado…' : 'Cargar itemizado…'}<input id="avanceItemizado" type="file" accept=".xlsx,.xls" hidden></label></section>
         <div class="actions"><button id="avancePlano">Ver avance en el plano</button><button id="avanceExportar">Exportar respaldo</button><label class="progressImportLabel">Importar respaldo<input id="avanceImportar" type="file" accept="application/json,.json"></label></div><p id="avanceMensaje" role="status"></p>
         <div class="kpiGrid">${[[c.itemizado ? millones(piso.ejecutado) : '—', 'Ejecutado valorizado', c.itemizado ? 'de ' + millones(piso.total) + ' valorizable' : 'Carga el itemizado'], [c.itemizado ? pct(piso.ejecutado, piso.total) : '—', 'Avance valorizado', piso.valorizables + ' de ' + piso.partidas + ' partidas con cantidad'], [piso.avanceFisico.toLocaleString('es-CL', {maximumFractionDigits: 1}) + ' %', 'Avance físico promedio', 'Cada partida pesa igual; no ponderado por $'], [rep.bloqueadas.length + '', 'Con avance bloqueado', (c.itemizado ? millones(detenido) + ' ejecutado sin aprobar · ' : '') + rep.esperando + ' esperan su previo']].map(([n, t, s]) => `<article class="kpi"><span>${t}</span><b>${n}</b><small>${s}</small></article>`).join('')}</div>
         ${graficos(rep, c.items, esc)}
-        <details class="progressFilters"><summary>Filtrar recintos</summary><div class="pmaFilters"><label>Recinto<input id="avanceConsulta" type="search" value="${esc(consulta)}"></label><label>Estado<select id="avanceEstado"><option value="">Todos</option>${opciones(M.ESTADOS_RECINTO, estado, esc)}</select></label><label>Asepsia<select id="avanceAsepsia"><option value="">Todas</option>${opciones([...new Set(rep.filas.map(f => f.asepsia))].sort(), asepsia, esc)}</select></label><label>Unidad PMA<select id="avanceUnidad"><option value="">Todas</option>${opciones([...new Set(rep.filas.map(f => f.unit))].sort(), unidad, esc)}</select></label></div></details>
-        <details class="workRecords" open><summary>Checklist de recintos · ${filas.length}</summary><div class="progressRoomList">${filas.map(f => `<button data-avance-room="${esc(f.code)}"><i style="background:${COLORES_RECINTO[f.estado]}"></i>${esc(f.code)} · ${esc(f.name)}<small>${esc(f.estado)} · ${f.nodos.filter(n => n.tipo === 'partida' && n.estado === 'Aprobado').length}/${f.nodos.filter(n => n.tipo === 'partida').length} aprobadas${c.itemizado ? ' · ' + millones(f.ejecutado) + ' de ' + millones(f.total) : ''}</small></button>`).join('') || '<p>Sin resultados.</p>'}</div></details>
+        <section class="chartCard progressTabla"><div class="chartHeading"><h3>Recintos · ${filas.length} de ${rep.filas.length}</h3>${cf.limpiar()}</div><p class="chartSubtitle">Toca un encabezado para ordenar o filtrar, como en Excel. Toca un recinto para registrar su avance por partida.</p><div class="tableScroll"><table class="masterTable"><thead><tr>${cf.cabecera()}</tr></thead><tbody>${filas.slice(pagina * 30, pagina * 30 + 30).map(f => `<tr class="${elegido === f.code ? 'selectedRow' : ''}"><td data-label="Recinto"><button type="button" class="codeLink" data-avance-room="${esc(f.code)}">${esc(f.code)}</button><br><small>${esc(f.name)}</small></td><td data-label="Estado"><span class="partidaEstado clara" style="--c:#fff;border-left:8px solid ${COLORES_RECINTO[f.estado]}">${esc(f.estado)}</span></td><td data-label="Asepsia">${esc(f.asepsia || '—')}</td><td data-label="Unidad PMA">${esc(f.unit || '—')}</td><td data-label="Aprobadas">${aprobadas(f)} / ${f.nodos.filter(n => n.tipo === 'partida').length}</td><td data-label="Ejecutado">${c.itemizado ? millones(f.ejecutado) + ' de ' + millones(f.total) : '—'}</td></tr>`).join('') || `<tr><td colspan="6">Sin recintos con estos filtros.</td></tr>`}</tbody></table></div><div class="pagination"><button type="button" id="avancePrev" ${pagina === 0 ? 'disabled' : ''}>Anterior</button><span>Página ${pagina + 1} de ${paginas}</span><button type="button" id="avanceNext" ${pagina + 1 === paginas ? 'disabled' : ''}>Siguiente</button></div></section>
         <section id="avanceEditor" class="chartCard" hidden></section>
         <details class="avanceRevision"><summary>Para revisar: cadena de protocolos y partidas sin cantidad o sin protocolo</summary>
           <h4>Cadena de protocolos previos</h4><table class="avanceTabla"><thead><tr><th>Partida</th><th>Requiere liberado</th><th>Origen</th></tr></thead><tbody>${M.CADENA.map(([a, b, o]) => `<tr><td>${esc(a)}</td><td>${esc(M.PROTOCOLOS[b]?.nombre || b)}</td><td>${o === 'dada' ? 'Indicada' : o === 'decidida' ? 'Decidida con obra (27-10-2026)' : 'Propuesta, por validar'}</td></tr>`).join('')}</tbody></table>
@@ -143,8 +151,8 @@ export async function renderAvanceControl(root, ctx) {
           <h4>Terminaciones del PMA sin partida en el piloto (${rev.sinPartida.length})</h4><ul>${rev.sinPartida.map(x => `<li>${esc(x.terminacion)} · ${x.recintos.length} recintos</li>`).join('')}</ul>
           <p class="dataNote">Capítulos 7 (artefactos) y 9 (instalaciones) quedan fuera del piloto: ${rev.posteriores} partidas con cantidad en el piso −1 se conservan en el itemizado cargado para una etapa posterior. Curva S planificada y ritmo semanal requieren el programa de obra y semanas de registros.</p></details>`;
       const $ = s => root.querySelector(s), mensaje = $('#avanceMensaje');
-      for (const [id, fn] of [['#avanceEstado', v => estado = v], ['#avanceAsepsia', v => asepsia = v], ['#avanceUnidad', v => unidad = v]]) $(id).onchange = e => { fn(e.target.value); dibujar(); };
-      $('#avanceConsulta').oninput = e => { consulta = e.target.value; dibujar(); const i = $('#avanceConsulta'); i.focus(); i.setSelectionRange(consulta.length, consulta.length); };
+      cf.conectar(root, rep.filas);
+      $('#avancePrev').onclick = () => { pagina--; dibujar(); }; $('#avanceNext').onclick = () => { pagina++; dibujar(); };
       root.querySelectorAll('[data-avance-room]').forEach(b => b.onclick = () => {
         const fila = c.porCodigo.get(b.dataset.avanceRoom), plano = ctx.rooms().find(r => r.code === fila.code), editor = $('#avanceEditor');
         elegido = fila.code; editor.hidden = false; editor.innerHTML = `<h3>${esc(fila.code)} · ${esc(fila.name)}</h3>${plano ? '<button id="avanceUbicar">Ver en el plano</button>' : '<p class="dataNote">Fuera del área visible del plano.</p>'}<div id="avanceEditorCuerpo"></div>`;

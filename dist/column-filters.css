@@ -1,0 +1,40 @@
+/* Filtros de columna tipo Excel (column-filters.mjs): encabezados que abren un menú de orden, búsqueda y valores.
+   Mismo lenguaje gerencial: ángulos rectos, blanco, azul marino; filtrada = encabezado en azul Sacyr con embudo. */
+th .cfBoton, th .cfBoton:hover:not(:disabled) { display: inline-flex; align-items: center; gap: 6px; width: 100%; min-height: 0; padding: 0; margin: 0; background: transparent; color: inherit; border: 0; outline: 0; font: inherit; text-transform: inherit; letter-spacing: inherit; text-align: left; cursor: pointer; }
+th .cfBoton span { flex: 1; }
+th .cfBoton svg { flex: none; opacity: .75; }
+th .cfBoton:hover:not(:disabled) span, th .cfBoton:focus-visible span { text-decoration: underline; text-underline-offset: 3px; }
+th .cfBoton i { font-style: normal; font-weight: 800; }
+th .cfActivo span { border-bottom: 3px solid var(--g-cian, #29a8df); padding-bottom: 2px; }
+th .cfActivo svg { opacity: 1; color: var(--g-cian, #29a8df); }
+.cfLimpiar, .cfLimpiar:hover:not(:disabled) { background: transparent; border: 0; outline: 0; padding: 0 2px; min-height: 0; color: var(--g-azul, #0f5499); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font-size: 12px; }
+
+/* Menú: debajo del encabezado; en el celular, hoja inferior a todo el ancho. */
+.cfMenu { position: fixed; z-index: 1200; width: min(300px, calc(100vw - 16px)); display: flex; flex-direction: column; gap: 8px; padding: 10px; background: #fff; color: #000; border: 1px solid var(--g-marca, #1b2a56); border-top: 4px solid var(--g-marca, #1b2a56); font-size: 13px; text-transform: none; letter-spacing: 0; font-weight: 400; box-sizing: border-box; }
+.cfTitulo { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cfTitulo b { font-size: 12px; text-transform: uppercase; letter-spacing: .5px; }
+.cfTitulo button { width: 32px; min-height: 32px; padding: 0; font-size: 18px; line-height: 1; }
+.cfOrden { display: grid; gap: 4px; }
+.cfOrden button { text-align: left; font-size: 12px; min-height: 34px; padding: 6px 8px; }
+.cfBuscar { width: 100%; box-sizing: border-box; min-height: 36px; padding: 6px 8px; font-size: 14px; }
+.cfLista { flex: 1 1 auto; min-height: 60px; max-height: 280px; overflow: auto; border: 1px solid var(--g-regla, #8c8c8c); padding: 4px 0; }
+.cfLista label { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 5px 8px; cursor: pointer; font-weight: 400; font-size: 13px; }
+.cfLista label:hover { outline: 1px solid var(--g-azul, #0f5499); outline-offset: -1px; }
+.cfLista label span { overflow-wrap: anywhere; }
+.cfLista label b { font-size: 11px; color: #262626; font-variant-numeric: tabular-nums; }
+.cfLista .cfTodos { border-bottom: 1px solid var(--g-regla, #8c8c8c); font-weight: 600; grid-template-columns: auto 1fr; }
+.cfLista input { width: 16px; height: 16px; margin: 0; accent-color: var(--g-azul, #0f5499); }
+.cfNada { margin: 6px 8px; font-size: 12px; color: #262626; }
+.cfPie { display: flex; justify-content: space-between; gap: 8px; }
+.cfPie button { min-height: 36px; padding: 6px 12px; font-size: 13px; }
+.cfBarra { display: none; }
+@media (max-width: 700px) {
+  .cfMenu { left: 0 !important; right: 0; bottom: 0 !important; top: auto !important; width: 100%; max-height: 80dvh !important; border-left: 0; border-right: 0; padding: 12px 14px calc(12px + env(safe-area-inset-bottom)); }
+  .cfLista { max-height: none; }
+  .cfLista label { min-height: 40px; }
+  /* Sin encabezados en el celular: la misma botonera arriba de las fichas. */
+  .cfBarra { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 10px; margin-bottom: 4px; }
+  .cfBarra .cfBoton { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 6px 10px; font-size: 12px; white-space: nowrap; }
+  .cfBarra .cfBoton i { font-style: normal; }
+  .cfBarra .cfActivo, .cfBarra .cfActivo:hover:not(:disabled) { background: var(--g-azul, #0f5499); color: #fff; border-color: var(--g-azul, #0f5499); outline: 0; }
+}
