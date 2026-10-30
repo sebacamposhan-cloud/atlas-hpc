@@ -4,6 +4,8 @@ Control de obra → **Last Planner** utiliza el visor de arquitectura, los recin
 
 ## Uso
 
+Antes de registrar, inicia sesión con tu cuenta personal mediante **Nube**. Sin sesión, «Nueva actividad» abre el inicio de sesión y continúa automáticamente al formulario después de entrar. La pantalla explica el acceso junto a los botones; las cuentas lectoras y las operaciones sin permiso permanecen protegidas.
+
 1. **Planificación semanal:** crear un borrador con responsable, especialidad, contratista, fechas, cantidad y unidad. La semana ISO se deriva de las fechas (lunes a domingo); no existe un campo editable «Semana» en el formulario. La cabecera cambia al período guardado. Un trabajo que cruza semanas exige distribuir su cantidad entre tramos vinculados; la suma debe coincidir con el total. «Redistribuir grupo» permite ajustar los tramos mientras todos sean borradores.
 2. **Ubicación:** «Seleccionar recintos en plano» habilita un modo de selección sobre el mismo SVG, motor de geometría y mosaicos del visor principal. Admite recintos y pasillos, pisos, múltiples selecciones, zoom, desplazamiento, gestos táctiles, aplicar/cancelar y etiquetas removibles. El formulario conserva sus datos al volver.
 3. **Superficies:** elegir recinto, muros, cielos o pavimentos. En muros, tocar un recinto lo acerca y presenta sus tramos de contorno; se pueden seleccionar segmentos individuales o delimitar una intervención parcial. También se pueden dibujar áreas parciales, respetando los límites y huecos. La actividad guarda coordenadas, recinto, piso y referencia a la fuente.
@@ -84,6 +86,7 @@ La prueba PostgreSQL y el recorrido completo de navegador requieren herramientas
 npm install --prefix /tmp/atlas-lp-test-tools @electric-sql/pglite@0.3.14 playwright-core
 PGLITE_MODULE=/tmp/atlas-lp-test-tools/node_modules/@electric-sql/pglite/dist/index.js node lastplanner-sql-test.mjs
 PGLITE_MODULE=/tmp/atlas-lp-test-tools/node_modules/@electric-sql/pglite/dist/index.js PLAYWRIGHT_MODULE=/tmp/atlas-lp-test-tools/node_modules/playwright-core/index.mjs CHROMIUM_PATH=/usr/bin/chromium node lastplanner-browser-test.mjs
+PGLITE_MODULE=/tmp/atlas-lp-test-tools/node_modules/@electric-sql/pglite/dist/index.js PLAYWRIGHT_MODULE=/tmp/atlas-lp-test-tools/node_modules/playwright-core/index.mjs CHROMIUM_PATH=/usr/bin/chromium node lastplanner-login-browser-test.mjs
 ```
 
 El proveedor de prueba usa **PostgreSQL real en PGlite** para tablas, RLS, transacciones y el RPC; sustituye los endpoints de Supabase y el transporte de Storage. No certifica la configuración del proyecto Supabase de producción. La interfaz se prueba en Chromium real de escritorio y en viewport móvil táctil 390 × 844; no sustituye una comprobación final en Safari de un iPhone físico.

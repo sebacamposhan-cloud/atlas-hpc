@@ -91,6 +91,7 @@ export function iniciarNube({toast = aviso, esc = escapar} = {}) {
   if (ancla) ancla.after(boton); else document.querySelector('header')?.append(boton);
   const dialog = document.createElement('dialog');
   dialog.id = 'nubeDialog'; dialog.setAttribute('aria-label', 'Guardado en la nube'); document.body.append(dialog);
+  let loginContext='',closeAfterLogin=false;
 
   let estado = {fase: !leerSesion() ? 'sin-sesion' : navigator.onLine ? 'listo' : 'sin-conexion'}, enCurso = null, otraVez = false, temporizador = 0;
   const hora = d => d.toLocaleTimeString('es-CL', {hour: '2-digit', minute: '2-digit'});
@@ -146,6 +147,7 @@ export function iniciarNube({toast = aviso, esc = escapar} = {}) {
     const s = leerSesion();
     if (!s) {
       dialog.innerHTML = `<h2>Guardar en la nube</h2>
+        ${loginContext?`<p class="nubeContexto" role="status">${esc(loginContext)}</p>`:''}
         <p>Entra con tu cuenta de Atlas para que los proyectos, Last Planner y las observaciones con fotos queden en la nube y se vean en los demás equipos. Sin conexión todo se sigue guardando en este equipo y se sube al volver la señal.</p>
         <form id="nubeLogin"><label>Correo<input type="email" name="username" autocomplete="username" required></label>
         <label>Contraseña<input type="password" name="password" autocomplete="current-password" required></label>
@@ -155,7 +157,7 @@ export function iniciarNube({toast = aviso, esc = escapar} = {}) {
         e.preventDefault();
         const form = e.target, datos = new FormData(form), enviar = form.querySelector('.primary');
         enviar.disabled = true; dialog.querySelector('#nubeError').textContent = 'Entrando…';
-        try { await entrar(String(datos.get('username')).trim(), String(datos.get('password'))); form.reset(); estado.mensaje = ''; panel(); toast('Sesión iniciada. Sincronizando proyectos, observaciones y Last Planner…'); await sincronizar(); }
+        try { await entrar(String(datos.get('username')).trim(), String(datos.get('password'))); form.reset(); estado.mensaje = ''; if(closeAfterLogin)dialog.close();else panel(); toast('Sesión iniciada. Sincronizando proyectos, observaciones y Last Planner…'); await sincronizar(); }
         catch (failure) { enviar.disabled = false; dialog.querySelector('#nubeError').textContent = failure.status ? failure.message : 'Sin conexión: inténtalo con señal.'; }
       };
     } else {
@@ -173,7 +175,10 @@ export function iniciarNube({toast = aviso, esc = escapar} = {}) {
     }
     dialog.querySelector('[data-cerrar]').onclick = () => dialog.close();
   }
-  boton.onclick = () => { panel(); if (!dialog.open) dialog.showModal(); };
+  const abrirCuenta=({message='',closeOnLogin=false}={})=>{loginContext=String(message);closeAfterLogin=!!closeOnLogin;panel();if(!dialog.open)dialog.showModal();};
+  boton.onclick = () => abrirCuenta();
+  window.addEventListener('atlas-nube-open',event=>{event.preventDefault();abrirCuenta(event.detail||{});});
+  dialog.addEventListener('close',()=>{loginContext='';closeAfterLogin=false;});
 
   for (const nombre of ['atlas-observaciones-changed', 'atlas-markings-changed','atlas-lastplanner-changed']) window.addEventListener(nombre, e => { if (e.detail?.origen !== 'nube' && leerSesion()) programar(); });
   window.addEventListener('online', () => programar(1000));
