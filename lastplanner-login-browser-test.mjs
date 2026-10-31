@@ -40,7 +40,7 @@ try{
   await page.waitForFunction(()=>document.querySelector('#nubeError')?.textContent.includes('incorrectos'));assert.equal(await activity().evaluate(e=>e.open),false);
   await page.locator('#nubeLogin [name=password]').fill(accounts['editor@example.test'].password);await page.locator('#nubeLogin .primary').click();
   await page.locator('.lpCycleDialog[open] [name=actividad]').waitFor();assert.equal(await account().evaluate(e=>e.open),false);assert.match(await activity().locator('footer').innerText(),/editor@example.test/);
-  await activity().locator('[name=actividad]').fill('Borrador tras iniciar sesión QA '+width);await activity().locator('[name=responsable]').selectOption({label:'Quijote · Pintura'});await activity().locator('[name=cantidad]').fill('10');await activity().locator('[type=submit]').click();
+  await activity().locator('[name=actividad]').fill('Borrador tras iniciar sesión QA '+width);await activity().locator('[name=responsable]').selectOption({label:'Quijote · Pintura'});await activity().locator('[data-go="2"]').click();await activity().locator('[name=cantidad]').fill('10');await activity().locator('[type=submit]').click();
   await page.waitForFunction(()=>!document.querySelector('.lpCycleDialog').open);
   const saved=await page.evaluate(async width=>{const {readWorkflow}=await import('./lastplanner-cycle-store.mjs');return (await readWorkflow()).actividades.find(a=>a.actividad==='Borrador tras iniciar sesión QA '+width);},width);
   assert.ok(saved);assert.equal(saved.autor,'editor@example.test');assert.equal(saved.historial[0].actor,QA_ACTOR.id);

@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {plannedCapacity} from './dist/lastplanner-wizard.mjs';
+const data={people:2,rate:5,start:'2026-11-02',end:'2026-11-08',quantity:100};
+assert.deepEqual(plannedCapacity(data),{days:5,value:50,shortfall:50});
+assert.equal(plannedCapacity({...data,people:''}),null);
+assert.equal(plannedCapacity({...data,rate:-2}),null);
+assert.equal(plannedCapacity({...data,start:'invalid'}),null);
+assert.equal(plannedCapacity({...data,end:'2026-11-01'}),null);
+assert.deepEqual(plannedCapacity({...data,people:4}),{days:5,value:100,shortfall:0});
+assert.deepEqual(plannedCapacity({...data,people:0}),{days:5,value:0,shortfall:100});
+console.log('Capacidad: calendario base, datos ausentes, fechas inválidas, cantidades y déficit aprobados');
