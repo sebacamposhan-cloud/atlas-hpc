@@ -8,6 +8,10 @@ Antes de registrar, inicia sesión con tu cuenta personal mediante **Nube**. Sin
 
 1. **Planificación semanal:** crear un borrador con responsable, especialidad, contratista, fechas, cantidad y unidad. La semana ISO se deriva de las fechas (lunes a domingo); no existe un campo editable «Semana» en el formulario. La cabecera cambia al período guardado. Un trabajo que cruza semanas exige distribuir su cantidad entre tramos vinculados; la suma debe coincidir con el total. «Redistribuir grupo» permite ajustar los tramos mientras todos sean borradores.
 2. **Ubicación:** «Seleccionar recintos en plano» habilita un modo de selección sobre el mismo SVG, motor de geometría y mosaicos del visor principal. Admite recintos y pasillos, pisos, múltiples selecciones, zoom, desplazamiento, gestos táctiles, aplicar/cancelar y etiquetas removibles. El formulario conserva sus datos al volver.
+   La selección calcula automáticamente **los ejes que encierran toda su geometría** usando `ejes.json` del piso. Al agregar o quitar recintos se actualizan el rango y el marco de referencia del plano. Por ejemplo, los recintos `3.1.1.2.3-1`, `3.1.1.2.4-1` y `3.1.1.2.1-1` del Nivel −1 quedan en `AK–AM / A6–A8` con las fuentes actuales. Se guardan los ejes y la huella de la grilla junto a cada superficie; aparecen en la ficha, el reporte y el CSV, y forman parte del compromiso publicado. El marco solo delimita la referencia: el alcance sigue siendo las superficies seleccionadas. Cuando falten geometría o ejes suficientes, se informa en el campo automático.
+
+   **Frente de trabajo (opcional)** es el nombre que das a una zona o conjunto de tareas que organizas como una unidad; por ejemplo, «Pintura de consultas, ala norte». Los ejes se calculan independientemente de ese nombre. El campo Sector también sigue siendo opcional.
+
 3. **Superficies:** elegir recinto, muros, cielos o pavimentos. En muros, tocar un recinto lo acerca y presenta sus tramos de contorno; se pueden seleccionar segmentos individuales o delimitar una intervención parcial. También se pueden dibujar áreas parciales, respetando los límites y huecos. La actividad guarda coordenadas, recinto, piso y referencia a la fuente.
 4. Agregar restricciones previas con categoría, acción, responsable, departamento, fecha, ámbito, criticidad e intervención ITO. Se incorporan al mismo registro que se utiliza durante la ejecución.
 5. **Publicar planificación semanal:** congela la versión original y genera una emisión auditable. Las modificaciones posteriores requieren permiso de revisión y motivo; conservan valores anteriores, autor y fecha. La unidad publicada se mantiene para poder comparar cantidades. No se cambia retrospectivamente una verificación final.
@@ -34,6 +38,8 @@ Antes de registrar, inicia sesión con tu cuenta personal mediante **Nube**. Sin
 Antes de desplegar esta versión, ejecutar **`supabase/lastplanner-cycle.sql`** en el SQL Editor del **mismo proyecto Supabase de Nube**, después de `supabase/campo.sql`. Es una migración aditiva y repetible: crea sus propias tablas, políticas, RPC y bucket privado; no borra tablas de ATLAS ni modifica los estados de pago.
 
 Reutiliza `SUPABASE_URL`, `SUPABASE_ANON_KEY` y la sesión personal `atlas-nube-sesion`. No se requiere una service-role key ni compartir una contraseña de base de datos. El servicio Node verifica la sesión con Supabase; PostgreSQL aplica permisos y versiones aun al invocar directamente el RPC.
+
+El cálculo automático de ejes utiliza los alcances ya almacenados: no requiere una migración SQL adicional si el ciclo Last Planner está activado.
 
 Tablas nuevas:
 
@@ -64,7 +70,7 @@ Sin lista explícita se conservan los permisos del editor existente. La restaura
 | --- | --- |
 | Reglas y compatibilidad | `dist/lastplanner-cycle-model.mjs`, `lastplanner-geometry.mjs`; se conserva `lastplanner-model.mjs` |
 | Formularios, cuatro áreas, gráficos y reportes | `dist/lastplanner-workflow.mjs`, `lastplanner-report.mjs`, `lastplanner-cycle.css` |
-| Visor existente y geometrías | `dist/app.js`, `lastplanner-spatial.mjs`, `lastplanner-map.mjs`, `lastplanner.mjs`, `workspace.mjs` |
+| Visor existente y geometrías | `dist/app.js`, `lastplanner-spatial.mjs`, `lastplanner-axes.mjs`, `lastplanner-map.mjs`, `lastplanner.mjs`, `workspace.mjs` |
 | Persistencia y sesión | `dist/lastplanner-store.mjs`, `lastplanner-cycle-store.mjs`, `lastplanner-session.mjs` |
 | Nube | `dist/lastplanner-sync.mjs`, `dist/nube.mjs`, `server/lastplanner.mjs`, `server/groq-server.mjs` |
 | Base y distribución sin conexión | `supabase/lastplanner-cycle.sql`, `scripts/prepare-offline.mjs`, `dist/sw.js`, `dist/index.html` |
@@ -77,6 +83,7 @@ Las pruebas operan con datos de ensayo en contextos aislados. No se envían regi
 
 ```sh
 node lastplanner-cycle-test.mjs
+node lastplanner-axes-test.mjs
 node lastplanner-api-test.mjs
 ```
 
@@ -87,6 +94,7 @@ npm install --prefix /tmp/atlas-lp-test-tools @electric-sql/pglite@0.3.14 playwr
 PGLITE_MODULE=/tmp/atlas-lp-test-tools/node_modules/@electric-sql/pglite/dist/index.js node lastplanner-sql-test.mjs
 PGLITE_MODULE=/tmp/atlas-lp-test-tools/node_modules/@electric-sql/pglite/dist/index.js PLAYWRIGHT_MODULE=/tmp/atlas-lp-test-tools/node_modules/playwright-core/index.mjs CHROMIUM_PATH=/usr/bin/chromium node lastplanner-browser-test.mjs
 PGLITE_MODULE=/tmp/atlas-lp-test-tools/node_modules/@electric-sql/pglite/dist/index.js PLAYWRIGHT_MODULE=/tmp/atlas-lp-test-tools/node_modules/playwright-core/index.mjs CHROMIUM_PATH=/usr/bin/chromium node lastplanner-login-browser-test.mjs
+PGLITE_MODULE=/tmp/atlas-lp-test-tools/node_modules/@electric-sql/pglite/dist/index.js PLAYWRIGHT_MODULE=/tmp/atlas-lp-test-tools/node_modules/playwright-core/index.mjs CHROMIUM_PATH=/usr/bin/chromium node lastplanner-axes-browser-test.mjs
 ```
 
 El proveedor de prueba usa **PostgreSQL real en PGlite** para tablas, RLS, transacciones y el RPC; sustituye los endpoints de Supabase y el transporte de Storage. No certifica la configuración del proyecto Supabase de producción. La interfaz se prueba en Chromium real de escritorio y en viewport móvil táctil 390 × 844; no sustituye una comprobación final en Safari de un iPhone físico.
