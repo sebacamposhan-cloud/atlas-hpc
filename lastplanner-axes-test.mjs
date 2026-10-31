@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {createHash} from 'node:crypto';
+import {scopeAxes,selectionAxes,axesText,axesMarkup} from './dist/lastplanner-axes.mjs';
+const esc=s=>String(s).replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+const grids=Object.fromEntries([['N-1',''],['N01','n01/'],['N02','n02/'],['N03','n03/']].map(([level,folder])=>{const bytes=fs.readFileSync('dist/'+folder+'ejes.json');return [level,{raw:JSON.parse(bytes),reference:{nivel:level,archivo:'./'+folder+'ejes.json',sha256:createHash('sha256').update(bytes).digest('hex')}}];}));
+const scope=(id,points,type='polygon')=>({id,roomId:id,code:id,level:'N-1',tipo:type==='line'?'muros':'recinto',geometry:{type,points}});
+const grid=grids['N-1'],e=id=>grid.raw.ejes.find(e=>e.id===id),x=id=>e(id).a[0],y=id=>e(id).a[1];
+const locate=s=>({...s,ejes:scopeAxes(s,grid.raw,grid.reference)});
+const first=locate(scope('R1',[[x('A3')+10,y('AD')+10],[x('A4')-10,y('AD')+10],[x('A4')-10,y('AE')-10],[x('A3')+10,y('AE')-10]]));
+assert.equal(first.ejes.etiqueta,'AD–AE / A3–A4');assert.equal(first.ejes.referencia.sha256,grid.reference.sha256);assert.equal(first.ejes.nivel,'N-1');assert.ok(first.ejes.marco.poligono);assert.equal(first.ejes.marco.medidas,undefined);
+const second=locate(scope('R2',[[x('A5')+10,y('AF')+10],[x('A6')-10,y('AF')+10],[x('A6')-10,y('AG')-10],[x('A5')+10,y('AG')-10]]));
+assert.equal(selectionAxes([first,second]).etiqueta,'AD–AG / A3–A6');assert.equal(selectionAxes([first]).etiqueta,'AD–AE / A3–A4');assert.equal(selectionAxes([second,first,first]).etiqueta,selectionAxes([first,second]).etiqueta);
+const wall=locate(scope('W1',[[x('A4'),y('AD')+30],[x('A4'),y('AE')-30]],'line'));assert.equal(wall.ejes.etiqueta,'AD–AE / A4');assert.equal(wall.ejes.marco.tipo,'tramo');
+const prime=locate(scope('WP',[[x("A3'"),y('AO')+10],[x("A3'"),y('AO1')-10]],'line'));assert.equal(prime.ejes.etiqueta,"AO–AO1 / A3'");
+const outside=locate(scope('OUT',[[x('A0')-40,y('AD')],[x('A0')-20,y('AE')]],'line'));assert.equal(outside.ejes.estado,'fuera-grilla');assert.equal(outside.ejes.etiqueta,null);assert.equal(selectionAxes([first,outside]).estado,'fuera-grilla');assert.equal(axesMarkup(outside.ejes,esc),'');
+assert.equal(scopeAxes({...first,geometry:null},grid.raw,grid.reference).estado,'sin-geometria');assert.equal(scopeAxes(first,null).estado,'sin-grilla');assert.equal(selectionAxes([]).estado,'vacia');assert.equal(selectionAxes([scope('OLD',[[0,0],[1,1]],'line')]).estado,'pendiente');
+assert.equal(selectionAxes([first,{...second,ejes:{...second.ejes,nivel:'N01'}}]).estado,'fuentes-distintas');assert.equal(selectionAxes([first,{...second,ejes:{...second.ejes,referencia:{...second.ejes.referencia,sha256:'other'}}}]).estado,'fuentes-distintas');
+for(const [level,g] of Object.entries(grids)){const axis=id=>g.raw.ejes.find(e=>e.id===id),rect=scope(level,[[axis('A1').a[0],axis('AA').a[1]],[axis('A12').a[0],axis('AA').a[1]],[axis('A12').a[0],axis('AW').a[1]],[axis('A1').a[0],axis('AW').a[1]]]);assert.equal(scopeAxes(rect,g.raw,g.reference).etiqueta,'AA–AW / A1–A12',level);}
+const rotate=p=>[p[0]*Math.cos(.4)-p[1]*Math.sin(.4)+100,p[0]*Math.sin(.4)+p[1]*Math.cos(.4)-40],rotated={...grid.raw,ejes:grid.raw.ejes.map(e=>({...e,a:rotate(e.b),b:rotate(e.a)}))};assert.equal(scopeAxes({...first,geometry:{...first.geometry,points:first.geometry.points.map(rotate)}},rotated,grid.reference).etiqueta,first.ejes.etiqueta);
+const bad=structuredClone(grid.raw);bad.ejes.find(e=>e.id==='AE').b[1]+=30;assert.equal(scopeAxes(first,bad).estado,'grilla-incompatible');
+const parallel={ejes:[{id:'AA',tipo:'letra',a:[0,0],b:[100,0]},{id:'AB',tipo:'letra',a:[0,100],b:[100,100]},{id:'A1',tipo:'numero',a:[0,0],b:[100,0]},{id:'A2',tipo:'numero',a:[0,100],b:[100,100]}]};assert.equal(scopeAxes(scope('INVALID',[[20,20],[80,80]],'line'),parallel).estado,'grilla-incompatible');
+assert.match(axesMarkup(first.ejes,esc),/data-lp-axes-frame/);assert.match(axesText(first.ejes),/AD–AE/);assert.match(axesText(outside.ejes),/fuera/);assert.equal(axesMarkup({...first.ejes,marco:{...first.ejes.marco,caja:['" onload="bad',0,1,1]}},esc),'');
+assert.equal(selectionAxes([{...first,ejes:{...first.ejes,letras:{}}}]).estado,'grilla-incompatible');
+console.log('Ejes Last Planner: envolvente completa, cambios de selección, muros parciales, primas, cuatro pisos, rotación, fuente persistente y ausencia de datos sin ejes inventados aprobados.');

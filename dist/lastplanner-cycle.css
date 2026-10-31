@@ -11,3 +11,7 @@
 .lpFields>label:has(>input[hidden]){display:none}
 
 .lpCycleDialog>header{height:auto;min-height:48px;box-sizing:border-box}
+
+.lpAccessNotice{border-left:4px solid #0f5499;padding:12px 14px;margin:14px 0;font-size:13px;background:#fff}.lpAccessNotice strong{display:block}.lpAccessNotice p{font-size:12px;line-height:1.6;margin:7px 0}.lpAccessNotice button{font-size:12px;min-height:42px;margin-top:4px}
+
+.lpSelectedAxes{border-left:3px solid #0f5499;padding:10px 12px;margin:12px 0;font-size:12px}.lpSelectedAxes output{display:block;font-size:16px;font-weight:700;margin:7px 0;overflow-wrap:anywhere}.lpSelectedAxes small{display:block;font-size:11px;line-height:1.5}.lpSpatialAxes{font-size:12px;font-weight:700;margin:6px 0;overflow-wrap:anywhere}
