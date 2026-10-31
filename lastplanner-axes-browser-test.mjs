@@ -18,7 +18,7 @@ try{
   await sync(page);await page.locator('.lpCycleActions [data-cycle=new]').click();const form=page.locator('.lpCycleDialog');
   await form.locator('[name=actividad]').fill('Ejes de recintos reales QA '+width);await form.locator('[name=responsable]').selectOption({label:'Quijote · Pintura'});await form.locator('[data-go="2"]').click();await form.locator('[name=cantidad]').fill('120');await form.locator('[data-go="1"]').click();await form.locator('summary').filter({hasText:'Ubicación adicional'}).click();await form.locator('[name=frente]').fill('Pintura de consultas, ala norte');assert.equal(await form.locator('[name=frente]').getAttribute('required'),null);assert.match(await form.locator('#lpFrontHelp').innerText(),/Nombre de la zona/);
   await form.locator('[data-select-plan]').click();await page.waitForFunction(()=>document.querySelector('.lpSpatialContext')?.textContent.includes('Selecciona en el plano'));
-  for(const code of codes)await mark(page,code);
+  await page.locator('[data-pick-mode=pavimentos]').click();for(const code of codes)await mark(page,code);
   assert.match(await page.locator('.lpSpatialSelection>b').innerText(),/3 recintos/);const text=await page.locator('[data-pick-axes]').innerText();assert.match(text,/Ejes: A/);assert.equal(await page.locator('#lpSpatialLayer [data-lp-axes-frame]').count(),1);
   await mark(page,'7.1.2.1.2-2');assert.notEqual(await page.locator('[data-pick-axes]').innerText(),text);await page.locator('[data-pick-remove]').filter({hasText:'7.1.2.1.2-2'}).click();assert.equal(await page.locator('[data-pick-axes]').innerText(),text);
   await page.locator('[data-pick-apply]').click();await page.waitForFunction(()=>!document.querySelector('[data-selected-axes]').textContent.includes('Calculando'));
