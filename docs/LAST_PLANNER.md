@@ -117,3 +117,11 @@ El proveedor de prueba usa **PostgreSQL real en PGlite** para tablas, RLS, trans
 Las pruebas antiguas `room-progress-browser-test.mjs`, `source-contours-browser-test.mjs` y `floor-explorer-browser-test.mjs` todavía esperan controles anteriores a cambios ya presentes en `main` (`room-progress`, `geometryAuthority`, dos pisos habilitados). Se ejecutaron y fallan por esas expectativas obsoletas; no se cuentan como verificaciones aprobadas. La batería de despliegue, los tests nuevos del ciclo y el navegador de Puertas sí se ejecutan contra la interfaz actual.
 
 Queda aplicar el SQL en el proyecto real y desplegar esta rama mediante la revisión de GitHub/Render. No se han modificado los datos de producción ni se ha desplegado automáticamente.
+
+## Asistente de actividad
+
+El formulario de alta y edición se presenta en cuatro pasos: Trabajo, Ubicación, Planificación y Revisión. `dist/lastplanner-wizard.mjs` organiza los controles existentes y valida por etapa; el guardado continúa en `lastplanner-workflow.mjs` y su almacén versionado. La publicación semanal conserva su acción independiente. Las restricciones y observaciones están disponibles en Revisión; Sector y Frente, en Ubicación adicional. El resumen espacial mantiene el detalle desplegable y la edición individual. Cambiar de piso solicita confirmación antes de retirar alcances incompatibles.
+
+ATLAS no tiene React, TypeScript ni un compilador de esos lenguajes instalado. Se conserva su arquitectura ES modules, sin agregar un segundo framework. La capacidad usa el calendario base existente (lunes a viernes); no existe configuración de feriados en este módulo. Se muestra esta limitación y se inhibe la estimación al cambiar de unidad hasta confirmar el rendimiento.
+
+Pruebas: `node lastplanner-wizard-test.mjs` y `lastplanner-wizard-browser-test.mjs` con las mismas variables de Playwright/PGlite indicadas arriba. El recorrido crea y recupera actividades, selecciona tres recintos reales, verifica errores, revisión, capacidad, cancelación del cambio de piso y envío repetido; genera capturas de cuatro etapas a 320, 375, 390, 430, 768 y 1280 px. La cobertura previa del ciclo, ejes y acceso utiliza ahora la navegación del asistente. No requiere migración SQL.
