@@ -1,4 +1,5 @@
-import {selectionAxes,axesMarkup} from './lastplanner-axes.mjs';
+import {calibrate,compassMarkup} from './lastplanner-intelligence.mjs';
+import {selectionAxes,axesMarkup,loadAxesGrid} from './lastplanner-axes.mjs';
 // Integrated Last Planner production cycle; the same database and the main Atlas viewer are reused.
 import {PLAN_COLORS,geometryPath,scopeDrawing} from './lastplanner-map.mjs';
 import {nivel} from './level.mjs';
@@ -16,12 +17,15 @@ registerLayer('lastplanner',{nombre:'Last Planner · ejecución',categories:r=>[
 export function iniciarCapaLastPlanner(change){const reload=()=>cargarPlan(true).then(change).catch(()=>{});reload();window.addEventListener('atlas-lastplanner-changed',reload);}
 export function createLastPlanner(ctx){
  const ns='http://www.w3.org/2000/svg',overlay=document.createElementNS(ns,'g');overlay.id='lpExecutionLayer';overlay.setAttribute('pointer-events','none');overlay.setAttribute('clip-path','url(#scopeClip)');document.getElementById('svg').append(overlay);let onMap=false;
+ const compass=document.createElement('div');compass.className='lpCompass lpSavedCompass';compass.hidden=true;document.getElementById('viewport').append(compass);let grid=null,gridLevel=null;
  function renderOverlay(){
-  if(!onMap||!ctx.plannerVisible?.()||!cache||document.body.classList.contains('lpPicking')){overlay.replaceChildren();return;}
+  if(!onMap||!ctx.plannerVisible?.()||!cache||document.body.classList.contains('lpPicking')){overlay.replaceChildren();compass.hidden=true;return;}
+  compass.hidden=false;if(gridLevel!==nivel.id){gridLevel=nivel.id;grid=null;const requested=gridLevel;loadAxesGrid(requested).then(value=>{if(requested===gridLevel){grid=value;renderOverlay();}}).catch(()=>{});}compass.innerHTML=compassMarkup(calibrate(grid?.grid,grid?.reference),overlay.getScreenCTM());
   const rows=cache.actividades.filter(a=>a.level===nivel.id&&a.semana===week&&!a.archivada&&!a.id.startsWith('demo-')&&(!focusId||a.id===focusId));
   overlay.innerHTML=(focusId?axesMarkup(referenceAxes(rows[0]),ctx.esc):'')+rows.flatMap(a=>a.alcances.flatMap(scope=>{const room=ctx.rooms().find(r=>r.id===scope.roomId);if(scope.source?.sha256&&room&&ctx.source(room)?.sha256!==scope.source.sha256)return [];return scopeDrawing(a,scope,cache.restricciones).map(shape=>{const g=shape.geometry,path=g?geometryPath(g):ctx.path(scope.roomId),color=PLAN_COLORS[shape.state];return path?`<path data-lp-kind="${shape.kind}" data-lp-scope="${ctx.esc(scope.id)}" d="${ctx.esc(path)}" fill="${g?.type==='line'?'none':color}" fill-opacity="${shape.opacity}" stroke="${color}" stroke-opacity="${shape.kind==='planned'?.7:1}" stroke-width="${g?.type==='line'?shape.kind==='planned'?9:5:3}" stroke-dasharray="${shape.dashed?'8 4':''}" vector-effect="non-scaling-stroke" fill-rule="evenodd"><title>${ctx.esc(scope.code+' · '+scope.label+' · '+shape.state+' · '+(shape.kind==='executed'?'Intervención delimitada en ejecución':'Alcance planificado'))}</title></path>`:'';});})).join('');
 
  }
+ new MutationObserver(()=>{if(!compass.hidden)compass.innerHTML=compassMarkup(calibrate(grid?.grid,grid?.reference),overlay.getScreenCTM());}).observe(document.getElementById('svg'),{attributes:true,attributeFilter:['viewBox','transform','style']});
  function referenceAxes(activity){const scopes=activity?.alcances||[],current=scopes.every(scope=>{const room=ctx.rooms().find(r=>r.id===scope.roomId);return room&&scope.source?.sha256&&ctx.source(room)?.sha256===scope.source.sha256;});return current?selectionAxes(scopes):null;}
  const showOnPlan=async activity=>{week=activity?.semana||ui.period();focusId=activity?.id||null;onMap=true;await cargarPlan(true);const frame=referenceAxes(activity)?.marco;await ctx.onPlan(activity,frame?.poligono||frame?.linea||(frame?.punto?[frame.punto]:[]));renderOverlay();};
  const ui=createWorkflowUI({...ctx,onPlan:showOnPlan,currentData:()=>cache,renderOverlay});
