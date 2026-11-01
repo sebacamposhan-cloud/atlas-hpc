@@ -45,7 +45,8 @@ export function iniciarCapaAvance(alCambiar) {
   recargar(); window.addEventListener('atlas-avance-changed', recargar);
 }
 // Estado de cada terminación del rombo calculado desde sus partidas registradas (null si ninguna tiene registro).
-export const derivador = c => (room, campo) => { const f = c?.porCodigo.get(String(room.code).trim()); return f ? M.estadoTerminacion(M.partidasDeTerminacion(f.nodos, campo, f.row)) : null; };
+// campo 'M': los cuatro muros juntos.
+export const derivador = c => (room, campo) => { const f = c?.porCodigo.get(String(room.code).trim()); return f ? M.estadoTerminacion(campo === 'M' ? M.partidasDeMuros(f.nodos, f.row) : M.partidasDeTerminacion(f.nodos, campo, f.row)) : null; };
 
 // ---------- Gráficos ----------
 function barras(titulo, decision, filas, esc, vacio) {

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {decodePma} from './dist/pma-model.mjs';
 import {decodeRuntime} from './dist/runtime-loader.mjs';
-import {tasksFor, reportProgress, keyFor, estadoPartida, actualizarPartida, ESTADOS_PARTIDA, COLOR_PARTIDA} from './dist/room-progress-model.mjs';
+import {tasksFor, reportProgress, keyFor, estadoPartida, actualizarPartida, agruparMuros, combinarMuros, ESTADOS_PARTIDA, COLOR_PARTIDA} from './dist/room-progress-model.mjs';
 import {romboSVG} from './dist/rombo.mjs';
 
 // Rombo interactivo: estado de ejecución por partida y registro de una partida a la vez, con las reglas del checklist.
@@ -32,6 +32,15 @@ assert.equal(actualizarPartida(model, room, 'N-1', v2, 'CIE', {installation: 'En
 assert.throws(() => actualizarPartida(model, room, 'N-1', v2, 'PAV', {quality: 'Conforme'}, firma), /instalada/);
 assert.equal(actualizarPartida(model, room, 'N-1', v2, 'M1', {quality: 'Con observaciones'}, firma).fields.M1.quality, 'Con observaciones');
 assert.throws(() => actualizarPartida(model, room, 'N-1', v2, 'M1', {installation: 'Instalado'}, {...firma, responsible: ' '}), /responsable/);
+// Muros como uno: los muros que aplican en una sola terminación, con sus códigos y estado combinado o derivado.
+const unido = agruparMuros(reportProgress(model, [room], [v2]));
+assert.deepEqual(unido.rows[0].tasks.map(t => t.field), ['PAV', 'CIE', 'M']);
+assert.equal(unido.total, 3, 'cada recinto cuenta pavimento, cielo y muros');
+assert.deepEqual(combinarMuros([{installation: 'Instalado', quality: 'Conforme'}, {installation: 'Instalado', quality: 'Conforme'}]), {installation: 'Instalado', quality: 'Conforme'});
+assert.deepEqual(combinarMuros([{installation: 'Instalado', quality: 'Conforme'}, {installation: 'Sin registrar', quality: 'Sin revisar'}]), {installation: 'En proceso', quality: 'Sin revisar'});
+assert.deepEqual(combinarMuros([{installation: 'No iniciado', quality: 'Sin revisar'}, {installation: 'Sin registrar', quality: 'Con observaciones'}]), {installation: 'No iniciado', quality: 'Con observaciones'});
+const derivadoMuros = agruparMuros(reportProgress(model, [room], [v2]), (r, campo) => campo === 'M' ? {installation: 'Instalado', quality: 'Conforme'} : null);
+assert.equal(estadoPartida(derivadoMuros.rows[0].tasks.find(t => t.field === 'M')), 'Instalado y conforme');
 // Con partidas registradas en el avance, la terminación se calcula desde ellas y manda sobre lo marcado directo.
 const derivada = reportProgress(model, [room], [v2], 'N-1', (r, campo) => campo === 'PAV' ? {installation: 'Instalado', quality: 'Con observaciones'} : null).rows[0];
 assert.deepEqual(['PAV', 'CIE'].map(f => estadoPartida(derivada.tasks.find(x => x.field === f))), ['Con observaciones', 'Instalado y conforme']);
