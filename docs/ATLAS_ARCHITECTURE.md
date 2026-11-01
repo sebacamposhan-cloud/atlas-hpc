@@ -4,7 +4,6 @@ Se conserva el proyecto estático JavaScript ES modules + SVG; no es React/Vite 
 
 - `disciplines.mjs`: selector, visor paginado por lámina, búsqueda, ficha contextual, zonas y eventos. Usa mosaicos de PDF y coordenadas independientes normalizadas con /Rotate.
 - `construction-store.mjs`: IndexedDB `atlas-construction` v2, transacciones de registro + historial, respaldo e importación aditiva sin sobrescritura. Correcciones antiguas siguen en su almacenamiento original.
-- `construction-dashboard.mjs`: indicadores locales, revisión técnica/administrativa de protocolos, revisión de candidatos a puertas.
 - `scripts/import-disciplines.py`: ingesta reproducible de ocho ARQ-CIE y un plano de pavimentos; original, SHA256, página y bbox preservados.
 - `scripts/migrate-atlas.py`: SQLite de consolidación fuera de `dist`; no se descarga una base sensible en la aplicación pública.
 - `scripts/detect-doors.py`: piloto offline de segmentos que forman arcos y líneas de hojas. Resultado NO apto para inventario todavía.

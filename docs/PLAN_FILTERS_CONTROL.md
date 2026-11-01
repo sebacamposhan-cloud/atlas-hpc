@@ -22,7 +22,7 @@ El botón «Filtros» de la barra derecha abre un panel junto al plano en escrit
 ## Gráficos de control
 
 - El panel **Avances y protocolos** se retiró de Control de obra (octubre de 2026).
-- `construction-dashboard.mjs` queda en el repositorio sin usarse, y los registros locales de ese panel siguen en IndexedDB: no se borran.
+- `construction-dashboard.mjs`, que ya no usaba ninguna pantalla, se borró en noviembre de 2026. Los registros locales de ese panel siguen en IndexedDB: no se borran.
 - **Características del piso** y **Estados de pago** se retiraron de Control de obra el 28 de octubre de 2026, por decisión del jefe de producción. Los atributos documentales (pavimentos, cielos, muros, asepsia, sector) siguen disponibles en el plano desde **Filtros**. El enlace antiguo `#modulo=dashboard` abre la lista de paneles de Control de obra. Estados de pago se eliminó de la app completa ([PAYMENTS.md](PAYMENTS.md)).
 
 Las tortas se usan para categorías excluyentes. Las terminaciones que pueden solaparse conservan barras. El denominador es el conjunto de registros, nunca un total previsto de obra no documentado. Sin eventos, el estado es «Sin registrar»; sin registros, el gráfico indica que no hay datos. No se calculan m² ejecutados, avance global ni cumplimiento sin bases suficientes.
@@ -38,7 +38,7 @@ La siguiente imagen es **evidencia de una prueba automatizada con datos aislados
 ## Implementación y validación
 
 - `plan-filters.mjs`: panel y controles; `workspace.mjs` conserva el estado único de filtros/paleta y organiza Control de obra.
-- `work-charts.mjs`: distribuciones y gráficos SVG accesibles; `construction-dashboard.mjs` enlaza estados con registros.
+- `work-charts.mjs`: distribuciones y gráficos SVG accesibles.
 - `app.js`: integración de búsqueda, cámara y fichas; `index.html`/`workspace.css`: navegación y distribución responsive.
 - El manifiesto offline incluye ambos módulos nuevos. No se modifica runtime, SQLite, fuentes originales ni geometrías.
 

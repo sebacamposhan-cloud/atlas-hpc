@@ -7,6 +7,7 @@ import {crearFiltrosColumna} from './column-filters.mjs';
 import {createRombo} from './rombo.mjs';
 import {cargarObservaciones} from './observaciones.mjs';
 import {readProgress,exportProgress,importProgress} from './room-progress-store.mjs';
+import {cargarAvance,derivador} from './avance.mjs';
 import {workChart} from './work-charts.mjs';
 const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const download=value=>{const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='Atlas-avance-'+nivel.id+'-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);};
@@ -18,9 +19,10 @@ const tablaAvance={filtros:{},orden:null};
 export async function renderProgressControl(root,ctx){
  if(!progressFloors[nivel.id]){root.textContent='Elige un piso de trabajo.';return;}
  root.textContent='Cargando avance de '+nivel.nombre+'…';
- try{const model=await loadPma();let snapshot=await readProgress(),obs=await cargarObservaciones().catch(()=>({porCodigo:new Map()})),family='',selected=null,focus=null,detailPage=0,page=0;const esc=ctx.esc;
+ // Las terminaciones con partidas registradas toman su estado de ellas (avance por partida); las demás, lo marcado en el rombo.
+ try{const model=await loadPma();let snapshot=await readProgress(),obs=await cargarObservaciones().catch(()=>({porCodigo:new Map()})),avance=await cargarAvance().catch(()=>null),family='',selected=null,focus=null,detailPage=0,page=0;const esc=ctx.esc;
  const rombo=createRombo({esc,toast:ctx.toast,observaciones:()=>cargarObservaciones(),nuevaObservacion:(room,campo,listo)=>ctx.observaciones?.editor(room,null,listo,{terminacion:campo}),abrirObservacion:(id,listo)=>ctx.observaciones?.abrir(id,listo)});
- const refresh=async()=>{snapshot=await readProgress();obs=await cargarObservaciones(true).catch(()=>obs);if(root.isConnected)draw();};
+ const refresh=async()=>{snapshot=await readProgress();obs=await cargarObservaciones(true).catch(()=>obs);avance=await cargarAvance().catch(()=>avance);if(root.isConnected)draw();};
  const pendientes=r=>(obs.porCodigo.get(String(r.room.code).trim())||[]).filter(o=>['Abierta','En corrección','Corregida'].includes(o.estado)).length;
  const partida=(r,f)=>r.tasks.length?estadoPartida(r.tasks.find(t=>t.field===f)||{applicable:false}):'Sin definición';
  const situacion=r=>[r.complete?'Completo y conforme':'Pendiente',...(r.tasks.some(t=>t.quality==='Con observaciones')?['Con observaciones']:[]),...(r.tasks.some(t=>t.installation==='Sin registrar')?['Con partidas sin registrar']:[]),...(r.warnings.length?['Diferencias documentales']:[])];
@@ -32,12 +34,12 @@ export async function renderProgressControl(root,ctx){
  const celda=(r,f,titulo)=>{const e=partida(r,f);return `<td data-label="${titulo}"><span class="partidaEstado${['Sin registrar','No aplica','Sin definición'].includes(e)?' clara':''}${e==='No aplica'?' na':''}" style="--c:${COLOR_PARTIDA[e]}" title="${esc(e)}">${ABREVIA[e]}</span></td>`;};
  function abrirRecinto(room){
   selected=room;const editor=root.querySelector('#progressEditor');if(!editor||!room)return;editor.hidden=false;
-  editor.innerHTML=`<div class="chartHeading"><h3>${esc(room.code)} · ${esc(room.name)}</h3><span>${ctx.locate?'<button type="button" data-progress-locate-sel>Ver en el plano</button> ':''}<button type="button" data-progress-cerrar>Cerrar</button></span></div><div id="progressRombo"></div>`;
-  rombo.ficha(editor.querySelector('#progressRombo'),room,{alGuardar:()=>refresh()});
+  editor.innerHTML=`<div class="chartHeading"><h3>${esc(room.code)} · ${esc(room.name)}</h3><span>${ctx.locate?'<button type="button" data-progress-locate-sel>Ver en el plano</button> ':''}<button type="button" data-progress-cerrar>Cerrar</button></span></div><section class="avanceRecinto" hidden></section><div id="progressRombo"></div><section class="protocolosPrevios" hidden></section>`;
+  rombo.ficha(editor.querySelector('#progressRombo'),room,{alGuardar:()=>refresh(),panel:editor.querySelector('.avanceRecinto'),previos:editor.querySelector('.protocolosPrevios')});
   editor.querySelector('[data-progress-cerrar]').onclick=()=>{selected=null;editor.hidden=true;editor.replaceChildren();root.querySelectorAll('.progressRooms tr.selectedRow').forEach(tr=>tr.classList.remove('selectedRow'));};
   editor.querySelector('[data-progress-locate-sel]')?.addEventListener('click',()=>ctx.locate(room.id));
  }
- function draw(){if(!root.isConnected)return;const all=reportProgress(model,ctx.rooms(),snapshot.records,nivel.id),rows=cf.aplicar(all.rows),pages=Math.max(1,Math.ceil(rows.length/30));page=Math.min(page,pages-1);
+ function draw(){if(!root.isConnected)return;const all=reportProgress(model,ctx.rooms(),snapshot.records,nivel.id,derivador(avance)),rows=cf.aplicar(all.rows),pages=Math.max(1,Math.ceil(rows.length/30));page=Math.min(page,pages-1);
  const tasks=rows.flatMap(r=>r.tasks).filter(t=>t.documented&&(!family||t.field===family)),installed=tasks.filter(t=>t.installation==='Instalado').length,accepted=tasks.filter(t=>t.installation==='Instalado'&&t.quality==='Conforme').length;
  const coverage=progressCoverage(rows,family),filtrado=cf.activos()>0;
  const items=values=>values.map(([key,n],i)=>({key,n,color:['#8a9eaa','#bc9863','#357d9a','#4c8a6b'][i%4]}));

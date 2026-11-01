@@ -11,6 +11,10 @@ export const CAPITULOS_POSTERIORES = ['7', '9']; // artefactos e instalaciones: 
 export const ESTADOS = ['No iniciado', 'En ejecución', 'Instalado', 'Observado', 'Aprobado'];
 export const CONFORMIDAD = ['Sin revisar', 'Conforme', 'No conforme'];
 export const ESTADOS_PROTOCOLO = ['Pendiente', 'Liberado'];
+// Cada partida se marca en dos filas, como el rombo: ejecución (con su % mientras se ejecuta) y revisión. «Estado» y
+// «conformidad» de la escala anterior se derivan de ellas para los indicadores, la capa del plano y los respaldos.
+export const EJECUCION = ['No iniciado', 'En ejecución', 'Instalado'];
+export const REVISION = ['Sin revisar', 'Con observaciones', 'Conforme'];
 export const ESTADOS_RECINTO = ['Sin iniciar', 'En curso', 'Completo', 'Observado', 'Sin datos'];
 // Clave piso|código; los registros del −1 conservan su clave «N-1|código».
 export const keyFor = (code, level = 'N-1') => level + '|' + String(code).trim();
@@ -133,11 +137,26 @@ export function nodosRecinto(row, items = new Map(), materiales = null) {
   return {nodos: [...nodos.values()], sinPartida: [...new Set(sinPartida)], asepsia, superficie: m2};
 }
 
-// Estado vigente de un nodo, a partir del registro guardado.
+// Partida guardada (nueva o de la escala anterior) en dos filas. El % queda vacío (null) en ejecución si no se indicó:
+// en ese caso no suma m² ejecutados. Conforme exige instalado.
+export function dosFilas(v) {
+  if (!v) return {ejecucion: 'No iniciado', revision: 'Sin revisar', pct: 0};
+  const pct = Number.isFinite(v.pct) ? v.pct : null;
+  const ejecucion = EJECUCION.includes(v.ejecucion) ? v.ejecucion
+    : ['Instalado', 'Aprobado'].includes(v.estado) || (v.estado === 'Observado' && pct >= 100) ? 'Instalado' : v.estado === 'En ejecución' || (v.estado === 'Observado' && pct > 0) ? 'En ejecución' : 'No iniciado';
+  let revision = REVISION.includes(v.revision) ? v.revision
+    : v.estado === 'Observado' || v.conformidad === 'No conforme' ? 'Con observaciones' : v.estado === 'Aprobado' || v.conformidad === 'Conforme' ? 'Conforme' : 'Sin revisar';
+  if (revision === 'Conforme' && ejecucion !== 'Instalado') revision = 'Sin revisar';
+  return {ejecucion, revision, pct: ejecucion === 'No iniciado' ? 0 : ejecucion === 'Instalado' ? 100 : pct > 0 && pct < 100 ? pct : null};
+}
+const estadoLegado = ({ejecucion, revision}) => revision === 'Con observaciones' ? 'Observado' : ejecucion === 'Instalado' && revision === 'Conforme' ? 'Aprobado' : ejecucion;
+const conformidadLegada = revision => revision === 'Con observaciones' ? 'No conforme' : revision;
+
+// Estado vigente de un nodo, a partir del registro guardado. «registrada»: la partida tiene un registro propio.
 export function estadoNodo(nodo, registro) {
   if (nodo.tipo === 'protocolo') return {estado: registro?.protocolos?.[nodo.id]?.estado || 'Pendiente'};
-  const v = registro?.partidas?.[nodo.id];
-  return v ? {estado: v.estado, pct: v.pct, conformidad: v.conformidad, falta: v.falta || '', obs: v.obs || []} : {estado: 'No iniciado', pct: 0, conformidad: 'Sin revisar', falta: '', obs: []};
+  const v = registro?.partidas?.[nodo.id], d = dosFilas(v);
+  return {...d, pct: d.pct ?? 0, pctIndicado: d.pct, estado: estadoLegado(d), conformidad: conformidadLegada(d.revision), falta: v?.falta || '', obs: v?.obs || [], registrada: !!v};
 }
 export const liberado = (nodo, estado) => nodo.tipo === 'protocolo' ? estado.estado === 'Liberado' : estado.estado === 'Aprobado';
 export function bloqueos(nodo, nodos, registro) {
@@ -145,20 +164,16 @@ export function bloqueos(nodo, nodos, registro) {
   return nodo.prereq.map(id => porId.get(id)).filter(p => p && !liberado(p, estadoNodo(p, registro)));
 }
 
-// Reglas del checklist. Devuelve la lista de errores (vacía si es válido).
+// Reglas de una partida en dos filas. Devuelve la lista de errores (vacía si es válida).
 export function validarPartida(nodo, v, bloqueadoPor = []) {
   const e = [], nombre = nodo.item + ' ' + nodo.nombre;
-  if (!ESTADOS.includes(v.estado)) e.push(nombre + ': estado no válido.');
-  if (!CONFORMIDAD.includes(v.conformidad)) e.push(nombre + ': conformidad no válida.');
-  if (!Number.isFinite(v.pct) || v.pct < 0 || v.pct > 100) e.push(nombre + ': el % de avance debe estar entre 0 y 100.');
-  if (v.estado === 'No iniciado' && v.pct !== 0) e.push(nombre + ': «No iniciado» es 0 %.');
-  if (v.estado === 'En ejecución' && !(v.pct > 0 && v.pct < 100)) e.push(nombre + ': «En ejecución» requiere un % entre 1 y 99.');
-  if (['Instalado', 'Aprobado'].includes(v.estado) && v.pct !== 100) e.push(nombre + ': «' + v.estado + '» es 100 %.');
-  if (v.estado === 'Observado' && !v.obs.length && !v.falta.trim()) e.push(nombre + ': «Observado» requiere una observación o indicar qué falta.');
-  if (v.conformidad === 'No conforme' && !v.obs.length && !v.falta.trim()) e.push(nombre + ': «No conforme» requiere una observación o indicar qué falta.');
-  if (v.estado === 'Aprobado' && v.conformidad !== 'Conforme') e.push(nombre + ': solo se aprueba una partida conforme.');
-  if (v.estado === 'Aprobado' && v.falta.trim()) e.push(nombre + ': no se aprueba con faltantes declarados.');
-  if (v.estado === 'Aprobado' && bloqueadoPor.length) e.push(nombre + ': no puede quedar aprobada; falta liberar ' + bloqueadoPor.map(b => b.item || b.nombre).join(', ') + '.');
+  if (!EJECUCION.includes(v.ejecucion)) e.push(nombre + ': ejecución no válida.');
+  if (!REVISION.includes(v.revision)) e.push(nombre + ': revisión no válida.');
+  if (v.ejecucion === 'No iniciado' && v.pct !== 0) e.push(nombre + ': «No iniciado» es 0 %.');
+  if (v.ejecucion === 'Instalado' && v.pct !== 100) e.push(nombre + ': «Instalado» es 100 %.');
+  if (v.ejecucion === 'En ejecución' && v.pct != null && !(Number.isFinite(v.pct) && v.pct > 0 && v.pct < 100)) e.push(nombre + ': el % en ejecución va de 1 a 99.');
+  if (v.revision === 'Conforme' && v.ejecucion !== 'Instalado') e.push(nombre + ': solo una partida instalada puede quedar conforme.');
+  if (v.revision === 'Conforme' && bloqueadoPor.length) e.push(nombre + ': para quedar conforme falta liberar ' + bloqueadoPor.map(b => b.item || b.nombre).join(', ') + '.');
   return e;
 }
 export function validarRegistro(r, nodos) {
@@ -170,9 +185,69 @@ export function validarRegistro(r, nodos) {
   for (const n of nodos) {
     if (n.tipo === 'protocolo') { const p = r.protocolos?.[n.id]; if (p && !ESTADOS_PROTOCOLO.includes(p.estado)) e.push(n.nombre + ': estado no válido.'); continue; }
     const v = r.partidas?.[n.id]; if (!v) continue;
-    e.push(...validarPartida(n, {...v, falta: v.falta || '', obs: v.obs || []}, bloqueos(n, nodos, r)));
+    e.push(...validarPartida(n, dosFilas(v), bloqueos(n, nodos, r)));
   }
   return e;
+}
+
+// Registro nuevo del recinto con un solo nodo cambiado: el rombo guarda cada toque al instante. La ejecución fija el %
+// (0 sin iniciar, 100 instalada; en ejecución conserva el anterior o queda vacío) y bajar de instalada quita la
+// conformidad. Lo escrito antes en «qué falta» y observaciones queda guardado en la partida, sin mostrarse.
+export function actualizarNodo({code, level}, nodos, registro, id, cambio, {responsable, fecha, at = new Date().toISOString()}) {
+  const nodo = nodos.find(n => n.id === id); if (!nodo) throw Error('La partida no corresponde a este recinto.');
+  const partidas = {...(registro?.partidas || {})}, protocolos = {...(registro?.protocolos || {})};
+  if (nodo.tipo === 'protocolo') {
+    if (!ESTADOS_PROTOCOLO.includes(cambio.estado)) throw Error(nodo.nombre + ': estado no válido.');
+    protocolos[id] = {estado: cambio.estado, fecha, autor: responsable};
+  } else {
+    const previo = dosFilas(partidas[id]), sig = {...previo, ...cambio};
+    if (cambio.ejecucion) {
+      sig.pct = cambio.ejecucion === 'No iniciado' ? 0 : cambio.ejecucion === 'Instalado' ? 100 : 'pct' in cambio ? cambio.pct : previo.ejecucion === 'En ejecución' ? previo.pct : null;
+      if (cambio.ejecucion !== 'Instalado' && sig.revision === 'Conforme') sig.revision = 'Sin revisar';
+    }
+    const errores = validarPartida(nodo, sig, sig.revision === 'Conforme' ? bloqueos(nodo, nodos, {partidas, protocolos}) : []);
+    if (errores.length) throw Error(errores[0]);
+    partidas[id] = {...partidas[id], ejecucion: sig.ejecucion, revision: sig.revision, pct: sig.pct, estado: estadoLegado(sig), conformidad: conformidadLegada(sig.revision)};
+  }
+  const nuevo = {key: keyFor(code, level), code: String(code).trim(), level, version: (registro?.version || 0) + 1, at, responsable: String(responsable || '').trim(), fecha, protocolos, partidas};
+  const errores = validarRegistro(nuevo); if (errores.length) throw Error(errores[0]);
+  return nuevo;
+}
+
+// Estado de una terminación del rombo a partir de sus partidas (null si ninguna tiene registro propio).
+export function estadoTerminacion(partidas) {
+  if (!partidas.length || !partidas.some(p => p.registrada)) return null;
+  const e = partidas.map(p => p.ejecucion), r = partidas.map(p => p.revision);
+  return {installation: e.every(x => x === 'Instalado') ? 'Instalado' : e.every(x => x === 'No iniciado') ? 'No iniciado' : 'En proceso',
+    quality: r.includes('Con observaciones') ? 'Con observaciones' : r.every(x => x === 'Conforme') ? 'Conforme' : 'Sin revisar'};
+}
+// Lo marcado antes directamente en el rombo pasa a las partidas de esa terminación la primera vez que se marca una de
+// ellas, para no perderlo. «En proceso» queda en ejecución sin %; conforme solo si su protocolo previo está liberado.
+export function sembrarTerminacion(registro, nodos, partidas, {installation, quality}) {
+  const ejecucion = installation === 'Instalado' ? 'Instalado' : installation === 'En proceso' ? 'En ejecución' : 'No iniciado';
+  if (installation === 'Sin registrar' || !installation) return registro;
+  const sembrado = {...(registro || {}), partidas: {...(registro?.partidas || {})}, protocolos: {...(registro?.protocolos || {})}};
+  for (const p of partidas) {
+    if (sembrado.partidas[p.id]) continue;
+    const libre = !bloqueos(p, nodos, sembrado).length;
+    const revision = quality === 'Con observaciones' ? 'Con observaciones' : quality === 'Conforme' && ejecucion === 'Instalado' && libre ? 'Conforme' : 'Sin revisar';
+    const d = {ejecucion, revision, pct: ejecucion === 'No iniciado' ? 0 : ejecucion === 'Instalado' ? 100 : null};
+    sembrado.partidas[p.id] = {...d, estado: estadoLegado(d), conformidad: conformidadLegada(revision)};
+  }
+  return sembrado;
+}
+// Protocolos previos de un grupo de partidas (los que alguna de ellas exige liberados).
+export const protocolosDe = (nodos, partidas) => nodos.filter(n => n.tipo === 'protocolo' && partidas.some(p => p.prereq.includes(n.id)));
+// Panel de avance de la ficha: % del recinto (promedio de sus partidas, cada una con el mismo peso), avance de pavimento,
+// cielo y muros (los cuatro muros juntos, sin repetir sus partidas comunes), partidas conformes y protocolos liberados.
+export function resumenRecinto(nodos, row) {
+  const partidas = nodos.filter(n => n.tipo === 'partida'), protocolos = nodos.filter(n => n.tipo === 'protocolo');
+  const promedio = ps => ps.length ? ps.reduce((a, n) => a + (n.pct || 0), 0) / ps.length : null;
+  const muros = [...new Map(['M1', 'M2', 'M3', 'M4'].flatMap(c => partidasDeTerminacion(nodos, c, row)).map(n => [n.id, n])).values()];
+  const grupos = [['PAV', 'Pavimento', partidasDeTerminacion(nodos, 'PAV', row)], ['CIE', 'Cielo', partidasDeTerminacion(nodos, 'CIE', row)], ['M', 'Muros', muros]]
+    .map(([campo, nombre, ps]) => ({campo, nombre, partidas: ps, pct: promedio(ps), estado: estadoTerminacion(ps)}));
+  return {pct: promedio(partidas), grupos, partidas: partidas.length, conformes: partidas.filter(n => n.ejecucion === 'Instalado' && n.revision === 'Conforme').length,
+    protocolos: protocolos.length, liberados: protocolos.filter(n => n.estado === 'Liberado').length};
 }
 
 // Estado del recinto para colorear el plano.

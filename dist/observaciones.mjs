@@ -2,6 +2,7 @@ import {createObservationDetail} from './observacion-detail.mjs';
 import {estadoObservacion,referenciaObservacion} from './observaciones-query.mjs';
 import {crearFiltrosColumna,opciones as opcionesColumna} from './column-filters.mjs';
 import {editarMarcas,verFoto,capaMarcas} from './photo-marks.mjs';
+import {firmante,pedirSesion,exigirFirma,SIN_SESION} from './firma.mjs';
 // Observaciones en terreno por recinto, con registro fotográfico: sección en la ficha del plano, formulario pensado para
 // el celular (cámara del equipo), panel en Control de obra y capa del plano.
 // Datos disponibles en el equipo; nube.mjs sincroniza observaciones, fotos e historial con una sesión autorizada.
@@ -18,9 +19,6 @@ const fechaCorta = iso => iso ? new Date(iso).toLocaleDateString('es-CL') : '—
 const fechaHora = iso => iso ? new Date(iso).toLocaleString('es-CL', {dateStyle: 'short', timeStyle: 'short'}) : '—';
 const plazoTexto = p => p ? p.split('-').reverse().join('-') : 'sin plazo';
 const categoriaDe = t => t === 'PAV' ? 'Pavimento' : t === 'CIE' ? 'Cielo' : /^M\d$/.test(t) ? 'Muros y tabiques' : 'Otro';
-const CLAVE_AUTOR = 'atlas-autor';
-const autorGuardado = () => { try { return localStorage.getItem(CLAVE_AUTOR) || ''; } catch { return ''; } };
-const recordarAutor = v => { try { localStorage.setItem(CLAVE_AUTOR, v); } catch {} };
 const ordenar = lista => [...lista].sort((a, b) => Number(M.PENDIENTES.has(b.estado)) - Number(M.PENDIENTES.has(a.estado)) || b.actualizada.localeCompare(a.actualizada));
 const mb = v => (v / 1048576).toLocaleString('es-CL', {maximumFractionDigits: 1}) + ' MB';
 
@@ -66,7 +64,7 @@ export function createObservaciones(ctx) {
     <small>${esc(estadoObservacion(o.estado))} · ${esc(o.categoria)} · ${esc(o.responsable || 'Sin responsable')} · ${M.vencida(o, hoy()) ? '<em>vencida ' + plazoTexto(o.plazo) + '</em>' : o.plazo ? 'plazo ' + plazoTexto(o.plazo) : 'sin plazo'}${o.fotos.length ? ' · ' + o.fotos.length + (o.fotos.length === 1 ? ' foto' : ' fotos') : ''} · ${esc(o.autor)}, ${fechaCorta(o.creada)}</small>
     ${fotos?.length ? `<span class="obsFotosFicha">${fotos.slice(0, 4).map(f => `<span>${miniatura(f)}</span>`).join('')}${fotos.length > 4 ? `<span class="obsMas">+${fotos.length - 4}</span>` : ''}</span>` : ''}</span></button></li>`;
   const recintoDe = o => ctx.rooms().find(r => r.id === o.room.id) || ctx.rooms().find(r => r.code === o.room.code);
-  const detail=createObservationDetail({...ctx,level:nivel.id,room:recintoDe,processPhoto:procesarFoto,author:autorGuardado,rememberAuthor:recordarAutor,
+  const detail=createObservationDetail({...ctx,level:nivel.id,room:recintoDe,processPhoto:procesarFoto,
     highlight:id=>{document.querySelectorAll('[data-obs-row]').forEach(row=>row.classList.toggle('obsSelectedRow',row.dataset.obsRow===id));document.querySelectorAll('[data-obs]').forEach(b=>b.setAttribute('aria-expanded',String(b.dataset.obs===id)));},
     focusRecord:id=>[...document.querySelectorAll('[data-obs]')].find(b=>b.dataset.obs===id&&b.offsetParent)?.focus({preventScroll:true}),
     edit:async(obs,volver,changed)=>{volverDesdeEditor=volver;try{await editor(recintoDe(obs),obs,changed);if(!dialog.open){volverDesdeEditor=null;volver();}}catch(error){volverDesdeEditor=null;ctx.toast(error.message);volver();}}});
@@ -99,6 +97,8 @@ export function createObservaciones(ctx) {
   // terminacion: elemento ya elegido (desde el rombo del recinto) para una observación nueva.
   async function editor(room, obs, alGuardar, {terminacion = null} = {}) {
     if (!room) return ctx.toast('El recinto de esta observación ya no está en el plano.');
+    // Registra la cuenta de Nube del equipo: sin sesión se abre el inicio de sesión en vez del formulario.
+    if (!firmante()) { pedirSesion(SIN_SESION); return ctx.toast(SIN_SESION); }
     const fotosGuardadas = obs ? await leerFotos(obs.id) : [], historial = obs ? await leerHistorial(obs.id) : [];
     const nuevas = [], quitar = new Set(), tipoInicial = obs && obs.estado !== 'Abierta' ? 'despues' : 'antes';
     const finishes = room.finishes || [], source = ctx.source(room);
@@ -117,8 +117,8 @@ export function createObservaciones(ctx) {
         <fieldset class="obsPrioridad"><legend>Prioridad</legend>${M.PRIORIDADES.map(p => `<label><input type="radio" name="prioridad" value="${p}" ${(obs?.prioridad || 'Media') === p ? 'checked' : ''}> ${p}</label>`).join('')}</fieldset>
         <label>Responsable<input name="responsable" list="obsResponsables" maxlength="160" value="${esc(obs?.responsable || '')}" placeholder="Subcontrato o persona"><datalist id="obsResponsables">${responsables.map(r => `<option value="${esc(r)}">`).join('')}</datalist></label>
         <label>Plazo<input type="date" name="plazo" value="${esc(obs?.plazo || '')}"></label>
-        <label>${obs ? 'Quién hace este cambio' : 'Registrado por'} *<input name="autor" maxlength="160" required value="${esc(autorGuardado())}" autocomplete="name"></label>
       </div>
+      <p class="obsNota obsFirma">${obs ? 'Hace este cambio' : 'Registra'} <b>${esc(firmante())}</b></p>
       ${obs ? `<section class="obsEstado"><h3>Estado</h3><p class="obsNota">Registrada por ${esc(obs.autor)} el ${fechaHora(obs.creada)}${obs.cerrada ? ' · cerrada el ' + fechaHora(obs.cerrada) : ''}.</p>
         <label>Comentario del cambio<textarea name="comentario" rows="2" maxlength="1000" placeholder="Obligatorio para descartar o reabrir"></textarea></label>
         <div class="obsTransiciones">${(M.TRANSICIONES[obs.estado] || []).map(e => `<button type="button" data-estado="${esc(e)}" style="--c:${COLOR_ESTADO[e]}">${esc(ACCION[e])}</button>`).join('')}</div></section>
@@ -168,8 +168,8 @@ export function createObservaciones(ctx) {
       if (guardando) return;
       if (mensaje.textContent === 'Procesando foto…') mensaje.textContent = 'Esperando que terminen las fotos…';
       await procesando;
-      const v = Object.fromEntries(new FormData(form)), autor = String(v.autor || '').trim(), at = new Date().toISOString();
-      if (!autor) { mensaje.textContent = 'Indica quién registra.'; form.autor.focus(); return; }
+      const v = Object.fromEntries(new FormData(form)), at = new Date().toISOString();
+      let autor; try { autor = exigirFirma(); } catch (e) { mensaje.textContent = e.message; return; }
       const valores = {descripcion: String(v.descripcion || '').trim(), terminacion: v.terminacion, codigo: finishes.find(f => f.field === v.terminacion)?.code || null, categoria: v.categoria, prioridad: v.prioridad || 'Media', responsable: String(v.responsable || '').trim() || null, plazo: v.plazo || null};
       const fotosNuevas = nuevas.map(f => ({id: f.id, tipo: f.tipo, at, autor, ...(f.marcas?.length ? {marcas: f.marcas} : {})}));
       const conMarcas = f => { if (!editadas.has(f.id)) return f; const {marcas: _, ...resto} = f, m = editadas.get(f.id); return m.length ? {...resto, marcas: m} : resto; };
@@ -198,7 +198,7 @@ export function createObservaciones(ctx) {
       try {
         await guardarObservacion(o, versionEsperada, {historial: hist, quitarFotos: [...quitar],
           fotos: nuevas.map(f => ({id: f.id, obsId: o.id, tipo: f.tipo, at, autor, mime: f.mime, ancho: f.ancho, alto: f.alto, bytes: f.bytes, datos: f.datos, mini: f.mini}))});
-        recordarAutor(autor); pedirPersistencia(); guardando = false; dialog.close(); ctx.toast(estadoNuevo ? `Observación: ${estadoNuevo}.` : 'Observación guardada en este equipo.'); alGuardar?.();
+        pedirPersistencia(); guardando = false; dialog.close(); ctx.toast(estadoNuevo ? `Observación: ${estadoNuevo}.` : 'Observación guardada en este equipo.'); alGuardar?.();
       } catch (e) { guardando = false; form.querySelectorAll('button').forEach(b => { b.disabled = false; }); mensaje.textContent = 'No se guardó. ' + e.message; }
     }
     form.onsubmit = e => { e.preventDefault(); persistir(); };

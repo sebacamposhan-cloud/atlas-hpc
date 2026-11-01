@@ -26,11 +26,8 @@
 .romboFila > span { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: #000; }
 .romboBotones { display: grid; grid-template-columns: repeat(3, 1fr); }
 .romboBotones button { min-height: 42px; font-size: 12px; padding: 4px; margin-right: -1px; white-space: normal; line-height: 1.2; }
-.romboPartida label { display: grid; gap: 4px; font-size: 11px; font-weight: 600; }
-.romboPartida label.check { display: flex; align-items: center; gap: 6px; font-weight: 400; }
-.romboPartida textarea, .romboPartida input:not([type=checkbox]) { font-size: 14px; width: 100%; box-sizing: border-box; }
-.romboFirma { grid-template-columns: 1fr; }
 .romboMensaje { margin: 0; font-size: 11px; }
+.romboSesion button { margin-left: 6px; min-height: 32px; font-size: 12px; }
 .romboObs { border-top: 1px solid var(--g-marca, #1b2a56); padding-top: 8px; display: grid; gap: 6px; }
 .romboObs .romboTitulo button { font-size: 12px; min-height: 34px; }
 .romboObsLista { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
@@ -51,11 +48,37 @@
 .progressEditor .chartHeading > span { display: flex; gap: 6px; }
 .progressEditor #progressRombo { max-width: 560px; margin: 0 auto; }
 
-/* Partidas de la terminación elegida con sus m² (avance por partida, sin montos) y acceso al plano por código. */
+/* Partidas de la terminación elegida: m² ejecutados y pendientes (sin montos) y sus dos filas, ejecución y revisión, que
+   se guardan al tocarlas. Arriba, los protocolos previos que piden liberadas. */
 .romboVerCodigo, .romboVerCodigo:hover:not(:disabled) { display: inline; background: transparent; border: 0; outline: 0; padding: 0; min-height: 0; color: var(--g-azul, #0f5499); text-decoration: underline; text-underline-offset: 3px; font-size: 12px; font-weight: 700; cursor: pointer; text-align: left; }
-.romboM2 { border-top: 1px solid var(--g-marca, #1b2a56); padding-top: 8px; display: grid; gap: 6px; }
-.romboM2 .romboTitulo button { font-size: 12px; min-height: 34px; }
-.romboPartidas { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
-.romboPartidas li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px; padding: 6px 8px; border: 1px solid var(--g-regla, #8c8c8c); font-size: 12px; }
-.romboPartidas li small { grid-column: 1 / -1; color: #262626; }
-.romboPct { font-weight: 700; white-space: nowrap; }
+.romboPartidas, .romboProtocolos ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.romboPartidas li { display: grid; gap: 6px; padding: 8px; border: 1px solid var(--g-regla, #8c8c8c); font-size: 12px; }
+.romboPartidas li small { color: #262626; }
+.romboPartidaCab { display: flex; justify-content: space-between; align-items: baseline; gap: 2px 8px; flex-wrap: wrap; }
+.romboPct { font-weight: 700; }
+.romboPartidas small.romboBloqueo { color: #8a4b00; font-weight: 600; }
+.romboPctCampo { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; }
+.romboPctCampo input { width: 90px; font-size: 16px; }
+.romboBotones.romboDos { grid-template-columns: repeat(2, 1fr); }
+
+/* Panel de avance del recinto, bajo su nombre: % del recinto, barras de pavimento, cielo y muros con el color del rombo
+   (tocar una abre esa terminación) y conformes / protocolos liberados. */
+.avanceRecinto { border: 1px solid var(--g-marca, #1b2a56); border-top: 4px solid var(--g-marca, #1b2a56); padding: 10px 12px; margin: 10px 0 14px; display: grid; gap: 4px; background: #fff; }
+.arCabecera { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.arCabecera span { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #000; }
+.arCabecera b { font-size: 30px; line-height: 1; color: #000; }
+.avanceRecinto .arFila { display: grid; grid-template-columns: 76px minmax(0, 1fr) minmax(48px, auto); align-items: center; gap: 8px; width: 100%; min-height: 36px; padding: 4px 0; border: 0; background: transparent; text-align: left; font-size: 12px; font-weight: 600; color: #000; cursor: pointer; }
+.avanceRecinto .arFila:hover:not(:disabled) { background: transparent; text-decoration: underline; }
+.arFila b { text-align: right; white-space: nowrap; font-size: 12px; }
+.arBarra { display: block; height: 12px; border: 1px solid #000; background: #fff; }
+.arBarra i { display: block; height: 100%; }
+.arPie { margin: 4px 0 0; font-size: 11px; color: #262626; }
+
+/* Protocolos previos de todas las partidas del recinto, con su referencia REV1 y lo que piden liberado antes. */
+.protocolosPrevios { border-top: 3px solid var(--g-marca, #1b2a56); padding-top: 10px; margin: 14px 0; display: grid; gap: 8px; }
+.previosLista { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.previosLista li { display: grid; gap: 6px; padding: 8px; border: 1px solid var(--g-marca, #1b2a56); }
+.previoTexto { display: grid; gap: 2px; font-size: 13px; }
+.previoTexto b { color: #000; }
+.previoTexto small { font-size: 11px; color: #262626; }
+.progressEditor .avanceRecinto, .progressEditor .protocolosPrevios, #avanceEditor .avanceRecinto, #avanceEditor .protocolosPrevios { max-width: 560px; margin-left: auto; margin-right: auto; }
