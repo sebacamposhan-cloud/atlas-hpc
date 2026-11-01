@@ -1,8 +1,10 @@
-import {newMarking, validateMarking, addMarkedRoom, removeMarkedRoom, markingBackup, upgradeMarking, setEstados, addCut, removeCut, compareCuts, markingItems, actual, PLANTILLAS, CAMBIOS, MAX_ESTADOS} from './marking-model.mjs';
+import {newMarking, validateMarking, addMarkedRoom, removeMarkedRoom, markingBackup, upgradeMarking, setEstados, addCut, removeCut, compareCuts, markingItems, actual, PLANTILLAS, CAMBIOS, MAX_ESTADOS, esLevantamiento} from './marking-model.mjs';
 import {readMarkings, saveMarking, importMarkings} from './marking-store.mjs';
+import {createLevantamiento} from './levantamiento.mjs';
 
 // Proyectos de marcado: se parte de un piso, se definen estados con leyenda (por ejemplo Pendiente / En ejecución / Terminado),
 // se pintan recintos tocándolos y se guardan cortes con fecha para comparar el avance (plano de cambios y vista lado a lado).
+// Un proyecto también puede ser un levantamiento con columnas propias, importable y exportable a Excel (levantamiento.mjs).
 export function createMarking(ctx) {
   const esc = ctx.esc;
   const panel = document.createElement('aside');
@@ -29,7 +31,7 @@ export function createMarking(ctx) {
   const estadoDe = id => active?.estados?.find(e => e.id === id);
   // Comparación vigente: cortes elegidos y resultado (con m² de cada recinto).
   function comparacion() {
-    if (!active || !comparando) return null;
+    if (!active || !comparando || esLevantamiento(active)) return null;
     const vistas = [...active.cortes, actual(active)], antes = vistas.find(c => c.id === comparando.antes), despues = vistas.find(c => c.id === comparando.despues);
     if (!antes || !despues) return null;
     return {antes, despues, resultado: compareCuts(active.estados, antes, despues, m2)};
@@ -44,9 +46,10 @@ export function createMarking(ctx) {
   function open(doc) {
     validateMarking(doc);
     if (doc.level !== ctx.level) throw Error('El documento pertenece a otro piso.');
-    ctx.enter(); active = upgradeMarking(doc); focused = null; error = ''; comparando = null; pincel = active.estados.at(-1).id;
+    ctx.enter(); active = upgradeMarking(doc); focused = null; error = ''; comparando = null; pincel = esLevantamiento(active) ? null : active.estados.at(-1).id;
     panel.hidden = false; document.body.classList.add('markingOpen', 'hideLeft', 'hideRight');
     launch.setAttribute('aria-expanded', 'true'); dialog.close(); render(); redraw();
+    if (esLevantamiento(active)) lev.abrir(active);
   }
   function status() {
     const label = panel.querySelector('#markingSaveStatus');
@@ -72,11 +75,14 @@ export function createMarking(ctx) {
     if (!active || !room || !find(room.id)) return;
     if (comparando) return ctx.toast('Estás comparando cortes. Vuelve a «Estados» para pintar.');
     focused = room.id;
+    // En un levantamiento, tocar un recinto abre su ficha en el panel; se marca columna por columna.
+    if (esLevantamiento(active)) { render(); ctx.redraw(); return; }
     return change(doc => addMarkedRoom(doc, room, ctx.source(room), pincel));
   }
 
   function render() {
     if (!active) return;
+    if (esLevantamiento(active)) { lev.render(panel, active, focused); status(); return; }
     const comp = comparacion(), varios = active.estados.length > 1;
     if (!active.estados.some(e => e.id === pincel)) pincel = active.estados[0].id;
     const cuenta = id => active.rooms.filter(r => r.estado === id), suma = rooms => rooms.reduce((s, r) => s + (m2(r.id) || 0), 0);
@@ -139,11 +145,13 @@ export function createMarking(ctx) {
     if (pending) return ctx.toast('Espera a que termine el guardado.');
     try {
       const docs = (await readMarkings()).filter(doc => doc.level === ctx.level && doc.specialty === 'architecture').sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-      showDialog(`<h2>Mis proyectos</h2><p>Arquitectura · ${esc(ctx.levelName)}. Un proyecto pinta recintos por estado (por ejemplo, pisos vinílicos instalados) y guarda cortes para comparar el avance.</p><button id="newMarking" class="primary">+ Nuevo proyecto</button>
-        <div class="markingLibrary">${docs.map(doc => `<button data-open-marking="${esc(doc.id)}"><b>${esc(doc.name)}</b><span>${esc(doc.author)} · ${doc.rooms.length} recintos${doc.cortes?.length ? ` · ${doc.cortes.length} cortes` : ''}</span><small>${esc(doc.purpose)}</small></button>`).join('') || '<p>Aún no hay proyectos para este piso.</p>'}</div>
+      showDialog(`<h2>Mis proyectos</h2><p>Arquitectura · ${esc(ctx.levelName)}. Un proyecto pinta recintos por estado (por ejemplo, pisos vinílicos instalados) y guarda cortes para comparar el avance; un levantamiento lleva una tabla con tus columnas y se importa o exporta en Excel.</p>
+        <div class="markingNuevo"><button id="newMarking" class="primary">+ Nuevo proyecto</button><label class="markingImportar">Importar planilla (Excel o CSV)<input id="levImportar" type="file" accept=".xlsx,.xls,.csv,.txt"></label></div>
+        <div class="markingLibrary">${docs.map(doc => `<button data-open-marking="${esc(doc.id)}"><b>${esc(doc.name)}</b><span>${esLevantamiento(doc) ? `Levantamiento · ${doc.filas.length} recintos · ${doc.columnas.length} columnas` : `${esc(doc.author)} · ${doc.rooms.length} recintos${doc.cortes?.length ? ` · ${doc.cortes.length} cortes` : ''}`}</span><small>${esc(doc.purpose)}</small></button>`).join('') || '<p>Aún no hay proyectos para este piso.</p>'}</div>
         <button id="markingBackupAll" ${docs.length ? '' : 'disabled'}>Respaldar proyectos de este piso</button><label>Restaurar respaldo JSON<input id="markingRestore" type="file" accept=".json,application/json"></label>
         <p>Se guarda en este equipo. Con la sesión de «Nube» iniciada se sincroniza con los demás equipos; sin ella, usa el respaldo.</p>`);
-      dialog.querySelector('#newMarking').onclick = () => editor();
+      dialog.querySelector('#newMarking').onclick = () => tipoNuevo();
+      dialog.querySelector('#levImportar').onchange = event => { const file = event.target.files[0]; if (file) lev.importar(file); };
       dialog.querySelector('#markingBackupAll').onclick = () => download(docs);
       dialog.querySelectorAll('[data-open-marking]').forEach(button => {button.onclick = () => {
         try {open(docs.find(doc => doc.id === button.dataset.openMarking));} catch (failure) {dialog.querySelector('#markingError').textContent = failure.message;}
@@ -157,8 +165,17 @@ export function createMarking(ctx) {
       };
     } catch (failure) {ctx.toast('No se pudieron abrir los proyectos: ' + failure.message);}
   }
+  // Proyecto nuevo: marcado (un estado por recinto) o levantamiento (tabla con columnas propias).
+  function tipoNuevo() {
+    showDialog(`<h2>Nuevo proyecto</h2><p>Arquitectura · ${esc(ctx.levelName)}</p><div class="markingTipos">
+      <button data-tipo="marcado"><b>Marcado</b><span>Un estado por recinto, con leyenda y cortes para comparar el avance.</span></button>
+      <button data-tipo="levantamiento"><b>Levantamiento</b><span>Una tabla con tus columnas (estado, lista o texto), vista «Listo para instalar», enlace con el rombo y Excel.</span></button></div>`);
+    dialog.querySelector('[data-tipo=marcado]').onclick = () => editor();
+    dialog.querySelector('[data-tipo=levantamiento]').onclick = () => lev.editor();
+  }
   // Datos del proyecto y leyenda de estados (de menor a mayor avance). Con un solo estado funciona como el marcado de un color.
   function editor(doc) {
+    if (doc && esLevantamiento(doc)) return lev.editor(doc);
     let estados = structuredClone(doc ? upgradeMarking(doc).estados : [{...PLANTILLAS.marcado[0]}]);
     showDialog(`<h2>${doc ? 'Datos y leyenda del proyecto' : 'Nuevo proyecto'}</h2><p>Arquitectura · ${esc(ctx.levelName)}</p><form id="markingForm">
       <label>Nombre del proyecto *<input name="name" required maxlength="160" value="${esc(doc?.name || '')}" placeholder="Ej.: Pisos vinílicos instalados"></label>
@@ -237,6 +254,9 @@ export function createMarking(ctx) {
       });
     } catch (failure) {dialog.querySelector('#markingError').textContent = failure.message;}
   }
+  const lev = createLevantamiento({esc, toast: ctx.toast, level: ctx.level, levelName: ctx.levelName, rooms: ctx.rooms, find, dialog, showDialog, change, library,
+    abrir: open, cerrar: close, biblioteca: library, respaldo: () => download([active]), exportarPlano: () => ctx.export(structuredClone(active), null), download: ctx.download,
+    enfocar: id => { focused = id; const room = find(id); if (room) ctx.focus(room); render(); ctx.redraw(); }, alCambiarEnlace: () => { if (active && esLevantamiento(active)) { render(); ctx.redraw(); } }});
   launch.onclick = () => ctx.editing() ? ctx.toast('Guarda o cancela la edición del contorno antes de marcar.') : library();
   // Si la nube trae otra versión del proyecto abierto, se muestra esa después de los guardados en curso.
   window.addEventListener('atlas-markings-changed', event => {
@@ -254,5 +274,5 @@ export function createMarking(ctx) {
   document.addEventListener('click', event => {
     if (active && event.target.closest('button[data-module],[data-plan-type],#planSettingsOpen') && !close()) {event.preventDefault(); event.stopImmediatePropagation();}
   }, true);
-  return {active: () => active, focused: () => focused, choose, close, comparacion, items: () => active ? markingItems(active, comparacion()?.resultado) : []};
+  return {active: () => active, focused: () => focused, choose, close, comparacion, items: () => !active ? [] : esLevantamiento(active) ? lev.items(active) : markingItems(active, comparacion()?.resultado)};
 }

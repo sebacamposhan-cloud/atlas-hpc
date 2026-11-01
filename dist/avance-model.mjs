@@ -243,7 +243,7 @@ export const protocolosDe = (nodos, partidas) => nodos.filter(n => n.tipo === 'p
 export function resumenRecinto(nodos, row) {
   const partidas = nodos.filter(n => n.tipo === 'partida'), protocolos = nodos.filter(n => n.tipo === 'protocolo');
   const promedio = ps => ps.length ? ps.reduce((a, n) => a + (n.pct || 0), 0) / ps.length : null;
-  const muros = [...new Map(['M1', 'M2', 'M3', 'M4'].flatMap(c => partidasDeTerminacion(nodos, c, row)).map(n => [n.id, n])).values()];
+  const muros = partidasDeMuros(nodos, row);
   const grupos = [['PAV', 'Pavimento', partidasDeTerminacion(nodos, 'PAV', row)], ['CIE', 'Cielo', partidasDeTerminacion(nodos, 'CIE', row)], ['M', 'Muros', muros]]
     .map(([campo, nombre, ps]) => ({campo, nombre, partidas: ps, pct: promedio(ps), estado: estadoTerminacion(ps)}));
   return {pct: promedio(partidas), grupos, partidas: partidas.length, conformes: partidas.filter(n => n.ejecucion === 'Instalado' && n.revision === 'Conforme').length,
@@ -315,6 +315,8 @@ export function partidasDeTerminacion(nodos, campo, row) {
     : campo === 'CIE' ? es(o, 'Cielo') || o.startsWith('Cenefa') : !!codigo && (o === 'Muros' || es(o, 'Muro ' + codigo));
   return nodos.filter(n => n.tipo === 'partida' && n.origen.some(propia));
 }
+// Partidas de los cuatro muros juntos (las cuadrillas avanzan en todos a la vez), sin repetir las comunes.
+export const partidasDeMuros = (nodos, row) => [...new Map(['M1', 'M2', 'M3', 'M4'].flatMap(c => partidasDeTerminacion(nodos, c, row)).map(n => [n.id, n])).values()];
 // Avance físico de un recinto: promedio del % de sus partidas (cada partida pesa igual).
 export const avanceFisico = nodos => { const ps = nodos.filter(n => n.tipo === 'partida'); return ps.length ? ps.reduce((a, n) => a + (n.pct || 0), 0) / ps.length : 0; };
 

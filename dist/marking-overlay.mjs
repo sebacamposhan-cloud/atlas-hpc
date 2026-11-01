@@ -1,6 +1,7 @@
 // All coordinates come from the existing viewer; annotations add no new geometry.
 // Cada recinto se pinta con el color de su estado (proyectos) o, al comparar cortes, con el tipo de cambio (ver markingItems).
-import {markingItems, CAMBIOS} from './marking-model.mjs';
+import {markingItems, CAMBIOS, esLevantamiento} from './marking-model.mjs';
+import {leyenda as leyendaLevantamiento, categoria, TIPOS_COLUMNA} from './levantamiento-model.mjs';
 export function createMarkingOverlay(ctx) {
   const svg = document.getElementById('svg'), overlay = document.getElementById('markingOverlay');
   const elementos = doc => ctx.items ? ctx.items() : markingItems(doc);
@@ -39,6 +40,13 @@ export function markingLegend(doc, comparacion = null) {
   const nombreEstado = id => doc.estados?.find(e => e.id === id)?.nombre;
   const lineas = ['Documento: ' + doc.name, 'Realizado por: ' + doc.author, 'Propósito: ' + doc.purpose,
     'Arquitectura / ' + doc.level, 'Creado: ' + doc.createdAt, 'Actualizado: ' + doc.updatedAt];
+  // Levantamiento: la vista del plano (una columna o «Listo para instalar») con sus totales y cada recinto con su categoría.
+  if (esLevantamiento(doc)) {
+    const vista = doc.columnas.find(c => c.id === doc.vista)?.nombre || 'Listo para instalar';
+    lineas.push('Levantamiento · columnas: ' + doc.columnas.map(c => `${c.nombre} (${TIPOS_COLUMNA[c.tipo]})`).join(', '), 'Plano coloreado por: ' + vista,
+      'Leyenda: ' + leyendaLevantamiento(doc, doc.filas).filter(e => e.n).map(e => `${e.nombre} (${e.n})`).join(' / '));
+    return [...lineas, ...doc.filas.map(f => `${f.code} - ${f.name} [${categoria(doc, f)?.nombre || 'Sin dato'}]`)];
+  }
   if (comparacion) {
     lineas.push(`Comparación: ${comparacion.antes.nombre} -> ${comparacion.despues.nombre}`,
       ...Object.entries(CAMBIOS).map(([k, c]) => `${c.nombre}: ${comparacion.resultado.totales[k]} recintos`),
