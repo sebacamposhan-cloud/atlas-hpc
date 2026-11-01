@@ -1,3 +1,4 @@
+import {validateSchedule} from './lastplanner-daily.mjs';
 // Production cycle of the existing Last Planner. Pure rules shared by the UI, storage and server.
 import {semanaDe,rangoSemana,sumarDias,esFecha,esSemana,CAUSAS,TIPOS_RESTRICCION,DEPARTAMENTOS} from './lastplanner-model.mjs';
 import {withinGeometry} from './lastplanner-geometry.mjs';
@@ -38,6 +39,7 @@ export function validateScope(scope){
  return scope;
 }
 export function validateActivity(a){
+ if(a?.planificacion?.schedule)validateSchedule(a.planificacion.schedule,a.inicioPlan,a.finPlan);
  if(a?.schema!==2||!text(a.id,100)||!text(a.actividad,200)||!text(a.responsable,160)||!text(a.level,30)||!Number.isSafeInteger(a.version)||a.version<1)fail('Actividad incompleta.');
  if(!['borrador','publicada','cerrada'].includes(a.fase)||(!a.legacyIncomplete&&(!finite(a.cantidad)||a.cantidad<=0||!text(a.unidad,20))))fail('Indica una cantidad positiva y su unidad.');
  if(!a.legacyIncomplete){const weeks=weeksForDates(a.inicioPlan,a.finPlan);if(weeks.length!==1||a.semana!==weeks[0].semana)fail('La semana se calcula desde las fechas; distribuye los trabajos de varias semanas.');}
@@ -81,9 +83,10 @@ export function createDraft(values,actor,{activityId=id(),at=now()}={}){
 }
 export function createSegments(values,allocations,actor,options={}){
  const weeks=weeksForDates(values.inicioPlan,values.finPlan);
+ if(values.planificacion?.schedule)validateSchedule(values.planificacion.schedule,values.inicioPlan,values.finPlan);
  if(weeks.length===1)return [createDraft(values,actor,options)];
  if(!Array.isArray(allocations)||allocations.length!==weeks.length||allocations.some(n=>!finite(n)||n<=0)||Math.abs(allocations.reduce((s,n)=>s+n,0)-values.cantidad)>EPS)fail('Las cantidades de los tramos deben sumar exactamente el compromiso total.');
- const root=options.activityId||id();return weeks.map((dates,i)=>createDraft({...values,...dates,cantidad:allocations[i],grupo:{id:root,indice:i,total:weeks.length,cantidadTotal:values.cantidad,inicio:values.inicioPlan,fin:values.finPlan}},actor,{...options,activityId:i?id():root}));
+ const root=options.activityId||id();return weeks.map((dates,i)=>createDraft({...values,...dates,...(values.planificacion?.schedule?{planificacion:{...values.planificacion,schedule:values.planificacion.schedule.filter(r=>r.date>=dates.inicioPlan&&r.date<=dates.finPlan)}}:{}),cantidad:allocations[i],grupo:{id:root,indice:i,total:weeks.length,cantidadTotal:values.cantidad,inicio:values.inicioPlan,fin:values.finPlan}},actor,{...options,activityId:i?id():root}));
 }
 export function editDraft(a,values,actor,{at=now()}={}){
  requirePermission(actor,'draft');if(a.fase!=='borrador')fail('El compromiso está publicado. Usa una revisión autorizada con motivo.');
@@ -204,7 +207,7 @@ export function reprogramBalance(a,dates,actor,{newId=id(),at=now()}={}){
  requirePermission(actor,'draft');if(a.verificacion.resultado!=='Incumplida')fail('Revisa el incumplimiento antes de reprogramar el saldo.');if(a.saldoReprogramado||a.reprogramada)fail('El saldo ya fue reprogramado. Consulta el registro histórico antes de trasladarlo nuevamente.');
  const balance=Math.max(0,a.cantidad-executed(a));if(balance<=EPS)fail('No queda cantidad pendiente para reprogramar.');const weeks=weeksForDates(dates.inicioPlan,dates.finPlan);if(weeks.length!==1||weeks[0].semana<=a.semana)fail('El saldo debe programarse en una semana posterior.');
  const pending=a.alcances.filter(s=>scopeProgress(a,s.id,{verified:true}).avance<1-EPS).map(s=>({...copy(s),origenScopeId:s.id,fraccionOriginalDesde:scopeProgress(a,s.id,{verified:true}).avance}));
- const next=createDraft({...planFields(a),...dates,cantidad:balance,alcances:pending.length?pending:copy(a.alcances),grupo:null,origen:a.id,restrictionIds:copy(a.restrictionIds)},actor,{activityId:newId,at});
+ const next=createDraft({...planFields(a),...dates,...(a.planificacion?{planificacion:{...a.planificacion,schedule:[]}}:{}),cantidad:balance,alcances:pending.length?pending:copy(a.alcances),grupo:null,origen:a.id,restrictionIds:copy(a.restrictionIds)},actor,{activityId:newId,at});
  const previous=changed(a,{...a,saldoReprogramado:next.id,reprogramada:next.semana},actor,'Reprogramar saldo',{actividadDestino:next.id,cantidad:balance},at);
  return {previous,next};
 }
