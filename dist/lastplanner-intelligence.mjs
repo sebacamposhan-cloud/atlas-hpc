@@ -13,3 +13,10 @@ export function recommend({quantity,unit,rate,rateUnit,basis='persona-dia',days,
  const capacity=rate*days*(hourly?hours:1),resources=Math.ceil(quantity/capacity),people=byCrew?resources*crew.reduce((n,r)=>n+r.count,0):resources;
  return {state:status==='validado'?'validated':'provisional',resources,people,perResource:capacity,label:resources+' '+(byCrew?'cuadrillas':'personas'),message:`${quantity} ${unit} / (${rate} ${unit}/${basis} × ${days} días${hourly?' × '+hours+' h/día':''})`,source};
 }
+
+// Transform calibrated world vectors into the current viewer, including rotation.
+export function compassMarkup(calibration,matrix){
+  if(!calibration||!matrix){return 'N / A · S / W · E / 12 · O / 1 — Orientación pendiente de calibración';}
+  const directions=[['N · A',calibration.north],['S · W',calibration.north.map(x=>-x)],['E · 12',calibration.east],['O · 1',calibration.east.map(x=>-x)]];
+  return '<svg viewBox="0 0 136 108" role="img" aria-label="Norte hacia A; sur hacia W; este hacia 12; oeste hacia 1">'+directions.map(([label,v])=>{const x=matrix.a*v[0]+matrix.c*v[1],y=matrix.b*v[0]+matrix.d*v[1],length=Math.hypot(x,y),dx=x/length,dy=y/length;return `<line x1="68" y1="54" x2="${68+dx*27}" y2="${54+dy*27}" stroke="#0f5499" stroke-width="2"/><text x="${68+dx*44}" y="${57+dy*43}" text-anchor="middle" fill="#173a62" font-size="10">${label}</text>`;}).join('')+'</svg><small>E12: cordillera · E1: mar</small>';
+}

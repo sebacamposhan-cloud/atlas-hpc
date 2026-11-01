@@ -10,3 +10,7 @@ const input={quantity:100,unit:'m²',rate:5,rateUnit:'m²',basis:'persona-dia',d
 assert.equal(recommend(input).resources,4);assert.equal(recommend(input).state,'provisional');assert.equal(recommend({...input,unit:'ml'}).state,'unavailable');assert.equal(recommend({...input,rate:0}).state,'unavailable');assert.equal(recommend({...input,days:0}).state,'unavailable');
 assert.equal(recommend({...input,quantity:320,rate:40,basis:'cuadrilla-dia',crew:[{role:'Pintor',count:2},{role:'Ayudante',count:1}]}).people,6);assert.equal(recommend({...input,basis:'cuadrilla-dia'}).state,'unavailable');assert.equal(recommend({...input,basis:'persona-hora',hours:4}).resources,1);
 console.log('Orientación de cuatro pisos, rotación, datos ausentes, bases de productividad, unidades y redondeo aprobados');
+
+const {compassMarkup}=await import('./dist/lastplanner-intelligence.mjs');
+assert.match(compassMarkup({north:[0,-1],east:[1,0]},{a:0,b:1,c:-1,d:0}),/x="112" y="57"[^>]*>N · A/);
+assert.match(compassMarkup(null,null),/pendiente de calibración/);
