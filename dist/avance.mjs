@@ -1,14 +1,13 @@
 // Avance por recinto y partida en los cuatro pisos, en m² ejecutados y pendientes (sin valorización: los precios no
-// se manejan en la plataforma). Editor compartido por la ficha del plano y Control de obra, panel con indicadores y
-// gráficos, y capa de color del plano.
+// se manejan en la plataforma). Las partidas se marcan en el rombo del recinto (rombo.mjs), en la ficha del plano y en
+// Control de obra; aquí, el panel con indicadores y gráficos y la capa de color del plano.
 import {loadPma} from './pma.mjs';
-import {pmaDifferences} from './pma-model.mjs';
 import {nivel} from './level.mjs';
 import {registerLayer} from './layers.mjs';
 import {progressFloors} from './progress-scope.mjs';
 import * as M from './avance-model.mjs';
 import {crearFiltrosColumna} from './column-filters.mjs';
-import {leerAvance, guardarAvance, exportarAvance, importarAvance, borrarItemizado} from './avance-store.mjs';
+import {leerAvance, exportarAvance, importarAvance, borrarItemizado} from './avance-store.mjs';
 
 export const COLORES_RECINTO = {'Sin iniciar': '#9aa3ad', 'En curso': '#d9a21b', 'Completo': '#2e9e5b', 'Observado': '#d64545', 'Sin datos': '#cfd5da'};
 const COLORES_ESTADO = {'No iniciado': '#9aa3ad', 'En ejecución': '#d9a21b', 'Instalado': '#357d9a', 'Observado': '#d64545', 'Aprobado': '#2e9e5b'};
@@ -16,7 +15,6 @@ export const unidad = u => u === 'm2' ? 'm²' : u || '';
 export const m2 = v => v == null ? '—' : v.toLocaleString('es-CL', {maximumFractionDigits: 1});
 const pct = (a, b) => b ? (100 * a / b).toLocaleString('es-CL', {maximumFractionDigits: 1}) + ' %' : '—';
 const hoy = () => new Intl.DateTimeFormat('en-CA', {timeZone: 'America/Santiago', year: 'numeric', month: '2-digit', day: '2-digit'}).format(new Date());
-const opciones = (lista, actual, esc) => lista.map(v => `<option ${v === actual ? 'selected' : ''}>${esc(v)}</option>`).join('');
 const PISO_PMA = () => progressFloors[nivel.id];
 // Pavimento y cielo del recinto: la partida de la terminación con su superficie PMA (m² ejecutados de pendientes).
 export const superficiesRecinto = fila => [['Pavimento', 'PAV'], ['Cielo', 'CIE']].map(([nombre, campo]) => {
@@ -46,64 +44,8 @@ export function iniciarCapaAvance(alCambiar) {
   const recargar = () => cargarAvance(true).then(alCambiar).catch(() => {});
   recargar(); window.addEventListener('atlas-avance-changed', recargar);
 }
-
-// ---------- Editor de un recinto (ficha del plano y Control de obra) ----------
-export async function renderAvanceRecinto(root, room, esc, alGuardar = () => {}) {
-  if (!PISO_PMA()) { root.textContent = 'El avance por partida está disponible en los pisos −1, 1, 2 y 3.'; return; }
-  const serie = String((Number(root.dataset.avanceSerie) || 0) + 1); root.dataset.avanceSerie = serie; root.textContent = 'Cargando partidas…';
-  try {
-    const c = await cargarAvance();
-    if (!root.isConnected || root.dataset.avanceSerie !== serie) return;
-    const fila = c.porCodigo.get(String(room.code).trim());
-    if (!fila) { root.innerHTML = `<p>Este recinto no figura como activo en el PMA de ${esc(nivel.nombre)} (${esc(PISO_PMA())}). No se generan partidas.</p>`; return; }
-    const reg = fila.registro, version = reg?.version || 0, nodos = fila.nodos, mats = c.pma.materials;
-    const difs = room.finishes ? pmaDifferences(room, fila.row) : [];
-    const term = ['PAV', 'CIE', 'M1', 'M2', 'M3', 'M4'].map(k => `<tr><td>${k}</td><td>${esc(fila.row[k] || '—')}</td><td>${esc(mats.get(String(fila.row[k] ?? '').trim()) || '')}</td></tr>`).join('');
-    const prot = nodos.filter(n => n.tipo === 'protocolo'), parts = nodos.filter(n => n.tipo === 'partida');
-    const previo = n => n.prereq.length ? n.prereq.map(id => { const p = nodos.find(x => x.id === id); return p ? `${esc(p.tipo === 'protocolo' ? p.nombre : p.item + ' ' + p.nombre)}: <b>${esc(p.estado)}</b>` : ''; }).join(' · ') : 'Sin protocolo previo asignado';
-    const cantidad = n => n.cantidad != null ? `${m2(n.m2Ejecutado)} de ${m2(n.cantidad)} ${esc(unidad(n.unidad))} ejecutados · ${m2(n.m2Pendiente)} ${esc(unidad(n.unidad))} pendientes` : 'Sin cantidad por recinto en el PMA: se registra el % de avance';
-    root.innerHTML = `<div class="avanceResumen"><span class="avanceChip" style="--c:${COLORES_RECINTO[fila.estado]}">${esc(fila.estado)}</span><span>Asepsia ${esc(fila.asepsia)}</span><span>${esc(fila.row.area || '')}</span></div>
-      <div class="avanceMontos">${superficiesRecinto(fila).map(s => `<div><small>${s.nombre.toUpperCase()} · m²</small><b>${s.nodo ? m2(s.nodo.m2Ejecutado) + ' / ' + m2(s.nodo.cantidad) : '—'}</b><small>${s.nodo ? 'pendientes ' + m2(s.nodo.m2Pendiente) : 'sin superficie en el PMA'}</small></div>`).join('')}<div><small>AVANCE FÍSICO</small><b>${m2(M.avanceFisico(nodos))} %</b><small>${parts.filter(n => n.estado === 'Aprobado').length} de ${parts.length} partidas aprobadas</small></div></div>
-      ${difs.length ? `<p class="pmaWarning">PMA y plano difieren en ${esc(difs.map(d => d.field + ' (plano ' + (d.plan ?? '—') + ' / PMA ' + (d.pma ?? '—') + ')').join(', '))}. Las partidas y cantidades usan el PMA; la conciliación queda pendiente.</p>` : ''}
-      <details><summary>Terminaciones PMA</summary><table class="finishes"><tbody>${term}</tbody></table></details>
-      <form class="avanceForm"><div class="avanceCabecera"><label>Responsable<input name="responsable" required maxlength="200" value="${esc(reg?.responsable || '')}"></label><label>Fecha<input name="fecha" type="date" required value="${esc(reg?.fecha || hoy())}"></label></div>
-      ${prot.length ? `<h4>Protocolos previos</h4>${prot.map(n => `<label class="avanceProtocolo"><span>${esc(n.nombre)}<small>REV1 ${esc(n.ref)} · Previo: ${previo(n)}</small></span><select name="prot_${n.id}">${opciones(M.ESTADOS_PROTOCOLO, n.estado, esc)}</select></label>`).join('')}` : ''}
-      <h4>Partidas · ${parts.length}</h4>
-      ${parts.map(n => `<details class="avancePartida" data-nodo="${esc(n.id)}"><summary><i style="background:${COLORES_ESTADO[n.estado]}"></i><b>${esc(n.item)}</b> ${esc(n.nombre)}<span>${esc(n.estado)} · ${n.pct} %</span></summary>
-        <p class="avanceDato">${cantidad(n)}</p>
-        <p class="avancePrevio ${n.bloqueadoPor.length ? 'bloquea' : ''}">${n.bloqueadoPor.length ? '⚠ Bloquea la aprobación · ' : ''}Previo: ${previo(n)}</p>
-        <div class="avanceCampos"><label>Estado<select name="estado_${n.id}">${opciones(M.ESTADOS, n.estado, esc)}</select></label><label>% avance<input name="pct_${n.id}" type="number" min="0" max="100" step="1" value="${n.pct}"></label><label>Conformidad<select name="conf_${n.id}">${opciones(M.CONFORMIDAD, n.conformidad, esc)}</select></label></div>
-        <label>Qué falta<textarea name="falta_${n.id}" maxlength="3000">${esc(n.falta)}</textarea></label>
-        ${n.obs.length ? `<ul class="avanceObs">${n.obs.map(o => `<li><b>${esc(o.fecha)} · ${esc(o.autor)}</b> ${esc(o.texto)}</li>`).join('')}</ul>` : ''}
-        <label>Nueva observación<textarea name="obs_${n.id}" maxlength="3000" placeholder="Se guarda con la fecha y el responsable"></textarea></label></details>`).join('')}
-      <p class="avanceMensaje" role="status"></p><div class="actions"><button type="submit" class="primary">Guardar avance</button></div></form>
-      <details><summary>Historial del recinto</summary>${c.avance.historial.filter(h => h.registro.key === M.keyFor(fila.code, nivel.id)).sort((a, b) => b.registro.version - a.registro.version).map(h => `<p><b>Versión ${h.registro.version} · ${esc(h.registro.fecha)} · ${esc(h.registro.responsable)}</b><br>${esc(Object.entries(h.registro.partidas || {}).map(([id, v]) => id + ' ' + v.estado + ' ' + v.pct + '%').join(' · '))}</p>`).join('') || '<p>Sin registros guardados.</p>'}</details>`;
-    const form = root.querySelector('form'), mensaje = root.querySelector('.avanceMensaje');
-    // El estado fija el porcentaje cuando corresponde.
-    form.addEventListener('change', e => {
-      const m = e.target.name?.match(/^estado_(.+)$/); if (!m) return;
-      const p = form.elements['pct_' + m[1]];
-      if (e.target.value === 'No iniciado') p.value = 0; else if (['Instalado', 'Aprobado'].includes(e.target.value)) p.value = 100;
-      if (e.target.value === 'Aprobado') form.elements['conf_' + m[1]].value = 'Conforme';
-    });
-    form.onsubmit = async e => {
-      e.preventDefault();
-      const f = new FormData(form), responsable = String(f.get('responsable') || '').trim(), fecha = String(f.get('fecha') || '');
-      const registro = {key: M.keyFor(fila.code, nivel.id), code: fila.code, level: nivel.id, version: version + 1, at: new Date().toISOString(), responsable, fecha, protocolos: {}, partidas: {}};
-      for (const n of prot) registro.protocolos[n.id] = {estado: f.get('prot_' + n.id), fecha, autor: responsable};
-      for (const n of parts) {
-        const nueva = String(f.get('obs_' + n.id) || '').trim();
-        registro.partidas[n.id] = {estado: f.get('estado_' + n.id), pct: Number(f.get('pct_' + n.id)), conformidad: f.get('conf_' + n.id), falta: String(f.get('falta_' + n.id) || ''),
-          obs: [...n.obs, ...(nueva ? [{fecha, autor: responsable, texto: nueva}] : [])]};
-      }
-      const errores = M.validarRegistro(registro, nodos.map(({estado, pct, conformidad, falta, obs, bloqueadoPor, total, ejecutado, pendiente, m2Ejecutado, m2Pendiente, ...base}) => base));
-      if (errores.length) { mensaje.innerHTML = errores.map(x => `<span>${esc(x)}</span>`).join('<br>'); return; }
-      const boton = form.querySelector('[type=submit]'); boton.disabled = true;
-      try { await guardarAvance(registro, version); await cargarAvance(true); await renderAvanceRecinto(root, room, esc, alGuardar); if (root.isConnected) root.querySelector('.avanceMensaje').textContent = 'Avance guardado con historial.'; alGuardar(); }
-      catch (error) { mensaje.textContent = error.message; boton.disabled = false; }
-    };
-  } catch (error) { if (root.isConnected) { root.textContent = error.message; const b = document.createElement('button'); b.textContent = 'Reintentar'; b.onclick = () => renderAvanceRecinto(root, room, esc, alGuardar); root.append(b); } }
-}
+// Estado de cada terminación del rombo calculado desde sus partidas registradas (null si ninguna tiene registro).
+export const derivador = c => (room, campo) => { const f = c?.porCodigo.get(String(room.code).trim()); return f ? M.estadoTerminacion(M.partidasDeTerminacion(f.nodos, campo, f.row)) : null; };
 
 // ---------- Gráficos ----------
 function barras(titulo, decision, filas, esc, vacio) {
@@ -130,7 +72,7 @@ const tramo = v => v >= 100 ? '100 %' : v >= 50 ? '50 a 99 %' : v > 0 ? '1 a 49 
 export async function renderAvanceControl(root, ctx) {
   if (!PISO_PMA()) { root.innerHTML = '<p>El avance por partida está disponible en los pisos −1, 1, 2 y 3.</p>'; return; }
   const esc = ctx.esc; root.textContent = 'Cargando avance por partida…';
-  let elegido = null, pagina = 0;
+  let elegido = null, pagina = 0, rombo = null;
   try {
     let c = await cargarAvance(true);
     const dibujar = () => {
@@ -161,12 +103,16 @@ export async function renderAvanceControl(root, ctx) {
       const $ = s => root.querySelector(s), mensaje = $('#avanceMensaje');
       cf.conectar(root, rep.filas);
       $('#avancePrev').onclick = () => { pagina--; dibujar(); }; $('#avanceNext').onclick = () => { pagina++; dibujar(); };
-      root.querySelectorAll('[data-avance-room]').forEach(b => b.onclick = () => {
+      // Tocar un recinto abre su rombo, el mismo de la ficha del plano, para marcar sus partidas.
+      root.querySelectorAll('[data-avance-room]').forEach(b => b.onclick = async () => {
         const fila = c.porCodigo.get(b.dataset.avanceRoom), plano = ctx.rooms().find(r => r.code === fila.code), editor = $('#avanceEditor');
-        elegido = fila.code; editor.hidden = false; editor.innerHTML = `<h3>${esc(fila.code)} · ${esc(fila.name)}</h3>${plano ? '<button id="avanceUbicar">Ver en el plano</button>' : '<p class="dataNote">Fuera del área visible del plano.</p>'}<div id="avanceEditorCuerpo"></div>`;
-        if (plano) $('#avanceUbicar').onclick = () => ctx.locate?.(plano.id);
-        renderAvanceRecinto($('#avanceEditorCuerpo'), plano || {code: fila.code, name: fila.name}, esc, async () => { c = await cargarAvance(); });
+        elegido = fila.code; editor.hidden = false; editor.innerHTML = `<div class="chartHeading"><h3>${esc(fila.code)} · ${esc(fila.name)}</h3>${plano ? '<button id="avanceUbicar">Ver en el plano</button>' : ''}</div>${plano ? '<div id="avanceEditorCuerpo" class="avanceRombo"></div>' : '<p class="dataNote">Fuera del área visible del plano: su avance se marca en el rombo cuando el recinto esté dibujado.</p>'}`;
         editor.scrollIntoView({block: 'start'});
+        if (!plano) return;
+        $('#avanceUbicar').onclick = () => ctx.locate?.(plano.id);
+        const [{createRombo}, {cargarObservaciones}] = await Promise.all([import('./rombo.mjs'), import('./observaciones.mjs')]);
+        rombo ||= createRombo({esc, toast: ctx.toast, observaciones: () => cargarObservaciones(), nuevaObservacion: (room, campo, listo) => ctx.observaciones?.editor(room, null, listo, {terminacion: campo}), abrirObservacion: (id, listo) => ctx.observaciones?.abrir(id, listo)});
+        const cuerpo = $('#avanceEditorCuerpo'); if (cuerpo) rombo.ficha(cuerpo, plano, {alGuardar: async () => { c = await cargarAvance(); }});
       });
       $('#avancePlano').onclick = () => ctx.pintarCapa?.('avance');
       $('#avanceExportar').onclick = async () => { try { const v = await exportarAvance(), url = URL.createObjectURL(new Blob([JSON.stringify(v, null, 2)], {type: 'application/json'})), a = document.createElement('a'); a.href = url; a.download = 'Atlas-avance-partidas-' + hoy() + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 10000); } catch (e) { mensaje.textContent = e.message; } };

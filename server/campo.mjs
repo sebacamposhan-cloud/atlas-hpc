@@ -32,7 +32,9 @@ export function createCampo(env, fetchImpl = fetch) {
       const sesion = data => {
         const role = data?.user?.app_metadata?.campo_role;
         if (!['editor', 'lector'].includes(role)) return null;
-        return {token: data.access_token, refresh: data.refresh_token, expiraEn: Number(data.expires_in) || 3600, user: {username: data.user.email, role}};
+        // El nombre de la cuenta (user_metadata en Supabase) firma los registros de terreno; sin nombre firma el correo.
+        const meta = data.user.user_metadata || {}, nombre = String(meta.nombre || meta.full_name || meta.name || '').trim().slice(0, 120);
+        return {token: data.access_token, refresh: data.refresh_token, expiraEn: Number(data.expires_in) || 3600, user: {username: data.user.email, role, ...(nombre ? {nombre} : {})}};
       };
       const sinPermiso = 'Esta cuenta no tiene acceso a proyectos y observaciones. Pide que le asignen campo_role en Supabase.';
 

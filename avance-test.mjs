@@ -47,14 +47,21 @@ const pintado = n1.find(r => ['11', '12'].includes(r.M1)), np = M.nodosRecinto(p
 assert(np.find(n => n.id === '6.2.2').prereq.includes('5.3') && np.find(n => n.id === '5.3').prereq.includes('5.1') && !np.find(n => n.id === '5.1').prereq.length, 'pintura ← empaste ← sellos ← tabique (inicia la cadena)');
 assert.equal(np.find(n => /^6\.4\.1\./.test(n.id)).cantidad, null, 'muros sin m² por recinto: no se valorizan');
 
-// Reglas del checklist.
+// Reglas de una partida en dos filas (ejecución y revisión), como el rombo. Solo estados: no se exige texto.
+const d = (ejecucion, revision = 'Sin revisar', pct = ejecucion === 'Instalado' ? 100 : ejecucion === 'No iniciado' ? 0 : null) => ({ejecucion, revision, pct});
+assert(M.validarPartida(pav, {...d('No iniciado'), pct: 10}).length, 'No iniciado es 0 %');
+assert(M.validarPartida(pav, {...d('En ejecución'), pct: 100}).length, 'en ejecución el % va de 1 a 99');
+assert.equal(M.validarPartida(pav, d('En ejecución')).length, 0, 'en ejecución con el % aún sin indicar');
+assert.equal(M.validarPartida(pav, d('En ejecución', 'Con observaciones', 40)).length, 0, 'con observaciones no exige texto');
+assert(M.validarPartida(pav, d('En ejecución', 'Conforme', 40)).join().includes('instalada'), 'conforme exige instalada');
+assert(M.validarPartida(pav, d('Instalado', 'Conforme'), [{item: 'P-NIV-RES'}]).join().includes('falta liberar'), 'protocolo previo no liberado impide quedar conforme');
+assert.equal(M.validarPartida(pav, d('Instalado', 'Conforme'), []).length, 0);
+// Los registros de la escala anterior (estado, % y conformidad) se leen en dos filas.
 const v = (estado, pct, conformidad = 'Sin revisar', extra = {}) => ({estado, pct, conformidad, falta: '', obs: [], ...extra});
-assert(M.validarPartida(pav, v('No iniciado', 10)).length, 'No iniciado es 0 %');
-assert(M.validarPartida(pav, v('En ejecución', 100)).length, 'En ejecución exige 1–99 %');
-assert(M.validarPartida(pav, v('Observado', 40)).length, 'Observado exige observación');
-assert.equal(M.validarPartida(pav, v('Observado', 40, 'No conforme', {obs: [{fecha: '2026-10-27', autor: 'QA', texto: 'Burbujas'}]})).length, 0);
-assert(M.validarPartida(pav, v('Aprobado', 100, 'Conforme'), [{item: 'P-NIV-RES'}]).join().includes('no puede quedar aprobada'), 'protocolo previo no liberado bloquea la aprobación');
-assert.equal(M.validarPartida(pav, v('Aprobado', 100, 'Conforme'), []).length, 0);
+assert.deepEqual(M.dosFilas(v('Aprobado', 100, 'Conforme')), d('Instalado', 'Conforme'));
+assert.deepEqual(M.dosFilas(v('Observado', 40, 'No conforme')), d('En ejecución', 'Con observaciones', 40));
+assert.deepEqual(M.dosFilas(v('En ejecución', 30, 'Conforme')), d('En ejecución', 'Sin revisar', 30), 'conforme sin instalar no se conserva');
+assert.deepEqual(M.dosFilas(null), d('No iniciado'));
 
 // Valorización y estados de recinto.
 const reg = {key: M.keyFor(caucho.code), code: caucho.code.trim(), level: 'N-1', version: 1, at: new Date().toISOString(), responsable: 'QA', fecha: '2026-10-27',
@@ -72,6 +79,39 @@ assert.equal(obs.filas.find(f => f.code === caucho.code.trim()).estado, 'Observa
 const rev = M.revision(rep, items);
 assert(rev.sinVinculo.some(x => x.id === '6.5.1.1'), 'puertas sin vínculo por recinto quedan para revisión');
 assert.deepEqual(rev.sinProtocolo, [], 'con la sobrelosa ligada a su protocolo y el tabique como inicio de cadena, ninguna partida queda sin previo');
-assert(M.validarRegistro({...reg, protocolos: {'P-NIV-RES': {estado: 'Pendiente'}}}, nodos).join().includes('no puede quedar aprobada'), 'sobrelosa aprobada exige su protocolo previo liberado');
+assert(M.validarRegistro({...reg, protocolos: {'P-NIV-RES': {estado: 'Pendiente'}}}, nodos).join().includes('falta liberar'), 'sobrelosa conforme exige su protocolo previo liberado');
+
+// Cada toque en el rombo guarda un registro nuevo: cambia solo el nodo tocado, firma la cuenta y conserva lo anterior
+// (también lo escrito antes en «qué falta» y observaciones, que ya no se muestra).
+const firma = {responsable: 'mauro@hpc.test', fecha: '2026-11-01', at: '2026-11-01T12:00:00Z'}, lugar = {code: caucho.code, level: 'N-1'};
+const conTexto = {...reg, partidas: {...reg.partidas, '6.1.4.6': v('En ejecución', 50, 'Sin revisar', {falta: 'Sello', obs: [{fecha: '2026-10-27', autor: 'QA', texto: 'Burbujas'}]})}};
+const r2 = M.actualizarNodo(lugar, nodos, conTexto, '6.1.4.6', {ejecucion: 'Instalado'}, firma), p2 = r2.partidas['6.1.4.6'];
+assert.deepEqual([r2.version, r2.responsable, r2.fecha, p2.pct, p2.estado, p2.falta, p2.obs.length], [2, 'mauro@hpc.test', '2026-11-01', 100, 'Instalado', 'Sello', 1]);
+assert.deepEqual(r2.partidas['2.6'], reg.partidas['2.6'], 'las demás partidas quedan como estaban');
+assert.throws(() => M.actualizarNodo(lugar, nodos, r2, '6.1.4.6', {revision: 'Conforme'}, firma), /falta liberar/, 'conforme exige su protocolo previo liberado');
+const r3 = M.actualizarNodo(lugar, nodos, r2, 'P-NIV-RES', {estado: 'Liberado'}, firma);
+assert.deepEqual([r3.protocolos['P-NIV-RES'].estado, r3.protocolos['P-NIV-RES'].autor], ['Liberado', 'mauro@hpc.test']);
+const r4 = M.actualizarNodo(lugar, nodos, r3, '6.1.4.6', {revision: 'Conforme'}, firma);
+assert.equal(r4.partidas['6.1.4.6'].estado, 'Aprobado', 'instalada y conforme equivale a aprobada en los indicadores');
+const r5 = M.actualizarNodo(lugar, nodos, r4, '6.1.4.6', {ejecucion: 'En ejecución'}, firma);
+assert.deepEqual([r5.partidas['6.1.4.6'].revision, r5.partidas['6.1.4.6'].pct], ['Sin revisar', null], 'bajar de instalada quita la conformidad y deja el % por indicar');
+assert.equal(M.actualizarNodo(lugar, nodos, r5, '6.1.4.6', {pct: 60}, firma).partidas['6.1.4.6'].pct, 60);
+assert.throws(() => M.actualizarNodo(lugar, nodos, r5, '6.1.4.6', {pct: 60}, {...firma, responsable: ' '}), /responsable/);
+assert.equal(M.reporteAvance(pma, items, [r5]).filas.find(f => f.code === caucho.code.trim()).nodos.find(n => n.id === '6.1.4.6').m2Ejecutado, 0, 'en ejecución sin % no suma m²');
+
+// El rombo resume las partidas de cada terminación.
+const tr = estados => M.estadoTerminacion(estados.map(([ejecucion, revision = 'Sin revisar']) => ({ejecucion, revision, registrada: true})));
+assert.equal(M.estadoTerminacion([{ejecucion: 'No iniciado', revision: 'Sin revisar', registrada: false}]), null, 'sin registros propios no se calcula');
+assert.deepEqual(tr([['Instalado', 'Conforme'], ['Instalado', 'Conforme']]), {installation: 'Instalado', quality: 'Conforme'});
+assert.deepEqual(tr([['Instalado', 'Conforme'], ['En ejecución']]), {installation: 'En proceso', quality: 'Sin revisar'});
+assert.deepEqual(tr([['Instalado'], ['No iniciado', 'Con observaciones']]), {installation: 'En proceso', quality: 'Con observaciones'});
+assert.deepEqual(tr([['No iniciado'], ['No iniciado']]), {installation: 'No iniciado', quality: 'Sin revisar'});
+// Lo marcado antes directo en el rombo pasa a las partidas de la terminación al marcar la primera.
+const fila2 = M.reporteAvance(pma, items, []).filas.find(f => f.code === caucho.code.trim()), pavs = M.partidasDeTerminacion(fila2.nodos, 'PAV', fila2.row);
+const sembrado = M.sembrarTerminacion(null, fila2.nodos, pavs, {installation: 'Instalado', quality: 'Conforme'});
+assert(pavs.length && pavs.every(p => sembrado.partidas[p.id].ejecucion === 'Instalado'), 'instalado pasa a todas');
+assert.equal(sembrado.partidas['6.1.4.6'].revision, 'Sin revisar', 'conforme solo donde su protocolo previo está liberado');
+assert.deepEqual(M.protocolosDe(fila2.nodos, pavs).map(n => n.id).sort(), ['P-NIV-RES', 'P-SOBRELOSA']);
+assert.equal(M.sembrarTerminacion(null, fila2.nodos, pavs, {installation: 'Sin registrar', quality: 'Sin revisar'}), null);
 console.log(JSON.stringify({checks: 'passed', recintos: rep.filas.length, partidas: rep.partidas.length, valorizables: rep.piso.valorizables,
-  scope: 'Itemizado por código ITEM (desordenado, eliminados, títulos, duplicados), enlace recinto → partidas con PMA real, cadena de protocolos, reglas de estado, valorización, estados de recinto y listas de revisión.'}));
+  scope: 'Itemizado por código ITEM (desordenado, eliminados, títulos, duplicados), enlace recinto → partidas con PMA real, cadena de protocolos, partidas en dos filas (ejecución y revisión) con lectura de la escala anterior, guardado de un toque con firma, rombo calculado desde las partidas, traspaso de lo marcado antes en el rombo, valorización, estados de recinto y listas de revisión.'}));

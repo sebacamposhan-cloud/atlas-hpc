@@ -22,6 +22,7 @@
 <link rel="stylesheet" href="lastplanner-cycle.css">
 <link rel="stylesheet" href="column-filters.css">
 <link rel="stylesheet" href="rombo.css">
+<link rel="stylesheet" href="ficha.css">
 </head>
 <body class="hideLeft hideRight floorHome" data-module="map">
 <div id="atlasUpdateNotice" role="status" hidden><span id="atlasUpdateText"></span><button id="atlasUpdateReview">Revisar actualización</button></div>
@@ -193,11 +194,9 @@ Ejes A–W · 1–12
 </div>
 </footer>
 </main>
+<button id="fichaBarra" type="button" aria-label="Abrir la ficha del recinto"><span id="fichaBarraTexto"></span><b aria-hidden="true">▲</b></button>
 <aside class="right">
-<button id="expandDetail" aria-label="Ampliar o reducir ficha">
-<span>
-</span>
-</button>
+<button id="fichaPlano" type="button">← Plano</button>
 <button id="closeDetail" aria-label="Cerrar ficha">×</button>
 <div class="resizeHandle" id="detailResize" role="separator" aria-label="Ajustar ancho de ficha" tabindex="0"></div><div id="detail">
 <div class="intro">

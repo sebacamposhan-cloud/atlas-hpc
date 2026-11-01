@@ -8,12 +8,15 @@ El panel local Avances y protocolos (retirado de Control de obra en octubre de 2
 
 La ficha del recinto abre con su **rombo**, dibujado como en las láminas: M1 arriba, M2 a la derecha, M3 abajo, M4 a la izquierda, cielo al centro arriba y pavimento al centro abajo, cada sección con su código. Desde octubre de 2026 las tarjetas de Avance y de Observaciones de Control de obra son una sola, **Avance y observaciones**.
 
-- **Color = estado de ejecución** de la partida: blanco sin registrar, gris no iniciado, ámbar en proceso, azul instalado por revisar, rojo con observaciones, verde instalado y conforme, rayado no aplica. Un número rojo cuenta las observaciones en terreno pendientes de ese elemento.
-- **Tocar una sección** despliega su checklist: Ejecución (No iniciado, En proceso, Instalado) y Revisión (Sin revisar, Con observaciones, Conforme). Tocar un estado **lo guarda al instante** y el rombo cambia de color; Qué falta y la observación de la partida se guardan con «Guardar notas». Mismas reglas del registro: conforme solo instalada y sin faltantes; con observaciones exige la nota (se pide y se aplica al guardarla); bajar de instalada quita la conformidad.
-- Cada guardado es una nueva versión del registro del recinto con el responsable (se recuerda en el equipo) y la fecha de hoy; las demás partidas conservan lo guardado. Si hay diferencias documentales, se pide marcar el cotejo antes.
-- Debajo del checklist están las partidas de esa terminación con sus m² ejecutados y pendientes («Registrar avance por partida» abre ese registro), las observaciones del elemento y «+ Observación con foto» con el elemento ya elegido. «Ver en el plano los recintos con PAV 108» reemplaza a la antigua leyenda.
-- En la ficha, las observaciones pendientes van primero; las cerradas y descartadas quedan plegadas en «Ver todas».
-- **Ficha del recinto (desde octubre de 2026):** arriba las observaciones en terreno, con sus fotos en grande, y debajo el rombo interactivo; luego el avance por partida (m² ejecutados y pendientes, terminaciones PMA, protocolos previos e historial) y los protocolos. Es igual en los cuatro pisos. Se retiraron el rombo estático (imagen y «ver original»), el checklist completo con su formulario, el desplegable PMA, la asepsia documentada y el aviso de contorno técnico: el rombo cumple la función del checklist. El historial de versiones se sigue guardando y viaja en el respaldo de avance.
+- **Color = estado de ejecución** de la terminación: blanco sin registrar, gris no iniciado, ámbar en proceso, azul instalado por revisar, rojo con observaciones, verde instalado y conforme, rayado no aplica. Un número rojo cuenta las observaciones en terreno pendientes de ese elemento.
+- **Las partidas mandan (noviembre de 2026).** Tocar una sección despliega las partidas del avance de esa terminación (por ejemplo tabiquería, sellos, empaste y pintura de un muro), cada una con sus m² ejecutados y pendientes y dos filas: Ejecución (No iniciado, En ejecución, Instalado) y Revisión (Sin revisar, Con observaciones, Conforme). En ejecución se puede indicar el % (1 a 99); sin %, no suma m². Arriba, los protocolos previos de esas partidas (Pendiente / Liberado).
+- **Cada toque se guarda al instante**, sin botón de guardar. El color de la terminación se calcula desde sus partidas: todas instaladas → instalada; alguna con observaciones → con observaciones; todas conformes → conforme. Los muros con el mismo código comparten partidas y se pintan igual.
+- Reglas: conforme exige instalada y su protocolo o partida previa liberada; bajar de instalada quita la conformidad. «Con observaciones» solo marca el estado: el detalle va en las observaciones con foto, únicas de la plataforma.
+- Una terminación sin partidas en el avance se marca directo con las mismas dos filas. Lo marcado antes directo en el rombo se muestra hasta marcar la primera partida de esa terminación; en ese momento pasa a todas sus partidas («en proceso» queda en ejecución sin %).
+- **Firma la cuenta de Nube** del equipo (su nombre, o el correo si la cuenta no tiene nombre cargado en Supabase) con la fecha de hoy. Sin sesión no se registra avance ni observaciones: se abre el inicio de sesión. La sesión queda en el equipo y firma también sin señal.
+- Las diferencias PMA/plano se avisan arriba del rombo; no hay casilla de cotejo.
+- **Ficha del recinto (noviembre de 2026):** código y nombre, observaciones en terreno (pendientes primero, con fotos en grande), el rombo con sus partidas y los protocolos abiertos del recinto. Se retiraron el estado y el cuadro de nivel, contorno técnico, lámina y revisión; el desplegable de avance por partida con su formulario, la tabla de terminaciones PMA y el historial; los protocolos cerrados con sus filtros; los botones Revisar/corregir, Editar contorno, Ficha PDF e Historial, y la referencia documental. Las versiones se siguen guardando con su firma y viajan en el respaldo; lo escrito antes en «qué falta» y en observaciones de partida queda guardado sin mostrarse.
+- **Tamaño de la ficha:** en computador abre a media pantalla; el borde ajusta el ancho y queda guardado en el equipo. En celulares, tablets y pantallas de menos de 1024 px ocupa la pantalla completa; «← Plano» la baja a una barra con el código y el nombre, y los botones «Ver en el plano» también la bajan.
 
 En **Avance por recinto**, los recintos van en una tabla con una columna por partida, con los colores del rombo, más sector, situación, observaciones pendientes y asepsia. Los encabezados filtran y ordenan como en Excel, y los indicadores y gráficos siguen a la tabla. Tocar un recinto abre su rombo debajo. Las pruebas están en `rombo-test.mjs`.
 
@@ -22,14 +25,13 @@ En **Avance por recinto**, los recintos van en una tabla con una columna por par
 Desde el rombo (en la ficha del plano o desde la tabla de Control de obra) se usa este registro:
 
 - Pavimento, cielo y muros norte, oriente, sur y poniente, con código/material PMA y asepsia requerida de pintura.
-- Instalación: Sin registrar, No iniciado, En proceso, Instalado.
-- Condición: Sin revisar, Con observaciones, Conforme. Conforme exige Instalado y ningún faltante declarado. Con observaciones exige una observación escrita.
-- Faltantes y observaciones por partida, observaciones generales del recinto, responsable y fecha de revisión.
-- Historial de versiones, estados anteriores y notas. La fecha de terreno es editable; la hora de guardado se conserva aparte.
+- Por partida del avance (o por terminación, si no tiene partidas): ejecución y revisión, con el % mientras se ejecuta.
+- Conforme exige instalada. Sin campos de texto: lo observado se registra como observación con foto.
+- Firma de la cuenta de Nube y fecha del día; historial de versiones guardado (no se muestra en la ficha).
 
 Las orientaciones vienen de CODIFICACIÓN MUROS del PMA. No se crean tareas de asepsia adicionales: es un requisito de la terminación. Se registra el resultado de cada terminación; el desglose de estructura, placas, manos de pintura y mediciones parciales queda para otra iteración con criterios acordados.
 
-No aplica (`N/A` o `-`) se muestra y excluye del denominador. Códigos sin definición documental no permiten registrar instalación y bloquean la declaración de recinto completo. Una diferencia de códigos PMA/plano o de eliminación exige cotejo explícito en el formulario antes de guardar; ese cotejo no cambia las fuentes ni resuelve automáticamente el conflicto documental.
+No aplica (`N/A` o `-`) se muestra y excluye del denominador. Códigos sin definición documental no permiten registrar instalación y bloquean la declaración de recinto completo. Una diferencia de códigos PMA/plano o de eliminación se avisa sobre el rombo; no cambia las fuentes ni resuelve automáticamente el conflicto documental.
 
 ## Análisis de avance
 
@@ -53,7 +55,6 @@ La evolución semanal y los tiempos de resolución de observaciones son próximo
 - Almacenamiento IndexedDB **atlas-room-progress**, independiente de fuentes, geometrías y protocolos existentes. Clave `piso|código` (las claves existentes `N-1|código` se conservan), con tabla rooms e historial append-only. No se escribe en el disco efímero de Render.
 - **Los avances son locales al navegador/dispositivo. No hay sincronización compartida entre usuarios.** Exportar respaldo conserva registros e historial del piso activo en JSON; importar agrega datos y permite repetir el mismo respaldo. Si un registro existente difiere, se rechaza toda la importación para evitar sobrescribir el trabajo local. No se fusionan ediciones divergentes automáticamente.
 - Guardado atómico de ficha e historial, con versión esperada para detectar modificaciones en otra pestaña. Actualizar avance vuelve a leer los registros. Las fichas abiertas reciben el cambio realizado en el mismo documento.
-- Borrador de formulario en sessionStorage, recuperable al regresar al recinto o recargar esa pestaña. No cuenta en gráficos hasta Guardar avance. Un borrador de otra versión se puede descargar o descartar; el formulario se bloquea hasta resolverlo para evitar sobrescribirlo. El borrador no sustituye un guardado ni un respaldo.
 - Hash de PMA y códigos de partida conservados en cada revisión. Si cambian, los estados anteriores quedan en historial y se presentan sin registro vigente hasta cotejar y guardar contra la nueva fuente.
 - Módulos en el núcleo offline. El PMA consultado queda en caché; completar Guardar plano y fichas permite preparar el piloto sin conexión. Registro offline, historial y exportación operan en el dispositivo.
 - El asistente Groq conserva su consulta documental actual; no recibe estos avances locales automáticamente.

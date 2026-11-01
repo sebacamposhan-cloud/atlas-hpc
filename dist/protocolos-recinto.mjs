@@ -84,9 +84,9 @@ export function cargarIndice() {
 
 // ---------- Sección de la ficha ----------
 const ABIERTO = 'ABIERTO', cerrado = e => e === 'CERRADO' || e === 'CERRADO POR AUTOCONTROL';
+// En la ficha solo se listan los folios abiertos del recinto: los cerrados se consultan en Control de obra.
 export function createProtocolosRecinto(ctx) {
   const esc = ctx.esc;
-  let filtro = 'todos';
   async function ficha(root, room, resumen) {
     const geo = ctx.footprint(room.id);
     if (!geo?.rings?.length) { root.innerHTML = '<p class="muted">Este recinto no tiene contorno: no se puede cruzar con los ejes de los protocolos.</p>'; return; }
@@ -94,18 +94,13 @@ export function createProtocolosRecinto(ctx) {
     let indice; try { indice = await cargarIndice(); } catch (e) { root.innerHTML = `<p class="obsError">${esc(e.message)}</p>`; return; }
     if (!root.isConnected) return;
     const todos = protocolosDelRecinto(indice, geo.rings).sort((a, b) => a.tipo.code.localeCompare(b.tipo.code, 'es') || String(a.fila.folio).localeCompare(String(b.fila.folio), 'es', {numeric: true}));
-    const abiertos = todos.filter(p => p.estado === ABIERTO).length, cerrados = todos.filter(p => cerrado(p.estado)).length;
-    if (resumen) resumen.textContent = `Protocolos en este recinto · ${todos.length}${abiertos ? ` (${abiertos} abiertos)` : ''}`;
-    const lista = todos.filter(p => filtro === 'todos' || (filtro === 'abiertos' ? p.estado === ABIERTO : cerrado(p.estado)));
+    const lista = todos.filter(p => p.estado === ABIERTO);
+    if (resumen) resumen.textContent = `Protocolos abiertos · ${lista.length}`;
     const grupos = new Map(); for (const p of lista) { if (!grupos.has(p.tipo.id)) grupos.set(p.tipo.id, []); grupos.get(p.tipo.id).push(p); }
     const fecha = v => { const f = matrixDate(v, indice.date1904); return !f ? '—' : /^\d{4}-\d{2}-\d{2}$/.test(f) ? f.split('-').reverse().join('-') : f; };
     const chip = e => `<span class="obsChip" style="--c:${stateColors[e] || '#595959'}">${esc(stateLabels[e] || e)}</span>`;
-    root.innerHTML = `<div class="protRecResumen"><b>${todos.length}</b> folios · <b>${abiertos}</b> abiertos · <b>${cerrados}</b> cerrados</div>
-      <div class="obsStateTabs protRecFiltros">${[['todos', 'Todos', todos.length], ['abiertos', 'Abiertos', abiertos], ['cerrados', 'Cerrados', cerrados]].map(([k, t, n]) => `<button type="button" data-prot-filtro="${k}" aria-pressed="${filtro === k}">${t} <b>${n}</b></button>`).join('')}</div>
-      ${grupos.size ? [...grupos.values()].map(ps => { const t = ps[0].tipo; return `<details class="protRecGrupo" ${grupos.size <= 3 ? 'open' : ''}><summary><b>${esc(t.code)}</b> ${esc(t.name)} <small>${ps.length}</small></summary><ul>${ps.map(p => `<li><button type="button" data-prot-ver="${esc(t.id)}|${esc(p.fila.id)}" title="Ver este folio en el plano"><span class="protRecFolio">${esc(numeroProtocolo(p.fila.folio))}</span><span><b>${esc(p.u.etiqueta)}</b> · ${esc(textoMedidas(p.u) || p.u.tipo)}<small>${esc([p.fila.element, p.fila.receiver].filter(v => v && String(v).trim() !== 'null').join(' · ') || 'Sin elemento documentado')} · elaborado ${fecha(p.fila.issued)}${cerrado(p.estado) && p.fila.closedDate ? ' · cerrado ' + fecha(p.fila.closedDate) : ''}</small></span>${chip(p.estado)}</button></li>`).join('')}</ul></details>`; }).join('')
-        : `<p class="muted">${todos.length ? 'Sin folios en esta categoría.' : 'Ningún protocolo de la matriz nombra ejes que abarquen este recinto.'}</p>`}
-      <p class="protRecNota">Matriz REV1 al ${esc(String(indice.corte || '').split('-').reverse().join('-'))} · ${esc(protocolFloors[nivel.id]?.code || '')}. Un folio cuenta si su zona entre ejes se superpone con el recinto (AA-AW/A1-A12 abarca todo el piso), o si su tramo o pilar queda a menos de 60 cm. En este piso no se asignan ${indice.sinUbicar} folios sin ejes ubicables ni ${indice.anulados} anulados. Toca un folio para verlo en el plano.</p>`;
-    root.querySelectorAll('[data-prot-filtro]').forEach(b => b.onclick = () => { filtro = b.dataset.protFiltro; ficha(root, room, resumen); });
+    root.innerHTML = `${grupos.size ? [...grupos.values()].map(ps => { const t = ps[0].tipo; return `<details class="protRecGrupo" ${grupos.size <= 3 ? 'open' : ''}><summary><b>${esc(t.code)}</b> ${esc(t.name)} <small>${ps.length}</small></summary><ul>${ps.map(p => `<li><button type="button" data-prot-ver="${esc(t.id)}|${esc(p.fila.id)}" title="Ver este folio en el plano"><span class="protRecFolio">${esc(numeroProtocolo(p.fila.folio))}</span><span><b>${esc(p.u.etiqueta)}</b> · ${esc(textoMedidas(p.u) || p.u.tipo)}<small>${esc([p.fila.element, p.fila.receiver].filter(v => v && String(v).trim() !== 'null').join(' · ') || 'Sin elemento documentado')} · elaborado ${fecha(p.fila.issued)}${cerrado(p.estado) && p.fila.closedDate ? ' · cerrado ' + fecha(p.fila.closedDate) : ''}</small></span>${chip(p.estado)}</button></li>`).join('')}</ul></details>`; }).join('')
+        : '<p class="muted">Sin protocolos abiertos en este recinto.</p>'}`;
     root.querySelectorAll('[data-prot-ver]').forEach(b => b.onclick = () => { const [tipoId, folioId] = b.dataset.protVer.split('|'), g = indice.porTipo.get(tipoId); ctx.verProtocolos?.({tipo: g.tipo, filas: g.filas, foco: folioId}); });
   }
   return {ficha};

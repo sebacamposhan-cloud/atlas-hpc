@@ -27,12 +27,14 @@ const fila = reportProgress(model, [room], [v2]).rows[0];
 assert.deepEqual(['PAV', 'CIE', 'M1'].map(f => estadoPartida(fila.tasks.find(x => x.field === f))), ['En proceso', 'Instalado y conforme', 'Sin registrar']);
 // Bajar de instalado quita la conformidad.
 assert.equal(actualizarPartida(model, room, 'N-1', v2, 'CIE', {installation: 'En proceso'}, firma).fields.CIE.quality, 'Sin revisar');
-// Reglas: conforme exige instalado y nada pendiente; con observaciones exige la nota; responsable obligatorio.
+// Reglas: conforme exige instalada; «con observaciones» se marca sin texto (el detalle va en las observaciones con foto);
+// responsable obligatorio (la cuenta de Nube del equipo).
 assert.throws(() => actualizarPartida(model, room, 'N-1', v2, 'PAV', {quality: 'Conforme'}, firma), /instalada/);
-assert.throws(() => actualizarPartida(model, room, 'N-1', v2, 'CIE', {missing: 'Falta sello perimetral', quality: 'Conforme'}, firma), /Qué falta/);
-assert.throws(() => actualizarPartida(model, room, 'N-1', v2, 'M1', {quality: 'Con observaciones'}, firma), /observación de la partida/);
-assert.equal(actualizarPartida(model, room, 'N-1', v2, 'M1', {quality: 'Con observaciones', notes: 'Fisura en junta'}, firma).fields.M1.notes, 'Fisura en junta');
+assert.equal(actualizarPartida(model, room, 'N-1', v2, 'M1', {quality: 'Con observaciones'}, firma).fields.M1.quality, 'Con observaciones');
 assert.throws(() => actualizarPartida(model, room, 'N-1', v2, 'M1', {installation: 'Instalado'}, {...firma, responsible: ' '}), /responsable/);
+// Con partidas registradas en el avance, la terminación se calcula desde ellas y manda sobre lo marcado directo.
+const derivada = reportProgress(model, [room], [v2], 'N-1', (r, campo) => campo === 'PAV' ? {installation: 'Instalado', quality: 'Con observaciones'} : null).rows[0];
+assert.deepEqual(['PAV', 'CIE'].map(f => estadoPartida(derivada.tasks.find(x => x.field === f))), ['Con observaciones', 'Instalado y conforme']);
 // Un registro de otra versión del PMA no arrastra sus estados.
 const viejo = {...v2, sourceSha: 'f'.repeat(64)};
 assert.equal(actualizarPartida(model, room, 'N-1', viejo, 'M2', {installation: 'No iniciado'}, firma).fields.PAV.installation, 'Sin registrar');
@@ -50,4 +52,4 @@ assert.match(svg, /aria-label="Muro oriente M2 · 12 · En proceso · 2 observac
 assert.match(svg, /fill="url\(#romboNA\)"/);
 assert(svg.lastIndexOf('data-rombo="PAV"') > svg.lastIndexOf('data-rombo="M4"'), 'la elegida se dibuja encima');
 assert.equal((romboSVG(partes, null, String, false).match(/data-rombo=/g) || []).length, 0, 'sin interacción si no se puede registrar');
-console.log(JSON.stringify({checks: 'passed', scope: 'Rombo interactivo: estados de ejecución con color, registro de una partida conservando las demás, conformidad solo instalada y sin pendientes, observación con nota, responsable obligatorio, fuente cambiada, partidas sin definición y dibujo con seis secciones, código, estado y observaciones pendientes.'}));
+console.log(JSON.stringify({checks: 'passed', scope: 'Rombo interactivo: estados de ejecución con color, registro de una partida conservando las demás, conformidad solo instalada, observaciones sin texto obligatorio, responsable obligatorio, estado calculado desde las partidas, fuente cambiada, partidas sin definición y dibujo con seis secciones, código, estado y observaciones pendientes.'}));
