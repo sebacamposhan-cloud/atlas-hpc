@@ -106,13 +106,13 @@ export async function renderAvanceControl(root, ctx) {
       // Tocar un recinto abre su rombo, el mismo de la ficha del plano, para marcar sus partidas.
       root.querySelectorAll('[data-avance-room]').forEach(b => b.onclick = async () => {
         const fila = c.porCodigo.get(b.dataset.avanceRoom), plano = ctx.rooms().find(r => r.code === fila.code), editor = $('#avanceEditor');
-        elegido = fila.code; editor.hidden = false; editor.innerHTML = `<div class="chartHeading"><h3>${esc(fila.code)} · ${esc(fila.name)}</h3>${plano ? '<button id="avanceUbicar">Ver en el plano</button>' : ''}</div>${plano ? '<div id="avanceEditorCuerpo" class="avanceRombo"></div>' : '<p class="dataNote">Fuera del área visible del plano: su avance se marca en el rombo cuando el recinto esté dibujado.</p>'}`;
+        elegido = fila.code; editor.hidden = false; editor.innerHTML = `<div class="chartHeading"><h3>${esc(fila.code)} · ${esc(fila.name)}</h3>${plano ? '<button id="avanceUbicar">Ver en el plano</button>' : ''}</div>${plano ? '<section class="avanceRecinto" hidden></section><div id="avanceEditorCuerpo" class="avanceRombo"></div><section class="protocolosPrevios" hidden></section>' : '<p class="dataNote">Fuera del área visible del plano: su avance se marca en el rombo cuando el recinto esté dibujado.</p>'}`;
         editor.scrollIntoView({block: 'start'});
         if (!plano) return;
         $('#avanceUbicar').onclick = () => ctx.locate?.(plano.id);
         const [{createRombo}, {cargarObservaciones}] = await Promise.all([import('./rombo.mjs'), import('./observaciones.mjs')]);
         rombo ||= createRombo({esc, toast: ctx.toast, observaciones: () => cargarObservaciones(), nuevaObservacion: (room, campo, listo) => ctx.observaciones?.editor(room, null, listo, {terminacion: campo}), abrirObservacion: (id, listo) => ctx.observaciones?.abrir(id, listo)});
-        const cuerpo = $('#avanceEditorCuerpo'); if (cuerpo) rombo.ficha(cuerpo, plano, {alGuardar: async () => { c = await cargarAvance(); }});
+        const cuerpo = $('#avanceEditorCuerpo'); if (cuerpo) rombo.ficha(cuerpo, plano, {alGuardar: async () => { c = await cargarAvance(); }, panel: editor.querySelector('.avanceRecinto'), previos: editor.querySelector('.protocolosPrevios')});
       });
       $('#avancePlano').onclick = () => ctx.pintarCapa?.('avance');
       $('#avanceExportar').onclick = async () => { try { const v = await exportarAvance(), url = URL.createObjectURL(new Blob([JSON.stringify(v, null, 2)], {type: 'application/json'})), a = document.createElement('a'); a.href = url; a.download = 'Atlas-avance-partidas-' + hoy() + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 10000); } catch (e) { mensaje.textContent = e.message; } };

@@ -60,14 +60,16 @@ function minimizarFicha(){if(fichaCompleta()&&!document.body.classList.contains(
 function verEnPlano(mostrar){const completa=fichaCompleta()&&!document.body.classList.contains('hideRight')&&selected;mostrar();if(completa)document.body.classList.add('fichaMinima');}
 function abrirDesdeBarra(){const id=recintoFicha;document.body.classList.remove('fichaMinima');if(id&&selected?.id!==id)selectRoom(id,false);else document.body.classList.remove('hideRight');}
 let recintoFicha=null;
+// Rombo de la ficha con su panel de avance (bajo el nombre) y el bloque de protocolos previos.
+function fichaRombo(r){if($('romboEvidence'))romboAvance?.ficha($('romboEvidence'),r,{alGuardar:()=>render(),panel:$('avanceRecinto'),previos:$('protocolosPrevios')});}
 function clearArchitectureSelection(code){
   selected=null;isolation=false;previousView=null;
   render();markResultActive();
   $('detail').innerHTML=`<div class="intro"><h2>Sin recinto seleccionado</h2><p>${code?'El código '+esc(code)+' requiere seleccionar una correspondencia en Arquitectura.':'Selecciona un recinto en el plano o busca su código.'}</p></div>`;
   document.body.classList.add('hideRight');
 }
-function renderDetail(){const r=selected;if(!r)return;const source=data.documents.find(d=>d.id===r.document_id);$('detail').innerHTML=`<div class="section-label">FICHA DE RECINTO</div><h2 class="detailCode">${esc(r.code)}</h2><h3 class="detailName">${esc(r.name)}</h3><details class="obsRoom" open><summary>Observaciones en terreno</summary><div id="obsRoomEvidence"></div></details><section class="romboAvance"><div class="section-label">AVANCE POR PARTIDA · TOCA EL ROMBO</div><div id="romboEvidence"></div></section><details class="protRecinto" ${protocolosAbiertos?'open':''}><summary>Protocolos abiertos</summary><div id="protocolRoomEvidence"></div></details>`;$('fichaBarraTexto').textContent=r.code+' · '+r.name;recintoFicha=r.id;
-if($('romboEvidence'))romboAvance?.ficha($('romboEvidence'),r,{alGuardar:()=>render()});if($('obsRoomEvidence'))observaciones?.ficha($('obsRoomEvidence'),r);const protSection=$('detail').querySelector('.protRecinto'),verProtRecinto=()=>protocolosRecinto?.ficha($('protocolRoomEvidence'),r,protSection.querySelector('summary'));protSection?.addEventListener('toggle',()=>{if(!protSection.isConnected)return;protocolosAbiertos=protSection.open;if(protSection.open)verProtRecinto();});if(protSection?.open)verProtRecinto();
+function renderDetail(){const r=selected;if(!r)return;const source=data.documents.find(d=>d.id===r.document_id);$('detail').innerHTML=`<div class="section-label">FICHA DE RECINTO</div><h2 class="detailCode">${esc(r.code)}</h2><h3 class="detailName">${esc(r.name)}</h3><section id="avanceRecinto" class="avanceRecinto" aria-label="Avance del recinto" hidden></section><details class="obsRoom" open><summary>Observaciones en terreno</summary><div id="obsRoomEvidence"></div></details><section class="romboAvance"><div class="section-label">AVANCE POR PARTIDA · TOCA EL ROMBO</div><div id="romboEvidence"></div></section><section id="protocolosPrevios" class="protocolosPrevios" hidden></section><details class="protRecinto" ${protocolosAbiertos?'open':''}><summary>Protocolos abiertos</summary><div id="protocolRoomEvidence"></div></details>`;$('fichaBarraTexto').textContent=r.code+' · '+r.name;recintoFicha=r.id;
+fichaRombo(r);if($('obsRoomEvidence'))observaciones?.ficha($('obsRoomEvidence'),r);const protSection=$('detail').querySelector('.protRecinto'),verProtRecinto=()=>protocolosRecinto?.ficha($('protocolRoomEvidence'),r,protSection.querySelector('summary'));protSection?.addEventListener('toggle',()=>{if(!protSection.isConnected)return;protocolosAbiertos=protSection.open;if(protSection.open)verProtRecinto();});if(protSection?.open)verProtRecinto();
 
 }
 async function prepareExternalGeometry(){
@@ -228,7 +230,7 @@ function revertLast(r){const old=JSON.parse(r.history[0].before_json);modal(`<h2
 for(const eventName of ['atlas-before-update','atlas-before-floor-change'])window.addEventListener(eventName,event=>{if(edit||document.querySelector('#contourEditor[open],#modal[open] form')){event.preventDefault();toast('Guarda o cierra la edición antes de continuar.');}});
 window.addEventListener('atlas-floor-resume',()=>{ui?.show('map');requestAnimationFrame(()=>{setView(view);updateTiles();});});
 
-for(const evento of ['atlas-room-progress-changed','atlas-observaciones-changed','atlas-avance-changed'])window.addEventListener(evento,()=>{if(selected&&$('romboEvidence'))romboAvance?.ficha($('romboEvidence'),selected);});
+for(const evento of ['atlas-room-progress-changed','atlas-observaciones-changed','atlas-avance-changed'])window.addEventListener(evento,()=>{if(selected)fichaRombo(selected);});
 
 async function enterSpatial(){
  marking?.close?.();

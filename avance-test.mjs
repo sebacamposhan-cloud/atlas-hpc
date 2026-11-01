@@ -113,5 +113,15 @@ assert(pavs.length && pavs.every(p => sembrado.partidas[p.id].ejecucion === 'Ins
 assert.equal(sembrado.partidas['6.1.4.6'].revision, 'Sin revisar', 'conforme solo donde su protocolo previo está liberado');
 assert.deepEqual(M.protocolosDe(fila2.nodos, pavs).map(n => n.id).sort(), ['P-NIV-RES', 'P-SOBRELOSA']);
 assert.equal(M.sembrarTerminacion(null, fila2.nodos, pavs, {installation: 'Sin registrar', quality: 'Sin revisar'}), null);
+
+// Panel de avance de la ficha: % del recinto, pavimento, cielo y muros, conformes y protocolos liberados.
+const fila4 = M.reporteAvance(pma, items, [r4]).filas.find(f => f.code === caucho.code.trim()), res = M.resumenRecinto(fila4.nodos, fila4.row);
+const partidas4 = fila4.nodos.filter(n => n.tipo === 'partida');
+assert.equal(res.pct, partidas4.reduce((a, n) => a + n.pct, 0) / partidas4.length, '% del recinto = promedio de sus partidas');
+assert.deepEqual(res.grupos.map(g => g.campo), ['PAV', 'CIE', 'M']);
+assert.deepEqual([res.grupos[0].pct, res.grupos[0].estado], [100, {installation: 'Instalado', quality: 'Conforme'}], 'sobrelosa y caucho instalados y conformes');
+assert.deepEqual([res.conformes, res.protocolos, res.liberados], [2, fila4.nodos.filter(n => n.tipo === 'protocolo').length, 2]);
+const muros = res.grupos[2].partidas;
+assert.equal(new Set(muros.map(n => n.id)).size, muros.length, 'los muros no repiten sus partidas comunes');
 console.log(JSON.stringify({checks: 'passed', recintos: rep.filas.length, partidas: rep.partidas.length, valorizables: rep.piso.valorizables,
   scope: 'Itemizado por código ITEM (desordenado, eliminados, títulos, duplicados), enlace recinto → partidas con PMA real, cadena de protocolos, partidas en dos filas (ejecución y revisión) con lectura de la escala anterior, guardado de un toque con firma, rombo calculado desde las partidas, traspaso de lo marcado antes en el rombo, valorización, estados de recinto y listas de revisión.'}));

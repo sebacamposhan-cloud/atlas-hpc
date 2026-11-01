@@ -238,6 +238,17 @@ export function sembrarTerminacion(registro, nodos, partidas, {installation, qua
 }
 // Protocolos previos de un grupo de partidas (los que alguna de ellas exige liberados).
 export const protocolosDe = (nodos, partidas) => nodos.filter(n => n.tipo === 'protocolo' && partidas.some(p => p.prereq.includes(n.id)));
+// Panel de avance de la ficha: % del recinto (promedio de sus partidas, cada una con el mismo peso), avance de pavimento,
+// cielo y muros (los cuatro muros juntos, sin repetir sus partidas comunes), partidas conformes y protocolos liberados.
+export function resumenRecinto(nodos, row) {
+  const partidas = nodos.filter(n => n.tipo === 'partida'), protocolos = nodos.filter(n => n.tipo === 'protocolo');
+  const promedio = ps => ps.length ? ps.reduce((a, n) => a + (n.pct || 0), 0) / ps.length : null;
+  const muros = [...new Map(['M1', 'M2', 'M3', 'M4'].flatMap(c => partidasDeTerminacion(nodos, c, row)).map(n => [n.id, n])).values()];
+  const grupos = [['PAV', 'Pavimento', partidasDeTerminacion(nodos, 'PAV', row)], ['CIE', 'Cielo', partidasDeTerminacion(nodos, 'CIE', row)], ['M', 'Muros', muros]]
+    .map(([campo, nombre, ps]) => ({campo, nombre, partidas: ps, pct: promedio(ps), estado: estadoTerminacion(ps)}));
+  return {pct: promedio(partidas), grupos, partidas: partidas.length, conformes: partidas.filter(n => n.ejecucion === 'Instalado' && n.revision === 'Conforme').length,
+    protocolos: protocolos.length, liberados: protocolos.filter(n => n.estado === 'Liberado').length};
+}
 
 // Estado del recinto para colorear el plano.
 export function estadoRecinto(nodos, registro) {

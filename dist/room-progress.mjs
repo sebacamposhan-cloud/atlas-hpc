@@ -34,8 +34,8 @@ export async function renderProgressControl(root,ctx){
  const celda=(r,f,titulo)=>{const e=partida(r,f);return `<td data-label="${titulo}"><span class="partidaEstado${['Sin registrar','No aplica','Sin definición'].includes(e)?' clara':''}${e==='No aplica'?' na':''}" style="--c:${COLOR_PARTIDA[e]}" title="${esc(e)}">${ABREVIA[e]}</span></td>`;};
  function abrirRecinto(room){
   selected=room;const editor=root.querySelector('#progressEditor');if(!editor||!room)return;editor.hidden=false;
-  editor.innerHTML=`<div class="chartHeading"><h3>${esc(room.code)} · ${esc(room.name)}</h3><span>${ctx.locate?'<button type="button" data-progress-locate-sel>Ver en el plano</button> ':''}<button type="button" data-progress-cerrar>Cerrar</button></span></div><div id="progressRombo"></div>`;
-  rombo.ficha(editor.querySelector('#progressRombo'),room,{alGuardar:()=>refresh()});
+  editor.innerHTML=`<div class="chartHeading"><h3>${esc(room.code)} · ${esc(room.name)}</h3><span>${ctx.locate?'<button type="button" data-progress-locate-sel>Ver en el plano</button> ':''}<button type="button" data-progress-cerrar>Cerrar</button></span></div><section class="avanceRecinto" hidden></section><div id="progressRombo"></div><section class="protocolosPrevios" hidden></section>`;
+  rombo.ficha(editor.querySelector('#progressRombo'),room,{alGuardar:()=>refresh(),panel:editor.querySelector('.avanceRecinto'),previos:editor.querySelector('.protocolosPrevios')});
   editor.querySelector('[data-progress-cerrar]').onclick=()=>{selected=null;editor.hidden=true;editor.replaceChildren();root.querySelectorAll('.progressRooms tr.selectedRow').forEach(tr=>tr.classList.remove('selectedRow'));};
   editor.querySelector('[data-progress-locate-sel]')?.addEventListener('click',()=>ctx.locate(room.id));
  }
