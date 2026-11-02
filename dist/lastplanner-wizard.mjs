@@ -16,7 +16,7 @@ export function mountActivityWizard(form,{revision=false}){
  blocks[1].querySelector('h3').remove();steps[1].append(blocks[1]);
  const details=document.createElement('details');details.className='lpWizardSelection';details.innerHTML='<summary>Ver detalle de la selección</summary>';blocks[1].append(details);
  for(const selector of ['[data-selected-rooms]','[data-selected-scopes]'])details.append(form.querySelector(selector));
- const additional=document.createElement('details');additional.innerHTML='<summary>Ubicación adicional (opcional)</summary>';additional.append(field('sector'),field('frente'),form.querySelector('#lpFrontHelp'));blocks[1].append(additional);
+ const additional=document.createElement('div');additional.hidden=true;additional.append(field('sector'),field('frente'),form.querySelector('#lpFrontHelp'));blocks[1].append(additional);
  const counts=document.createElement('p');counts.setAttribute('role','status');blocks[1].insertBefore(counts,details);
  const planGrid=document.createElement('div');planGrid.className='lpFields';steps[2].append(planGrid);
  for(const name of ['inicioPlan','finPlan','cantidad','unidad'])planGrid.append(field(name));
