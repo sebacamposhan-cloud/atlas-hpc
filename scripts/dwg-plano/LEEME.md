@@ -51,6 +51,10 @@ Fuentes, fuera del repo: carpetas «Planos N01», «Planos N02» y «Planos N03�
 5. **Importar.**
    - N01 y N03: `node scripts/import-dwg.mjs n0x`
    - N02: `node scripts/import-n02.mjs`
+   - Luego `node scripts/recintos-extra.mjs`, que hace dos cosas:
+     - agrega los recintos rotulados que el plano no tiene: en el N02, los que quedaron sin polilínea; en el −1, los de las láminas A-511 y A-512;
+     - quita de los niveles 2 y 3 los recintos de triple altura del nivel 1.
+     El contorno sale del mismo relleno desde el rótulo (`contorno.mjs`). Lo calculado queda en `data/<nivel>/recintos-extra.json`, para volver a aplicarlo sin `barreras.json`.
    - Después: `node scripts/prepare-offline.mjs` y `node pisos-test.mjs`.
 
 **Revisar una zona sin generar todo:** `render.html?nivel=n01&x=1600&y=2000&w=700&h=500&s=2&guardar=nombre`, en coordenadas de Atlas. La imagen queda en `data/n01/revision/`, que Git ignora.
