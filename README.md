@@ -120,9 +120,13 @@ Con la fuente actual y evaluación al **27-10-2026**: **2.045 registros crítico
 
 Detalles y capturas: [CRITICAL_PROTOCOLS.md](docs/CRITICAL_PROTOCOLS.md). Tests: `node critical-protocol-test.mjs` y `PLAYWRIGHT_MODULE=<ruta-a-playwright-core> node critical-protocol-browser-test.mjs`.
 
-## Editor de contornos (herramienta interna)
+## Editor de contornos
 
-Para corregir a mano los contornos de los recintos sobre las líneas del DWG, con pinzamientos como en AutoCAD, OSNAP, orto, dibujar, partir y simplificar. Corre solo en el PC de desarrollo (`node scripts/editor-contornos/servidor.mjs` → http://127.0.0.1:8012/) y no se publica. Guarda `dist/<piso>/contornos.json`, que la app aplica sobre los contornos originales. Uso y reglas: [scripts/editor-contornos/LEEME.md](scripts/editor-contornos/LEEME.md). Prueba: `node contornos-test.mjs`.
+Sirve para corregir a mano los contornos de los recintos sobre las líneas del DWG, con pinzamientos como en AutoCAD, OSNAP, orto, dibujar, partir y simplificar. Se usa en computador.
+- **En Atlas:** botón «Editor de contornos» al pie del plano. Guarda en Nube recinto por recinto, con una cuenta de rol editor, y todos los equipos con sesión ven la corrección. Requiere ejecutar `supabase/contornos.sql`.
+- **En el PC de desarrollo:** `node scripts/editor-contornos/servidor.mjs` → http://127.0.0.1:8012/. Guarda `dist/<piso>/contornos.json` para publicarlo con commit.
+
+La app aplica ambas correcciones sobre los contornos originales; para el mismo recinto manda la de la nube. Uso y reglas: [scripts/editor-contornos/LEEME.md](scripts/editor-contornos/LEEME.md). Prueba: `node contornos-test.mjs`.
 
 ## Liberación de frentes (archivado)
 

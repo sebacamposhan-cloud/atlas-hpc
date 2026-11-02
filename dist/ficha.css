@@ -1,6 +1,9 @@
 /* Ficha del recinto (aside.right): media pantalla en computador (ancho en --detail, ajustable con el borde) y pantalla
    completa en celulares y tablets, con «← Plano» para bajarla a una barra con el código y el nombre del recinto. */
 #fichaPlano, #fichaBarra { display: none; }
+/* Editor de contornos: herramienta de computador (mouse y teclado), abre en otra pestaña con el piso activo. */
+.botonEnlace { display: inline-flex; align-items: center; border: 1px solid var(--g-marca, #1b2a56); padding: 6px 10px; font-size: 12px; font-weight: 600; color: var(--g-texto, #000); text-decoration: none; background: #fff; }
+@media (max-width: 1023px), (pointer: coarse) { #editorContornos { display: none; } }
 @media (max-width: 1023px), (pointer: coarse) {
   body:not(.hideRight) .right { position: fixed; inset: 0; width: auto; max-width: none; height: auto; margin: 0; border: 0; border-radius: 0; box-shadow: none; z-index: 40; overflow: auto; overscroll-behavior: contain; transition: none; background: #fff; }
   .right .resizeHandle { display: none; }

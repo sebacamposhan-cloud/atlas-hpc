@@ -5,6 +5,7 @@ import {syncLastPlanner} from './lastplanner-sync.mjs';
 import {crearSincronizador} from './nube-sync.mjs';
 import {readMarkings, saveMarking, replaceMarking} from './marking-store.mjs';
 import {leerParaNube, idsFotos, leerFoto, guardarDesdeNube, guardarFotoDesdeNube} from './observaciones-store.mjs';
+import {refrescarContornosNube} from './contornos-nube.mjs';
 
 const SESION = 'atlas-nube-sesion';
 const leerSesion = () => { try { return JSON.parse(localStorage.getItem(SESION)); } catch { return null; } };
@@ -126,6 +127,7 @@ export function iniciarNube({toast = aviso, esc = escapar} = {}) {
         catch (e) { if (e.status !== 401) throw e; await renovar(true); return sincronizar(); }
       });
       mostrar({fase: 'listo', ultimo: new Date(), resumen});
+      refrescarContornosNube().catch(() => {}); // contornos corregidos desde el editor en otros equipos
     } catch (e) {
       if (e.status === 401) { guardarSesion(null); mostrar({fase: 'sin-sesion', mensaje: e.message}); toast('Nube: ' + e.message); }
       else mostrar({fase: navigator.onLine ? 'error' : 'sin-conexion', mensaje: e.status ? e.message : 'Sin conexión con la nube; se reintentará.'});

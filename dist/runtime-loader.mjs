@@ -1,5 +1,6 @@
 // One compact request supplies everything needed to browse the plan of the active level.
-import {datos} from './level.mjs';
+import {datos, nivel} from './level.mjs';
+import {combinarContornos, refrescarContornosNube} from './contornos-nube.mjs';
 let pending;
 export function decodeRuntime(bundle) {
   if (bundle.schema !== 1) throw new Error('Versión de datos no compatible. Recarga Atlas.');
@@ -21,7 +22,9 @@ export function loadRuntime() {
       // contornos.json: correcciones del editor interno de contornos; si falta, el plano usa sus contornos originales.
       const [response, contornos] = await Promise.all([fetch(datos('runtime.json'), {signal: controller.signal}), fetch(datos('contornos.json'), {signal: controller.signal}).then(r => r.ok ? r.json() : null).catch(() => null)]);
       if (!response.ok) throw new Error('No se pudieron cargar las fichas. Reintenta con conexión.');
-      return {...decodeRuntime(await response.json()), contornos: contornos?.recintos || []};
+      // Las correcciones guardadas en la nube con el editor mandan sobre las del archivo; se refrescan en segundo plano.
+      refrescarContornosNube().catch(() => {});
+      return {...decodeRuntime(await response.json()), contornosArchivo: contornos?.recintos || [], contornos: combinarContornos(contornos?.recintos || [], nivel.id)};
     } catch (error) {
       pending = null;
       if (error.name === 'AbortError') throw new Error('La conexión está tardando. Reintenta; el plano guardado se abre sin internet.');

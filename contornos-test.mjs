@@ -1,10 +1,11 @@
-// Contornos corregidos con el editor interno (scripts/editor-contornos): geometría, archivo de cada piso y prioridad en la app.
+// Contornos corregidos con el editor de contornos (dist/editor-contornos): geometría, archivo de cada piso y prioridad en la app.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {decodeRuntime} from './dist/runtime-loader.mjs';
 import {resolveFootprints} from './dist/geometry-authority.mjs';
-import {METROS, areaAnillo, areaM2, areaDeclarada, seCruza, errorAnillo, simplificar, crearIndice, agregarTramo, enganchar, orto, partir} from './scripts/editor-contornos/geometria.mjs';
-import {NIVELES, FORMATO, validar, serializar, vacio, posicionPlano} from './scripts/editor-contornos/archivo.mjs';
+import {METROS, areaAnillo, areaM2, areaDeclarada, seCruza, errorAnillo, simplificar, crearIndice, agregarTramo, enganchar, orto, partir} from './dist/editor-contornos/geometria.mjs';
+import {NIVELES, FORMATO, validar, serializar, vacio, posicionPlano} from './dist/editor-contornos/archivo.mjs';
+import {idContorno, combinarContornos} from './dist/contornos-nube.mjs';
 
 // Unidades: 1 unidad = 1,7639 cm; un cuadrado de 100 unidades mide 3,11 m².
 assert.ok(Math.abs(METROS - .017639) < 1e-6);
@@ -79,4 +80,18 @@ for (const [nivel, n] of Object.entries(NIVELES)) {
   assert.equal(resolveFootprints(atlas, [room], new Map(), {rooms: []}, [{...correccion[0], code: 'B'}]).get('room').method, 'technical');
   assert.equal(resolveFootprints(atlas, [room], new Map(), {rooms: []}).get('room').method, 'technical', 'sin correcciones todo sigue igual');
 }
-console.log(JSON.stringify({checks: 'passed', contornosCorregidos: resumen, scope: 'Editor de contornos: unidades, enganche (extremo, medio, intersección, perpendicular, cercano, orto), partir, simplificar; archivo de cada piso válido y sin conexión; prioridad sobre auxiliares y validados, no sobre ediciones del navegador.'}));
+
+// Nube: el id del registro solo lleva letras, números, guion y guion bajo; lo de la nube manda sobre el archivo del piso y
+// una corrección «eliminada» vuelve al contorno original.
+{
+  for (const code of ['RT.(-1)-1', '4.4.1.3.1-3', 'DI.2-8']) assert.match(idContorno('N-1', code), /^[A-Za-z0-9_-]{1,100}$/);
+  assert.notEqual(idContorno('N02', 'A.1'), idContorno('N02', 'A-1'));
+  const memoria = new Map(); globalThis.localStorage = {getItem: k => memoria.get(k) ?? null, setItem: (k, v) => memoria.set(k, v)};
+  const archivo = [{id: 'a', code: 'A', parts: [{polygon: [[0, 0]], holes: []}]}, {id: 'b', code: 'B', parts: []}];
+  assert.deepEqual(combinarContornos(archivo, 'N02'), archivo, 'sin nube, el archivo');
+  memoria.set('atlas-contornos-nube', JSON.stringify({N02: {A: {version: 2, recinto: {id: 'a', code: 'A', parts: [{polygon: [[9, 9]], holes: []}]}}, B: {version: 1, eliminado: true}, C: {version: 1, recinto: {id: 'c', code: 'C', parts: []}}}}));
+  assert.deepEqual(combinarContornos(archivo, 'N02').map(c => [c.code, c.parts[0]?.polygon[0][0] ?? null]), [['A', 9], ['C', null]]);
+  assert.deepEqual(combinarContornos(archivo, 'N03'), archivo, 'otro piso no cambia');
+  delete globalThis.localStorage;
+}
+console.log(JSON.stringify({checks: 'passed', contornosCorregidos: resumen, scope: 'Editor de contornos: unidades, enganche (extremo, medio, intersección, perpendicular, cercano, orto), partir, simplificar; archivo de cada piso válido y sin conexión; prioridad sobre auxiliares y validados, no sobre ediciones del navegador; ids de Nube y correcciones de la nube sobre el archivo.'}));

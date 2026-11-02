@@ -2,6 +2,8 @@
 // El servidor solo reenvía con la sesión de cada usuario; Supabase aplica RLS y el control de versión. No usa la clave service_role.
 const ID = /^[A-Za-z0-9_-]{1,100}$/, DESDE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/;
 const BUCKET = 'atlas-campo', MAX_JSON = 2500000, MAX_FOTO = 5242880, PAGINA = 500, CAMPOS = 'tipo,id,version,data,updated_at,updated_by';
+// «contorno»: correcciones del editor de contornos, un registro por recinto (supabase/contornos.sql).
+const TIPOS = ['proyecto', 'observacion', 'contorno'];
 const fallo = (status, message) => Object.assign(Error(message), {status});
 
 export function createCampo(env, fetchImpl = fetch) {
@@ -62,11 +64,12 @@ export function createCampo(env, fetchImpl = fetch) {
       if (typeof token !== 'string' || !token || token.length > 8192) return send(401, {error: 'Entra con tu cuenta para usar la nube.'});
       if (url.pathname === '/api/campo/logout' && req.method === 'POST') { await call('/auth/v1/logout', token, {method: 'POST', body: {}}); return send(200, {ok: true}); }
       if (url.pathname === '/api/campo' && req.method === 'GET') {
-        const desde = url.searchParams.get('desde');
+        const desde = url.searchParams.get('desde'), tipo = url.searchParams.get('tipo');
         if (desde && !DESDE.test(desde)) return send(400, {error: 'Fecha inválida.'});
+        if (tipo && !TIPOS.includes(tipo)) return send(400, {error: 'Tipo inválido.'});
         const registros = [];
         for (let offset = 0; offset < 100000; offset += PAGINA) {
-          const r = await call(`/rest/v1/atlas_campo?select=${CAMPOS}&order=updated_at.asc,tipo.asc,id.asc&limit=${PAGINA}&offset=${offset}${desde ? '&updated_at=gte.' + encodeURIComponent(desde) : ''}`, token);
+          const r = await call(`/rest/v1/atlas_campo?select=${CAMPOS}&order=updated_at.asc,tipo.asc,id.asc&limit=${PAGINA}&offset=${offset}${desde ? '&updated_at=gte.' + encodeURIComponent(desde) : ''}${tipo ? '&tipo=eq.' + tipo : ''}`, token);
           if (expirada(r)) return send(401, {error: 'Tu sesión terminó. Vuelve a entrar.'});
           if (!r.ok) return send(503, {error: 'No se pudo leer la nube. Revisa que se haya ejecutado supabase/campo.sql.'});
           registros.push(...r.data); if (r.data.length < PAGINA) break;
@@ -75,7 +78,7 @@ export function createCampo(env, fetchImpl = fetch) {
       }
       if (url.pathname === '/api/campo' && req.method === 'POST') {
         const b = await json();
-        if (!['proyecto', 'observacion'].includes(b.tipo) || !ID.test(b.id || '') || !Number.isSafeInteger(b.version) || b.version < 0 || !b.data || typeof b.data !== 'object' || Array.isArray(b.data)) return send(400, {error: 'Registro inválido.'});
+        if (!TIPOS.includes(b.tipo) || !ID.test(b.id || '') || !Number.isSafeInteger(b.version) || b.version < 0 || !b.data || typeof b.data !== 'object' || Array.isArray(b.data)) return send(400, {error: 'Registro inválido.'});
         const r = await call('/rest/v1/rpc/guardar_atlas_campo', token, {body: {p_tipo: b.tipo, p_id: b.id, p_version: b.version, p_data: b.data}});
         if (r.ok) return send(200, r.data);
         if (r.data?.code === '40001') {

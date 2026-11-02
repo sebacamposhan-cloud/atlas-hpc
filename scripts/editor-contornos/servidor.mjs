@@ -1,18 +1,26 @@
-// Servidor local del editor de contornos: herramienta interna de desarrollo, no se publica.
+// Servidor local del editor de contornos (dist/editor-contornos/), para corregir en el PC y publicar con commit.
 // Uso: node scripts/editor-contornos/servidor.mjs  y abrir http://127.0.0.1:8012/
-// Lee el plano de dist/ y las líneas del DWG de data/<nivel>/barreras.json (fuera del repo publicado).
-// Solo escribe dist/<piso>/contornos.json, después de validarlo contra los recintos del piso.
+// Sirve dist/ como Atlas y responde editor-contornos/modo.json {local: true}: así el editor guarda aquí, en
+// dist/<piso>/contornos.json (validado contra los recintos del piso), y no en Nube. Las líneas del DWG salen de
+// data/<nivel>/barreras.json, más completas que las publicadas.
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {decodeRuntime} from '../../dist/runtime-loader.mjs';
-import {NIVELES, validar, serializar} from './archivo.mjs';
-const here = path.dirname(fileURLToPath(import.meta.url)), repo = path.resolve(here, '../..'), dist = path.join(repo, 'dist');
+import {NIVELES, validar, serializar} from '../../dist/editor-contornos/archivo.mjs';
+const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..'), dist = path.join(repo, 'dist');
 const PUERTO = Number(process.env.EDITOR_PORT || 8012);
-const mime = {'.html': 'text/html; charset=utf-8', '.mjs': 'text/javascript', '.js': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.webp': 'image/webp', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml'};
+const mime = {'.html': 'text/html; charset=utf-8', '.mjs': 'text/javascript', '.js': 'text/javascript', '.json': 'application/json', '.css': 'text/css', '.webp': 'image/webp', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.woff2': 'font/woff2'};
 const enviar = (res, status, cuerpo, tipo = 'application/json; charset=utf-8') => { res.writeHead(status, {'Content-Type': tipo, 'Cache-Control': 'no-store'}); res.end(typeof cuerpo === 'string' || Buffer.isBuffer(cuerpo) ? cuerpo : JSON.stringify(cuerpo)); };
 const dentro = (base, archivo) => archivo === base || archivo.startsWith(base + path.sep);
+// Líneas del DWG en el formato publicado, armadas desde data/<nivel>/barreras.json.
+function lineas(nivel) {
+  const b = path.join(repo, 'data', nivel, 'barreras.json'), m = path.join(repo, 'data', nivel, 'marco.json');
+  if (!fs.existsSync(b) || !fs.existsSync(m)) return null;
+  const {escala, ox, oy} = JSON.parse(fs.readFileSync(m, 'utf8'));
+  return {formato: 'atlas-barreras-v1', nivel, marco: {escala, ox, oy}, tramos: JSON.parse(fs.readFileSync(b, 'utf8')).flat()};
+}
 
 http.createServer(async (req, res) => {
   try {
@@ -31,12 +39,12 @@ http.createServer(async (req, res) => {
       return enviar(res, 200, {ok: true, archivo: path.relative(repo, destino).replaceAll('\\', '/'), recintos: archivo.recintos.length});
     }
     if (req.method !== 'GET') return enviar(res, 405, {errores: ['Método no permitido.']});
-    let archivo;
-    if (url.pathname === '/') archivo = path.join(here, 'editor.html');
-    else if (url.pathname.startsWith('/tool/')) archivo = path.resolve(here, '.' + decodeURIComponent(url.pathname.slice(5)));
-    else if (url.pathname.startsWith('/repo/dist/')) archivo = path.resolve(dist, '.' + decodeURIComponent(url.pathname.slice(10)));
-    else { const m = url.pathname.match(/^\/repo\/data\/(s01|n01|n02|n03)\/(barreras|marco)\.json$/); if (m) archivo = path.join(repo, 'data', m[1], m[2] + '.json'); }
-    if (!archivo || !(dentro(here, archivo) || dentro(dist, archivo) || dentro(path.join(repo, 'data'), archivo))) return enviar(res, 403, {errores: ['Ruta no permitida.']});
+    if (url.pathname === '/') { res.writeHead(302, {Location: '/editor-contornos/editor.html'}); return res.end(); }
+    if (url.pathname === '/editor-contornos/modo.json') return enviar(res, 200, {local: true});
+    const l = url.pathname.match(/^\/editor-contornos\/barreras\/(s01|n01|n02|n03)\.json$/), local = l && lineas(l[1]);
+    if (local) return enviar(res, 200, local);
+    const archivo = path.resolve(dist, '.' + decodeURIComponent(url.pathname));
+    if (!dentro(dist, archivo)) return enviar(res, 403, {errores: ['Ruta no permitida.']});
     if (!fs.existsSync(archivo) || fs.statSync(archivo).isDirectory()) return enviar(res, 404, {errores: ['No existe: ' + url.pathname]});
     res.writeHead(200, {'Content-Type': mime[path.extname(archivo)] || 'application/octet-stream', 'Cache-Control': 'no-store'});
     fs.createReadStream(archivo).pipe(res);
