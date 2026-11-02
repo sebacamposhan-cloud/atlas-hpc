@@ -6,7 +6,7 @@ La selección de Last Planner utiliza ahora un espacio de trabajo basado en la r
 
 - Cabecera institucional y contexto del paso 2 de los cuatro pasos existentes, sin mensajes ficticios de guardado.
 - En escritorio: panel izquierdo con piso, Muros/Cielos/Pavimentos y un único recinto activo; plano amplio en el centro; brújula y navegación a la derecha; tarjetas de selección abajo.
-- En móvil: el plano queda encima del editor compacto. Las cuatro orientaciones se muestran en dos columnas, y las tarjetas inferiores admiten desplazamiento propio. El ancho de la página no desborda.
+- En móvil: el plano ocupa más de la mitad de la ventana de prueba de 844 px. Cabecera reducida, piso y superficies en una franja, editor de muros a todo el ancho y cuatro opciones legibles en dos columnas. Los recintos empiezan plegados bajo «Ver detalle»; al expandirlos se mantienen sus tarjetas editables. Se conservan áreas táctiles de al menos 44×44 px y la página no desborda.
 - Muros ordenados Norte, Sur, Este y Oeste; los tramos adicionales conservan sus identificadores geométricos y etiquetas reales. Las casillas comunican su estado a tecnologías de asistencia.
 - Resaltado azul sobre los tramos seleccionados; relleno suave que identifica el recinto activo. Código del recinto y etiquetas de orientación/eje sobre el plano cuando son visibles.
 - Una tarjeta por recinto con resumen de las superficies. Tocar «Editar superficies» enfoca ese recinto en el mismo visor y recupera sus marcas. Quitar un recinto es una acción independiente. «Ver detalle» permite quitar una superficie concreta.
@@ -27,7 +27,7 @@ Las referencias cardinales siguen siendo N→A, S→W, E→12 y O→1, calibrada
 
 - Cadena de Render: 38 comprobaciones aprobadas.
 - Prueba contextual completa en 320, 375, 390, 430, 768 y 1280 px: recintos reales, Norte/Este, resaltado, edición desde tarjetas, retorno al formulario, guardado, recuperación y sincronización entre navegadores.
-- Se comprueba que el plano tenga espacio utilizable, que no quede debajo del panel ni del resumen, y que la página no tenga desbordamiento horizontal.
+- Se comprueba que el plano no quede debajo del panel ni del resumen y que la página no desborde. En 320/375/390/430 px con ventana de 844 px, se exige al menos 420 px de alto de plano, controles táctiles de 44×44 px y selecciones plegadas inicialmente. Ajuste móvil adicional: controles de zoom abajo a la derecha y etiqueta grande de ejes oculta para evitar superposición.
 - Ciclo completo: selección, publicación, restricción previa, bloqueo, asistencia, ejecución parcial delimitada, verificación, saldo, sincronización, recuperación sin red e históricos.
 - Prueba de ejes desde la selección y su persistencia, y orientación geométrica de cuatro pisos.
 - Capturas reales del navegador disponibles abajo. Las pruebas usan Chromium con interacción táctil; no sustituyen una comprobación en Safari de un iPhone físico.
