@@ -1,0 +1,1137 @@
+{
+  "importer": {
+    "version": "hpc-apu-import-1",
+    "scriptSha256": "83cd9d5e57c804e355d3306b661d747812ef1b4e75e2aa93dff3c7703bc532a8"
+  },
+  "version": "hpc-apu-131d3d1f2457-01",
+  "source": {
+    "name": "APU.xlsx",
+    "project": "Hospital Provincia Cordillera",
+    "sha256": "131d3d1f245734167021e51a824caba4aef57ef3494a11f2885d8c0d4e4d051d",
+    "sheet": "APU",
+    "rows": 26920
+  },
+  "counts": {
+    "chapters": 878,
+    "parts": 4142,
+    "resources": 12202,
+    "orphans": 0,
+    "resourceTypes": {
+      "Mano de obra": 4084,
+      "Maquinaria": 3807,
+      "Otros": 4,
+      "Material": 4307
+    },
+    "operations": 4084,
+    "reviewedParts": 25,
+    "reviewedOperations": 97,
+    "usableApuPersonRates": 0,
+    "formulaCells": 19269
+  },
+  "subtotalChecks": {
+    "consistent": 4141,
+    "pending-review": 1
+  },
+  "subtotalPending": [
+    {
+      "partId": "2.3.3@150",
+      "row": 150,
+      "status": "pending-review"
+    }
+  ],
+  "resourceNaturePrefixMismatches": [
+    {
+      "row": 117,
+      "code": "OAHO01A",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 124,
+      "code": "OOBG01A",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 132,
+      "code": "OAMO01A",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 142,
+      "code": "SAIS001",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 166,
+      "code": "OOBG01A",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 174,
+      "code": "OAMO01B",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 190,
+      "code": "OOBG01A",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 200,
+      "code": "OM40024",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 217,
+      "code": "OOBG01A",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 225,
+      "code": "OAMO01E",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 241,
+      "code": "OOBG01A",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 268,
+      "code": "OOBG01A",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 279,
+      "code": "M4-0031",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 295,
+      "code": "OOBG01A",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 303,
+      "code": "OAMO01E",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 307,
+      "code": "M4-0027",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 317,
+      "code": "OAHO01C",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 324,
+      "code": "OOBG01A",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 332,
+      "code": "OAMO01E",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 338,
+      "code": "OPIL001B",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 345,
+      "code": "OOBG01B",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 350,
+      "code": "SAZA05F",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 356,
+      "code": "OPIL001C",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 386,
+      "code": "OPAV01A",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 1633,
+      "code": "MA639C",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 1634,
+      "code": "MA639D",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 1641,
+      "code": "MA6310C",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 1642,
+      "code": "MA6310D",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 1649,
+      "code": "MA6311C",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 1650,
+      "code": "MA6311D",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 1657,
+      "code": "MA6312C",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 1658,
+      "code": "MA6312D",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 3773,
+      "code": "OACF04A",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 4010,
+      "code": "OACA01B",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 16383,
+      "code": "OEXC001B",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 16406,
+      "code": "OEXC001A",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 18266,
+      "code": "MA916112",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 21567,
+      "code": "MA916112",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 21717,
+      "code": "OOBG01A",
+      "nature": "Mano de obra"
+    },
+    {
+      "row": 21777,
+      "code": "OEXC001B",
+      "nature": "Mano de obra"
+    }
+  ],
+  "issues": {
+    "missing-unit": 90,
+    "missing-positive-price": 161,
+    "no-resources": 162,
+    "deleted": 26
+  },
+  "sample": [
+    {
+      "code": "5.1.1",
+      "row": 980,
+      "description": "Tabique opaco común (T1)",
+      "validation": "documentary-reviewed",
+      "operations": [
+        {
+          "label": "Colocacion Estructura Metalcon Tabique opaco común (T1)",
+          "row": 987,
+          "coefficient": 0.04,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocacion Placas 1° cara Tabique opaco común (T1)",
+          "row": 988,
+          "coefficient": 0.02,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocacion Aislacion Tabique opaco común (T1)",
+          "row": 989,
+          "coefficient": 0.01,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocacion Placas 2° cara Tabique opaco común (T1)",
+          "row": 990,
+          "coefficient": 0.012,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocacion Huincha de term Tabique opaco común (T1)",
+          "row": 991,
+          "coefficient": 0.01,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación bloqueador de giro y pletina de amarre Tabique opaco común (T1)",
+          "row": 992,
+          "coefficient": 0.005,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        }
+      ]
+    },
+    {
+      "code": "5.1.3",
+      "row": 997,
+      "description": "Tabique delgado para falsos (T3)",
+      "validation": "documentary-reviewed",
+      "operations": [
+        {
+          "label": "Colocación Estructura Metalcon Tabique delgado para falsos (T3)",
+          "row": 1002,
+          "coefficient": 0.024,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación Placas 1° Cara Tabique delgado para falsos (T3)",
+          "row": 1003,
+          "coefficient": 0.02,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación Aislamiento Tabique delgado para falsos (T3)",
+          "row": 1004,
+          "coefficient": 0.006,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación Huincha de terminación Tabique delgado para falsos (T3)",
+          "row": 1005,
+          "coefficient": 0.006,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        }
+      ]
+    },
+    {
+      "code": "5.1.4",
+      "row": 1009,
+      "description": "Tabique acústico (TA)",
+      "validation": "documentary-reviewed",
+      "operations": [
+        {
+          "label": "Colocación Estructura Metalcon Tabique acústico (TA)",
+          "row": 1018,
+          "coefficient": 0.061,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación Placas 1° Cara Tabique acústico (TA)",
+          "row": 1019,
+          "coefficient": 0.028,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación malla fibra de vidrio más pasta e= 3mm 2° cara Tabique acústico (TA)",
+          "row": 1020,
+          "coefficient": 0.002,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación Aislamiento Tabique acústico (TA)",
+          "row": 1021,
+          "coefficient": 0.015,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación Placas 2° Cara Tabique acústico (TA)",
+          "row": 1022,
+          "coefficient": 0.018,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación malla fibra de vidrio más pasta e= 3mm 2° cara Tabique acústico (TA)",
+          "row": 1023,
+          "coefficient": 0.002,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación Huincha de terminación Tabique acústico (TA)",
+          "row": 1024,
+          "coefficient": 0.016,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación bloqueador de giro y pletina de amarre Tabique acústico (TA)",
+          "row": 1025,
+          "coefficient": 0.008,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        }
+      ]
+    },
+    {
+      "code": "5.1.5",
+      "row": 1029,
+      "description": "Tabique vidriado sobre antepecho (TV1)",
+      "validation": "documentary-reviewed",
+      "operations": [
+        {
+          "label": "Colocación Estructura Metalcon Tabique vidriado sobre antepecho (TV1)",
+          "row": 1037,
+          "coefficient": 0.118,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación Placas 1° Cara Tabique vidriado sobre antepecho (TV1)",
+          "row": 1038,
+          "coefficient": 0.062,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación Aislamiento Tabique vidriado sobre antepecho (TV1)",
+          "row": 1039,
+          "coefficient": 0.039,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación Placas 2° Cara Tabique vidriado sobre antepecho (TV1)",
+          "row": 1040,
+          "coefficient": 0.037,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación Huincha de terminación Tabique vidriado sobre antepecho (TV1)",
+          "row": 1041,
+          "coefficient": 0.04,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación bloqueador de giro y pletina de amarre Tabique vidriado sobre antepecho (TV1)",
+          "row": 1042,
+          "coefficient": 0.05,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación panel vidriado Tabique vidriado sobre antepecho (TV1)",
+          "row": 1043,
+          "coefficient": 0.1,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        }
+      ]
+    },
+    {
+      "code": "5.1.6",
+      "row": 1047,
+      "description": "Tabique vidriado sobre antepecho con micropersiana interior (TV1MP)",
+      "validation": "documentary-reviewed",
+      "operations": [
+        {
+          "label": "Colocación Estructura Metalcon Tabique vidriado sobre antepecho con micropersiana interior (TV1mp)",
+          "row": 1057,
+          "coefficient": 0.228,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación Placas 1° Cara Tabique vidriado sobre antepecho con micropersiana interior (TV1mp)",
+          "row": 1058,
+          "coefficient": 0.122,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación malla fibra de vidrio más pasta e= 3mm 2° cara Tabique vidriado sobre antepecho con micropersiana interior (TV1mp)",
+          "row": 1059,
+          "coefficient": 0.01,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación Aislamiento Tabique vidriado sobre antepecho con micropersiana interior (TV1mp)",
+          "row": 1060,
+          "coefficient": 0.061,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación Placas 2° Cara Tabique vidriado sobre antepecho con micropersiana interior (TV1mp)",
+          "row": 1061,
+          "coefficient": 0.073,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación malla fibra de vidrio más pasta e= 3mm 2° cara Tabique vidriado sobre antepecho con micropersiana interior (TV1mp)",
+          "row": 1062,
+          "coefficient": 0.01,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación Huincha de terminación Tabique vidriado sobre antepecho con micropersiana interior (TV1mp)",
+          "row": 1063,
+          "coefficient": 0.076,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación bloqueador de giro y pletina de amarre Tabique vidriado sobre antepecho con micropersiana interior (TV1mp)",
+          "row": 1064,
+          "coefficient": 0.095,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación panel vidriado con micropersiana",
+          "row": 1065,
+          "coefficient": 0.1,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        }
+      ]
+    },
+    {
+      "code": "5.1.7",
+      "row": 1069,
+      "description": "Tabique vidriado de piso a cielo (TV2)",
+      "validation": "documentary-reviewed",
+      "operations": [
+        {
+          "label": "Colocación Estructura Metalcon Tabique vidriado de piso a cielo (TV2)",
+          "row": 1077,
+          "coefficient": 0.088,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación Placas 1° Cara Tabique vidriado de piso a cielo (TV2)",
+          "row": 1078,
+          "coefficient": 0.047,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación Aislamiento Tabique vidriado de piso a cielo (TV2)",
+          "row": 1079,
+          "coefficient": 0.029,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación Placas 2° Cara Tabique vidriado de piso a cielo (TV2)",
+          "row": 1080,
+          "coefficient": 0.028,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación Huincha de terminación Tabique vidriado de piso a cielo (TV2)",
+          "row": 1081,
+          "coefficient": 0.029,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación bloqueador de giro y pletina de amarre Tabique vidriado de piso a cielo (TV2)",
+          "row": 1082,
+          "coefficient": 0.037,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación panel vidriado",
+          "row": 1083,
+          "coefficient": 0.075,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        }
+      ]
+    },
+    {
+      "code": "5.1.8",
+      "row": 1087,
+      "description": "Tabique vidriado con ventana alta (TV3)",
+      "validation": "documentary-reviewed",
+      "operations": [
+        {
+          "label": "Colocación Estructura Metalcon Tabique vidriado con ventana alta (TV3)",
+          "row": 1095,
+          "coefficient": 0.088,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación Placas 1° Cara Tabique vidriado con ventana alta (TV3)",
+          "row": 1096,
+          "coefficient": 0.047,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación Aislamiento Tabique vidriado con ventana alta (TV3)",
+          "row": 1097,
+          "coefficient": 0.029,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación Placas 2° Cara Tabique vidriado con ventana alta (TV3)",
+          "row": 1098,
+          "coefficient": 0.028,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación Huincha de terminación Tabique vidriado con ventana alta (TV3)",
+          "row": 1099,
+          "coefficient": 0.029,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación bloqueador de giro y pletina de amarre Tabique vidriado con ventana alta (TV3)",
+          "row": 1100,
+          "coefficient": 0.037,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación panel vidriado",
+          "row": 1101,
+          "coefficient": 0.075,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        }
+      ]
+    },
+    {
+      "code": "5.1.9",
+      "row": 1105,
+      "description": "Tabique plomado (TX)",
+      "validation": "documentary-reviewed",
+      "operations": [
+        {
+          "label": "Colocación Estructura Metalcon Tabique opaco plomado (TX)",
+          "row": 1112,
+          "coefficient": 0.04,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación Placas 1° Cara Tabique opaco plomado (TX)",
+          "row": 1113,
+          "coefficient": 0.019,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación Aislamiento Tabique opaco plomado (TX)",
+          "row": 1114,
+          "coefficient": 0.01,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación Placas 2° Cara Tabique opaco plomado (TX)",
+          "row": 1115,
+          "coefficient": 0.012,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación Huincha de terminación Tabique opaco plomado (TX)",
+          "row": 1116,
+          "coefficient": 0.01,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación bloqueador de giro y pletina de amarre Tabique opaco plomado (TX)",
+          "row": 1117,
+          "coefficient": 0.005,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        }
+      ]
+    },
+    {
+      "code": "6.1.4.1",
+      "row": 1420,
+      "description": "Pavimento vinílico homogéneo acústico 3,7 MM",
+      "validation": "documentary-reviewed",
+      "operations": [
+        {
+          "label": "Instalacion autonivelante previo",
+          "row": 1423,
+          "coefficient": 0.025,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Instalacion pav vinílico homogéneo acústico 3,7 mm",
+          "row": 1424,
+          "coefficient": 0.033,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        }
+      ]
+    },
+    {
+      "code": "6.1.4.2",
+      "row": 1428,
+      "description": "Pavimento vinílico homogéneo antiestático 2 mm",
+      "validation": "documentary-reviewed",
+      "operations": [
+        {
+          "label": "Instalacion autonivelante previo",
+          "row": 1431,
+          "coefficient": 0.036,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Instalacion pav vinílico homogéneo antiestático 2 mm",
+          "row": 1432,
+          "coefficient": 0.049,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        }
+      ]
+    },
+    {
+      "code": "6.1.4.3",
+      "row": 1436,
+      "description": "Pavimento vinílico homogéneo 2 mm",
+      "validation": "documentary-reviewed",
+      "operations": [
+        {
+          "label": "Instalacion autonivelante previo",
+          "row": 1439,
+          "coefficient": 0.021,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Instalacion pav vinílico homogéneo 2 mm",
+          "row": 1440,
+          "coefficient": 0.023,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        }
+      ]
+    },
+    {
+      "code": "6.1.4.4",
+      "row": 1444,
+      "description": "Pavimento vinílico antideslizante R10 2 MM",
+      "validation": "documentary-reviewed",
+      "operations": [
+        {
+          "label": "Instalacion autonivelante previo",
+          "row": 1447,
+          "coefficient": 0.025,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Instalacion pav vinílico antideslizante r10 2 mm",
+          "row": 1448,
+          "coefficient": 0.034,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        }
+      ]
+    },
+    {
+      "code": "6.1.4.5",
+      "row": 1452,
+      "description": "Pavimento vinílico antideslizante clase 3 2,5 MM",
+      "validation": "documentary-reviewed",
+      "operations": [
+        {
+          "label": "Instalacion autonivelante previo",
+          "row": 1455,
+          "coefficient": 0.025,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Instalacion pav vinílico antideslizante clase 3 2,5 mm",
+          "row": 1456,
+          "coefficient": 0.034,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        }
+      ]
+    },
+    {
+      "code": "6.2.2",
+      "row": 1516,
+      "description": "Empaste para terminación de pintura",
+      "validation": "documentary-reviewed",
+      "operations": [
+        {
+          "label": "MO Pintura empaste",
+          "row": 1518,
+          "coefficient": 0.004,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        }
+      ]
+    },
+    {
+      "code": "6.2.3",
+      "row": 1522,
+      "description": "Porcelanato técnico",
+      "validation": "documentary-reviewed",
+      "operations": [
+        {
+          "label": "MO porcelanato técnico",
+          "row": 1524,
+          "coefficient": 0.07,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        }
+      ]
+    },
+    {
+      "code": "6.2.4",
+      "row": 1528,
+      "description": "Laminado de alta presión 8 mm",
+      "validation": "documentary-reviewed",
+      "operations": [
+        {
+          "label": "MO Panel laminado de alta presion",
+          "row": 1530,
+          "coefficient": 0.05,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        }
+      ]
+    },
+    {
+      "code": "6.3.2",
+      "row": 1567,
+      "description": "Cielo falso fijo de yeso-cartón recintos secos",
+      "validation": "documentary-reviewed",
+      "operations": [
+        {
+          "label": "Colocación perfil en tabiquería para apoyo de estructura",
+          "row": 1573,
+          "coefficient": 0.02,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación metalcon Omega 38x35x15x8x0.85¨ [35/OMA085] (0.98)",
+          "row": 1574,
+          "coefficient": 0.025,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación portante Cielo 40x18x10x0.5 (.38) y estructura antisísmica",
+          "row": 1575,
+          "coefficient": 0.01,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación placa yeso-cartón estándar ST",
+          "row": 1576,
+          "coefficient": 0.01,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación huincha de acabado",
+          "row": 1577,
+          "coefficient": 0.005,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        }
+      ]
+    },
+    {
+      "code": "6.3.3",
+      "row": 1581,
+      "description": "Cielo falso fijo de yeso-cartón recintos húmedos",
+      "validation": "documentary-reviewed",
+      "operations": [
+        {
+          "label": "Colocación perfil en tabiquería para apoyo de estructura",
+          "row": 1587,
+          "coefficient": 0.022,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación metalcon Omega 38x35x15x8x0.85¨ [35/OMA085] (0.98)",
+          "row": 1588,
+          "coefficient": 0.026,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación portante Cielo 40x18x10x0.5 (.38) y estructura antisísmica",
+          "row": 1589,
+          "coefficient": 0.011,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación placa yeso-cartón estándar RH",
+          "row": 1590,
+          "coefficient": 0.01,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación huincha de acabado",
+          "row": 1591,
+          "coefficient": 0.005,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        }
+      ]
+    },
+    {
+      "code": "6.3.4",
+      "row": 1595,
+      "description": "Cielo desmontable modular de yeso revestido en vinilo de 24\" y 48\"",
+      "validation": "documentary-reviewed",
+      "operations": [
+        {
+          "label": "Colocación estructura metálica soporte de placa",
+          "row": 1598,
+          "coefficient": 0.025,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Colocación cielo modular placa lavable 61x61",
+          "row": 1599,
+          "coefficient": 0.02,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        }
+      ]
+    },
+    {
+      "code": "6.4.1.1",
+      "row": 1666,
+      "description": "Asepsia baja en paramentos verticales",
+      "validation": "documentary-reviewed",
+      "operations": [
+        {
+          "label": "Mano de Obra Pintura Asepsia baja. Capa base.",
+          "row": 1670,
+          "coefficient": 0.002,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Mano de Obra Pintura Asepsia baja. Capa intermedia.",
+          "row": 1671,
+          "coefficient": 0.003,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Mano de Obra Pintura Asepsia baja. Capa de terminación.",
+          "row": 1672,
+          "coefficient": 0.002,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        }
+      ]
+    },
+    {
+      "code": "6.4.1.2",
+      "row": 1676,
+      "description": "Asepsia media en paramentos verticales",
+      "validation": "documentary-reviewed",
+      "operations": [
+        {
+          "label": "Mano de Obra Pintura Asepsia media Capa base.",
+          "row": 1680,
+          "coefficient": 0.003,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Mano de Obra Pintura Asepsia media Capa intermedia.",
+          "row": 1681,
+          "coefficient": 0.004,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Mano de Obra Pintura Asepsia media Capa de terminación.",
+          "row": 1682,
+          "coefficient": 0.002,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        }
+      ]
+    },
+    {
+      "code": "6.4.1.3",
+      "row": 1686,
+      "description": "Asepsia alta en paramentos verticales",
+      "validation": "documentary-reviewed",
+      "operations": [
+        {
+          "label": "Mano de Obra Pintura Asepsia alta Capa base.",
+          "row": 1690,
+          "coefficient": 0.003,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Mano de Obra Pintura Asepsia alta Capa intermedia.",
+          "row": 1691,
+          "coefficient": 0.005,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Mano de Obra Pintura Asepsia alta Capa de terminación.",
+          "row": 1692,
+          "coefficient": 0.004,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        }
+      ]
+    },
+    {
+      "code": "6.4.2.1",
+      "row": 1699,
+      "description": "Asepsia baja en cielos",
+      "validation": "documentary-reviewed",
+      "operations": [
+        {
+          "label": "Mano de Obra Pintura Asepsia baja cielo Capa base.",
+          "row": 1703,
+          "coefficient": 0.004,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Mano de Obra Pintura Asepsia baja cielo Capa intermedia.",
+          "row": 1704,
+          "coefficient": 0.004,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Mano de Obra Pintura Asepsia baja cielo Capa de terminación.",
+          "row": 1705,
+          "coefficient": 0.002,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        }
+      ]
+    },
+    {
+      "code": "6.4.2.2",
+      "row": 1709,
+      "description": "Asepsia media en cielos",
+      "validation": "documentary-reviewed",
+      "operations": [
+        {
+          "label": "Mano de Obra Pintura Asepsia media en cielo Capa base.",
+          "row": 1713,
+          "coefficient": 0.005,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Mano de Obra Pintura Asepsia media en cielo Capa intermedia.",
+          "row": 1714,
+          "coefficient": 0.004,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Mano de Obra Pintura Asepsia media en cielo Capa de terminación.",
+          "row": 1715,
+          "coefficient": 0.003,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        }
+      ]
+    },
+    {
+      "code": "6.4.2.3",
+      "row": 1719,
+      "description": "Asepsia alta en cielos",
+      "validation": "documentary-reviewed",
+      "operations": [
+        {
+          "label": "Mano de Obra Pintura Asepsia alta en cielo Capa base.",
+          "row": 1723,
+          "coefficient": 0.006,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Amno de Obra Pintura Asepsia alta en cielo Capa intermedia.",
+          "row": 1724,
+          "coefficient": 0.005,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        },
+        {
+          "label": "Mano de Obra Pintura Asepsia alta en cielo Capa de terminación.",
+          "row": 1725,
+          "coefficient": 0.003,
+          "unit": "Dia",
+          "status": "documentary-reviewed"
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Revisión documental por reglas contrastadas con las filas originales; no aprobación técnica de cuadrillas.",
+    "Todos los recursos de mano de obra usan Dia/dia sin composición verificada.",
+    "Importes monetarios comprobados a nivel recurso, no publicados en catálogo técnico.",
+    "El Excel original es la fuente reversible; cambiar index.json permite volver a otra importación conservada."
+  ]
+}

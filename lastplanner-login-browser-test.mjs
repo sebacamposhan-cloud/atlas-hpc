@@ -1,3 +1,4 @@
+import {enterPlanning} from './test-support/planning-browser.mjs';
 import assert from 'node:assert/strict';
 import {createAtlasServer} from './server/groq-server.mjs';
 import {cloudFixture,QA_ACTOR,tokenFor} from './test-support/lastplanner-cloud.mjs';
@@ -28,7 +29,7 @@ try{
   page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(15000);
   await page.goto(base+'/?nivel=N-1');await page.locator('#assistantOpen').waitFor();
   await page.locator('[data-module=work]:visible').first().click();await page.locator('[data-work-tab=lastplanner]').first().click();await page.locator('.lpCycleNav').waitFor();
-  await page.locator('[data-cycle=view][data-id=planificacion]').click();
+  await page.locator('[data-cycle=view][data-id=planificacion]').click();await enterPlanning(page);
   const create=()=>page.locator('.lpCycleActions [data-cycle=new]'),account=()=>page.locator('#nubeDialog'),activity=()=>page.locator('.lpCycleDialog');
   assert.equal(await page.evaluate(()=>localStorage.getItem('atlas-nube-sesion')),null);
   assert.match(await page.locator('.lpAccessNotice').innerText(),/Inicia sesión/);
