@@ -1,1 +1,4 @@
-{"format":"atlas-contornos-v1","nivel":"N02","unidad":"1 unidad del plano = 1,7639 cm","recintos":[]}
+{"format":"atlas-contornos-v1","nivel":"N02","unidad":"1 unidad del plano = 1,7639 cm","recintos":[
+{"id":"n02-a508:4.4.1.1.1-2","code":"4.4.1.1.1-2","parts":[{"polygon":[[3913.05,7763.97],[3913.05,7584.71],[3913.05,7401],[4333,7401],[4330.8,7239.1],[4620.49,7239.1],[4617.49,7821.47],[4516.94,7815.86],[4414.58,7809.71],[4206.97,7793.26],[4055.97,7778.97]],"holes":[]}],"area_m2":101.27,"antes":"Contorno vectorial del DWG","fecha":"2026-10-29T01:48:03.794Z"},
+{"id":"n02-a504:4.4.1.4.19-1","code":"4.4.1.4.19-1","parts":[{"polygon":[[2303.37,7093.77],[2303.37,7124.84],[2585.09,7124.31],[2823.65,7124.31],[2823.65,7093.77],[2567.13,7093.77]],"holes":[]}],"area_m2":4.97,"antes":"Superficie auxiliar de selección","fecha":"2026-10-29T01:51:00.668Z","rotuloFuera":true}
+]}

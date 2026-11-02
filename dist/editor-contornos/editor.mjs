@@ -1,10 +1,16 @@
-// Editor de contornos: herramienta interna para corregir a mano los contornos de los recintos sobre las líneas del DWG.
-// Pinzamientos como las polilíneas de AutoCAD, enganche (OSNAP), orto, dibujar y partir. Guarda dist/<piso>/contornos.json
-// a través de servidor.mjs; la app aplica ese archivo con geometry-authority.mjs. Ver LEEME.md.
-import {decodeRuntime} from '/repo/dist/runtime-loader.mjs';
-import {resolveFootprints} from '/repo/dist/geometry-authority.mjs';
+// Editor de contornos: corrige a mano los contornos de los recintos sobre las líneas del DWG. Pinzamientos como las
+// polilíneas de AutoCAD, enganche (OSNAP), orto, dibujar y partir. Publicado en Atlas (/editor-contornos/editor.html)
+// guarda cada recinto corregido en Nube con la cuenta del equipo (contornos-nube.mjs); en el PC, con
+// scripts/editor-contornos/servidor.mjs, escribe dist/<piso>/contornos.json. La app aplica ambos con geometry-authority.mjs.
+import {decodeRuntime} from '../runtime-loader.mjs';
+import {resolveFootprints} from '../geometry-authority.mjs';
+import {combinarContornos, guardarContornoNube, refrescarContornosNube} from '../contornos-nube.mjs';
+import {firmante, pedirSesion} from '../firma.mjs';
 import {aMetros, aUnidades, areaM2, areaAnillo, areaDeclarada, enPartes, enAnillo, dist, limpiar, errorAnillo, errorPartes, simplificar, crearIndice, agregarTramo, tramosCerca, enganchar, orto, partir} from './geometria.mjs';
-import {NIVELES, vacio, redondear, posicionPlano} from './archivo.mjs';
+import {NIVELES, vacio, redondear, posicionPlano, validar} from './archivo.mjs';
+// En el PC el servidor local responde modo.json y guarda el archivo; publicado en Atlas, se guarda en Nube.
+const MODO_LOCAL = !!(await fetch('modo.json', {cache: 'no-store'}).then(r => r.ok ? r.json() : null).catch(() => null))?.local;
+let enNube = new Map(); // código → corrección vigente al abrir el piso (para guardar solo lo que cambió)
 
 const $ = id => document.getElementById(id);
 const canvas = $('plano'), g = canvas.getContext('2d');
@@ -56,18 +62,23 @@ async function cargar(id) {
   $('cargando').hidden = false; $('cargando').textContent = 'Cargando ' + NIVELES[id].nombre + '…';
   try {
     const n = NIVELES[id];
-    runtime = decodeRuntime(await json('/repo/dist/' + n.datos + 'runtime.json'));
-    const archivo = await json('/repo/dist/' + n.datos + 'contornos.json', true) || vacio(id);
+    runtime = decodeRuntime(await json('../' + n.datos + 'runtime.json'));
+    const archivo = await json('../' + n.datos + 'contornos.json', true) || vacio(id);
     nivel = id; history.replaceState(null, '', '?nivel=' + encodeURIComponent(id));
     prepararRecintos(runtime.data, runtime.atlas);
-    corr = new Map(archivo.recintos.map(c => [c.id, c]));
+    // Publicado: lo corregido en Nube (por cualquier equipo) va sobre el archivo del piso.
+    if (!MODO_LOCAL) await refrescarContornosNube().catch(() => {});
+    const vigentes = MODO_LOCAL ? archivo.recintos : combinarContornos(archivo.recintos, id);
+    enNube = new Map(vigentes.map(c => [c.code, JSON.stringify(c)]));
+    corr = new Map(vigentes.map(c => [c.id, c]));
     base = resolveFootprints(runtime.atlas, rooms, aliases, runtime.selection, []);
     sel = null; puntos = []; deshacer = []; rehacer = []; sucio = false; firmaGuardada = firma(); imagenes.clear();
     recalcular();
     indiceDwg = crearIndice(48);
-    const marco = await json('/repo/data/' + n.dwg + '/marco.json', true), barreras = marco && await json('/repo/data/' + n.dwg + '/barreras.json', true);
-    if (barreras) { const E = marco.escala, X = x => (x - marco.ox) * E, Y = y => (marco.oy - y) * E; for (const [ax, ay, bx, by] of barreras) agregarTramo(indiceDwg, [X(ax), Y(ay)], [X(bx), Y(by)]); }
-    else avisar('Este equipo no tiene las líneas del DWG del piso (data/' + n.dwg + '/barreras.json): el enganche usa solo los contornos de los recintos.', 8000);
+    // Líneas del DWG publicadas (publicar-lineas.mjs): tramos planos [ax, ay, bx, by, …] en cm con el marco del piso.
+    const lineas = await json('barreras/' + n.dwg + '.json', true);
+    if (lineas?.tramos) { const {escala: E, ox, oy} = lineas.marco, t = lineas.tramos, X = x => (x - ox) * E, Y = y => (oy - y) * E; for (let i = 0; i < t.length; i += 4) agregarTramo(indiceDwg, [X(t[i]), Y(t[i + 1])], [X(t[i + 2]), Y(t[i + 3])]); }
+    else avisar('No se encontraron las líneas del DWG del piso: el enganche usa solo los contornos de los recintos.', 8000);
     encuadrar([runtime.map.origin[0], runtime.map.origin[1], runtime.map.origin[0] + runtime.map.width, runtime.map.origin[1] + runtime.map.height]);
     lista(); ficha(); botones();
   } catch (e) { avisar(e.message, 8000); } finally { $('cargando').hidden = true; dibujar(); }
@@ -128,7 +139,7 @@ const iguales = (a, b) => JSON.stringify(redondear(a)) === JSON.stringify(redond
 function registro(id, parts) {
   const r = porId.get(id), b = base.get(id), previo = corr.get(id);
   if (b && iguales(parts, b.rings)) return null; // volvió a su contorno original
-  return {id, code: r.code, parts: redondear(parts), area_m2: Math.round(areaM2(parts) * 100) / 100, antes: previo?.antes || origenDe(id), ...($('autor').value.trim() ? {autor: $('autor').value.trim()} : {}), fecha: new Date().toISOString(), ...(previo?.rotuloFuera ? {rotuloFuera: true} : {})};
+  return {id, code: r.code, parts: redondear(parts), area_m2: Math.round(areaM2(parts) * 100) / 100, antes: previo?.antes || origenDe(id), ...((MODO_LOCAL ? $('autor').value.trim() : firmante()) ? {autor: MODO_LOCAL ? $('autor').value.trim() : firmante()} : {}), fecha: new Date().toISOString(), ...(previo?.rotuloFuera ? {rotuloFuera: true} : {})};
 }
 function aplicar(cambios) { const paso = cambios.map(c => ({id: c.id, antes: corr.get(c.id) || null, despues: c.despues})); rehacer = []; deshacer.push(paso); if (deshacer.length > 300) deshacer.shift(); hacer(paso, 'despues'); }
 function hacer(paso, lado) { for (const c of paso) { if (c[lado]) corr.set(c.id, c[lado]); else corr.delete(c.id); } sucio = firma() !== firmaGuardada; recalcular(); lista(); ficha(); botones(); dibujar(); }
@@ -212,12 +223,29 @@ function simplificarSel() {
 }
 async function guardar() {
   const archivo = {...vacio(nivel), recintos: [...corr.values()]};
+  if (!MODO_LOCAL) return guardarEnNube(archivo);
   $('guardar').disabled = true;
   try {
     const res = await fetch('/guardar?nivel=' + encodeURIComponent(nivel), {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(archivo)}), j = await res.json();
     if (!res.ok) { $('listaErrores').innerHTML = (j.errores || ['Error desconocido.']).map(e => `<li>${esc(e)}</li>`).join(''); $('errores').showModal(); return; }
     sucio = false; firmaGuardada = firma(); avisar('Guardado: ' + j.recintos + ' recintos corregidos en ' + j.archivo + '. Para publicarlo hay que hacer commit de ese archivo.', 7000);
   } catch (e) { avisar('No se pudo guardar: ' + e.message + '. ¿Sigue abierto servidor.mjs?', 7000); } finally { $('guardar').disabled = false; dibujar(); }
+}
+// Publicado: valida como el servidor local y sube a Nube solo los recintos que cambiaron (o vuelven al original).
+async function guardarEnNube(archivo) {
+  if (!firmante()) { pedirSesion(); return avisar('Para guardar, entra en Nube desde Atlas (botón Nube del plano) con una cuenta editor y vuelve a esta pestaña.', 9000); }
+  const errores = validar(archivo, {nivel, rooms: runtime.data.rooms, atlas: runtime.atlas, map: runtime.map});
+  if (errores.length) { $('listaErrores').innerHTML = errores.map(e => `<li>${esc(e)}</li>`).join(''); $('errores').showModal(); return; }
+  const ahora = new Map(archivo.recintos.map(c => [c.code, c]));
+  const cambios = [...[...ahora].filter(([code, c]) => enNube.get(code) !== JSON.stringify(c)), ...[...enNube.keys()].filter(code => !ahora.has(code)).map(code => [code, null])];
+  if (!cambios.length) { sucio = false; firmaGuardada = firma(); return avisar('No hay cambios que guardar.'); }
+  $('guardar').disabled = true; let hechos = 0;
+  try {
+    for (const [code, c] of cambios) { await guardarContornoNube(nivel, code, c); hechos++; if (c) enNube.set(code, JSON.stringify(c)); else enNube.delete(code); }
+    sucio = false; firmaGuardada = firma(); avisar(`Guardado en Nube: ${hechos} recinto${hechos === 1 ? '' : 's'}. Ya se ve en el plano de Atlas de todos los equipos con sesión.`, 7000);
+  } catch (e) {
+    avisar((e.status === 409 ? 'Otro equipo cambió uno de estos recintos: vuelve a abrir el piso para ver su versión. ' : 'No se guardó todo: ') + `${hechos} de ${cambios.length} guardados. ${e.message}`, 9000);
+  } finally { $('guardar').disabled = false; dibujar(); }
 }
 
 // ---------- Dibujo ----------
@@ -232,13 +260,13 @@ function pintar() {
   const [x0, y0] = aPlano(0, 0), [x1, y1] = aPlano(W, H), m = runtime.map;
   // Plano de fondo: vista general y teselas del nivel de detalle adecuado; se aclara cuando se ven las líneas del DWG.
   g.save(); g.globalAlpha = verLineas && vista.s > .6 && indiceDwg?.tramos.length ? .4 : .85;
-  const ov = imagen('/repo/dist/' + m.overview); if (ov) { const s = aPantalla(m.origin); g.drawImage(ov, s[0], s[1], m.width * vista.s, m.height * vista.s); }
+  const ov = imagen('../' + m.overview); if (ov) { const s = aPantalla(m.origin); g.drawImage(ov, s[0], s[1], m.width * vista.s, m.height * vista.s); }
   const niveles = [...m.levels].sort((a, b) => a.scale - b.scale), nt = niveles.find(l => l.scale >= vista.s * dpr * .9) || niveles.at(-1);
   if (vista.s * dpr > niveles[0].scale * .6) {
     const span = m.tileSize / nt.scale, ruta = m.tilePath || 'map/';
     for (let ty = Math.max(0, Math.floor((y0 - m.origin[1]) / span)); ty <= Math.min(nt.rows - 1, Math.floor((y1 - m.origin[1]) / span)); ty++)
       for (let tx = Math.max(0, Math.floor((x0 - m.origin[0]) / span)); tx <= Math.min(nt.columns - 1, Math.floor((x1 - m.origin[0]) / span)); tx++) {
-        const t = imagen(`/repo/dist/${ruta}${nt.z}/${tx}_${ty}.webp`); if (!t) continue;
+        const t = imagen(`../${ruta}${nt.z}/${tx}_${ty}.webp`); if (!t) continue;
         const s = aPantalla([m.origin[0] + tx * span, m.origin[1] + ty * span]); g.drawImage(t, s[0], s[1], t.naturalWidth / nt.scale * vista.s, t.naturalHeight / nt.scale * vista.s);
       }
   }
@@ -368,6 +396,8 @@ $('osnap').onclick = () => { osnap = !osnap; botones(); }; $('orto').onclick = (
 $('simplificar').onclick = simplificarSel; $('original').onclick = () => { if (corr.has(sel)) aplicar([{id: sel, despues: null}]); };
 $('deshacer').onclick = deshacerPaso; $('rehacer').onclick = rehacerPaso; $('guardar').onclick = guardar;
 try { $('autor').value = localStorage.getItem('atlas-editor-autor') || ''; } catch {}
+// Publicado firma la cuenta de Nube del equipo: no se pide autor.
+if (!MODO_LOCAL) $('autor').hidden = true;
 $('autor').onchange = () => { try { localStorage.setItem('atlas-editor-autor', $('autor').value.trim()); } catch {} };
 $('nivel').innerHTML = Object.entries(NIVELES).map(([id, n]) => `<option value="${id}">${n.nombre}</option>`).join('');
 $('nivel').onchange = () => cargar($('nivel').value);

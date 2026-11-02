@@ -3,6 +3,24 @@ import {matchPma,pmaWarnings,pmaDifferences} from './pma-model.mjs';
 export const installation=['Sin registrar','No iniciado','En proceso','Instalado'];
 export const quality=['Sin revisar','Con observaciones','Conforme'];
 export const fields={PAV:'Pavimento',CIE:'Cielo',M1:'Muro norte',M2:'Muro oriente',M3:'Muro sur',M4:'Muro poniente'};
+// Muros como uno (las cuadrillas avanzan en los cuatro a la vez): la ficha y Control de obra muestran pavimento, cielo y
+// muros; los registros se siguen guardando por muro.
+export const CAMPOS={PAV:'Pavimento',CIE:'Cielo',M:'Muros'};
+export const esMuro=campo=>/^M\d$/.test(campo);
+export function combinarMuros(ts){const ins=ts.map(t=>t.installation),cal=ts.map(t=>t.quality);
+ const installation=ins.every(x=>x==='Sin registrar')?'Sin registrar':ins.every(x=>x==='Instalado')?'Instalado':ins.every(x=>x==='No iniciado'||x==='Sin registrar')?'No iniciado':'En proceso';
+ return {installation,quality:cal.includes('Con observaciones')?'Con observaciones':cal.every(x=>x==='Conforme')?'Conforme':'Sin revisar'};}
+// Terminación «Muros» de una fila: los muros que aplican, con sus códigos; estado desde las partidas (derivado) o combinando lo marcado.
+export function muroUnico(tasks,derivado=null){const aplican=tasks.filter(t=>esMuro(t.field)&&t.applicable);if(!aplican.length)return null;
+ const documented=aplican.every(t=>t.documented),estado=derivado||(documented?combinarMuros(aplican):{installation:'Sin registrar',quality:'Sin revisar'});
+ return {field:'M',name:'Muros',code:[...new Set(aplican.map(t=>t.code))].join(' / '),description:[...new Set(aplican.map(t=>t.description))].join(' / '),applicable:true,documented,asepsis:aplican[0].asepsis,
+  ...estado,missing:'',notes:'',stale:!derivado&&aplican.some(t=>t.stale),derivada:!!derivado,muros:aplican.map(t=>t.field)};}
+// Reporte con los cuatro muros en una sola terminación. derivar(room,'M'): estado desde las partidas de los cuatro muros.
+export function agruparMuros(report,derivar=null){
+ const rows=report.rows.map(r=>{const m=muroUnico(r.tasks,derivar?.(r.room,'M')||null),tasks=[...r.tasks.filter(t=>!esMuro(t.field)),...(m?[m]:[])];
+  return {...r,tasks,complete:tasks.length>0&&tasks.every(t=>t.documented&&t.installation==='Instalado'&&t.quality==='Conforme')};});
+ const tasks=rows.flatMap(r=>r.tasks),eligible=tasks.filter(t=>t.documented);
+ return {...report,rows,tasks:eligible,unknown:tasks.filter(t=>!t.documented).length,total:eligible.length,installed:eligible.filter(t=>t.installation==='Instalado').length,accepted:eligible.filter(t=>t.installation==='Instalado'&&t.quality==='Conforme').length,observed:eligible.filter(t=>t.quality==='Con observaciones').length,complete:rows.filter(r=>r.complete).length};}
 export const keyFor=(code,level='N-1')=>level+'|'+code.trim();
 export function tasksFor(model,room,level='N-1'){if(progressFloor(room.level)!==level)return [];const match=matchPma(model,room,level);if(match.state!=='matched')return [];return Object.entries(fields).map(([field,name])=>{const code=String(match.row[field]??'').trim();return {field,name,code,description:model.materials.get(code)||'Descripción pendiente',applicable:!['N/A','-'].includes(code),documented:!!code&&model.materials.has(code),asepsis:match.row.asepsis};});}
 export function validateRecord(r){if(!progressFloors[r?.level]||typeof r.code!=='string'||r.key!==keyFor(r.code,r.level)||!Number.isInteger(r.version)||r.version<1||!r.responsible?.trim()||!/^\d{4}-\d{2}-\d{2}$/.test(r.date)||!Number.isFinite(Date.parse(r.date))||new Date(r.date).toISOString().slice(0,10)!==r.date||!/^[a-f0-9]{64}$/.test(r.sourceSha)||typeof r.notes!=='string'||r.notes.length>10000||!r.fields||typeof r.at!=='string')throw Error('Registro de avance incompleto.');for(const [f,v] of Object.entries(r.fields)){if(!fields[f]||!installation.includes(v.installation)||!quality.includes(v.quality)||typeof v.code!=='string'||typeof v.missing!=='string'||typeof v.notes!=='string'||v.notes.length>5000||v.missing.length>5000||v.quality==='Conforme'&&v.installation!=='Instalado')throw Error('Revisa estado, condición y observaciones de '+(fields[f]||f));}return r;}

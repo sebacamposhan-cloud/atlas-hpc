@@ -1,6 +1,9 @@
 // User annotations reference existing rooms; source properties and geometry stay untouched.
 // Esquema 1: documento de marcado con un color. Esquema 2 (proyectos): estados con leyenda ordenados de menor a mayor avance,
 // un estado por recinto y cortes con fecha (fotografías del avance) para comparar períodos. Los documentos del esquema 1 siguen siendo válidos.
+// Esquema 3: levantamiento con columnas propias (levantamiento-model.mjs).
+import {validarLevantamiento} from './levantamiento-model.mjs';
+export const esLevantamiento = doc => doc?.schema === 3 && doc.tipo === 'levantamiento';
 const text = (value, limit) => typeof value === 'string' && value.trim().length > 0 && value.length <= limit;
 const color = value => /^#[a-f0-9]{6}$/i.test(value);
 export const MAX_ESTADOS = 8, MAX_CORTES = 120;
@@ -20,6 +23,7 @@ function validarEstados(estados) {
   return ids;
 }
 export function validateMarking(doc) {
+  if (esLevantamiento(doc)) return validarLevantamiento(doc);
   if (!doc || ![1, 2].includes(doc.schema) || doc.specialty !== 'architecture' || !text(doc.id, 100) || !text(doc.level, 30)) throw Error('Documento de Arquitectura inválido.');
   for (const [key, label, max] of [['name', 'Nombre del documento', 160], ['author', 'Quién lo realizó', 160], ['purpose', 'Para qué es el plano', 2000]]) {
     if (!text(doc[key], max)) throw Error(label + ': completa este campo obligatorio.');
@@ -57,7 +61,7 @@ export function newMarking(values, level, id, at = new Date().toISOString()) {
 }
 // Lleva un documento del esquema 1 al esquema 2 con un único estado «Marcado» de su color.
 export function upgradeMarking(doc) {
-  if (doc.schema === 2) return doc;
+  if (doc.schema !== 1) return doc;
   return validateMarking({...doc, schema: 2, estados: [{...PLANTILLAS.marcado[0], color: doc.color}], cortes: [], rooms: doc.rooms.map(r => ({...r, estado: 'marcado'}))});
 }
 const estadoInicial = doc => doc.schema === 2 ? doc.estados[0].id : undefined;
@@ -111,7 +115,9 @@ export function compareCuts(estados, antes, despues, area = () => null) {
   return {filas, porEstado, totales, nombre};
 }
 // Recintos a dibujar con su color: estados del proyecto o, en modo comparación, el tipo de cambio.
+// Un levantamiento ubica sus filas por código: los colores los entrega el módulo del levantamiento (marking.items()).
 export function markingItems(doc, comparacion = null) {
+  if (esLevantamiento(doc)) return [];
   if (comparacion) return comparacion.filas.map(f => ({id: f.id, color: CAMBIOS[f.cambio].color, number: null, opacity: f.cambio === 'igual' ? .18 : .45}));
   const colores = doc.schema === 2 ? new Map(doc.estados.map(e => [e.id, e.color])) : null;
   return doc.rooms.map(mark => ({id: mark.id, color: colores?.get(mark.estado) || doc.color, number: mark.number, opacity: .35}));

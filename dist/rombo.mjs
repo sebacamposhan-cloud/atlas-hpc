@@ -7,11 +7,11 @@
 // dibuja el panel de avance del recinto (bajo su nombre) y el bloque de protocolos previos de todas sus partidas.
 import {loadPma} from './pma.mjs';
 import {nivel} from './level.mjs';
-import {tasksFor, reportProgress, keyFor, fields, ESTADOS_PARTIDA, COLOR_PARTIDA, estadoPartida, actualizarPartida} from './room-progress-model.mjs';
+import {tasksFor, reportProgress, keyFor, fields, ESTADOS_PARTIDA, COLOR_PARTIDA, estadoPartida, actualizarPartida, esMuro, muroUnico} from './room-progress-model.mjs';
 import {readProgress, saveProgress} from './room-progress-store.mjs';
 import {progressFloors, progressFloor} from './progress-scope.mjs';
 import {cargarAvance, m2, unidad} from './avance.mjs';
-import {partidasDeTerminacion, estadoTerminacion, actualizarNodo, sembrarTerminacion, resumenRecinto, EJECUCION, REVISION} from './avance-model.mjs';
+import {partidasDeTerminacion, partidasDeMuros, estadoTerminacion, actualizarNodo, sembrarTerminacion, resumenRecinto, EJECUCION, REVISION} from './avance-model.mjs';
 import {guardarAvance} from './avance-store.mjs';
 import {firmante, exigirFirma, pedirSesion} from './firma.mjs';
 
@@ -23,23 +23,24 @@ const ZONAS = {
   CIE: {puntos: '95,105 205,105 205,150 95,150', texto: [150, 128], aviso: [183, 108]},
   PAV: {puntos: '95,150 205,150 205,195 95,195', texto: [150, 173], aviso: [183, 153]}
 };
-const NOMBRE_OBS = {PAV: 'Pavimento', CIE: 'Cielo', M1: 'Muro M1', M2: 'Muro M2', M3: 'Muro M3', M4: 'Muro M4'};
+const NOMBRE_OBS = {PAV: 'Pavimento', CIE: 'Cielo', M: 'Muros'}, MUROS = ['M1', 'M2', 'M3', 'M4'];
 const OSCUROS = new Set(['No iniciado', 'En proceso', 'Instalado · por revisar', 'Con observaciones', 'Instalado y conforme']);
 const hoy = () => new Intl.DateTimeFormat('en-CA', {timeZone: 'America/Santiago', year: 'numeric', month: '2-digit', day: '2-digit'}).format(new Date());
 const fecha = d => String(d || '').split('-').reverse().join('-');
 
-// Dibujo del rombo (SVG). partes: {campo: {codigo, estado, pendientes}}; elegido: campo seleccionado.
+// Dibujo del rombo (SVG). partes: {campo: {codigo, estado, pendientes}}; elegido: campo seleccionado ('M' = los cuatro muros).
+const elegidaEn = (elegido, campo) => elegido === campo || (elegido === 'M' && esMuro(campo));
 export function romboSVG(partes, elegido, esc = String, interactivo = true) {
   const parte = campo => {
     const p = partes[campo] || {codigo: '—', estado: 'Sin definición', pendientes: 0}, z = ZONAS[campo], oscuro = OSCUROS.has(p.estado), [x, y] = z.texto;
     const relleno = p.estado === 'No aplica' ? 'url(#romboNA)' : COLOR_PARTIDA[p.estado];
-    const attrs = interactivo ? ` data-rombo="${campo}" role="button" tabindex="0" aria-pressed="${elegido === campo}"` : '';
-    return `<g class="romboParte${elegido === campo ? ' romboElegida' : ''}"${attrs} aria-label="${esc(fields[campo])} ${esc(campo)} · ${esc(p.codigo)} · ${esc(p.estado)}${p.pendientes ? ` · ${p.pendientes} observaciones pendientes` : ''}"><title>${esc(fields[campo])} (${campo}) · ${esc(p.codigo)} · ${esc(p.estado)}</title>
+    const attrs = interactivo ? ` data-rombo="${campo}" role="button" tabindex="0" aria-pressed="${elegidaEn(elegido, campo)}"` : '';
+    return `<g class="romboParte${elegidaEn(elegido, campo) ? ' romboElegida' : ''}"${attrs} aria-label="${esc(fields[campo])} ${esc(campo)} · ${esc(p.codigo)} · ${esc(p.estado)}${p.pendientes ? ` · ${p.pendientes} observaciones pendientes` : ''}"><title>${esc(fields[campo])} (${campo}) · ${esc(p.codigo)} · ${esc(p.estado)}</title>
       <polygon points="${z.puntos}" fill="${relleno}"/><text x="${x}" y="${y}" class="${oscuro ? 'claro' : ''}">${esc(p.codigo)}</text><text x="${x}" y="${y + 15}" class="romboCampo${oscuro ? ' claro' : ''}">${campo}</text>
       ${p.pendientes ? `<g class="romboAviso"><rect x="${z.aviso[0]}" y="${z.aviso[1]}" width="20" height="18"/><text x="${z.aviso[0] + 10}" y="${z.aviso[1] + 10}">${p.pendientes}</text></g>` : ''}</g>`;
   };
   // La elegida se dibuja al final para que su contorno quede encima.
-  const orden = Object.keys(ZONAS).sort((a, b) => (a === elegido) - (b === elegido));
+  const orden = Object.keys(ZONAS).sort((a, b) => elegidaEn(elegido, a) - elegidaEn(elegido, b));
   return `<svg class="romboSVG" viewBox="0 0 300 300" role="group" aria-label="Rombo del recinto: toca una partida"><defs><pattern id="romboNA" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" fill="#fff"/><line x1="0" y1="0" x2="0" y2="8" stroke="#8c8c8c" stroke-width="2"/></pattern></defs>${orden.map(parte).join('')}</svg>`;
 }
 
@@ -61,19 +62,26 @@ export function createRombo(ctx) {
     if (!vigente()) return;
     const actual = snapshot.records.find(r => r.key === keyFor(room.code, nivel.id));
     const todas = model ? tasksFor(model, room, nivel.id) : [], fila = model ? reportProgress(model, [room], snapshot.records, nivel.id).rows[0] : null;
-    const partidasDe = campo => avance ? partidasDeTerminacion(avance.nodos, campo, avance.row) : [];
+    // Los muros van juntos ('M'): sus partidas sin repetir las comunes y un solo estado para los que aplican.
+    const partidasDe = campo => !avance ? [] : campo === 'M' ? partidasDeMuros(avance.nodos, avance.row) : partidasDeTerminacion(avance.nodos, campo, avance.row);
     // Lo marcado directo en el rombo; con partidas registradas, su estado calculado manda.
-    const marcada = campo => { const t = todas.find(t => t.field === campo); if (!t) return null; const r = fila?.tasks.find(x => x.field === campo); return {...t, ...(r || {installation: 'Sin registrar', quality: 'Sin revisar', stale: false})}; };
+    const marcadaUna = campo => { const t = todas.find(t => t.field === campo); if (!t) return null; const r = fila?.tasks.find(x => x.field === campo); return {...t, ...(r || {installation: 'Sin registrar', quality: 'Sin revisar', stale: false})}; };
+    const marcada = campo => campo === 'M' ? muroUnico(MUROS.map(marcadaUna).filter(Boolean)) : marcadaUna(campo);
     const tarea = campo => { const t = marcada(campo), d = t && estadoTerminacion(partidasDe(campo)); return d ? {...t, ...d, stale: false} : t; };
-    const codigo = campo => tarea(campo)?.code || room.finishes?.find(f => f.field === campo)?.code || '—';
-    const pendientes = campo => obs.filter(o => o.terminacion === campo && ['Abierta', 'En corrección', 'Corregida'].includes(o.estado));
-    const partes = Object.fromEntries(Object.keys(ZONAS).map(c => [c, {codigo: codigo(c), estado: todas.length ? estadoPartida(tarea(c)) : 'Sin definición', pendientes: pendientes(c).length}]));
+    const codigo = campo => marcadaUna(campo)?.code || room.finishes?.find(f => f.field === campo)?.code || '—';
+    const pendientes = campo => obs.filter(o => (campo === 'M' ? esMuro(o.terminacion) : o.terminacion === campo) && ['Abierta', 'En corrección', 'Corregida'].includes(o.estado));
+    // Cada muro conserva su código; los que aplican llevan el estado de «Muros» y el número rojo suma los cuatro (en el primero que aplica).
+    const estadoMuros = todas.length && tarea('M') ? estadoPartida(tarea('M')) : 'Sin definición', primerMuro = MUROS.find(c => marcadaUna(c)?.applicable);
+    const partes = Object.fromEntries(Object.keys(ZONAS).map(c => [c, esMuro(c)
+      ? {codigo: codigo(c), estado: !todas.length ? 'Sin definición' : marcadaUna(c)?.applicable ? estadoMuros : estadoPartida(marcadaUna(c)), pendientes: c === primerMuro ? pendientes('M').length : 0}
+      : {codigo: codigo(c), estado: todas.length ? estadoPartida(tarea(c)) : 'Sin definición', pendientes: pendientes(c).length}]));
     const avisos = [...(fila?.warnings || []), ...(actual && model && actual.sourceSha !== model.source.sha256 ? ['El avance guardado es de otra versión del PMA.'] : [])];
     const registrable = !!(model && todas.length);
-    const t = tarea(elegido), estado = partes[elegido].estado, aplica = registrable && t?.applicable && t?.documented;
+    const t = tarea(elegido), estado = elegido === 'M' ? estadoMuros : partes[elegido].estado, aplica = registrable && t?.applicable && t?.documented;
+    const codigoElegido = elegido === 'M' ? t?.code || '—' : partes[elegido].codigo, nombreElegido = elegido === 'M' ? 'Muros' : fields[elegido];
     const ps = aplica ? partidasDe(elegido) : [], conPartidas = ps.length > 0, directo = aplica && !conPartidas;
     const previa = conPartidas && !ps.some(p => p.registrada) ? marcada(elegido) : null, traspasar = previa && !previa.stale && previa.installation !== 'Sin registrar';
-    const lista = obs.filter(o => o.terminacion === elegido).sort((a, b) => b.actualizada.localeCompare(a.actualizada));
+    const lista = obs.filter(o => elegido === 'M' ? esMuro(o.terminacion) : o.terminacion === elegido).sort((a, b) => b.actualizada.localeCompare(a.actualizada));
     const boton = (attr, valor, actualV, extra = '') => `<button type="button" ${attr}="${esc(valor)}" aria-pressed="${valor === actualV}" ${extra}>${esc(valor)}</button>`;
     const cantidad = n => n.cantidad != null ? `${m2(n.m2Ejecutado)} de ${m2(n.cantidad)} ${esc(unidad(n.unidad))} ejecutados · <b>${m2(n.m2Pendiente)} ${esc(unidad(n.unidad))} pendientes</b>` : 'Sin superficie por recinto en el PMA: avance en %';
     const resumen = n => (n.ejecucion === 'En ejecución' && n.pctIndicado != null ? 'En ejecución · ' + n.pctIndicado + ' %' : n.ejecucion) + (n.revision === 'Sin revisar' ? '' : ' · ' + n.revision);
@@ -89,27 +97,25 @@ export function createRombo(ctx) {
       <div class="romboLeyenda">${ESTADOS_PARTIDA.filter(e => e !== 'Sin definición').map(e => `<span><i class="${e === 'No aplica' ? 'na' : ''}" style="background:${COLOR_PARTIDA[e]}"></i>${esc(e)}</span>`).join('')}<span><i class="obs"></i>Observaciones pendientes</span></div></div>
       ${registrable ? '' : `<p class="romboNota">${enPiso ? 'Este recinto no tiene correspondencia en el PMA: el rombo muestra los códigos, pero el avance no se puede registrar.' : 'El recinto no pertenece al piso activo.'}</p>`}
       ${avisos.map(w => `<p class="pmaWarning">${esc(w)}</p>`).join('')}
-      <section class="romboPartida" aria-live="polite"><div class="romboTitulo"><span class="romboChip" style="--c:${COLOR_PARTIDA[estado]}">${esc(estado)}</span><h4>${esc(fields[elegido])} · ${esc(elegido)} · ${esc(partes[elegido].codigo)}</h4></div>
-        <p class="romboDesc">${esc(t?.description || room.finishes?.find(f => f.field === elegido)?.description || 'Sin descripción en el PMA')}${t && elegido !== 'PAV' && t.asepsis ? ` · Asepsia ${esc(t.asepsis)}` : ''}${ctx.verCodigo && !['—', 'N/A', '-'].includes(partes[elegido].codigo) ? ` <button type="button" class="romboVerCodigo" data-rombo-ver-codigo>Ver en el plano los recintos con ${esc(elegido)} ${esc(partes[elegido].codigo)}</button>` : ''}</p>
+      <section class="romboPartida" aria-live="polite"><div class="romboTitulo"><span class="romboChip" style="--c:${COLOR_PARTIDA[estado]}">${esc(estado)}</span><h4>${esc(nombreElegido)} · ${elegido === 'M' ? '' : esc(elegido) + ' · '}${esc(codigoElegido)}</h4></div>
+        <p class="romboDesc">${esc(t?.description || room.finishes?.find(f => f.field === elegido)?.description || 'Sin descripción en el PMA')}${t && elegido !== 'PAV' && t.asepsis ? ` · Asepsia ${esc(t.asepsis)}` : ''}${ctx.verCodigo && !['—', 'N/A', '-'].includes(codigoElegido) ? ` <button type="button" class="romboVerCodigo" data-rombo-ver-codigo>Ver en el plano los recintos con ${elegido === 'M' ? 'muros' : esc(elegido)} ${esc(codigoElegido.split(' / ')[0])}</button>` : ''}</p>
         ${aplica && !firmante() ? '<p class="romboNota romboSesion">Entra en Nube con tu cuenta para marcar el avance. <button type="button" data-rombo-entrar>Entrar</button></p>' : ''}
         ${traspasar ? '<p class="romboNota">Marcada antes en el rombo: al marcar una partida, ese estado pasa a todas las de esta terminación.</p>' : ''}
         ${conPartidas ? `<ul class="romboPartidas">${ps.map(partida).join('')}</ul>`
         : directo ? `<div class="romboFila"><span>Ejecución</span><div class="romboBotones">${['No iniciado', 'En proceso', 'Instalado'].map(v => boton('data-rombo-inst', v, t.installation)).join('')}</div></div>
           <div class="romboFila"><span>Revisión</span><div class="romboBotones">${['Sin revisar', 'Con observaciones', 'Conforme'].map(v => boton('data-rombo-cal', v, t.quality, v === 'Conforme' && t.installation !== 'Instalado' ? 'disabled title="Primero márcala instalada"' : '')).join('')}</div></div>`
-        : registrable ? `<p class="romboNota">${t && !t.applicable ? 'No aplica según el PMA: fuera del cálculo de avance.' : 'Requiere definición documental en el PMA: fuera del porcentaje.'}</p>` : ''}
+        : registrable ? `<p class="romboNota">${(t && !t.applicable) || (elegido === 'M' && !t) ? 'No aplica según el PMA: fuera del cálculo de avance.' : 'Requiere definición documental en el PMA: fuera del porcentaje.'}</p>` : ''}
         <p class="romboMensaje" role="status">${esc(ultimo)}</p>
         <div class="romboObs"><div class="romboTitulo"><h4>Observaciones en ${esc(NOMBRE_OBS[elegido])} <small>${lista.length}</small></h4><button type="button" data-rombo-obs-nueva>+ Observación con foto</button></div>
-          ${lista.length ? `<ul class="romboObsLista">${lista.map(o => `<li><button type="button" data-rombo-obs="${esc(o.id)}"><b>${esc(o.descripcion)}</b><small>${esc(o.estado === 'Corregida' ? 'Por validar' : o.estado)} · ${esc(o.responsable || 'Sin responsable')}${o.plazo ? ' · plazo ' + esc(o.plazo.split('-').reverse().join('-')) : ''}${o.fotos.length ? ` · ${o.fotos.length} foto${o.fotos.length === 1 ? '' : 's'}` : ''}</small></button></li>`).join('')}</ul>` : '<p class="romboNota">Sin observaciones en este elemento.</p>'}</div></section>`;
+          ${lista.length ? `<ul class="romboObsLista">${lista.map(o => `<li><button type="button" data-rombo-obs="${esc(o.id)}"><b>${elegido === 'M' ? esc(o.terminacion) + ' · ' : ''}${esc(o.descripcion)}</b><small>${esc(o.estado === 'Corregida' ? 'Por validar' : o.estado)} · ${esc(o.responsable || 'Sin responsable')}${o.plazo ? ' · plazo ' + esc(o.plazo.split('-').reverse().join('-')) : ''}${o.fotos.length ? ` · ${o.fotos.length} foto${o.fotos.length === 1 ? '' : 's'}` : ''}</small></button></li>`).join('')}</ul>` : '<p class="romboNota">Sin observaciones en este elemento.</p>'}</div></section>`;
     // Panel de avance: % del recinto, barras de pavimento, cielo y muros con el color del rombo (tocar una abre esa
     // terminación) y conformes / protocolos liberados. Una terminación sin partidas muestra su estado, no un %.
-    const res = avance ? resumenRecinto(avance.nodos, avance.row) : null, muros = ['M1', 'M2', 'M3', 'M4'];
-    const muroDe = () => muros.find(c => partidasDe(c).length) || muros.find(c => tarea(c)?.applicable) || 'M1';
+    const res = avance ? resumenRecinto(avance.nodos, avance.row) : null;
     const barra = g => {
-      const campo = g.campo === 'M' ? muroDe() : g.campo, varios = g.campo === 'M' && new Set(muros.map(c => partes[c].estado).filter(e => e !== 'No aplica')).size > 1;
-      const e = g.estado ? estadoPartida({applicable: true, documented: true, ...g.estado}) : varios && !g.partidas.length ? 'Varía por muro' : partes[campo].estado;
+      const tt = todas.length ? tarea(g.campo) : null, e = g.estado ? estadoPartida({applicable: true, documented: true, ...g.estado}) : tt ? estadoPartida(tt) : 'No aplica';
       // Con partidas, su %; si aún no tienen registro pero la terminación se marcó antes directo, ese estado.
       const conPct = g.partidas.length && (g.estado || e === 'Sin registrar');
-      return `<button type="button" class="arFila" data-ar-campo="${campo}"><span>${esc(g.nombre)}</span><span class="arBarra"><i style="width:${conPct ? Math.round(g.pct) : 0}%;background:${COLOR_PARTIDA[e] || '#fff'}"></i></span><b>${esc(conPct ? Math.round(g.pct) + ' %' : e)}</b></button>`;
+      return `<button type="button" class="arFila" data-ar-campo="${g.campo}"><span>${esc(g.nombre)}</span><span class="arBarra"><i style="width:${conPct ? Math.round(g.pct) : 0}%;background:${COLOR_PARTIDA[e] || '#fff'}"></i></span><b>${esc(conPct ? Math.round(g.pct) + ' %' : e)}</b></button>`;
     };
     if (panel) {
       panel.innerHTML = res?.partidas ? `<div class="arCabecera"><span>Avance del recinto</span><b>${Math.round(res.pct)} %</b></div>${res.grupos.map(barra).join('')}
@@ -127,9 +133,12 @@ export function createRombo(ctx) {
     const volver = () => ficha(root, room, {alGuardar, panel, previos});
     const elegir = campo => { elegido = campo; volver(); };
     panel?.querySelectorAll('[data-ar-campo]').forEach(b => b.onclick = async () => { elegido = b.dataset.arCampo; await volver(); root.querySelector('.romboPartida')?.scrollIntoView({block: 'start', behavior: 'smooth'}); });
-    root.querySelectorAll('[data-rombo]').forEach(g => { g.addEventListener('click', () => elegir(g.dataset.rombo)); g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); elegir(g.dataset.rombo); } }); });
-    root.querySelector('[data-rombo-obs-nueva]').onclick = () => ctx.nuevaObservacion(room, elegido, volver);
-    root.querySelector('[data-rombo-ver-codigo]')?.addEventListener('click', () => ctx.verCodigo(elegido, partes[elegido].codigo));
+    // Tocar cualquier muro elige los cuatro.
+    const campoDe = g => esMuro(g.dataset.rombo) ? 'M' : g.dataset.rombo;
+    root.querySelectorAll('[data-rombo]').forEach(g => { g.addEventListener('click', () => elegir(campoDe(g))); g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); elegir(campoDe(g)); } }); });
+    // Una observación en muros se registra en un muro concreto (se elige en el formulario; parte en el primero que aplica).
+    root.querySelector('[data-rombo-obs-nueva]').onclick = () => ctx.nuevaObservacion(room, elegido === 'M' ? primerMuro || 'M1' : elegido, volver);
+    root.querySelector('[data-rombo-ver-codigo]')?.addEventListener('click', () => ctx.verCodigo(elegido === 'M' ? primerMuro || 'M1' : elegido, codigoElegido.split(' / ')[0]));
     root.querySelector('[data-rombo-entrar]')?.addEventListener('click', () => pedirSesion());
     root.querySelectorAll('[data-rombo-obs]').forEach(b => b.onclick = () => ctx.abrirObservacion(b.dataset.romboObs, volver));
     // Cada toque guarda al instante; mientras se guarda, la ficha no acepta otro toque.
@@ -150,10 +159,13 @@ export function createRombo(ctx) {
     const sinCambio = b => b.getAttribute('aria-pressed') === 'true';
     previos?.querySelectorAll('[data-prot]').forEach(b => b.onclick = () => { if (sinCambio(b)) return; const [id, estado] = b.dataset.prot.split('|'); guardarNodo(id, {estado}, () => previos.querySelector('.previosMensaje')); });
     if (!aplica) return;
+    // Sin partidas, «Muros» marca a la vez todos los muros que aplican (un solo registro nuevo del recinto).
     const guardarDirecto = cambio => registrar(async firma => {
-      const valor = actualizarPartida(model, room, nivel.id, actual, elegido, cambio, {responsible: firma, date: hoy(), sourceReviewed: false});
+      const campos = elegido === 'M' ? t.muros.filter(c => marcadaUna(c)?.documented) : [elegido];
+      let valor = actual; for (const c of campos) valor = actualizarPartida(model, room, nivel.id, valor, c, cambio, {responsible: firma, date: hoy(), sourceReviewed: false});
+      valor = {...valor, version: (actual?.version || 0) + 1};
       await saveProgress(valor, actual?.version || 0);
-      return `${fields[elegido]}: ${estadoPartida({...t, ...valor.fields[elegido]})}.`;
+      return `${nombreElegido}: ${estadoPartida({...t, ...valor.fields[campos[0]]})}.`;
     });
     const idDe = el => el.closest('[data-partida]').dataset.partida;
     root.querySelectorAll('[data-p-ejec]').forEach(b => b.onclick = () => { if (!sinCambio(b)) guardarNodo(idDe(b), {ejecucion: b.dataset.pEjec}); });

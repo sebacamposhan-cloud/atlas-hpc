@@ -37,7 +37,7 @@ dialog{border:1px solid var(--line);border-radius:10px;max-width:640px}dialog ul
 #cargando{position:absolute;inset:0;display:grid;place-items:center;background:#fbfcfdcc;font-size:14px}
 </style>
 <header>
-  <h1>Editor de contornos <small>· herramienta interna</small></h1>
+  <h1>Editor de contornos <small>· Atlas · guarda en Nube</small></h1>
   <div class="grupo"><select id="nivel" aria-label="Piso"></select></div>
   <div class="grupo" role="group" aria-label="Modo">
     <button id="modoEditar" aria-pressed="true" title="Mover, agregar y quitar vértices (E)">Editar<kbd>E</kbd></button>
@@ -94,5 +94,5 @@ dialog{border:1px solid var(--line);border-radius:10px;max-width:640px}dialog ul
 </main>
 <footer id="estado"></footer>
 <dialog id="errores"><h3>No se guardó</h3><ul id="listaErrores"></ul><form method="dialog"><button>Cerrar</button></form></dialog>
-<script type="module" src="/tool/editor.mjs"></script>
+<script type="module" src="editor.mjs"></script>
 </html>

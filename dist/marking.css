@@ -84,6 +84,46 @@ body.markingOpen .toolbar, body.markingOpen main > footer { right: 332px; }
 #markingForm .estadosLista input[name=estadoNombre] { flex: 1; min-width: 0; font-size: 16px; }
 .estadosLista button { min-width: 36px; min-height: 36px; padding: 0; }
 #markingForm .colorUnico[hidden] { display: none; }
+/* Levantamiento: vista del plano, ficha del recinto con una botonera por columna, lista del piso, tabla y editor de columnas. */
+.markingNuevo { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.markingImportar { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; border: 1px solid var(--g-marca, #1b2a56); padding: 8px 10px; cursor: pointer; }
+.markingImportar input { max-width: 190px; font-size: 11px; }
+.markingTipos { display: grid; gap: 10px; margin-top: 12px; }
+.markingTipos button { text-align: left; white-space: normal; padding: 12px; display: grid; gap: 4px; }
+.markingTipos span { font-size: 12px; font-weight: 400; }
+.levVista { display: grid; gap: 4px; font-size: 11px; font-weight: 700; margin: 10px 0 4px; }
+.levVista select { font-size: 14px; width: 100%; }
+.levFicha { border: 1px solid var(--g-marca, #1b2a56); border-top: 4px solid var(--g-marca, #1b2a56); padding: 8px; margin: 10px 0; display: grid; gap: 8px; }
+.levFicha h3 { margin: 0; font-size: 13px; color: #000; }
+.levCampo { display: grid; gap: 4px; font-size: 11px; font-weight: 700; color: #000; }
+.levCampo small { font-weight: 400; }
+.levCampo input { font-size: 14px; width: 100%; box-sizing: border-box; }
+.levOpciones { display: flex; flex-wrap: wrap; gap: 4px; }
+.levOpciones button { min-height: 36px; font-size: 12px; padding: 4px 8px; border-left: 6px solid var(--c); white-space: normal; }
+.levOpciones button[aria-pressed="true"] { background: var(--c) !important; color: #fff !important; border-color: var(--c); }
+.levOpciones button:disabled[aria-pressed="true"] { opacity: 1; }
+.levQuitar { justify-self: start; font-size: 11px; }
+.levFilas { list-style: none; padding: 0; margin: 0; }
+.levFilas li { border-bottom: 1px solid var(--line); }
+.levFilas li.focused { background: #f0f0f0; }
+.levFilas button { width: 100%; border: 0; text-align: left; white-space: normal; padding: 8px 2px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px; align-items: center; }
+.levFilas b { font-size: 12px; } .levFilas span:not(.levChip) { grid-column: 1; color: var(--muted); font-size: 10px; }
+.levFilas .levChip { grid-column: 2; grid-row: 1 / span 2; }
+.levChip { display: inline-block; font-size: 10px; font-weight: 700; border: 1px solid #000; border-left: 8px solid var(--c); padding: 2px 6px; background: #fff; color: #000; white-space: nowrap; }
+.levChip.vacio { border-left-color: #fff; color: #595959; }
+.levTablaScroll { max-height: 64vh; }
+.levTabla td small { font-size: 9px; color: #595959; }
+.levColumnas { list-style: none; padding: 0; margin: 0 0 8px; display: grid; gap: 10px; }
+.levColumnas > li { border: 1px solid var(--line); padding: 8px; display: grid; gap: 6px; }
+.levColCab { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+#markingForm .levColCab input[name=nombre] { flex: 1 1 160px; width: auto; font-size: 14px; }
+.levColCab select { font-size: 13px; }
+.levColCab button, .levOps button { min-width: 34px; min-height: 34px; padding: 0 6px; }
+.levOps { list-style: none; padding: 0 0 0 10px; margin: 0; display: grid; gap: 4px; }
+.levOps li { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 11px; }
+.levOps input[type=color] { width: 36px; height: 30px; padding: 1px; }
+#markingForm .levOps input[name=op] { flex: 1 1 120px; width: auto; font-size: 13px; }
+.levOps label { display: inline-flex; gap: 3px; align-items: center; font-weight: 400; }
 @media(max-width:700px) {
   #markingPanel {
     top: auto; width: 100%; height: clamp(170px,33dvh,260px); border-left: 0; border-top: 1px solid var(--line);
