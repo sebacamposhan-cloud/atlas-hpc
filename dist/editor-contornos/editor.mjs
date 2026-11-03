@@ -233,7 +233,7 @@ async function guardar() {
 }
 // Publicado: valida como el servidor local y sube a Nube solo los recintos que cambiaron (o vuelven al original).
 async function guardarEnNube(archivo) {
-  if (!firmante()) { pedirSesion(); return avisar('Para guardar, entra en Nube desde Atlas (botón Nube del plano) con una cuenta editor y vuelve a esta pestaña.', 9000); }
+  if (!firmante()) { pedirSesion(); return avisar('Para guardar, inicia sesión en Atlas con una cuenta editor y vuelve a esta pestaña.', 9000); }
   const errores = validar(archivo, {nivel, rooms: runtime.data.rooms, atlas: runtime.atlas, map: runtime.map});
   if (errores.length) { $('listaErrores').innerHTML = errores.map(e => `<li>${esc(e)}</li>`).join(''); $('errores').showModal(); return; }
   const ahora = new Map(archivo.recintos.map(c => [c.code, c]));

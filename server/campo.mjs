@@ -6,7 +6,10 @@ const BUCKET = 'atlas-campo', MAX_JSON = 2500000, MAX_FOTO = 5242880, PAGINA = 5
 const TIPOS = ['proyecto', 'observacion', 'contorno'];
 const fallo = (status, message) => Object.assign(Error(message), {status});
 
-export function createCampo(env, fetchImpl = fetch) {
+const INCORRECTOS = 'Usuario o contraseña incorrectos.';
+
+// sesiones (server/sesion.mjs) emite la cookie de Atlas al entrar y al renovar, y la borra al salir.
+export function createCampo(env, fetchImpl = fetch, sesiones = null) {
   const base = String(env.SUPABASE_URL || '').replace(/\/$/, ''), key = env.SUPABASE_ANON_KEY;
   const configurada = /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(base) && !!key;
   const intentos = new Map();
@@ -38,31 +41,52 @@ export function createCampo(env, fetchImpl = fetch) {
         const meta = data.user.user_metadata || {}, nombre = String(meta.nombre || meta.full_name || meta.name || '').trim().slice(0, 120);
         return {token: data.access_token, refresh: data.refresh_token, expiraEn: Number(data.expires_in) || 3600, user: {username: data.user.email, role, ...(nombre ? {nombre} : {})}};
       };
-      const sinPermiso = 'Esta cuenta no tiene acceso a proyectos y observaciones. Pide que le asignen campo_role en Supabase.';
+      const sinPermiso = 'Tu cuenta no tiene acceso a Atlas. Pide a la administración que te asigne un rol.';
+      const recordar = b => b.recordar !== false;
 
+      // Entrada a Atlas con usuario o correo. El usuario (app_metadata.usuario, solo lo cambia un administrador) se
+      // traduce al correo de la cuenta con supabase/login-usuario.sql. Usuario inexistente y clave errónea responden igual.
       if (url.pathname === '/api/campo/login' && req.method === 'POST') {
-        const now = Date.now(); for (const [ip, v] of intentos) if (v.until < now) intentos.delete(ip);
-        const ip = req.socket.remoteAddress, limite = intentos.get(ip) || {n: 0, until: now + 900000};
-        if (limite.n >= 10) return send(429, {error: 'Demasiados intentos. Reintenta en 15 minutos.'});
-        limite.n++; intentos.set(ip, limite);
         const b = await json();
-        if (typeof b.username !== 'string' || typeof b.password !== 'string' || !b.username || b.username.length > 254 || b.password.length > 1024) return send(400, {error: 'Credenciales inválidas.'});
-        const r = await call('/auth/v1/token?grant_type=password', null, {body: {email: b.username, password: b.password}});
-        if (!r.ok) return send(401, {error: 'Correo o contraseña incorrectos.'});
+        if (typeof b.username !== 'string' || typeof b.password !== 'string' || !b.username.trim() || b.username.length > 254 || !b.password || b.password.length > 1024) return send(400, {error: 'Escribe tu usuario o correo y tu contraseña.'});
+        const nombre = b.username.trim().toLowerCase();
+        // Detrás del proxy de Render todos llegan con la misma IP: el límite se cuenta por IP y usuario.
+        const now = Date.now(); for (const [k, v] of intentos) if (v.until < now) intentos.delete(k);
+        const clave = req.socket.remoteAddress + '|' + nombre, limite = intentos.get(clave) || {n: 0, until: now + 900000};
+        if (limite.n >= 10) return send(429, {error: 'Demasiados intentos. Reintenta en 15 minutos.'});
+        limite.n++; intentos.set(clave, limite);
+        let email = nombre;
+        if (!nombre.includes('@')) {
+          const u = await call('/rest/v1/rpc/atlas_correo_de_usuario', null, {body: {p_usuario: nombre}});
+          if (!u.ok) return send(503, {error: 'El ingreso con usuario aún no está habilitado (falta ejecutar supabase/login-usuario.sql). Entra con tu correo.'});
+          email = typeof u.data === 'string' ? u.data : '';
+        }
+        if (!email) return send(401, {error: INCORRECTOS});
+        const r = await call('/auth/v1/token?grant_type=password', null, {body: {email, password: b.password}});
+        if (r.status >= 500) return send(503, {error: 'No se pudo conectar con el servicio de cuentas. Reintenta en un momento.'});
+        if (!r.ok) return send(401, {error: INCORRECTOS});
         const s = sesion(r.data); if (!s) return send(403, {error: sinPermiso});
-        intentos.delete(ip);
-        return send(200, s);
+        intentos.delete(clave);
+        sesiones?.emitir(req, res, {usuario: s.user.username, rol: s.user.role, recordar: recordar(b)});
+        return send(200, {...s, recordar: recordar(b)});
       }
       if (url.pathname === '/api/campo/refresh' && req.method === 'POST') {
         const b = await json();
         if (typeof b.refresh !== 'string' || !b.refresh || b.refresh.length > 4096) return send(400, {error: 'Sesión inválida.'});
         const r = await call('/auth/v1/token?grant_type=refresh_token', null, {body: {refresh_token: b.refresh}});
         if (!r.ok) return send(401, {error: 'Tu sesión terminó. Vuelve a entrar.'});
-        const s = sesion(r.data); return s ? send(200, s) : send(403, {error: sinPermiso});
+        const s = sesion(r.data); if (!s) return send(403, {error: sinPermiso});
+        sesiones?.emitir(req, res, {usuario: s.user.username, rol: s.user.role, recordar: recordar(b)});
+        return send(200, {...s, recordar: recordar(b)});
       }
       const token = req.headers['x-campo-session'];
-      if (typeof token !== 'string' || !token || token.length > 8192) return send(401, {error: 'Entra con tu cuenta para usar la nube.'});
-      if (url.pathname === '/api/campo/logout' && req.method === 'POST') { await call('/auth/v1/logout', token, {method: 'POST', body: {}}); return send(200, {ok: true}); }
+      const conToken = typeof token === 'string' && !!token && token.length <= 8192;
+      if (url.pathname === '/api/campo/logout' && req.method === 'POST') {
+        sesiones?.borrar(req, res);
+        if (conToken) await call('/auth/v1/logout', token, {method: 'POST', body: {}}).catch(() => {});
+        return send(200, {ok: true});
+      }
+      if (!conToken) return send(401, {error: 'Tu sesión terminó. Vuelve a entrar.'});
       if (url.pathname === '/api/campo' && req.method === 'GET') {
         const desde = url.searchParams.get('desde'), tipo = url.searchParams.get('tipo');
         if (desde && !DESDE.test(desde)) return send(400, {error: 'Fecha inválida.'});

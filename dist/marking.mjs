@@ -149,7 +149,7 @@ export function createMarking(ctx) {
         <div class="markingNuevo"><button id="newMarking" class="primary">+ Nuevo proyecto</button><label class="markingImportar">Importar planilla (Excel o CSV)<input id="levImportar" type="file" accept=".xlsx,.xls,.csv,.txt"></label></div>
         <div class="markingLibrary">${docs.map(doc => `<button data-open-marking="${esc(doc.id)}"><b>${esc(doc.name)}</b><span>${esLevantamiento(doc) ? `Levantamiento · ${doc.filas.length} recintos · ${doc.columnas.length} columnas` : `${esc(doc.author)} · ${doc.rooms.length} recintos${doc.cortes?.length ? ` · ${doc.cortes.length} cortes` : ''}`}</span><small>${esc(doc.purpose)}</small></button>`).join('') || '<p>Aún no hay proyectos para este piso.</p>'}</div>
         <button id="markingBackupAll" ${docs.length ? '' : 'disabled'}>Respaldar proyectos de este piso</button><label>Restaurar respaldo JSON<input id="markingRestore" type="file" accept=".json,application/json"></label>
-        <p>Se guarda en este equipo. Con la sesión de «Nube» iniciada se sincroniza con los demás equipos; sin ella, usa el respaldo.</p>`);
+        <p>Se guarda en este equipo. Se sincroniza con los demás equipos con tu sesión de Atlas; el respaldo queda como copia adicional.</p>`);
       dialog.querySelector('#newMarking').onclick = () => tipoNuevo();
       dialog.querySelector('#levImportar').onchange = event => { const file = event.target.files[0]; if (file) lev.importar(file); };
       dialog.querySelector('#markingBackupAll').onclick = () => download(docs);

@@ -17,7 +17,7 @@ const finite=v=>typeof v==='number'&&Number.isFinite(v)&&v>=0;
 export const isoToday=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 export const canonical=v=>JSON.stringify(v===undefined?null:Array.isArray(v)?v.map(x=>JSON.parse(canonical(x))):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().filter(k=>v[k]!==undefined).map(k=>[k,JSON.parse(canonical(v[k]))])):v);
 export function allowed(actor,permission){return !!actor?.id&&actor.role==='editor'&&(actor.permissions==null||actor.permissions.includes(permission));}
-export function requirePermission(actor,permission){if(!allowed(actor,permission))fail('Tu sesión no tiene permiso para '+(PERMISSION_LABELS[permission]||'realizar esta operación')+'. Entra con una cuenta autorizada en Nube.');}
+export function requirePermission(actor,permission){if(!allowed(actor,permission))fail('Tu sesión no tiene permiso para '+(PERMISSION_LABELS[permission]||'realizar esta operación')+'. Pide a la administración que te asigne ese permiso.');}
 const audit=(actor,operation,details={},at=now())=>({id:id(),at,autor:actor.email,actor:actor.id,operacion:operation,detalle:operation,...copy(details)});
 export function changed(previous,next,actor,operation,details={},at=now()){
  return {...copy(next),version:(previous?.version||0)+1,actualizada:at,autor:previous?.autor||actor.email,creada:previous?.creada||at,historial:[...(previous?.historial||[]),audit(actor,operation,details,at)]};

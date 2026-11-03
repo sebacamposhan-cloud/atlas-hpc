@@ -1,7 +1,7 @@
 // Almacenamiento local de observaciones en terreno: IndexedDB «atlas-observaciones» con observaciones, fotos e historial.
 // Guardado atómico con versión esperada (no se sobrescribe lo guardado en otra pestaña) e historial que solo se agrega.
 // Las fotos se guardan como bytes (ArrayBuffer), que IndexedDB conserva de forma fiable también en iPhone.
-// Con la sesión de «Nube» iniciada se sincronizan con los demás equipos (nube.mjs); el respaldo JSON incluye las fotos.
+// Con la sesión de Atlas iniciada se sincronizan con los demás equipos (nube.mjs); el respaldo JSON incluye las fotos.
 import {validarObservacion, RESPALDO} from './observaciones-model.mjs';
 
 const TABLAS = ['observaciones', 'fotos', 'historial'];

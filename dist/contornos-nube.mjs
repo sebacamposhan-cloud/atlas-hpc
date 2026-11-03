@@ -17,7 +17,7 @@ export function combinarContornos(archivo, nivel) {
 }
 
 async function pedir(metodo, ruta, cuerpo) {
-  const s = sesion(); if (!s?.token) { const e = Error('Entra en Nube con tu cuenta para guardar contornos.'); e.status = 401; throw e; }
+  const s = sesion(); if (!s?.token) { const e = Error('Inicia sesión en Atlas para guardar contornos.'); e.status = 401; throw e; }
   const r = await fetch(ruta, {method: metodo, cache: 'no-store', headers: {'x-campo-session': s.token, ...(cuerpo ? {'Content-Type': 'application/json'} : {})}, ...(cuerpo ? {body: JSON.stringify(cuerpo)} : {})});
   const datos = await r.json().catch(() => ({}));
   if (!r.ok) { const e = Error(datos.error || 'No se pudo conectar con la nube.'); e.status = r.status; e.data = datos; throw e; }

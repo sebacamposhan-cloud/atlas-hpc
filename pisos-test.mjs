@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import {createAtlasServer} from './server/groq-server.mjs';
+import {cookieDeSesion} from './server/sesion.mjs';
 import {decodeRuntime} from './dist/runtime-loader.mjs';
 
 // Cada piso de pisos.js debe traer datos completos en el formato de Atlas.
@@ -57,14 +58,14 @@ for (const core of ['/pisos.js', '/level.mjs']) assert(offline.files.some(f => f
 // El semáforo de liberación se archivó en archivo/semaforo-liberacion/ (28-10-2026): no se publica ni se guarda sin conexión.
 assert(!offline.files.some(f => f.url === '/liberacion.mjs' || f.url.startsWith('/liberacion/')), 'el semáforo de liberación no debe estar en el paquete sin conexión');
 for (const piso of pisos.filter(p => p.datos)) assert(offline.files.some(f => f.url === '/' + piso.datos + 'runtime.json'), piso.id + ': sus datos deben poder guardarse sin conexión');
-assert(!offline.files.some(f => f.url !== '/index.html' && f.url.endsWith('.html')), 'el service worker solo guarda la portada como HTML');
+assert(!offline.files.some(f => !['/index.html', '/login.html'].includes(f.url) && f.url.endsWith('.html')), 'el service worker solo guarda la portada y el inicio de sesión como HTML');
 
-const server = await createAtlasServer({env: {ATLAS_ACCESS_PASSWORD: 'isolated-test-password'}});
+const server = await createAtlasServer({env: {ATLAS_SESSION_SECRET: 'isolated-session-secret-0123456789abcdef'}});
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const base = 'http://127.0.0.1:' + server.address().port;
-const headers = {Authorization: 'Basic ' + Buffer.from('atlas:isolated-test-password').toString('base64')};
+const headers = {Cookie:'atlas_sesion='+cookieDeSesion('isolated-session-secret-0123456789abcdef',{usuario:'qa@hpc.test',rol:'editor'})};
 try {
-  assert.equal((await fetch(base + '/?nivel=N02')).status, 401, 'debe pedir contraseña');
+  assert.equal((await fetch(base + '/?nivel=N02')).status, 401, 'debe pedir inicio de sesión');
   const portada = await fetch(base + '/?nivel=N02', {headers});
   assert.equal(portada.status, 200);
   assert((await portada.text()).includes('id="floorExplorer"'), 'todos los pisos usan la misma portada');

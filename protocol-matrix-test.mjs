@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import {createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {createAtlasServer} from './server/groq-server.mjs';
+import {cookieDeSesion} from './server/sesion.mjs';
 import {decodeMatrixRows,selectTypes,selectMatrixRows,matrixDate,matrixPage,matrixFields} from './dist/protocol-model.mjs';
 const catalog=JSON.parse(fs.readFileSync('dist/protocols/catalog.json'));
 const original=fs.readFileSync('dist/source/'+catalog.source.filename),hash=createHash('sha256').update(original).digest('hex');
@@ -39,6 +40,6 @@ const manifest=JSON.parse(fs.readFileSync('dist/sw.js','utf8').match(/self\.ATLA
 for(const path of ['/protocol-catalog.mjs','/protocol-model.mjs','/protocols/catalog.json'])assert(manifest.files.some(file=>file.url===path&&file.core));
 for(const type of catalog.types)assert(manifest.files.some(file=>file.url==='/protocols/'+type.file&&file.pack==='plan'&&!file.core));
 assert(manifest.files.some(file=>file.url==='/source/'+catalog.source.filename&&file.pack==='documents'&&!file.core));
-const server=await createAtlasServer({env:{ATLAS_ACCESS_PASSWORD:'isolated-matrix-test'}});await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port,headers={Authorization:'Basic '+Buffer.from('atlas:isolated-matrix-test').toString('base64')};
+const server=await createAtlasServer({env:{ATLAS_SESSION_SECRET:'isolated-session-secret-0123456789abcdef'}});await new Promise(r=>server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+server.address().port,headers={Cookie:'atlas_sesion='+cookieDeSesion('isolated-session-secret-0123456789abcdef',{usuario:'qa@hpc.test',rol:'editor'})};
 try{for(const path of ['/protocols/catalog.json','/protocols/'+type.file,'/source/'+catalog.source.filename])assert.equal((await fetch(base+path)).status,401);const response=await fetch(base+'/source/'+catalog.source.filename,{headers});assert.equal(response.headers.get('content-type'),'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');assert.equal(createHash('sha256').update(Buffer.from(await response.arrayBuffer())).digest('hex'),hash);}finally{server.closeAllConnections();await new Promise(r=>server.close(r));}
 console.log('Protocol matrix: 20,233 × 16 original cells independently compared to Excel; 154 codes/38 specialties; dates, raw values, duplicate folios, summary discrepancy, selection/pagination, schema/version checks, offline packs and protected original download passed');

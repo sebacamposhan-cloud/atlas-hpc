@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Acceso a Atlas HPC, plataforma de gestión de obra del Hospital Provincia Cordillera.">
+<meta name="theme-color" content="#0d47a1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Atlas HPC">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/atlas.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/atlas-192.png">
+<title>Atlas HPC · Iniciar sesión</title>
+<link rel="preload" href="fonts/google-sans-flex-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="login.css">
+<script type="module" src="login.mjs"></script>
+</head>
+<body>
+<div class="fachada" role="img" aria-label="Fachada del Hospital Provincia Cordillera"></div>
+<main class="tarjeta">
+ <i class="forma forma-a" aria-hidden="true"></i><i class="forma forma-b" aria-hidden="true"></i><i class="forma forma-c" aria-hidden="true"></i>
+ <div class="contenido">
+  <img class="logo" src="login/logo.png" width="326" height="271" alt="Atlas HPC · Hospital Provincia Cordillera">
+  <h1>Iniciar sesión</h1>
+  <p class="bajada">Accede a la plataforma de gestión de obra y control del proyecto.</p>
+  <form id="acceso" novalidate>
+   <label class="campo">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
+    <span class="oculto">Usuario o correo electrónico</span>
+    <input name="usuario" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="254" required placeholder="Usuario o correo electrónico">
+   </label>
+   <label class="campo">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.2"/></svg>
+    <span class="oculto">Contraseña</span>
+    <input name="clave" type="password" autocomplete="current-password" maxlength="1024" required placeholder="Contraseña">
+    <button type="button" class="ver" aria-label="Mostrar contraseña" aria-pressed="false">
+     <svg class="ojo" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>
+     <svg class="ojo-tachado" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 20 20 4"/></svg>
+    </button>
+   </label>
+   <div class="fila">
+    <label class="recordar"><input name="recordar" type="checkbox" checked> Recordar mi sesión</label>
+    <button type="button" class="olvido" aria-expanded="false" aria-controls="olvidoAviso">¿Olvidaste tu contraseña?</button>
+   </div>
+   <p id="olvidoAviso" class="aviso" hidden>Pide a la administración de Atlas que restablezca tu contraseña.</p>
+   <p id="estado" class="estado" role="alert"></p>
+   <button class="entrar" type="submit">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M3 12h11"/><path d="m10 8 4 4-4 4"/></svg>
+    Iniciar sesión
+   </button>
+  </form>
+ </div>
+</main>
+</body>
+</html>

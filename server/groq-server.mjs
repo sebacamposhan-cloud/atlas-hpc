@@ -1,6 +1,6 @@
 import {createLastPlannerCloud} from './lastplanner.mjs';
 import {createCampo} from './campo.mjs';
-import {createHash,timingSafeEqual} from 'node:crypto';
+import {crearSesiones} from './sesion.mjs';
 import http from 'node:http';
 import {readFile,realpath} from 'node:fs/promises';
 import path from 'node:path';
@@ -11,12 +11,17 @@ import {decodeRuntime} from '../dist/runtime-loader.mjs';
 // Fichas de los pisos adicionales (formato runtime), para que el asistente reconozca sus recintos.
 const otherLevels=['n01/runtime.json','n02/runtime.json','n03/runtime.json'];
 const root=fileURLToPath(new URL('../dist/',import.meta.url));
+// Sin sesión solo se entrega el inicio de sesión y lo que necesita para mostrarse y entrar.
+const PUBLICAS=new Set(['/healthz','/login','/login.html','/login.css','/login.mjs','/manifest.webmanifest','/api/campo/login','/api/campo/refresh','/api/campo/logout']);
+const publica=ruta=>PUBLICAS.has(ruta)||/^\/(login|icons|fonts)\//.test(ruta);
 const mime={'.xlsx':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','.html':'text/html; charset=utf-8','.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.json':'application/json','.webmanifest':'application/manifest+json','.svg':'image/svg+xml','.jpg':'image/jpeg','.jpeg':'image/jpeg','.png':'image/png','.webp':'image/webp','.pdf':'application/pdf','.woff2':'font/woff2'};
 export async function createAtlasServer({env=process.env,fetchImpl=fetch}={}){
- const campo=createCampo(env,fetchImpl),lastPlanner=createLastPlannerCloud(env,fetchImpl);
- const password=env.ATLAS_ACCESS_PASSWORD,username=env.ATLAS_ACCESS_USER||'atlas';
- if(!['127.0.0.1','localhost','::1'].includes(env.ATLAS_HOST||'127.0.0.1')&&!password)throw Error('Configura ATLAS_ACCESS_PASSWORD antes de exponer Atlas fuera de loopback.');
- const authorized=req=>{if(!password)return true;const expected=Buffer.from(username+':'+password).toString('base64'),actual=(req.headers.authorization||'').replace(/^Basic /,'');const hash=value=>createHash('sha256').update(value).digest();return timingSafeEqual(hash(actual),hash(expected));};
+ if(!['127.0.0.1','localhost','::1'].includes(env.ATLAS_HOST||'127.0.0.1')){
+  if(!env.ATLAS_SESSION_SECRET)throw Error('Configura ATLAS_SESSION_SECRET antes de exponer Atlas fuera de loopback.');
+  if(!env.SUPABASE_URL||!env.SUPABASE_ANON_KEY)throw Error('Configura SUPABASE_URL y SUPABASE_ANON_KEY: sin ellas nadie puede iniciar sesión en Atlas.');
+ }
+ if(env.ATLAS_SESSION_SECRET&&env.ATLAS_SESSION_SECRET.length<32)throw Error('ATLAS_SESSION_SECRET debe tener al menos 32 caracteres.');
+ const sesiones=crearSesiones(env),campo=createCampo(env,fetchImpl,sesiones),lastPlanner=createLastPlannerCloud(env,fetchImpl);
  const groq=createGroq(env,fetchImpl),data=JSON.parse(await readFile(path.join(root,'data.json')));
  for(const file of otherLevels){const extra=decodeRuntime(JSON.parse(await readFile(path.join(root,file)))).data;data.rooms.push(...extra.rooms);data.documents.push(...extra.documents);}
  const pma=decodePma(JSON.parse(await readFile(path.join(root,'pma/catalog.json'))));
@@ -25,7 +30,19 @@ export async function createAtlasServer({env=process.env,fetchImpl=fetch}={}){
   try{
    const url=new URL(req.url,'http://localhost');
    if(url.pathname==='/healthz'&&req.method==='GET')return send(res,200,{status:'ok'});
-   if(!authorized(req)){res.setHeader('WWW-Authenticate','Basic realm="Atlas HPC", charset="UTF-8"');return send(res,401,{error:'Acceso protegido. Introduce el usuario y contraseña de Atlas.'});}
+   // La ruta pública se decide sobre la ruta ya decodificada, la misma que se sirve (sin %2F ni \ que la desvíen).
+   let ruta;try{ruta=decodeURIComponent(url.pathname);}catch{return send(res,400,{error:'Ruta inválida.'});}
+   if(/[\\\0]/.test(ruta))return send(res,400,{error:'Ruta inválida.'});
+   if(ruta.split('/').includes('..'))return send(res,403,{error:'Ruta no permitida.'});
+   ruta=path.posix.normalize(ruta);
+   const sesion=sesiones.leer(req);
+   if(sesiones.activa&&!sesion&&!publica(ruta)){
+    // Una página abierta sin sesión va al inicio de sesión y vuelve después a la misma dirección.
+    if(['GET','HEAD'].includes(req.method)&&(req.headers['sec-fetch-mode']==='navigate'||String(req.headers.accept||'').includes('text/html'))){res.writeHead(302,{Location:'/login.html?next='+encodeURIComponent(url.pathname+url.search),'Cache-Control':'no-store'});return res.end();}
+    return send(res,401,{error:'Inicia sesión en Atlas para continuar.'});
+   }
+   sesiones.marcarModo(req,res);
+   if(url.pathname==='/api/sesion'&&req.method==='GET')return send(res,200,sesiones.activa?{activa:true,usuario:sesion.usuario,rol:sesion.rol}:{activa:false});
    if(url.pathname.startsWith('/api/lastplanner/'))return lastPlanner(req,res,url);
    if(url.pathname==='/api/campo'||url.pathname.startsWith('/api/campo/'))return campo(req,res,url);
    if(url.pathname==='/api/groq/status'&&req.method==='GET')return send(res,200,groq.status());
@@ -43,9 +60,9 @@ export async function createAtlasServer({env=process.env,fetchImpl=fetch}={}){
     return send(res,200,await groq.chat([{role:'system',content:system},...messages]));
    }
    if(!['GET','HEAD'].includes(req.method))return send(res,405,{error:'Método no permitido.'});
-   const name=decodeURIComponent(url.pathname.endsWith('/')?url.pathname+'index.html':url.pathname),candidate=path.resolve(root,'.'+name),resolved=await realpath(candidate);
+   const name=ruta.endsWith('/')?ruta+'index.html':ruta==='/login'?'/login.html':ruta,candidate=path.resolve(root,'.'+name),resolved=await realpath(candidate);
    if(!resolved.startsWith(path.resolve(root)+path.sep))return send(res,403,{error:'Ruta no permitida.'});
-   const bytes=await readFile(resolved);if(['/index.html','/sw.js','/sw-runtime.js','/actualizar.html'].includes(name))res.setHeader('Cache-Control','no-cache');res.writeHead(200,{'Content-Type':mime[path.extname(resolved)]||'application/octet-stream'});res.end(req.method==='HEAD'?undefined:bytes);
+   const bytes=await readFile(resolved);if(['/index.html','/sw.js','/sw-runtime.js','/actualizar.html','/login.html'].includes(name))res.setHeader('Cache-Control','no-cache');res.writeHead(200,{'Content-Type':mime[path.extname(resolved)]||'application/octet-stream'});res.end(req.method==='HEAD'?undefined:bytes);
   }catch(e){if(e.code==='EISDIR'){const url=new URL(req.url,'http://localhost');res.writeHead(301,{Location:url.pathname+'/'+url.search});return res.end();}if(e.code==='ENOENT')return send(res,404,{error:'Archivo no encontrado.'});if(e.retryAfterSeconds)res.setHeader('Retry-After',String(e.retryAfterSeconds));send(res,e.status||500,{error:e.status?e.message:'No se pudo procesar la consulta.',...(e.code&&e.status?{code:e.code}:{}),...(e.retryAfterSeconds?{retryAfterSeconds:e.retryAfterSeconds}:{})});}
  });
 }

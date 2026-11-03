@@ -8,4 +8,4 @@ export function sessionActor(){
  return {id:claims.sub||session.user.id||session.user.username,email:claims.email||session.user.username,role:claims.app_metadata?.campo_role||session.user.role,permissions:permissions==null?null:Array.isArray(permissions)?permissions.filter(p=>PERMISSIONS.includes(p)):[]};
 }
 export const can=permission=>allowed(sessionActor(),permission);
-export function authenticatedActor(permission){const actor=sessionActor();if(!actor||!allowed(actor,permission))throw Error('Entra en Nube con una cuenta autorizada para esta operación.');return actor;}
+export function authenticatedActor(permission){const actor=sessionActor();if(!actor||!allowed(actor,permission))throw Error('Tu cuenta no tiene permiso para esta operación.');return actor;}

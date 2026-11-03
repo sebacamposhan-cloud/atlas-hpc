@@ -99,7 +99,7 @@ export function createRombo(ctx) {
       ${avisos.map(w => `<p class="pmaWarning">${esc(w)}</p>`).join('')}
       <section class="romboPartida" aria-live="polite"><div class="romboTitulo"><span class="romboChip" style="--c:${COLOR_PARTIDA[estado]}">${esc(estado)}</span><h4>${esc(nombreElegido)} · ${elegido === 'M' ? '' : esc(elegido) + ' · '}${esc(codigoElegido)}</h4></div>
         <p class="romboDesc">${esc(t?.description || room.finishes?.find(f => f.field === elegido)?.description || 'Sin descripción en el PMA')}${t && elegido !== 'PAV' && t.asepsis ? ` · Asepsia ${esc(t.asepsis)}` : ''}${ctx.verCodigo && !['—', 'N/A', '-'].includes(codigoElegido) ? ` <button type="button" class="romboVerCodigo" data-rombo-ver-codigo>Ver en el plano los recintos con ${elegido === 'M' ? 'muros' : esc(elegido)} ${esc(codigoElegido.split(' / ')[0])}</button>` : ''}</p>
-        ${aplica && !firmante() ? '<p class="romboNota romboSesion">Entra en Nube con tu cuenta para marcar el avance. <button type="button" data-rombo-entrar>Entrar</button></p>' : ''}
+        ${aplica && !firmante() ? '<p class="romboNota romboSesion">Inicia sesión en Atlas para marcar el avance. <button type="button" data-rombo-entrar>Entrar</button></p>' : ''}
         ${traspasar ? '<p class="romboNota">Marcada antes en el rombo: al marcar una partida, ese estado pasa a todas las de esta terminación.</p>' : ''}
         ${conPartidas ? `<ul class="romboPartidas">${ps.map(partida).join('')}</ul>`
         : directo ? `<div class="romboFila"><span>Ejecución</span><div class="romboBotones">${['No iniciado', 'En proceso', 'Instalado'].map(v => boton('data-rombo-inst', v, t.installation)).join('')}</div></div>

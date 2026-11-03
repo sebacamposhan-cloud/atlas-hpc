@@ -23,6 +23,6 @@ export async function cloudFixture(){
   if(path==='/rest/v1/atlas_registros')return json([]);
   return json({error:'Unsupported isolated provider '+path},404);
  }catch(e){return json({message:e.message,code:e.code},400);}};const result=queue.then(work);queue=result.then(()=>{},()=>{});return result;};
- return {db,rpc,rows,authenticated,fetchImpl,files,env:{SUPABASE_URL:'https://isolated-lp.supabase.co',SUPABASE_ANON_KEY:'isolated-test-key',ATLAS_ACCESS_PASSWORD:'isolated-lp-cycle'},close:()=>db.close()};
+ return {db,rpc,rows,authenticated,fetchImpl,files,env:{SUPABASE_URL:'https://isolated-lp.supabase.co',SUPABASE_ANON_KEY:'isolated-test-key'},close:()=>db.close()};
 }
 export const requestFor=(action,ops)=>({p_id:crypto.randomUUID(),p_accion:action,p_huella:createHash('sha256').update(JSON.stringify(ops)).digest('hex'),p_ops:ops});

@@ -55,10 +55,10 @@ El adaptador Groq es independiente del adaptador IA opcional anterior, que conti
 1. Crear una cuenta en Render y conectar GitHub con acceso al repositorio privado `sebacamposhan-cloud/atlas-hpc`.
 2. Crear un Blueprint desde ese repositorio, seleccionando la rama `feat/cielos-navigation-association` y el archivo `render.yaml`.
 3. Introducir `GROQ_API_KEY` y un `GROQ_MODEL` de chat habilitado para la cuenta en los campos solicitados por Render y revisar el servicio antes de iniciar el despliegue. No copiar la clave a Git ni al chat.
-4. Render genera `ATLAS_ACCESS_PASSWORD`; consultarla en sus variables de entorno. El usuario de acceso a Atlas es `atlas`. La contraseña es distinta de la API key.
-5. Abrir la dirección que proporcione Render, entrar con esas credenciales y probar «Asistente». Si Groq rechaza el modelo, ejecutar `server/groq-check.mjs` en un entorno con la clave inyectada y actualizar `GROQ_MODEL` con un ID habilitado.
+4. Render genera `ATLAS_SESSION_SECRET` (firma la cookie de sesión). Configurar `SUPABASE_URL` y `SUPABASE_ANON_KEY`: el acceso a Atlas es con las cuentas personales de Supabase ([docs/LOGIN.md](LOGIN.md)).
+5. Abrir la dirección que proporcione Render, iniciar sesión y probar «Asistente». Si Groq rechaza el modelo, ejecutar `server/groq-check.mjs` en un entorno con la clave inyectada y actualizar `GROQ_MODEL` con un ID habilitado.
 
-El servidor admite el `PORT` asignado por el alojamiento y `ATLAS_HOST=0.0.0.0`. Rechaza ese enlace público si no hay `ATLAS_ACCESS_PASSWORD`. El acceso básico protege tanto archivos como API; `/healthz` solo devuelve el estado del proceso, sin documentos ni claves. Render debe terminar HTTPS. Esta protección es un acceso compartido inicial; no implementa roles o cuentas individuales.
+El servidor admite el `PORT` asignado por el alojamiento y `ATLAS_HOST=0.0.0.0`. Rechaza ese enlace público si faltan `ATLAS_SESSION_SECRET`, `SUPABASE_URL` o `SUPABASE_ANON_KEY`. Sin sesión solo entrega el inicio de sesión: archivos y API responden 401 y las páginas redirigen a `/login.html`; `/healthz` solo devuelve el estado del proceso, sin documentos ni claves. Render debe terminar HTTPS.
 
 **Antes de cambiar de dirección de Atlas, exportar los respaldos de recintos y de obra del sitio actual.** LocalStorage, IndexedDB y las descargas offline pertenecen a cada origen/navegador: no se trasladan automáticamente al dominio nuevo. Importar los respaldos en el nuevo sitio y verificar su contenido antes de abandonar el anterior.
 
