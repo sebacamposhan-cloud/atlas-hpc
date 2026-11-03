@@ -1,3 +1,4 @@
+import {validateApu} from './apu.mjs';
 import {createHash} from 'node:crypto';
 import * as C from '../dist/lastplanner-cycle-model.mjs';
 import {validarReunion} from '../dist/lastplanner-model.mjs';
@@ -14,6 +15,7 @@ export function validateOperations(ops,action,rows,actor){
   const previous=existing.get(key);if((previous?.version||0)!==op.expectedRemote)throw error(409,'El registro cambió en otro equipo. Se conserva el lote pendiente para resolver el conflicto.');
   if(action==='migration'&&!previous){if(op.table==='actividades')C.validateActivity(op.data);}
   else C.validateMutation(op.table,previous?.data,op.data,action,actor);
+  if(op.table==='actividades')validateApu(op.data.planificacion?.apu,previous?.data?.planificacion?.apu);
   if(op.table==='reuniones')validarReunion(op.data);
   const index=merged[op.table].findIndex(r=>r.id===op.id);if(index<0)merged[op.table].push(op.data);else merged[op.table][index]=op.data;
  }

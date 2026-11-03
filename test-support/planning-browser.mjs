@@ -1,0 +1,2 @@
+// Enter the explicitly confirmed planning view, then expose the existing commitment registry for legacy cycle checks.
+export async function enterPlanning(page){const enter=page.locator('[data-plan-enter]');if(await enter.count())await enter.click();const register=page.locator('[data-plan-register]');if(await register.count()&&await register.getAttribute('open')===null)await register.locator('summary').first().click();}
