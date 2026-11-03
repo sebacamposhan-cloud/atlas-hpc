@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {createGroq} from './server/groq.mjs';
 import {createAtlasServer} from './server/groq-server.mjs';
+import {cookieDeSesion} from './server/sesion.mjs';
 let calls=0;
 await assert.rejects(createGroq({},()=>{calls++;}).chat([]),/GROQ_API_KEY/);assert.equal(calls,0);
 const testKey='isolated-test-key';let sent;
@@ -21,26 +22,37 @@ await assert.rejects(createGroq({GROQ_API_KEY:testKey},async()=>({ok:false,statu
 await assert.rejects(createGroq({GROQ_API_KEY:testKey},async()=>({ok:true,json:async()=>({})})).chat([]),/vacía/);
 console.log('Groq backend: server-only key, real HTTP routing, trusted room context, validation, origin, usage limit and provider errors passed (mock provider, no live request)');
 
-await assert.rejects(createAtlasServer({env:{ATLAS_HOST:'0.0.0.0'}}),/ATLAS_ACCESS_PASSWORD/);
-const protectedServer=await createAtlasServer({env:{ATLAS_HOST:'0.0.0.0',ATLAS_ACCESS_PASSWORD:'isolated-password'},fetchImpl:mock});
+const secret='isolated-session-secret-0123456789abcdef',supabaseEnv={SUPABASE_URL:'https://isolated.supabase.co',SUPABASE_ANON_KEY:'isolated'},session={Cookie:'atlas_sesion='+cookieDeSesion(secret,{usuario:'qa@hpc.test',rol:'editor'})};
+await assert.rejects(createAtlasServer({env:{ATLAS_HOST:'0.0.0.0'}}),/ATLAS_SESSION_SECRET/);
+await assert.rejects(createAtlasServer({env:{ATLAS_HOST:'0.0.0.0',ATLAS_SESSION_SECRET:secret}}),/SUPABASE_URL/);
+await assert.rejects(createAtlasServer({env:{ATLAS_SESSION_SECRET:'short'}}),/32 caracteres/);
+const protectedServer=await createAtlasServer({env:{ATLAS_HOST:'0.0.0.0',ATLAS_SESSION_SECRET:secret,...supabaseEnv},fetchImpl:mock});
 await new Promise(resolve=>protectedServer.listen(0,'127.0.0.1',resolve));
 const protectedBase='http://127.0.0.1:'+protectedServer.address().port;
 try{
  assert.equal((await fetch(protectedBase+'/healthz')).status,200);
- for(const url of ['/','/api/groq/chat','/runtime.json'])assert.equal((await fetch(protectedBase+url)).status,401);
- assert.equal((await fetch(protectedBase+'/',{headers:{Authorization:'Basic '+Buffer.from('atlas:wrong').toString('base64')}})).status,401);
- const response=await fetch(protectedBase+'/',{headers:{Authorization:'Basic '+Buffer.from('atlas:isolated-password').toString('base64')}});assert.equal(response.status,200);
+ for(const url of ['/','/api/groq/chat','/runtime.json','/sw.js','/api/sesion','/api/campo'])assert.equal((await fetch(protectedBase+url)).status,401,url);
+ const page=await fetch(protectedBase+'/?nivel=N-1',{redirect:'manual',headers:{Accept:'text/html'}});assert.equal(page.status,302);assert.equal(page.headers.get('location'),'/login.html?next=%2F%3Fnivel%3DN-1');
+ for(const url of ['/login','/login.html','/login.css','/login.mjs','/login/logo.png','/login/fachada.webp','/fonts/google-sans-flex-latin-wght-normal.woff2','/icons/atlas.svg'])assert.equal((await fetch(protectedBase+url)).status,200,url);
+ for(const url of ['/login/..%2Findex.html','/login/%2e%2e/index.html','/fonts/..%5Cindex.html','/login/..%2Fruntime.json'])assert.notEqual((await fetch(protectedBase+url)).status,200,url);
+ assert.equal((await fetch(protectedBase+'/',{headers:{Authorization:'Basic '+Buffer.from('atlas:isolated-password').toString('base64')}})).status,401,'la clave básica de Render ya no abre Atlas');
+ assert.equal((await fetch(protectedBase+'/',{headers:{Cookie:'atlas_sesion='+cookieDeSesion('other-secret-of-at-least-32-characters!',{usuario:'qa@hpc.test',rol:'editor'})}})).status,401,'cookie firmada con otro secreto');
+ assert.equal((await fetch(protectedBase+'/',{headers:{Cookie:'atlas_sesion='+cookieDeSesion(secret,{usuario:'qa@hpc.test',rol:'editor'},Date.now()-31*864e5)}})).status,401,'cookie vencida');
+ const tampered=session.Cookie.replace(/^(atlas_sesion=)([^.]+)/,(m,k,d)=>k+Buffer.from(JSON.stringify({...JSON.parse(Buffer.from(d,'base64url')),u:'otro@hpc.test'})).toString('base64url'));
+ assert.equal((await fetch(protectedBase+'/',{headers:{Cookie:tampered}})).status,401,'datos alterados');
+ const response=await fetch(protectedBase+'/',{headers:session});assert.equal(response.status,200);assert(!String(response.headers.get('set-cookie')).includes('atlas_sin_login=1'));
+ assert.deepEqual(await (await fetch(protectedBase+'/api/sesion',{headers:session})).json(),{activa:true,usuario:'qa@hpc.test',rol:'editor'});
 }finally{protectedServer.closeAllConnections();await new Promise(resolve=>protectedServer.close(resolve));}
-console.log('Deployment: public binding requires a password, health check exposes no documents, static/API access protected');
+console.log('Deployment: public binding requires session secret and Supabase, health check exposes no documents, only the login page is public, pages redirect to login, static/API need a valid signed session cookie');
 
 const diagnostic=createGroq({GROQ_API_KEY:testKey,GROQ_MODEL:' unavailable-model '},async(url)=>url.endsWith('/models')?{ok:true,json:async()=>({data:[{id:'enabled-model'}]})}:{ok:false,status:404,json:async()=>({error:{code:'model_not_found',message:'untrusted provider detail '+testKey}})});
 assert.deepEqual(await diagnostic.models(),{configuredModel:'unavailable-model',listed:false,models:['enabled-model']});
 await assert.rejects(diagnostic.chat([{role:'user',content:'test'}]),e=>e.message.includes('GROQ_MODEL')&&!e.message.includes(testKey));
 assert.equal(diagnostic.usage().requests,1,'model listing must not consume the chat allowance');
-const diagnosticsServer=await createAtlasServer({env:{ATLAS_ACCESS_PASSWORD:'test-password',GROQ_API_KEY:testKey},fetchImpl:async()=>({ok:true,json:async()=>({data:[{id:'enabled-model'}]})})});
+const diagnosticsServer=await createAtlasServer({env:{ATLAS_SESSION_SECRET:secret,GROQ_API_KEY:testKey},fetchImpl:async()=>({ok:true,json:async()=>({data:[{id:'enabled-model'}]})})});
 await new Promise(resolve=>diagnosticsServer.listen(0,'127.0.0.1',resolve));
 try{
  const url='http://127.0.0.1:'+diagnosticsServer.address().port+'/api/groq/models';assert.equal((await fetch(url)).status,401);
- const response=await fetch(url,{headers:{Authorization:'Basic '+Buffer.from('atlas:test-password').toString('base64')}});assert.equal(response.status,200);const text=await response.text();assert(!text.includes(testKey));assert.deepEqual(JSON.parse(text).models,['enabled-model']);
+ const response=await fetch(url,{headers:session});assert.equal(response.status,200);const text=await response.text();assert(!text.includes(testKey));assert.deepEqual(JSON.parse(text).models,['enabled-model']);
 }finally{diagnosticsServer.closeAllConnections();await new Promise(resolve=>diagnosticsServer.close(resolve));}
 console.log('Groq model diagnostics: authenticated listing, sanitized provider errors and trimmed model configuration passed');

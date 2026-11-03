@@ -1,6 +1,6 @@
 # Nube de proyectos y observaciones en terreno
 
-Los **proyectos** (recintos pintados por estado, con cortes) y las **observaciones en terreno con fotos** se guardan primero en el equipo (IndexedDB) y, con la sesión de **Nube** iniciada, se sincronizan con Supabase. Así no se pierden al cerrar la app, al actualizar el código ni al cambiar de celular, y todos los equipos ven lo mismo.
+Los **proyectos** (recintos pintados por estado, con cortes) y las **observaciones en terreno con fotos** se guardan primero en el equipo (IndexedDB) y se sincronizan con Supabase usando la sesión con que se entró a Atlas ([LOGIN.md](LOGIN.md)). Así no se pierden al cerrar la app, al actualizar el código ni al cambiar de celular, y todos los equipos ven lo mismo.
 
 Usa un proyecto Supabase con cuentas personales (es el mismo proyecto que usaba el antiguo módulo Estados de pago, retirado el 28 de octubre de 2026). No usa la clave `service_role`.
 
@@ -20,10 +20,9 @@ Usa un proyecto Supabase con cuentas personales (es el mismo proyecto que usaba 
 
 ## Uso
 
-- Botón **Nube** en la cabecera (en el celular, el ícono de nube). **Entrar** con correo y contraseña personales.
-- Punto de estado: verde sincronizado, azul sincronizando, amarillo sin red (se guarda en el equipo y se sube al volver la señal), rojo error (el detalle aparece al tocar el botón), gris sin sesión.
-- Se sincroniza solo: unos segundos después de cada cambio, al volver la conexión, al volver a la app y cada 3 minutos con la app abierta. **Sincronizar ahora** fuerza una vuelta.
-- La sesión se renueva sola mientras se use la app. **Cerrar sesión** deja lo guardado en el equipo.
+- No hay botón aparte: al iniciar sesión en Atlas la nube queda activa. Los errores y conflictos aparecen como avisos.
+- Se sincroniza solo: unos segundos después de cada cambio, al volver la conexión, al volver a la app y cada 3 minutos con la app abierta.
+- La sesión se renueva sola mientras se use la app. **Cerrar sesión** (cabecera) intenta subir lo pendiente y deja lo guardado en el equipo.
 
 ## Reglas
 
@@ -45,5 +44,5 @@ Usa un proyecto Supabase con cuentas personales (es el mismo proyecto que usaba 
 - `supabase/campo.sql`: tablas, RLS, función de guardado con versión y bucket de fotos.
 - `server/campo.mjs`: rutas `/api/campo` (sesión, lectura, guardado y fotos) que reenvían a Supabase con la sesión de cada usuario.
 - `dist/nube-sync.mjs`: reglas de sincronización (huellas, conflictos, fotos).
-- `dist/nube.mjs` y `dist/nube.css`: botón, sesión y disparadores.
+- `dist/nube.mjs` y `dist/nube.css`: sesión, «Cerrar sesión» y disparadores de la sincronización.
 - `nube-test.mjs`: dos equipos y una cuenta lectora contra un Supabase simulado (no ejercita el SQL real).

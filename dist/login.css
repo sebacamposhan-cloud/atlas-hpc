@@ -1,0 +1,106 @@
+/* Inicio de sesión de Atlas. Única pantalla con degradados celestes y formas azules (excepción al tema gerencial,
+   que no se carga aquí). PC: fachada a pantalla completa y tarjeta a la izquierda; celular: formulario arriba y
+   franja de la fachada abajo. */
+@font-face {
+  font-family: "Google Sans Flex"; font-style: normal; font-display: swap; font-weight: 1 1000;
+  src: url("fonts/google-sans-flex-latin-wght-normal.woff2") format("woff2-variations"), url("fonts/google-sans-flex-latin-wght-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+:root {
+  --marino: #13285a;      /* letras del logo */
+  --azul: #0d47a1;        /* botón y enlaces */
+  --azul-claro: #2b8ce6;
+  --texto: #0b1424;
+  --texto2: #4a5568;
+  --borde: #c9d5e6;
+  --error: #b42318;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  font-family: "Google Sans Flex", "Google Sans", "Segoe UI", -apple-system, "Helvetica Neue", Arial, sans-serif;
+  color: var(--texto); background: #0f3f86;
+  display: flex; align-items: center; min-height: 100vh; min-height: 100svh;
+}
+.oculto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Fachada a pantalla completa, con un velo azul a la izquierda para que la tarjeta se lea sobre el cielo. */
+.fachada {
+  position: fixed; inset: 0; z-index: 0;
+  background: linear-gradient(90deg, rgba(8, 32, 78, .45), rgba(8, 32, 78, 0) 48%), url("login/fachada.webp") 62% center / cover no-repeat;
+}
+
+.tarjeta {
+  position: relative; z-index: 1; overflow: hidden;
+  width: min(440px, calc(100vw - 48px)); margin: 32px 0 32px clamp(24px, 6vw, 112px);
+  border-radius: 20px; box-shadow: 0 24px 60px rgba(4, 20, 52, .35);
+  background: linear-gradient(165deg, #fbfdff 0%, #eef4fc 55%, #e2ecf9 100%);
+}
+/* Formas diagonales del diseño: azul intenso arriba a la izquierda, celeste detrás y un corte claro abajo. */
+.forma { position: absolute; pointer-events: none; }
+.forma-a { left: 0; top: 0; width: 46%; height: 150px; background: linear-gradient(135deg, #1f6fe0, #0d47a1); clip-path: polygon(0 0, 100% 0, 0 100%); }
+.forma-b { left: 0; top: 0; width: 64%; height: 190px; background: linear-gradient(135deg, rgba(91, 168, 242, .55), rgba(91, 168, 242, .15)); clip-path: polygon(0 0, 100% 0, 0 100%); }
+.forma-c { right: 0; bottom: 0; width: 55%; height: 140px; background: linear-gradient(315deg, rgba(91, 168, 242, .35), rgba(91, 168, 242, 0)); clip-path: polygon(100% 0, 100% 100%, 0 100%); }
+
+.contenido { position: relative; padding: 40px 36px 36px; }
+.logo { display: block; width: min(250px, 70%); height: auto; margin: 0 auto 26px; }
+h1 { margin: 0 0 6px; font-size: 27px; font-weight: 750; color: var(--marino); letter-spacing: -.01em; }
+.bajada { margin: 0 0 22px; font-size: 15.5px; line-height: 1.4; color: var(--texto2); }
+
+form { display: grid; gap: 14px; }
+.campo {
+  display: flex; align-items: center; gap: 10px; height: 50px; padding: 0 12px 0 14px;
+  border: 1px solid var(--borde); border-radius: 10px; background: #fff;
+  transition: border-color .15s, box-shadow .15s;
+}
+.campo:focus-within { border-color: var(--azul-claro); box-shadow: 0 0 0 3px rgba(43, 140, 230, .2); }
+.campo svg { flex: none; width: 22px; height: 22px; fill: none; stroke: #2d3748; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.campo input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent; font: inherit; font-size: 16px; color: var(--texto); }
+.campo input::placeholder { color: #5f6b7a; }
+.ver { display: grid; place-items: center; width: 36px; height: 36px; margin-right: -6px; border: 0; border-radius: 8px; background: none; cursor: pointer; }
+.ver:focus-visible { outline: 2px solid var(--azul-claro); }
+.ver .ojo { display: none; }
+.ver[aria-pressed=true] .ojo { display: block; }
+.ver[aria-pressed=true] .ojo-tachado { display: none; }
+
+.fila { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 14.5px; }
+.recordar { display: inline-flex; align-items: center; gap: 8px; color: var(--texto); cursor: pointer; }
+.recordar input { width: 18px; height: 18px; margin: 0; accent-color: var(--azul); }
+.olvido { padding: 4px 0; border: 0; background: none; font: inherit; color: #1565c0; cursor: pointer; }
+.olvido:hover { text-decoration: underline; }
+.aviso { margin: -4px 0 0; padding: 10px 12px; border-left: 3px solid var(--azul-claro); border-radius: 6px; background: #fff; font-size: 14px; color: var(--texto2); }
+.estado { min-height: 20px; margin: -2px 0; font-size: 14px; color: var(--texto2); }
+.estado[data-tipo=error] { color: var(--error); }
+
+.entrar {
+  display: flex; align-items: center; justify-content: center; gap: 10px; height: 52px; margin-top: 4px;
+  border: 0; border-radius: 10px; cursor: pointer; font: inherit; font-size: 17px; font-weight: 650; color: #fff;
+  background: linear-gradient(180deg, #1e63c6, #0b3f94); box-shadow: 0 8px 18px rgba(13, 71, 161, .28);
+}
+.entrar svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.entrar:hover { background: linear-gradient(180deg, #2470d6, #0d47a1); }
+.entrar:focus-visible { outline: 3px solid rgba(43, 140, 230, .45); outline-offset: 2px; }
+.entrar:disabled { opacity: .7; cursor: progress; }
+
+/* Celular y tableta vertical: el formulario ocupa la pantalla y la fachada queda como franja abajo. */
+@media (max-width: 760px) {
+  body { display: block; background: #eef4fc; }
+  .fachada { display: none; }
+  .tarjeta {
+    display: flex; flex-direction: column; width: 100%; min-height: 100vh; min-height: 100svh; margin: 0;
+    border-radius: 0; box-shadow: none;
+  }
+  .forma-a { width: 42%; height: 120px; }
+  .forma-b { width: 62%; height: 160px; }
+  .forma-c { bottom: auto; top: calc(100% - 34svh - 70px); height: 120px; width: 60%; }
+  .contenido { padding: 34px 24px 22px; width: 100%; max-width: 480px; margin: 0 auto; }
+  .logo { width: min(220px, 62%); margin-bottom: 22px; }
+  h1 { font-size: 25px; }
+  .fila { font-size: 13.5px; gap: 6px; }
+  .tarjeta::after {
+    content: ""; flex: 1 0 30svh; min-height: 190px; margin-top: auto;
+    background: url("login/fachada.webp") 55% 85% / cover no-repeat;
+    -webkit-mask-image: linear-gradient(180deg, transparent, #000 22%); mask-image: linear-gradient(180deg, transparent, #000 22%);
+  }
+}
+@media (prefers-reduced-motion: reduce) { .campo { transition: none; } }

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {createGroq} from './server/groq.mjs';
 import {createAtlasServer} from './server/groq-server.mjs';
+import {cookieDeSesion} from './server/sesion.mjs';
 let time=10000,calls=0;
 const provider=async(url,options)=>{calls++;assert.equal(options.headers.Authorization,'Bearer isolated-test-key');return new Response(JSON.stringify({choices:[{message:{content:'Respuesta de prueba'}}]}));};
 const groq=createGroq({GROQ_API_KEY:' isolated-test-key ',GROQ_MODEL:' ',GROQ_MAX_REQUESTS:'2',GROQ_WINDOW_SECONDS:'2'},provider,{now:()=>time});
@@ -14,13 +15,13 @@ const recovery=createGroq({GROQ_API_KEY:'test',GROQ_MAX_REQUESTS:'1'},async()=>{
 await assert.rejects(recovery.chat(messages),/conectar/);await assert.rejects(recovery.chat(messages),e=>e.code==='atlas_rate_limit');time+=60000;failed=false;assert.equal((await recovery.chat(messages)).answer,'Recovered');
 const limited=createGroq({GROQ_API_KEY:'test'},async()=>new Response(JSON.stringify({error:{code:'rate_limit_exceeded'}}),{status:429,headers:{'Retry-After':'17'}}));
 await assert.rejects(limited.chat(messages),e=>e.code==='groq_rate_limit'&&e.retryAfterSeconds===17);
-const server=await createAtlasServer({env:{GROQ_API_KEY:'isolated-test-key',GROQ_MAX_REQUESTS:'1',ATLAS_ACCESS_PASSWORD:'isolated-password'},fetchImpl:provider});
+const server=await createAtlasServer({env:{GROQ_API_KEY:'isolated-test-key',GROQ_MAX_REQUESTS:'1',ATLAS_SESSION_SECRET:'isolated-session-secret-0123456789abcdef'},fetchImpl:provider});
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
-const base='http://127.0.0.1:'+server.address().port,authorization='Basic '+Buffer.from('atlas:isolated-password').toString('base64');
+const base='http://127.0.0.1:'+server.address().port,cookie='atlas_sesion='+cookieDeSesion('isolated-session-secret-0123456789abcdef',{usuario:'qa@hpc.test',rol:'editor'});
 try{
  assert.equal((await fetch(base+'/api/groq/status')).status,401);
- const before=calls,status=await(await fetch(base+'/api/groq/status',{headers:{authorization}})).json();assert.equal(calls,before);assert.equal(status.configured,true);assert(!JSON.stringify(status).includes('isolated-test-key'));
- const post=()=>fetch(base+'/api/groq/chat',{method:'POST',headers:{authorization,'Content-Type':'application/json'},body:JSON.stringify({messages})});
+ const before=calls,status=await(await fetch(base+'/api/groq/status',{headers:{cookie}})).json();assert.equal(calls,before);assert.equal(status.configured,true);assert(!JSON.stringify(status).includes('isolated-test-key'));
+ const post=()=>fetch(base+'/api/groq/chat',{method:'POST',headers:{cookie,'Content-Type':'application/json'},body:JSON.stringify({messages})});
  assert.equal((await post()).status,200);const blocked=await post();assert.equal(blocked.status,429);assert(Number(blocked.headers.get('retry-after'))>0);assert.equal((await blocked.json()).code,'atlas_rate_limit');
 }finally{server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
 console.log('Groq recovery: rolling-window expiry without restart, failed-request recovery, usable default, trimmed key, provider Retry-After and authenticated secret-free status passed (mock provider)');

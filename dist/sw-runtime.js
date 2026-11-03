@@ -43,7 +43,7 @@ async function fetchFile(file, signal) {
     const response = await fetch(absolute(file.url), {signal: controller.signal, cache: 'no-cache', credentials: 'same-origin'});
     if (!response.ok || response.type === 'opaque' || response.redirected) throw new Error('No se pudo descargar '+file.url);
     const type = response.headers.get('content-type') || '';
-    if (file.url !== '/index.html' && type.includes('text/html')) throw new Error('El servidor no entregó '+file.url);
+    if (!['/index.html', '/login.html'].includes(file.url) && type.includes('text/html')) throw new Error('El servidor no entregó '+file.url);
     const bytes = await response.arrayBuffer();
     if (!bytes.byteLength) throw new Error('Archivo vacío: '+file.url);
     const headers=new Headers(response.headers);headers.delete('content-encoding');headers.delete('content-length');
