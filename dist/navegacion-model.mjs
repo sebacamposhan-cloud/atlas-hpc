@@ -11,6 +11,19 @@ export const TARJETAS = [
   {id: 'herramientas', titulo: 'Herramientas', texto: 'Proyectos, filtros y capas', funciones: [['proyectos', 'Proyectos'], ['filtros', 'Filtros y capas'], ['mas', 'Más']],
     dibujo: '<path d="M30 28h100M30 50h100M30 72h100"/><rect class="f" x="52" y="21" width="16" height="14"/><rect class="f" x="96" y="43" width="16" height="14"/><rect class="f" x="66" y="65" width="16" height="14"/>'}
 ];
+// Íconos de los botones flotantes (trazo de 24 unidades). Observaciones lleva la cámara.
+const trazo = cuerpo => `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${cuerpo}</svg>`;
+export const ICONOS = {
+  avance: trazo('<path d="M4 20h16"/><path d="M7 20v-6M12 20V6M17 20v-9"/>'),
+  observaciones: trazo('<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/>'),
+  resumen: trazo('<rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 10h16M4 15h16M10 10v10"/>'),
+  tipos: trazo('<path d="M9 4h6v3H9z"/><path d="M9 5H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-3"/><path d="m9 14 2 2 4-4"/>'),
+  criticos: trazo('<path d="M12 4 3 20h18z"/><path d="M12 10v5M12 18v.01"/>'),
+  proyectos: trazo('<rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 12h16M12 4v16"/><path d="M6.5 6.5h3v3h-3zM14.5 14.5h3v3h-3z" fill="currentColor"/>'),
+  filtros: trazo('<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>'),
+  mas: trazo('<circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/>'),
+  cerrar: trazo('<path d="M6 6l12 12M18 6 6 18"/>')
+};
 // Abren algo por un momento y no cambian la función activa del plano.
 const MOMENTANEAS = new Set(['resumen', 'proyectos', 'filtros', 'mas']);
 export const tarjeta = id => TARJETAS.find(t => t.id === id) || null;

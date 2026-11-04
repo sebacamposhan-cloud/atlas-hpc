@@ -2,6 +2,7 @@
 import './offline.mjs';
 import {iniciarNube} from './nube.mjs';
 import {leerMemoria,guardarMemoria} from './navegacion-model.mjs';
+import {crearFluido,arrastrar} from './fluido.mjs';
 iniciarNube();
 const $=id=>document.getElementById(id),floors=window.ATLAS_TARJETAS,active=window.ATLAS_PISO;
 const root=window.ATLAS_RAIZ;
@@ -12,8 +13,14 @@ const almacen=()=>{try{return localStorage;}catch{return {getItem:()=>null,setIt
 const pila=[...floors].reverse();let elegido=null;
 $('floorGrid').innerHTML=pila.map(({id,numero,piso},i)=>`<button type="button" class="pisoCapa" data-floor="${id}" style="--i:${i}" aria-label="Piso ${numero}" aria-pressed="false" ${piso?'':'disabled'}>>${piso?`<img class="pisoBlanco" src="pisos3d/${id.toLowerCase()}-blanco.png" alt="" width="760" height="490" decoding="async"><img class="pisoAzul" src="pisos3d/${id.toLowerCase()}-azul.png" alt="" width="760" height="490" decoding="async">`:''}</button>`).join('');
 $('floorLista').innerHTML=pila.map(({id,numero,piso},i)=>`<button type="button" class="pisoEtiqueta" data-floor="${id}" style="--i:${i}" aria-pressed="false" ${piso?'':'disabled'}>Piso ${numero}</button>`).join('');
-function elegir(id){elegido=floors.some(f=>f.id===id&&f.piso)?id:null;gallery.querySelectorAll('[data-floor]').forEach(b=>{const marcado=b.dataset.floor===elegido;b.setAttribute('aria-pressed',String(marcado));if(b.classList.contains('pisoEtiqueta'))b.textContent=b.textContent.replace(' ✓','')+(marcado?' ✓':'');});$('pisoContinuar').disabled=!elegido;}
-elegir(leerMemoria(almacen()).piso);
+function marcar(id){elegido=floors.some(f=>f.id===id&&f.piso)?id:null;gallery.querySelectorAll('[data-floor]').forEach(b=>{const marcado=b.dataset.floor===elegido;b.setAttribute('aria-pressed',String(marcado));if(b.classList.contains('pisoEtiqueta'))b.textContent=b.textContent.replace(' ✓','')+(marcado?' ✓':'');});$('pisoContinuar').disabled=!elegido;}
+// Al arrastrar los pisos cambia el elegido; los demás se abren a su alrededor y vuelven con un leve retraso, como agua.
+const capas=[...gallery.querySelectorAll('.pisoCapa')],etiquetas=[...gallery.querySelectorAll('.pisoEtiqueta')],lugarDe=id=>pila.findIndex(f=>f.id===id);
+const quietud=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+const pisos=crearFluido({cantidad:pila.length,inicial:Math.max(0,lugarDe(leerMemoria(almacen()).piso)),quieto:quietud,alCambiar:i=>{if(pila[i].piso)marcar(pila[i].id);},dibujar:posiciones=>{const abre=$('floorGrid').offsetWidth*.05;posiciones.forEach((p,i)=>{const d=i-p,y=(abre*Math.tanh(d*1.6)).toFixed(1)+'px',escala=(1+.04*Math.exp(-d*d*3)).toFixed(3);capas[i].style.setProperty('--y',y);capas[i].style.setProperty('--e',escala);etiquetas[i].style.setProperty('--y',y);});}});
+function elegir(id){marcar(id);if(elegido)pisos.ir(lugarDe(elegido));}
+marcar(leerMemoria(almacen()).piso);pisos.redibujar();
+arrastrar($('floorGrid'),pisos,{eje:'y',sentido:1,paso:()=>$('floorGrid').offsetWidth*.285});
 const safeToLeave=()=>window.dispatchEvent(new Event('atlas-before-floor-change',{cancelable:true}));
 function state(home){
  document.body.classList.toggle('floorHome',home);gallery.hidden=!home;$('floorHomeButton').hidden=home;

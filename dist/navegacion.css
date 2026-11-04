@@ -1,7 +1,7 @@
 /* Navegación de terreno. Se carga al final y usa los colores del tema gerencial: blanco, azul marino para estructura,
    azul para lo elegido, texto negro, ángulos rectos y sin sombras. Portada: pisos apilados. Plano: barra superior
    mínima, barra inferior con Control de obra, rueda de tarjetas y botones de función sobre el plano. */
-:root { --sidebar: 0px; --barra-obra: 64px; --barra-funciones: 56px; --cabecera: 64px; }
+:root { --sidebar: 0px; --barra-obra: 64px; --cabecera: 64px; }
 @media (max-width: 700px) { :root { --sidebar: 0px; --cabecera: 54px; } }
 
 /* Cabecera */
@@ -38,14 +38,11 @@ main:not([data-discipline=ceilings]):not([data-discipline=floors]):not([data-dis
 .toolbar #back, .toolbar #backResults { width: 110px; margin-left: -62px; font-size: 12px; white-space: normal; }
 .disciplineBar .capasDibujo { display: none; }
 #activeLegend { left: 10px; bottom: 12px; max-height: 38%; }
-body.conFunciones #activeLegend { bottom: calc(var(--barra-funciones) + 10px); width: auto; max-width: 220px; padding: 8px 10px; }
+body.conFunciones #activeLegend { width: auto; max-width: 220px; padding: 8px 10px; }
 body.conFunciones #activeLegend .legendActions, body.conFunciones #activeFilterCount, body.conFunciones #legendColorNote { display: none; }
-body.conFunciones .canvasHelp { bottom: calc(var(--barra-funciones) + 8px); }
 body.ruedaAbierta #activeLegend, body.hojaAbierta #activeLegend { display: none; }
 #planFilters { top: 12px; bottom: 12px; }
-body.conFunciones #planFilters { bottom: calc(var(--barra-funciones) + 12px); }
 #protocolPanel { top: 0; }
-body.conFunciones #protocolPanel { bottom: var(--barra-funciones); }
 .filterSeccion { font-size: 13px; margin: 18px 0 8px; }
 .filterTiposPlano { display: flex; flex-wrap: wrap; gap: 0; }
 .filterTiposPlano button { flex: 1 1 auto; min-height: 44px; margin: 0 -1px -1px 0; font-size: 13px; padding: 4px 10px; }
@@ -55,38 +52,48 @@ body.conFunciones #protocolPanel { bottom: var(--barra-funciones); }
 .planFilterBody .filterChips:empty { display: none; }
 @media (max-width: 700px) {
   #planFilters { top: auto; bottom: calc(var(--barra-obra) + 8px + env(safe-area-inset-bottom)); max-height: 66dvh; }
-  body.conFunciones #planFilters { bottom: calc(var(--barra-obra) + var(--barra-funciones) + 6px + env(safe-area-inset-bottom)); }
   #protocolPanel { top: auto; }
 }
 
-/* Botones de función sobre el plano */
-#barraFunciones { position: absolute; left: 0; right: 0; bottom: 0; z-index: 17; display: grid; grid-template-columns: auto minmax(0, 1fr) 48px; min-height: var(--barra-funciones); background: #fff; border-top: 3px solid var(--g-marca); }
+/* Flotantes: botones de función sobre el borde izquierdo del plano, circulares, con ícono y nombre. Como la portada, llevan
+   forma redonda y sombra suave para despegarse del plano; los colores son los del tema. */
+#barraFunciones { position: absolute; left: 10px; top: 12px; z-index: 17; display: flex; flex-direction: column; align-items: center; gap: 10px; pointer-events: none; }
 #barraFunciones[hidden] { display: none; }
-.funcionesTitulo { display: flex; align-items: center; padding: 0 16px; font-size: 14px; font-weight: 800; color: var(--g-texto); white-space: nowrap; }
-.funcionesBotones { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
-.funcionesBotones button { min-height: 52px; padding: 4px; border: 0; border-left: 1px solid var(--g-marca); font-size: 13px; font-weight: 700; white-space: normal; line-height: 1.15; }
-#funcionesCerrar { border: 0; border-left: 1px solid var(--g-marca); font-size: 24px; padding: 0; }
-@media (max-width: 700px) { .funcionesTitulo { display: none; } #barraFunciones { grid-template-columns: minmax(0, 1fr) 48px; } }
-@media (min-width: 1024px) and (pointer: fine) { body:not(.hideRight) #barraFunciones, body:not(.hideRight) #ruedaObra { right: calc(var(--detail) + 24px); } }
+#barraFunciones .funcionFlotante, #barraFunciones .funcionFlotante:hover:not(:disabled), #barraFunciones .funcionFlotante[aria-pressed=true], #barraFunciones .funcionFlotante[aria-pressed=true]:hover:not(:disabled) { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 78px; min-height: 0; padding: 0; border: 0; outline: 0; background: transparent !important; color: var(--g-texto) !important; font-weight: 700; pointer-events: auto; animation: funcionEntra .24s ease-out backwards; animation-delay: calc(var(--n) * 45ms); }
+.funcionCirculo { display: grid; place-items: center; width: 54px; height: 54px; border: 1px solid var(--g-marca); border-radius: 50% !important; background: #fff; color: var(--g-marca); box-shadow: 0 4px 12px rgba(27, 42, 86, .24) !important; transition: background .14s, color .14s, transform .14s; }
+.funcionFlotante:hover .funcionCirculo { transform: translateY(-2px); }
+.funcionFlotante:active .funcionCirculo { transform: scale(.94); }
+.funcionFlotante[aria-pressed=true] .funcionCirculo { background: var(--g-azul); border-color: var(--g-azul); color: #fff; box-shadow: 0 6px 16px rgba(15, 84, 153, .4) !important; }
+.funcionFlotante:focus-visible .funcionCirculo { outline: 3px solid var(--g-cian); outline-offset: 2px; }
+.funcionNombre { max-width: 78px; padding: 1px 6px; border-radius: 8px !important; background: #fff; font-size: 11px; line-height: 1.2; text-align: center; }
+#funcionesCerrar .funcionCirculo { width: 40px; height: 40px; }
+@keyframes funcionEntra { from { opacity: 0; transform: translateX(-14px); } }
+@media (prefers-reduced-motion: reduce) { #barraFunciones .funcionFlotante { animation: none; } }
+/* Se ocultan mientras algo los taparía a medias: en computador, la lista de búsqueda; en celular, las hojas y paneles. */
+body:not(.hideLeft) #barraFunciones { visibility: hidden; }
+@media (max-width: 700px) { body.hojaAbierta #barraFunciones, body.filtersOpen #barraFunciones, body.markingOpen #barraFunciones { visibility: hidden; } }
+@media (min-width: 1024px) and (pointer: fine) { body:not(.hideRight) #ruedaObra { right: calc(var(--detail) + 24px); } }
+
 
 /* Rueda de Control de obra: tarjetas que giran dentro de la ventana del plano */
-#ruedaObra { position: absolute; left: 0; right: 0; bottom: 0; z-index: 21; background: #fff; border-top: 3px solid var(--g-marca); padding: 8px 0 12px; }
+#ruedaObra { position: absolute; left: 0; right: 0; bottom: 0; z-index: 21; background: #fff; border-top: 3px solid var(--g-marca); padding: 8px 0 12px; animation: ruedaEntra .24s ease-out; }
+@keyframes ruedaEntra { from { transform: translateY(100%); } }
 #ruedaObra[hidden] { display: none; }
 .ruedaCabeza { display: flex; align-items: center; justify-content: space-between; padding: 0 12px 0 16px; }
 .ruedaCabeza h2 { margin: 0; font-size: 15px; font-weight: 800; color: var(--g-texto); }
 #ruedaCerrar { width: 44px; height: 44px; padding: 0; border: 0; font-size: 26px; }
-.ruedaPista { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 6px calc(50% - 104px) 10px; perspective: 900px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
-.ruedaPista::-webkit-scrollbar { display: none; }
-.ruedaTarjeta { flex: 0 0 208px; scroll-snap-align: center; display: grid; align-content: start; gap: 3px; min-height: 176px; padding: 10px 12px 12px; border: 1px solid var(--g-marca); background: #fff; color: var(--g-texto); text-align: left; white-space: normal; transition: transform .1s linear, background .12s; }
+.ruedaPista { position: relative; height: 192px; overflow: hidden; perspective: 900px; touch-action: pan-y; cursor: grab; user-select: none; -webkit-user-select: none; }
+.ruedaPista.tomado { cursor: grabbing; }
+.ruedaTarjeta { position: absolute; left: 50%; top: 6px; width: 208px; margin-left: -104px; display: grid; align-content: start; gap: 3px; min-height: 176px; box-sizing: border-box; padding: 10px 12px 12px; border: 1px solid var(--g-marca); background: #fff; color: var(--g-texto); text-align: left; white-space: normal; transition: background .12s; will-change: transform; }
 .ruedaTarjeta strong { font-size: 18px; font-weight: 800; line-height: 1.15; color: inherit; }
 .ruedaTarjeta small { font-size: 12px; line-height: 1.3; color: inherit; }
 .ruedaTarjeta svg { width: 100%; height: 84px; fill: none; stroke-width: 1.5; }
 .ruedaTarjeta.alCentro, .ruedaTarjeta.alCentro:hover:not(:disabled) { background: var(--g-azul); color: #fff; border-color: var(--g-azul); outline: 0; }
 .ruedaTarjeta.alCentro svg, .ruedaTarjeta.alCentro svg .f { stroke: #fff; }
-@media (prefers-reduced-motion: reduce) { .ruedaTarjeta { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .ruedaTarjeta { transition: none; } #ruedaObra { animation: none; } }
 
 /* Hoja de una función: lista sobre el plano */
-#hojaFuncion { position: absolute; z-index: 20; top: 12px; right: 12px; bottom: calc(var(--barra-funciones) + 12px); width: 380px; max-width: calc(100% - 24px); display: flex; flex-direction: column; background: #fff; border: 2px solid var(--g-marca); }
+#hojaFuncion { position: absolute; z-index: 20; top: 12px; right: 12px; bottom: 12px; width: 380px; max-width: calc(100% - 24px); display: flex; flex-direction: column; background: #fff; border: 2px solid var(--g-marca); }
 #hojaFuncion[hidden] { display: none; }
 .hojaCabeza { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 6px 6px 14px; border-bottom: 2px solid var(--g-marca); }
 .hojaCabeza h2 { margin: 0; font-size: 15px; font-weight: 800; color: var(--g-texto); }
@@ -103,7 +110,6 @@ body.conFunciones #protocolPanel { bottom: var(--barra-funciones); }
 .hojaVacia { margin: 8px 0; }
 @media (max-width: 700px) {
   #hojaFuncion { top: auto; left: 0; right: 0; bottom: 0; width: auto; max-width: none; height: 66%; border-width: 3px 0 0; }
-  body.conFunciones #hojaFuncion { bottom: var(--barra-funciones); }
 }
 
 /* Portada: maquetas 3D reales de cada piso (scripts/pisos-3d.mjs), como en el diseño aprobado. Es la excepción al tema,
@@ -114,15 +120,16 @@ body.conFunciones #protocolPanel { bottom: var(--barra-funciones); }
 #floorExplorer .floorIntro h1 { font-size: 29px; line-height: 1.1; margin: 6px 0 4px; letter-spacing: -.6px; font-weight: 800; }
 #floorExplorer .floorIntro p { margin: 0; font-size: 15px; }
 .pisosEscena { --placa: min(calc(100vw - 118px), calc((100dvh - 250px) / 1.58), 560px); --alto: calc(var(--placa) * 1.5); --paso: calc(var(--placa) * .285); flex: 1; min-height: var(--alto); display: flex; align-items: center; justify-content: center; gap: 0; width: 100%; max-width: 820px; margin: 0 auto; }
-.pisosPila { position: relative; flex: none; width: var(--placa); height: var(--alto); }
-.pisoCapa, .pisoCapa:hover:not(:disabled), .pisoCapa[aria-pressed=true], .pisoCapa[aria-pressed=true]:hover:not(:disabled) { position: absolute; left: 0; top: calc(var(--paso) * var(--i)); width: var(--placa); aspect-ratio: 760 / 490; padding: 0; border: 0; outline: 0; background: transparent !important; pointer-events: none; z-index: calc(4 - var(--i)); }
+.pisosPila { position: relative; flex: none; width: var(--placa); height: var(--alto); touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+.pisosPila.tomado, .pisosPila.tomado .pisoCapa::after { cursor: grabbing; }
+.pisoCapa, .pisoCapa:hover:not(:disabled), .pisoCapa[aria-pressed=true], .pisoCapa[aria-pressed=true]:hover:not(:disabled) { position: absolute; left: 0; top: calc(var(--paso) * var(--i)); width: var(--placa); aspect-ratio: 760 / 490; padding: 0; border: 0; outline: 0; background: transparent !important; pointer-events: none; z-index: calc(4 - var(--i)); transform: translateY(var(--y, 0)) scale(var(--e, 1)); will-change: transform; }
 .pisoCapa::after { content: ""; position: absolute; inset: 0; clip-path: polygon(50% 4%, 95% 40%, 56% 86%, 5% 46%); pointer-events: auto; cursor: pointer; }
 .pisoCapa img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; transition: opacity .18s ease-out; pointer-events: none; }
 .pisoCapa .pisoAzul { opacity: 0; }
 .pisoCapa[aria-pressed=true] .pisoAzul { opacity: 1; }
 .pisoCapa:focus-visible::before { content: ""; position: absolute; inset: 8% 6%; border: 2px solid var(--g-cian); }
 .pisosLista { position: relative; flex: none; width: 86px; height: var(--alto); margin-left: -22px; z-index: 5; }
-.pisoEtiqueta, .pisoEtiqueta:hover:not(:disabled) { position: absolute; left: 0; top: calc(var(--paso) * var(--i) + var(--placa) * .17); width: 86px; min-height: 46px; padding: 4px 6px; border: 1px solid transparent; outline: 0; border-radius: 999px !important; background: #fff; color: var(--g-texto); font-size: 15px; font-weight: 700; box-shadow: 0 4px 14px rgba(27, 42, 86, .16) !important; }
+.pisoEtiqueta, .pisoEtiqueta:hover:not(:disabled) { position: absolute; left: 0; top: calc(var(--paso) * var(--i) + var(--placa) * .17); width: 86px; min-height: 46px; padding: 4px 6px; border: 1px solid transparent; outline: 0; border-radius: 999px !important; background: #fff; color: var(--g-texto); font-size: 15px; font-weight: 700; box-shadow: 0 4px 14px rgba(27, 42, 86, .16) !important; transform: translateY(var(--y, 0)); }
 .pisoEtiqueta::before { content: ""; position: absolute; right: calc(100% + 4px); top: 50%; width: 30px; height: 1px; background: var(--g-regla); }
 .pisoEtiqueta::after { content: ""; position: absolute; right: calc(100% + 32px); top: calc(50% - 2px); width: 5px; height: 5px; border-radius: 50% !important; background: var(--g-regla); }
 .pisoEtiqueta[aria-pressed=true], .pisoEtiqueta[aria-pressed=true]:hover:not(:disabled) { background: var(--g-azul) !important; border-color: var(--g-azul); color: #fff !important; box-shadow: 0 6px 16px rgba(15, 84, 153, .35) !important; }
@@ -190,5 +197,4 @@ body.floorHome header .project b, body.floorHome header .project span { display:
 /* Con la ficha bajada, la barra del recinto queda sobre la navegación inferior */
 @media (max-width: 1023px), (pointer: coarse) {
   body.fichaMinima #fichaBarra { bottom: calc(var(--barra-obra) + env(safe-area-inset-bottom)); padding-bottom: 8px; }
-  body.fichaMinima.conFunciones #fichaBarra { bottom: calc(var(--barra-obra) + var(--barra-funciones) + env(safe-area-inset-bottom)); }
 }

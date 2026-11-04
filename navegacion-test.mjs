@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {TARJETAS, tarjeta, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar, paradaCercana, CLAVE_MEMORIA} from './dist/navegacion-model.mjs';
+import {TARJETAS, ICONOS, tarjeta, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar, paradaCercana, CLAVE_MEMORIA} from './dist/navegacion-model.mjs';
+import {crearFluido} from './dist/fluido.mjs';
 import {palancaHTML} from './dist/palanca.mjs';
 
 const almacen = (inicial = {}) => { const d = {...inicial}; return {getItem: k => d[k] ?? null, setItem: (k, v) => { d[k] = v; }, d}; };
@@ -15,6 +16,37 @@ assert.equal(tarjeta('inexistente'), null);
 assert.equal(tituloNavegacion('recintos', 'observaciones'), 'Recintos · Observaciones');
 assert.equal(tituloNavegacion('protocolos', null), 'Protocolos');
 assert.equal(tituloNavegacion(null, null), 'Plano');
+
+// Cada función tiene su ícono; Observaciones lleva la cámara.
+for (const t of TARJETAS) for (const [id] of t.funciones) assert.match(ICONOS[id] || '', /<svg/, id);
+assert.ok(ICONOS.cerrar);
+assert.match(ICONOS.observaciones, /<circle/);
+
+// Movimiento fluido: sigue, frena solo y queda exacto sobre un elemento.
+function fluido(opciones = {}) {
+  const cola = [], cambios = [];
+  let ultimas = [];
+  const f = crearFluido({cantidad: 4, inicial: 1, cuadro: q => cola.push(q), dibujar: p => { ultimas = [...p]; }, alCambiar: i => cambios.push(i), ...opciones});
+  return {f, cambios, posiciones: () => ultimas, correr(max = 2000) { let n = 0; while (cola.length && n++ < max) cola.shift()(); return n; }};
+}
+{
+  const a = fluido();
+  a.f.tomar(); a.f.llevar(2.4); a.f.soltar(.08); a.correr();
+  assert.equal(Number.isInteger(a.f.objetivo()), true);
+  assert.ok(a.f.objetivo() >= 2 && a.f.objetivo() <= 3);
+  assert.ok(a.posiciones().every(p => p === a.f.objetivo()), 'todos llegan al mismo punto');
+  assert.deepEqual(a.cambios.at(-1), a.f.indice());
+  // La onda: justo después de moverse, el elemento más lejano va más atrás que el más cercano.
+  const b = fluido(); b.f.ir(3); b.correr(4);
+  assert.ok(b.posiciones()[3] > b.posiciones()[0], 'el lejano llega después');
+  b.correr();
+  // Fuera del borde se resiste y vuelve al último elemento.
+  const c = fluido(); c.f.tomar(); c.f.llevar(9); c.correr(60); assert.ok(c.posiciones()[3] < 9 && c.posiciones()[3] > 3); c.f.soltar(); c.correr(); assert.equal(c.f.objetivo(), 3);
+  const e = fluido(); e.f.tomar(); e.f.llevar(-3); e.correr(5); e.f.soltar(.5); e.correr(); assert.equal(e.f.objetivo(), 0);
+  // Con movimiento reducido salta directo y sin inercia.
+  const d = fluido({quieto: () => true}); d.f.soltar(.5); d.f.ir(2); assert.ok(d.correr() <= 2); assert.deepEqual(d.posiciones(), [2, 2, 2, 2]);
+  const g = fluido(); g.f.fijar(3); assert.deepEqual(g.posiciones(), [3, 3, 3, 3]); assert.equal(g.f.indice(), 3); assert.equal(g.cambios.length, 0);
+}
 
 // Memoria: recuerda piso y función; ignora datos dañados, funciones momentáneas y tarjetas sin funciones.
 assert.deepEqual(leerMemoria(almacen()), {piso: null, tarjeta: null, funcion: null});
@@ -60,7 +92,7 @@ assert.ok(!index.includes('<button data-module'));
 assert.ok(index.indexOf('navegacion.css') > index.indexOf('gerencial.css'), 'navegacion.css debe cargarse después del tema');
 
 // Colores: solo los del tema, sin bordes redondeados ni sombras.
-const css = fs.readFileSync('dist/navegacion.css', 'utf8').replace(/\/\* Portada:[\s\S]*?(?=\/\* Menú del recinto)/, '');
+const css = fs.readFileSync('dist/navegacion.css', 'utf8').replace(/\/\* Portada:[\s\S]*?(?=\/\* Menú del recinto)/, '').replace(/\/\* Flotantes:[\s\S]*?(?=\/\* Rueda de Control)/, '');
 assert.ok(!/border-radius|box-shadow|gradient\((?!#fff)/.test(css.replace(/linear-gradient\(#fff, #fff\)/g, '')));
 assert.deepEqual([...new Set(css.replace(/\/\*[\s\S]*?\*\//g, '').match(/#[0-9a-f]{3,8}\b(?=[;, )])/gi) || [])].filter(c => c.toLowerCase() !== '#fff'), []);
 
@@ -68,5 +100,5 @@ assert.deepEqual([...new Set(css.replace(/\/\*[\s\S]*?\*\//g, '').match(/#[0-9a-
 const prepare = fs.readFileSync('scripts/prepare-offline.mjs', 'utf8');
 assert.ok(prepare.includes("walk('pisos3d')"));
 for (const piso of ['n-1', 'n01', 'n02', 'n03']) for (const color of ['blanco', 'azul']) assert.ok(fs.statSync(`dist/pisos3d/${piso}-${color}.png`).size > 10000, piso + color);
-for (const nombre of ['navegacion.css', 'navegacion.mjs', 'navegacion-model.mjs', 'palanca.mjs']) assert.ok(prepare.includes(`'${nombre}'`), nombre);
+for (const nombre of ['navegacion.css', 'navegacion.mjs', 'navegacion-model.mjs', 'palanca.mjs', 'fluido.mjs']) assert.ok(prepare.includes(`'${nombre}'`), nombre);
 console.log('navegacion-test: ok');
