@@ -1,0 +1,194 @@
+/* Navegación de terreno. Se carga al final y usa los colores del tema gerencial: blanco, azul marino para estructura,
+   azul para lo elegido, texto negro, ángulos rectos y sin sombras. Portada: pisos apilados. Plano: barra superior
+   mínima, barra inferior con Control de obra, rueda de tarjetas y botones de función sobre el plano. */
+:root { --sidebar: 0px; --barra-obra: 64px; --barra-funciones: 56px; --cabecera: 64px; }
+@media (max-width: 700px) { :root { --sidebar: 0px; --cabecera: 54px; } }
+
+/* Cabecera */
+body > header { margin-left: 0; }
+header #navToggle, header .brand, header #dashboard, header #detailToggle, #floorHomeButton, header #assistantOpen, header #diamondsOpen, header #diamondCatalogOpen { display: none !important; }
+body:not(.floorHome) header #offlineOpen { display: none; }
+header .project { display: block !important; flex: 0 0 auto; min-width: 0; font-size: 11px; line-height: 1.25; padding: 0; color: var(--g-texto); }
+header .project span { display: block; font-size: 11px; color: var(--g-texto2); white-space: nowrap; }
+#navPiso { font-size: 15px; font-weight: 800; color: var(--g-texto); white-space: nowrap; }
+.globalSearchWrap input { min-height: 40px; font-size: 16px; }
+.globalSearchWrap kbd { display: none; }
+body.floorHome header { justify-content: space-between; }
+body.floorHome header .logoutButton { margin-left: 8px; }
+@media (max-width: 700px) { body.floorHome #navPiso { font-size: 13px; white-space: normal; } }
+
+/* Espacio de trabajo y barra inferior */
+.workspace, body.hideRight .workspace, body.hideLeft .workspace, body.hideLeft.hideRight .workspace { margin-left: 0; height: calc(100dvh - var(--cabecera) - var(--barra-obra) - env(safe-area-inset-bottom)); }
+body.floorHome .workspace, body.floorHome.hideRight .workspace, body.floorHome.hideLeft .workspace, body.floorHome.hideLeft.hideRight .workspace { height: calc(100dvh - var(--cabecera)); }
+.bottomNav { display: grid; grid-template-columns: 1fr minmax(0, 1.7fr) 1fr; gap: 0; height: calc(var(--barra-obra) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); z-index: 35; background: #fff; }
+body.floorHome .bottomNav { display: none; }
+.bottomNav button, .bottomNav button.active { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-width: 0; height: 100%; padding: 4px 6px; border: 0; background: #fff; color: var(--g-texto); font-size: 12px; font-weight: 700; }
+.bottomNav button span { font-size: 18px; line-height: 1; }
+#bottomObra, #bottomObra:hover:not(:disabled) { background: var(--g-azul); color: #fff; font-size: 15px; font-weight: 800; outline: 0; }
+#bottomObra[aria-expanded=true], #bottomObra[aria-expanded=true]:hover:not(:disabled) { background: var(--g-marca); }
+#bottomObra:disabled { background: #fff; color: var(--g-texto2); border-left: 1px solid var(--g-regla); border-right: 1px solid var(--g-regla); }
+
+/* Plano: fuera lo que pasó a Herramientas */
+.planheader, main > footer, .layerbox, .toolbar #markingOpen, .toolbar #planSettingsOpen, .toolbar #reset, .toolbar #isolate { display: none !important; }
+main:not([data-discipline=ceilings]):not([data-discipline=floors]):not([data-discipline=doors]) .disciplineBar { display: none; }
+main:not([data-discipline=ceilings]):not([data-discipline=floors]):not([data-discipline=doors]) #viewport { top: 0 !important; }
+main:not([data-discipline=ceilings]):not([data-discipline=floors]):not([data-discipline=doors]) .toolbar { margin-top: 0; }
+.toolbar { top: 12px; right: 10px; width: 48px; flex-direction: column; flex-wrap: nowrap; }
+.toolbar button { min-width: 44px; min-height: 44px; font-size: 20px; }
+.toolbar #back, .toolbar #backResults { width: 110px; margin-left: -62px; font-size: 12px; white-space: normal; }
+.disciplineBar .capasDibujo { display: none; }
+#activeLegend { left: 10px; bottom: 12px; max-height: 38%; }
+body.conFunciones #activeLegend { bottom: calc(var(--barra-funciones) + 10px); width: auto; max-width: 220px; padding: 8px 10px; }
+body.conFunciones #activeLegend .legendActions, body.conFunciones #activeFilterCount, body.conFunciones #legendColorNote { display: none; }
+body.conFunciones .canvasHelp { bottom: calc(var(--barra-funciones) + 8px); }
+body.ruedaAbierta #activeLegend, body.hojaAbierta #activeLegend { display: none; }
+#planFilters { top: 12px; bottom: 12px; }
+body.conFunciones #planFilters { bottom: calc(var(--barra-funciones) + 12px); }
+#protocolPanel { top: 0; }
+body.conFunciones #protocolPanel { bottom: var(--barra-funciones); }
+.filterSeccion { font-size: 13px; margin: 18px 0 8px; }
+.filterTiposPlano { display: flex; flex-wrap: wrap; gap: 0; }
+.filterTiposPlano button { flex: 1 1 auto; min-height: 44px; margin: 0 -1px -1px 0; font-size: 13px; padding: 4px 10px; }
+.filterCapas { display: grid; gap: 2px; }
+.filterCapas label { display: flex; align-items: center; gap: 8px; min-height: 40px; font-size: 13px; }
+.filterCapas input { width: 18px; height: 18px; flex: none; }
+.planFilterBody .filterChips:empty { display: none; }
+@media (max-width: 700px) {
+  #planFilters { top: auto; bottom: calc(var(--barra-obra) + 8px + env(safe-area-inset-bottom)); max-height: 66dvh; }
+  body.conFunciones #planFilters { bottom: calc(var(--barra-obra) + var(--barra-funciones) + 6px + env(safe-area-inset-bottom)); }
+  #protocolPanel { top: auto; }
+}
+
+/* Botones de función sobre el plano */
+#barraFunciones { position: absolute; left: 0; right: 0; bottom: 0; z-index: 17; display: grid; grid-template-columns: auto minmax(0, 1fr) 48px; min-height: var(--barra-funciones); background: #fff; border-top: 3px solid var(--g-marca); }
+#barraFunciones[hidden] { display: none; }
+.funcionesTitulo { display: flex; align-items: center; padding: 0 16px; font-size: 14px; font-weight: 800; color: var(--g-texto); white-space: nowrap; }
+.funcionesBotones { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+.funcionesBotones button { min-height: 52px; padding: 4px; border: 0; border-left: 1px solid var(--g-marca); font-size: 13px; font-weight: 700; white-space: normal; line-height: 1.15; }
+#funcionesCerrar { border: 0; border-left: 1px solid var(--g-marca); font-size: 24px; padding: 0; }
+@media (max-width: 700px) { .funcionesTitulo { display: none; } #barraFunciones { grid-template-columns: minmax(0, 1fr) 48px; } }
+@media (min-width: 1024px) and (pointer: fine) { body:not(.hideRight) #barraFunciones, body:not(.hideRight) #ruedaObra { right: calc(var(--detail) + 24px); } }
+
+/* Rueda de Control de obra: tarjetas que giran dentro de la ventana del plano */
+#ruedaObra { position: absolute; left: 0; right: 0; bottom: 0; z-index: 21; background: #fff; border-top: 3px solid var(--g-marca); padding: 8px 0 12px; }
+#ruedaObra[hidden] { display: none; }
+.ruedaCabeza { display: flex; align-items: center; justify-content: space-between; padding: 0 12px 0 16px; }
+.ruedaCabeza h2 { margin: 0; font-size: 15px; font-weight: 800; color: var(--g-texto); }
+#ruedaCerrar { width: 44px; height: 44px; padding: 0; border: 0; font-size: 26px; }
+.ruedaPista { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 6px calc(50% - 104px) 10px; perspective: 900px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.ruedaPista::-webkit-scrollbar { display: none; }
+.ruedaTarjeta { flex: 0 0 208px; scroll-snap-align: center; display: grid; align-content: start; gap: 3px; min-height: 176px; padding: 10px 12px 12px; border: 1px solid var(--g-marca); background: #fff; color: var(--g-texto); text-align: left; white-space: normal; transition: transform .1s linear, background .12s; }
+.ruedaTarjeta strong { font-size: 18px; font-weight: 800; line-height: 1.15; color: inherit; }
+.ruedaTarjeta small { font-size: 12px; line-height: 1.3; color: inherit; }
+.ruedaTarjeta svg { width: 100%; height: 84px; fill: none; stroke-width: 1.5; }
+.ruedaTarjeta.alCentro, .ruedaTarjeta.alCentro:hover:not(:disabled) { background: var(--g-azul); color: #fff; border-color: var(--g-azul); outline: 0; }
+.ruedaTarjeta.alCentro svg, .ruedaTarjeta.alCentro svg .f { stroke: #fff; }
+@media (prefers-reduced-motion: reduce) { .ruedaTarjeta { transition: none; } }
+
+/* Hoja de una función: lista sobre el plano */
+#hojaFuncion { position: absolute; z-index: 20; top: 12px; right: 12px; bottom: calc(var(--barra-funciones) + 12px); width: 380px; max-width: calc(100% - 24px); display: flex; flex-direction: column; background: #fff; border: 2px solid var(--g-marca); }
+#hojaFuncion[hidden] { display: none; }
+.hojaCabeza { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 6px 6px 14px; border-bottom: 2px solid var(--g-marca); }
+.hojaCabeza h2 { margin: 0; font-size: 15px; font-weight: 800; color: var(--g-texto); }
+#hojaCerrar { flex: none; width: 44px; height: 44px; padding: 0; border: 0; font-size: 26px; }
+.hojaCuerpo { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 10px 14px 14px; font-size: 13px; }
+.hojaCuerpo input[type=search] { width: 100%; box-sizing: border-box; min-height: 44px; font-size: 16px; margin-bottom: 8px; }
+.hojaLista { list-style: none; margin: 0; padding: 0; }
+.hojaLista li[hidden] { display: none; }
+.hojaLista button { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 52px; padding: 8px 10px; margin-top: -1px; text-align: left; white-space: normal; font-size: 13px; }
+.hojaLista span { min-width: 0; display: grid; gap: 1px; }
+.hojaLista b { color: var(--g-texto); }
+.hojaLista small { font-size: 11px; font-weight: 400; color: var(--g-texto2); }
+.hojaLista em { font-style: normal; font-weight: 800; color: var(--g-texto); }
+.hojaVacia { margin: 8px 0; }
+@media (max-width: 700px) {
+  #hojaFuncion { top: auto; left: 0; right: 0; bottom: 0; width: auto; max-width: none; height: 66%; border-width: 3px 0 0; }
+  body.conFunciones #hojaFuncion { bottom: var(--barra-funciones); }
+}
+
+/* Portada: maquetas 3D reales de cada piso (scripts/pisos-3d.mjs), como en el diseño aprobado. Es la excepción al tema,
+   igual que el inicio de sesión: etiquetas redondeadas y sombras suaves, siempre con los azules de Sacyr. */
+#floorExplorer { display: flex; flex-direction: column; gap: 10px; padding: 18px 20px 16px; overflow: auto; box-sizing: border-box; height: 100%; background: #fff; }
+#floorExplorer .floorIntro { margin: 0; padding: 0; border: 0; flex: none; }
+#floorExplorer .floorIntro .section-label { font-size: 13px; letter-spacing: 0; text-transform: none; font-weight: 700; }
+#floorExplorer .floorIntro h1 { font-size: 29px; line-height: 1.1; margin: 6px 0 4px; letter-spacing: -.6px; font-weight: 800; }
+#floorExplorer .floorIntro p { margin: 0; font-size: 15px; }
+.pisosEscena { --placa: min(calc(100vw - 118px), calc((100dvh - 250px) / 1.58), 560px); --alto: calc(var(--placa) * 1.5); --paso: calc(var(--placa) * .285); flex: 1; min-height: var(--alto); display: flex; align-items: center; justify-content: center; gap: 0; width: 100%; max-width: 820px; margin: 0 auto; }
+.pisosPila { position: relative; flex: none; width: var(--placa); height: var(--alto); }
+.pisoCapa, .pisoCapa:hover:not(:disabled), .pisoCapa[aria-pressed=true], .pisoCapa[aria-pressed=true]:hover:not(:disabled) { position: absolute; left: 0; top: calc(var(--paso) * var(--i)); width: var(--placa); aspect-ratio: 760 / 490; padding: 0; border: 0; outline: 0; background: transparent !important; pointer-events: none; z-index: calc(4 - var(--i)); }
+.pisoCapa::after { content: ""; position: absolute; inset: 0; clip-path: polygon(50% 4%, 95% 40%, 56% 86%, 5% 46%); pointer-events: auto; cursor: pointer; }
+.pisoCapa img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; transition: opacity .18s ease-out; pointer-events: none; }
+.pisoCapa .pisoAzul { opacity: 0; }
+.pisoCapa[aria-pressed=true] .pisoAzul { opacity: 1; }
+.pisoCapa:focus-visible::before { content: ""; position: absolute; inset: 8% 6%; border: 2px solid var(--g-cian); }
+.pisosLista { position: relative; flex: none; width: 86px; height: var(--alto); margin-left: -22px; z-index: 5; }
+.pisoEtiqueta, .pisoEtiqueta:hover:not(:disabled) { position: absolute; left: 0; top: calc(var(--paso) * var(--i) + var(--placa) * .17); width: 86px; min-height: 46px; padding: 4px 6px; border: 1px solid transparent; outline: 0; border-radius: 999px !important; background: #fff; color: var(--g-texto); font-size: 15px; font-weight: 700; box-shadow: 0 4px 14px rgba(27, 42, 86, .16) !important; }
+.pisoEtiqueta::before { content: ""; position: absolute; right: calc(100% + 4px); top: 50%; width: 30px; height: 1px; background: var(--g-regla); }
+.pisoEtiqueta::after { content: ""; position: absolute; right: calc(100% + 32px); top: calc(50% - 2px); width: 5px; height: 5px; border-radius: 50% !important; background: var(--g-regla); }
+.pisoEtiqueta[aria-pressed=true], .pisoEtiqueta[aria-pressed=true]:hover:not(:disabled) { background: var(--g-azul) !important; border-color: var(--g-azul); color: #fff !important; box-shadow: 0 6px 16px rgba(15, 84, 153, .35) !important; }
+.pisoEtiqueta[aria-pressed=true]::before, .pisoEtiqueta[aria-pressed=true]::after { background: var(--g-azul); }
+#floorExplorer #pisoContinuar { flex: none; align-self: center; width: 100%; max-width: 460px; min-height: 58px; border-radius: 14px !important; box-shadow: 0 8px 20px rgba(15, 84, 153, .28) !important; font-size: 18px; font-weight: 800; }
+#floorExplorer #pisoContinuar:disabled { background: #fff; color: var(--g-texto2); border-color: var(--g-regla); box-shadow: none !important; }
+#navLogo { display: none; height: 38px; width: auto; }
+body.floorHome #navLogo { display: block; }
+body.floorHome header .project b, body.floorHome header .project span { display: none; }
+@media (min-width: 900px) { .pisosEscena { --placa: min(calc((100dvh - 262px) / 1.5), 560px); } .pisosLista { width: 110px; margin-left: 10px; } .pisoEtiqueta, .pisoEtiqueta:hover:not(:disabled) { width: 110px; font-size: 16px; } }
+
+/* Menú del recinto: primero el rombo; al tocar una parte, solo su menú de avance */
+#detail .detailName { margin: 0; font-size: 20px; line-height: 1.2; font-weight: 800; }
+#detail .detailCode { margin: 2px 0 0; font-size: 13px; font-weight: 600; }
+.romboAvance { border-top: 0; margin: 6px 0 8px; padding-top: 0; }
+.romboPista { margin: 0; font-size: 13px; font-weight: 600; text-align: center; color: var(--g-texto); }
+.romboCaja { gap: 6px; }
+.romboSVG { width: min(300px, 100%); }
+.romboLeyenda { font-size: 11px; }
+.avanceRecinto { margin: 8px 0; padding: 8px 10px; border-top-width: 1px; }
+.avanceRecinto .arBarra { height: 14px; }
+.avanceRecinto .arBarra i { background: var(--g-azul); }
+.arCabecera b { font-size: 24px; }
+.obsRoom { margin: 8px 0; }
+.obsRoom .obsFichaCabecera { flex-wrap: wrap; margin: 0; font-size: 14px; font-weight: 700; }
+.obsRoom .obsFichaCabecera .primary { width: 100%; min-height: 48px; font-size: 15px; }
+.obsPendientes { margin-top: 6px; }
+.protRecinto > summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; font-size: 14px; }
+#detail.fichaEnMenu > .detailCode, #detail.fichaEnMenu > .avanceRecinto, #detail.fichaEnMenu > .obsRoom, #detail.fichaEnMenu > .protocolosPrevios, #detail.fichaEnMenu > .protRecinto { display: none; }
+.romboPartida { border: 0; padding: 0; margin-top: 0; }
+.romboVolver { justify-self: start; min-height: 44px; padding: 6px 12px; font-size: 14px; font-weight: 700; }
+.romboEncabezado { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 12px; align-items: center; }
+.romboMini .romboSVG { width: 92px; }
+.romboMini text, .romboMini .romboAviso { display: none; }
+.romboEncabezado .romboTitulo { display: grid; gap: 6px; justify-items: start; }
+.romboEncabezado h4 { font-size: 16px; }
+.romboEncabezado .romboChip { order: 0; }
+.romboDesc { font-size: 13px; }
+.romboPartidas li { padding: 0; border: 1px solid var(--g-marca); }
+.romboPartidaCab, .romboPartidaCab:hover:not(:disabled) { display: flex; justify-content: space-between; align-items: center; gap: 4px 10px; flex-wrap: wrap; width: 100%; min-height: 56px; padding: 8px 10px; border: 0; outline: 0; background: #fff; text-align: left; font-size: 13px; font-weight: 500; white-space: normal; }
+.romboPartidaCab[aria-expanded=true] { border-bottom: 1px solid var(--g-marca); }
+.romboMando { display: grid; gap: 6px; padding: 8px 10px 12px; }
+.romboMando small { font-size: 12px; line-height: 1.3; }
+.romboPctCampo { font-size: 13px; }
+.romboPctCampo input { min-height: 44px; }
+
+/* Palanca de estados: riel con paradas fijas, como una caja de cambios */
+.palancas { display: grid; grid-auto-flow: column; grid-auto-columns: auto; justify-content: space-between; gap: 6px; margin-top: 6px; }
+.palanca { display: grid; gap: 6px; min-width: 0; align-content: start; }
+.palancaTitulo { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .3px; color: var(--g-texto); }
+.palancaRiel { --alto: 174px; --tramo: calc(var(--alto) / var(--n)); position: relative; display: grid; grid-template-rows: repeat(var(--n), 1fr); height: var(--alto); padding-left: 33px; box-sizing: border-box; }
+.palancaRiel::before { content: ""; position: absolute; left: 10px; width: 8px; top: calc(var(--tramo) / 2); bottom: calc(var(--tramo) / 2); box-sizing: border-box; background: var(--g-marca); }
+.palancaPomo { position: absolute; z-index: 2; left: 0; top: calc(var(--tramo) * var(--i) + var(--tramo) / 2 - 17px); width: 28px; height: 34px; box-sizing: border-box; border: 2px solid var(--g-marca); background-color: var(--g-azul); background-image: linear-gradient(#fff, #fff), linear-gradient(#fff, #fff), linear-gradient(#fff, #fff); background-size: 16px 2px; background-repeat: no-repeat; background-position: center 9px, center 14px, center 19px; cursor: grab; touch-action: none; transition: top .14s ease-out; }
+.palancaPomo::after { content: ""; position: absolute; inset: -8px; }
+.arrastrando .palancaPomo { top: calc(var(--y) - 17px); transition: none; cursor: grabbing; }
+.palancaRiel .palancaParada, .palancaRiel .palancaParada:hover:not(:disabled), .palancaRiel .palancaParada[aria-pressed=true], .palancaRiel .palancaParada[aria-pressed=true]:hover:not(:disabled) { position: relative; display: flex; align-items: center; min-height: 44px; margin: 0; padding: 0 0 0 2px; border: 0; outline: 0; background: transparent !important; color: var(--g-texto) !important; text-align: left; font-size: 12.5px; font-weight: 500; line-height: 1.15; white-space: normal; overflow-wrap: normal; }
+.palancaRiel .palancaParada::before { content: ""; position: absolute; left: -15px; top: 50%; width: 13px; height: 2px; background: var(--g-marca); }
+.palancaRiel .palancaParada[aria-pressed=true], .palancaRiel .palancaParada[aria-pressed=true]:hover:not(:disabled) { font-weight: 800; }
+.palancaRiel .palancaParada:disabled { color: var(--g-texto2) !important; opacity: .65; }
+.palancaRiel .palancaParada:disabled::before { background: var(--g-regla); }
+.palancaRiel .palancaParada:focus-visible { outline: 2px solid var(--g-cian); }
+.previosLista .palancas { max-width: 180px; }
+@media (min-width: 1024px) { .palancas { max-width: 560px; } }
+
+/* Con la ficha bajada, la barra del recinto queda sobre la navegación inferior */
+@media (max-width: 1023px), (pointer: coarse) {
+  body.fichaMinima #fichaBarra { bottom: calc(var(--barra-obra) + env(safe-area-inset-bottom)); padding-bottom: 8px; }
+  body.fichaMinima.conFunciones #fichaBarra { bottom: calc(var(--barra-obra) + var(--barra-funciones) + env(safe-area-inset-bottom)); }
+}

@@ -82,9 +82,9 @@ export function createObservaciones(ctx) {
       const miniatura = f => { const u = URL.createObjectURL(new Blob([f.mini], {type: 'image/jpeg'})); urlsFicha.push(u); return `<img src="${u}" alt="Foto ${esc(M.TIPOS_FOTO[f.tipo])} del ${fechaCorta(f.at)}">${capaMarcas(marcasFoto.get(f.id), f.ancho, f.alto, 'slice')}<span>${esc(M.TIPOS_FOTO[f.tipo])}</span>`; };
       root.innerHTML = `<div class="obsFichaCabecera"><span>${pendientes ? `${pendientes} pendiente${pendientes === 1 ? '' : 's'}${vencidas ? ` · <em>${vencidas} vencida${vencidas === 1 ? '' : 's'}</em>` : ''}` : lista.length ? 'Sin pendientes' : 'Sin observaciones registradas'}</span>
         <button type="button" class="primary" data-obs-nueva>+ Observación con foto</button></div>${(() => {
-          // Primero las pendientes; las cerradas y descartadas quedan plegadas para que el rombo no quede lejos.
+          // Plegadas para que el menú del recinto entre en una pantalla: a la vista quedan el rombo, el número y «+ Observación».
           const abiertas = lista.filter(o => M.PENDIENTES.has(o.estado)), cerradas = lista.filter(o => !M.PENDIENTES.has(o.estado)), lis = l => l.map(o => fila(o, false, fotos.get(o.id), miniatura)).join('');
-          return (abiertas.length ? `<ul class="obsLista">${lis(abiertas)}</ul>` : '')
+          return (abiertas.length ? `<details class="obsCerradas obsPendientes"><summary>Ver ${abiertas.length} pendiente${abiertas.length === 1 ? '' : 's'}</summary><ul class="obsLista">${lis(abiertas)}</ul></details>` : '')
             + (cerradas.length ? `<details class="obsCerradas"><summary>Ver todas · ${cerradas.length} cerrada${cerradas.length === 1 ? '' : 's'} o descartada${cerradas.length === 1 ? '' : 's'}</summary><ul class="obsLista">${lis(cerradas)}</ul></details>` : '');
         })()}`;
       const volver = () => cargarObservaciones(true).then(() => ficha(root, room));

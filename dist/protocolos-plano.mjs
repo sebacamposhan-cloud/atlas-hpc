@@ -91,7 +91,7 @@ export function createProtocolPlan(ctx) {
         <h3>En el plano (${ubicados.length})</h3><ul class="protocolLista">${ubicados.map(p => `<li><button data-folio="${esc(p.fila.id)}" class="${p.fila.id === foco ? 'activo' : ''}" ${ocultos.has(p.estado) ? 'disabled' : ''}><i style="background:${colorDe(p.estado)}"></i><b>${esc(p.numero)}</b><span>${esc(p.u.etiqueta)} · ${esc(textoMedidas(p.u))}</span><small>EJES: ${cita(p.fila.axes)}${p.u.ignorado ? ' · se ignoró «' + esc(p.u.ignorado) + '»' : ''}${p.u.aproximados.length ? ' · ≈ ' + esc(p.u.aproximados.map(a => a.id + ' → ' + a.base).join(', ')) : ''}</small><small>${quien(p.fila)} · ${esc(stateLabels[p.estado] || p.estado)}</small></button></li>`).join('') || '<li><p>Ningún folio con ejes ubicables.</p></li>'}</ul>
         <p class="protocolNota">Se dibuja exactamente entre los ejes que indica el protocolo: zona entre ejes, tramo sobre un eje o pilar en un cruce. Las superposiciones se muestran tal cual; todos los bordes van encima. Las medidas salen de la grilla del DWG (vano de 8,2 m). ≈ marca un eje que no está en la grilla y se aproximó a su base (A12B → A12). La matriz no se modifica.</p>
       </div>
-      <div class="protocolFooter"><button data-volver>← Volver a la matriz</button></div>`;
+      <div class="protocolFooter"><button data-volver>← Volver</button></div>`;
     panel.querySelector('[data-cerrar]').onclick = cerrar;
     panel.querySelector('[data-volver]').onclick = () => { cerrar(); ctx.volver(); };
     panel.querySelectorAll('[data-estado]').forEach(input => input.onchange = () => { if (input.checked) ocultos.delete(input.dataset.estado); else ocultos.add(input.dataset.estado); render(); dibujar(); });
