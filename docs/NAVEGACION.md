@@ -33,6 +33,16 @@ En celular y tablet, buscar un código ilumina el recinto y lo centra en el plan
 
 Cada partida se despliega en palancas, en el orden en que se avanza: protocolo previo, ejecución y revisión. El pomo se arrastra o se toca la posición. Cada parada es un botón normal, y el guardado es el mismo de antes.
 
+## Avance por recinto
+
+«Ver datos de ejemplo» muestra el panel completo con una muestra para gerencia. Se calcula al vuelo: no se guarda, no se sincroniza y no toca los registros reales. Mientras está activa, el panel lo avisa y no se puede marcar avance.
+
+«Avance real vs programado» muestra el % acumulado de partidas instaladas por semana. La línea real sale de la fecha del registro de cada recinto. Atlas todavía no tiene un programa de obra cargado, así que la línea programada solo aparece en los datos de ejemplo.
+
+## Proyectos
+
+Eliminar un proyecto pide confirmar con un segundo toque. La nube no borra registros: el proyecto queda marcado como eliminado y desaparece de las listas de todos los equipos.
+
 ## Archivos
 
 - `dist/navegacion-model.mjs`: tarjetas, funciones y memoria, sin DOM (`navegacion-test.mjs`).

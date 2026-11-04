@@ -61,9 +61,7 @@ function graficos(rep, esc) {
     [...embudo, ['Observado', rep.estados.find(x => x[0] === 'Observado')[1]]].map(([e, n]) => ({etiqueta: e, texto: n + ' · ' + pct(n, total), a: n, total, colorA: COLORES_ESTADO[e]})), esc, 'Sin partidas.');
   const g3 = barras('Partidas bloqueadas por protocolo previo', 'Qué protocolo liberar primero: trabajo con avance que no puede aprobarse hasta liberar su previo.',
     rep.bloqueosPorCausa.slice(0, 10).map(b => ({etiqueta: b.causa, texto: b.n + (b.n === 1 ? ' partida' : ' partidas'), a: b.n, total: rep.bloqueosPorCausa[0].n, colorA: '#c18b3f'})), esc, 'Ninguna partida con avance bloqueada. ' + rep.esperando + ' partidas sin iniciar esperan su protocolo previo.');
-  const g4 = barras('Avance físico por nivel de asepsia', 'Si los recintos de asepsia media avanzan más lento, revisar la cadena empaste → pintura y su inspección.',
-    rep.porAsepsia.map(a => ({etiqueta: 'Asepsia ' + a.id, texto: a.fisico.toFixed(1) + ' %', a: a.fisico, b: 100 - a.fisico, total: 100})), esc, 'Sin datos.');
-  return `<div class="chartGrid">${g1}${g2}${g3}${g4}</div>`;
+  return `<div class="chartGrid">${g1}${g2}${g3}</div>`;
 }
 
 // ---------- Panel de Control de obra ----------
