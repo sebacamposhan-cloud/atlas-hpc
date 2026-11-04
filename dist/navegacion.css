@@ -35,7 +35,7 @@ body.floorHome header .logoutButton { margin-left: 8px; }
 /* Espacio de trabajo y barra inferior */
 .workspace, body.hideRight .workspace, body.hideLeft .workspace, body.hideLeft.hideRight .workspace { margin-left: 0; height: calc(100dvh - var(--cabecera) - var(--barra-obra) - env(safe-area-inset-bottom)); }
 body.floorHome .workspace, body.floorHome.hideRight .workspace, body.floorHome.hideLeft .workspace, body.floorHome.hideLeft.hideRight .workspace { height: calc(100dvh - var(--cabecera)); }
-.bottomNav { display: grid; grid-template-columns: minmax(96px, 1fr) minmax(0, 3fr); gap: 0; height: calc(var(--barra-obra) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); z-index: 35; background: #fff; }
+.bottomNav { display: grid; grid-template-columns: minmax(84px, 1fr) minmax(84px, 1fr) minmax(0, 2fr); gap: 0; height: calc(var(--barra-obra) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); z-index: 35; background: #fff; }
 body.floorHome .bottomNav { display: none; }
 .bottomNav button, .bottomNav button.active { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-width: 0; height: 100%; padding: 4px 6px; border: 0; background: #fff; color: var(--g-texto); font-size: 12px; font-weight: 700; }
 .bottomNav button span { font-size: 18px; line-height: 1; }
@@ -98,6 +98,11 @@ body:not(.hideLeft) #barraFunciones { visibility: hidden; }
 #ruedaObra[hidden] { display: none; }
 .ruedaCabeza { display: flex; align-items: center; justify-content: space-between; padding: 0 12px 0 16px; }
 .ruedaCabeza h2 { margin: 0; font-size: 15px; font-weight: 800; color: var(--g-texto); }
+/* Control y Protocolos parten en sus tarjetas: la rueda es su pantalla de inicio y tapa el plano. */
+body.ruedaPortada #ruedaObra { top: 0; z-index: 30; display: flex; flex-direction: column; justify-content: center; gap: 12px; padding: 16px 0; border-top: 0; animation: none; }
+body.ruedaPortada .ruedaCabeza { justify-content: center; min-height: 44px; padding: 0 16px; }
+body.ruedaPortada .ruedaCabeza h2 { font-size: 29px; line-height: 1.1; }
+body.ruedaPortada #ruedaCerrar { display: none; }
 #ruedaCerrar { width: 44px; height: 44px; padding: 0; border: 0; font-size: 26px; }
 .ruedaPista { position: relative; height: 192px; overflow: hidden; perspective: 900px; touch-action: pan-y; cursor: grab; user-select: none; -webkit-user-select: none; }
 .ruedaPista.tomado { cursor: grabbing; }
@@ -107,6 +112,12 @@ body:not(.hideLeft) #barraFunciones { visibility: hidden; }
 .ruedaTarjeta svg { width: 100%; height: 84px; fill: none; stroke-width: 1.5; }
 .ruedaPista:not(.conCursor) .ruedaTarjeta.alCentro, .ruedaTarjeta.iluminada, .ruedaTarjeta.iluminada:hover:not(:disabled) { background: var(--g-azul); color: #fff; border-color: var(--g-azul); outline: 0; }
 .ruedaPista:not(.conCursor) .ruedaTarjeta.alCentro svg, .ruedaPista:not(.conCursor) .ruedaTarjeta.alCentro svg .f, .ruedaTarjeta.iluminada svg, .ruedaTarjeta.iluminada svg .f { stroke: #fff; }
+/* Tarjeta elegida: en azul, salvo que el cursor esté iluminando otra, igual que los pisos. */
+.ruedaTarjeta[aria-pressed=true] svg, .ruedaTarjeta[aria-pressed=true] svg .f { stroke: #fff; }
+.ruedaPista.conCursor .ruedaTarjeta[aria-pressed=true]:not(.iluminada), .ruedaPista.conCursor .ruedaTarjeta[aria-pressed=true]:not(.iluminada):hover:not(:disabled) { background: #fff !important; border-color: var(--g-marca); color: var(--g-texto) !important; }
+.ruedaPista.conCursor .ruedaTarjeta[aria-pressed=true]:not(.iluminada) small { color: var(--g-texto) !important; }
+.ruedaPista.conCursor .ruedaTarjeta[aria-pressed=true]:not(.iluminada) svg { stroke: var(--g-marca); }
+.ruedaPista.conCursor .ruedaTarjeta[aria-pressed=true]:not(.iluminada) svg .f { stroke: var(--g-azul); }
 @media (prefers-reduced-motion: reduce) { .ruedaTarjeta { transition: none; } #ruedaObra { animation: none; } }
 
 /* Hoja de una función: lista sobre el plano */
@@ -132,10 +143,17 @@ body:not(.hideLeft) #barraFunciones { visibility: hidden; }
 /* Portada: maquetas 3D reales de cada piso (scripts/pisos-3d.mjs), como en el diseño aprobado. Es la excepción al tema,
    igual que el inicio de sesión: etiquetas redondeadas y sombras suaves, siempre con los azules de Sacyr. */
 #floorExplorer { display: flex; flex-direction: column; gap: 10px; padding: 18px 20px 16px; overflow: auto; box-sizing: border-box; height: 100%; background: #fff; }
-#floorExplorer .floorIntro { margin: 0; padding: 0; border: 0; flex: none; }
-#floorExplorer .floorIntro .section-label { font-size: 13px; letter-spacing: 0; text-transform: none; font-weight: 700; }
-#floorExplorer .floorIntro h1 { font-size: 29px; line-height: 1.1; margin: 6px 0 4px; letter-spacing: -.6px; font-weight: 800; }
-#floorExplorer .floorIntro p { margin: 0; font-size: 15px; }
+#floorExplorer .floorIntro, #moduloExplorer .floorIntro { margin: 0; padding: 0; border: 0; flex: none; }
+#floorExplorer .floorIntro .section-label, #moduloExplorer .floorIntro .section-label { font-size: 13px; letter-spacing: 0; text-transform: none; font-weight: 700; }
+#floorExplorer .floorIntro h1, #moduloExplorer .floorIntro h1 { font-size: 29px; line-height: 1.1; margin: 6px 0 4px; letter-spacing: -.6px; font-weight: 800; }
+#floorExplorer .floorIntro p, #moduloExplorer .floorIntro p { margin: 0; font-size: 15px; }
+#moduloExplorer { position: absolute; inset: 0; z-index: 24; display: flex; flex-direction: column; gap: 10px; padding: 18px 20px 16px; overflow: auto; box-sizing: border-box; height: 100%; background: #fff; }
+#moduloExplorer[hidden], #floorExplorer[hidden], body:not(.floorHome) #moduloExplorer { display: none; }
+.moduloEscena { flex: 1; display: flex; align-items: center; min-height: 200px; }
+.moduloEscena .ruedaPista { flex: 1; min-width: 0; margin: 0 -20px; }
+.portadaAcciones { flex: none; align-self: center; display: flex; gap: 10px; width: 100%; max-width: 460px; }
+#floorExplorer #pisoVolver, #moduloExplorer #moduloVolver { flex: none; min-height: 58px; padding: 0 18px; border-radius: 14px !important; font-size: 16px; font-weight: 700; }
+#moduloExplorer #moduloVolver[hidden] { display: none; }
 .pisosEscena { --placa: min(calc(100vw - 118px), calc((100dvh - 250px) / 1.58), 560px); --alto: calc(var(--placa) * 1.5); --paso: calc(var(--placa) * .285); flex: 1; min-height: var(--alto); display: flex; align-items: center; justify-content: center; gap: 0; width: 100%; max-width: 820px; margin: 0 auto; }
 .pisosPila { position: relative; flex: none; width: var(--placa); height: var(--alto); touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
 .pisosPila.tomado, .pisosPila.tomado .pisoCapa::after { cursor: grabbing; }
@@ -152,18 +170,12 @@ body:not(.hideLeft) #barraFunciones { visibility: hidden; }
 #floorExplorer .pisoEtiqueta[aria-pressed=true], #floorExplorer .pisoEtiqueta[aria-pressed=true]:hover:not(:disabled) { background: #fff !important; color: var(--g-texto) !important; }
 #floorExplorer .pisoEtiqueta.iluminado, #floorExplorer .pisoEtiqueta.iluminado:hover:not(:disabled), #floorExplorer .pisoEtiqueta.iluminado[aria-pressed=true], #floorExplorer .pisoEtiqueta.iluminado[aria-pressed=true]:hover:not(:disabled) { background: var(--g-azul) !important; border-color: var(--g-azul); color: #fff !important; box-shadow: 0 6px 16px rgba(15, 84, 153, .35) !important; }
 .pisoEtiqueta.iluminado::before, .pisoEtiqueta.iluminado::after { background: var(--g-azul); }
-#floorExplorer #pisoContinuar { flex: none; align-self: center; width: 100%; max-width: 460px; min-height: 58px; border-radius: 14px !important; box-shadow: 0 8px 20px rgba(15, 84, 153, .28) !important; font-size: 18px; font-weight: 800; }
-#floorExplorer #pisoContinuar:disabled { background: #fff; color: var(--g-texto2); border-color: var(--g-regla); box-shadow: none !important; }
-#pisoAyuda { display: none; flex: none; margin: 0; text-align: center; font-size: 15px; font-weight: 600; color: var(--g-texto2); }
-@media (hover: hover) and (pointer: fine) {
-  #floorExplorer #pisoContinuar { display: none; }
-  #pisoAyuda { display: block; }
-  .pisosEscena { --placa: min(calc(100vw - 150px), calc((100dvh - 232px) / 1.5), 560px); }
-}
+#floorExplorer #pisoContinuar, #moduloExplorer #moduloContinuar { flex: 1; min-width: 0; min-height: 58px; border-radius: 14px !important; box-shadow: 0 8px 20px rgba(15, 84, 153, .28) !important; font-size: 18px; font-weight: 800; }
+#floorExplorer #pisoContinuar:disabled, #moduloExplorer #moduloContinuar:disabled { background: #fff; color: var(--g-texto2); border-color: var(--g-regla); box-shadow: none !important; }
 #navLogo { display: none; height: 38px; width: auto; }
 body.floorHome #navLogo { display: block; }
 body.floorHome header .project b, body.floorHome header .project span { display: none; }
-@media (min-width: 900px) { .pisosEscena { --placa: min(calc((100dvh - 262px) / 1.5), 560px); } .pisosLista { width: 110px; margin-left: 10px; } .pisoEtiqueta, .pisoEtiqueta:hover:not(:disabled) { width: 110px; font-size: 16px; } }
+@media (min-width: 900px) { .pisosEscena { --placa: min(calc((100dvh - 300px) / 1.5), 560px); } .pisosLista { width: 110px; margin-left: 10px; } .pisoEtiqueta, .pisoEtiqueta:hover:not(:disabled) { width: 110px; font-size: 16px; } }
 
 /* Menú del recinto: primero el rombo; al tocar una parte, solo su menú de avance */
 #detail .detailName { margin: 0; font-size: 20px; line-height: 1.2; font-weight: 800; }

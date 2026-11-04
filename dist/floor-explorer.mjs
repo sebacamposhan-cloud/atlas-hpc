@@ -1,16 +1,28 @@
 // Lightweight entry point. The existing viewer and its runtime load only after a floor is chosen.
+// Orden de entrada: módulo → piso → módulo abierto. Los enlaces con piso, los QR y las tareas entran directo.
 import './offline.mjs';
 import {iniciarNube} from './nube.mjs';
-import {leerMemoria,guardarMemoria} from './navegacion-model.mjs';
+import {leerMemoria,guardarMemoria,MODULOS,moduloDe,consultaPiso,leerConsulta} from './navegacion-model.mjs';
 import {crearFluido,arrastrar,crearOleaje} from './fluido.mjs';
+import {crearPista} from './selector-flujo.mjs';
 iniciarNube();
 const $=id=>document.getElementById(id),floors=window.ATLAS_TARJETAS,active=window.ATLAS_PISO;
 const root=window.ATLAS_RAIZ;
 let started=false,ready=false,pending;
-const gallery=$('floorExplorer');
+const gallery=$('floorExplorer'),seccionModulos=$('moduloExplorer');
 const almacen=()=>{try{return localStorage;}catch{return {getItem:()=>null,setItem:()=>{}};}};
+// Módulo elegido. Un enlace directo a un piso abre Plano; al entrar normal queda marcado el último de este equipo.
+const pedido=leerConsulta(location.search);
+let modulo=pedido.modulo||(pedido.nivel||location.hash?'plano':leerMemoria(almacen()).modulo)||'control',moduloAbierto=null,vista='modulos';
+const lugarModulo=id=>Math.max(0,MODULOS.findIndex(m=>m.id===id));
+$('moduloPista').innerHTML=MODULOS.map(m=>`<button type="button" class="ruedaTarjeta" data-modulo="${m.id}" aria-pressed="false"><svg class="panelArt" viewBox="0 0 160 100" aria-hidden="true">${m.dibujo}</svg><strong>${m.titulo}</strong><small>${m.texto}</small></button>`).join('');
+function marcarModulo(id){modulo=id;seccionModulos.querySelectorAll('[data-modulo]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.modulo===id)));$('moduloContinuar').textContent=`Continuar a ${moduloDe(id).titulo} →`;}
+const pistaModulos=crearPista($('moduloPista'),{inicial:lugarModulo(modulo),alCambiar:i=>marcarModulo(MODULOS[i].id)});
+pistaModulos.tarjetas.forEach(b=>b.onclick=()=>{marcarModulo(b.dataset.modulo);pistaModulos.ir(lugarModulo(b.dataset.modulo));});
+marcarModulo(modulo);
 // Pisos apilados con su plano real: el de más arriba es el piso más alto. Tocar el plano o su etiqueta lo marca; «Continuar» lo abre.
 const pila=[...floors].reverse();let elegido=null;
+function mostrar(nombre){vista=nombre;seccionModulos.hidden=nombre!=='modulos';gallery.hidden=nombre!=='pisos';if(nombre==='modulos')pistaModulos.acomodar(lugarModulo(modulo));else{$('floorModulo').textContent=moduloDe(modulo).titulo;pisos.redibujar();}}
 $('floorGrid').innerHTML=pila.map(({id,numero,piso},i)=>`<button type="button" class="pisoCapa" data-floor="${id}" style="--i:${i}" aria-label="Piso ${numero}" aria-pressed="false" ${piso?'':'disabled'}>>${piso?`<img class="pisoBlanco" src="pisos3d/${id.toLowerCase()}-blanco.png" alt="" width="760" height="490" decoding="async"><img class="pisoAzul" src="pisos3d/${id.toLowerCase()}-azul.png" alt="" width="760" height="490" decoding="async">`:''}</button>`).join('');
 $('floorLista').innerHTML=pila.map(({id,numero,piso},i)=>`<button type="button" class="pisoEtiqueta" data-floor="${id}" style="--i:${i}" aria-pressed="false" ${piso?'':'disabled'}>Piso ${numero}</button>`).join('');
 // Azul: el piso bajo el cursor o, sin cursor encima, el elegido. El elegido lleva ✓ y es el que abre «Continuar».
@@ -35,45 +47,66 @@ $('floorGrid').addEventListener('pointerleave',e=>{if(e.pointerType==='mouse'&&!
 etiquetas.forEach((b,i)=>{b.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse'&&!e.buttons)seguir(i,.6);});b.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')dejar();});});
 const safeToLeave=()=>window.dispatchEvent(new Event('atlas-before-floor-change',{cancelable:true}));
 function state(home){
- document.body.classList.toggle('floorHome',home);gallery.hidden=!home;$('floorHomeButton').hidden=home;
+ document.body.classList.toggle('floorHome',home);$('floorHomeButton').hidden=home;
+ if(home)mostrar(vista);else{seccionModulos.hidden=true;gallery.hidden=true;}
+ $('moduloVolver').hidden=!ready||!moduloAbierto;
  $('globalSearch').disabled=home||!ready;$('navToggle').disabled=home||!ready;
- $('bottomObra').disabled=home||!ready;
+ $('bottomObra').disabled=home||!ready;$('bottomModulos').disabled=home||!ready;
  $('navPiso').textContent=home?'Hospital Provincia Cordillera':'Piso '+active.corto;
  if(home)document.querySelector('header .project span').textContent='Atlas HPC';else window.dispatchEvent(new Event('atlas-piso-visible'));
  // Buttons added by the viewer should not appear above the entry screen.
  for(const id of ['assistantOpen','diamondCatalogOpen'])if($(id))$(id).hidden=home;
 }
+function enfocar(id){$(id).tabIndex=-1;$(id).focus({preventScroll:true});}
+// Vuelve a la pantalla de pisos, con el módulo que estaba abierto.
 function home(push=true){
  if(!safeToLeave())return;
- const alreadyHome=document.body.classList.contains('floorHome');window.dispatchEvent(new Event('atlas-floor-home'));state(true);if(push&&!alreadyHome)history.pushState(null,'',root);if(!alreadyHome)elegir(active.id);
- $('floorExplorerTitle').tabIndex=-1;$('floorExplorerTitle').focus({preventScroll:true});
+ const alreadyHome=document.body.classList.contains('floorHome');window.dispatchEvent(new Event('atlas-floor-home'));vista='pisos';state(true);if(push&&!alreadyHome)history.pushState(null,'',root+'?modulo='+modulo);if(!alreadyHome)elegir(active.id);
+ enfocar('floorExplorerTitle');
+}
+function irAModulos(push=true){
+ if(!safeToLeave())return;
+ window.dispatchEvent(new Event('atlas-floor-home'));vista='modulos';state(true);if(push)history.pushState(null,'',root);
+ enfocar('moduloTitulo');
+}
+// Con un solo piso disponible (un capataz en su piso) no hay nada que elegir: entra directo.
+function continuarModulo(){
+ guardarMemoria(almacen(),{modulo});
+ const disponibles=floors.filter(f=>f.piso);
+ if(disponibles.length===1){openFloor(disponibles[0].id);return;}
+ vista='pisos';state(true);history.pushState(null,'',root+'?modulo='+modulo);enfocar('floorExplorerTitle');
 }
 async function openFloor(id,push=true){
  const floor=floors.find(f=>f.id===id)?.piso;if(!floor||!safeToLeave())return;
- guardarMemoria(almacen(),{piso:id});
- if(id!==active.id){location.assign(root+'?nivel='+encodeURIComponent(id));return;}
- if(push)history.pushState(null,'',root+'?nivel='+encodeURIComponent(id));
+ guardarMemoria(almacen(),{piso:id,modulo});
+ window.ATLAS_MODULO=modulo;moduloAbierto=modulo;
+ const direccion=root+consultaPiso({nivel:id,modulo});
+ if(id!==active.id){location.assign(direccion);return;}
+ if(push)history.pushState(null,'',direccion);
  state(false);
  if(!started){started=true;document.body.classList.add('booting');$('loading').hidden=false;pending=import('./app.js').catch(()=>{started=false;$('loading').innerHTML='<span>No se pudo abrir el visor.</span><button id="floorRetry">Reintentar</button>';$('floorRetry').onclick=()=>location.reload();});}
  await pending;
  if(ready)window.dispatchEvent(new Event('atlas-floor-resume'));
 }
 gallery.querySelectorAll('[data-floor]').forEach(b=>b.onclick=()=>elegir(b.dataset.floor));
+// «Continuar» se usa siempre, en celular y en computador.
 $('pisoContinuar').onclick=()=>{if(elegido)openFloor(elegido);};
-// En computador no hay «Continuar»: doble clic sobre un piso entra a él. Con teclado, Enter.
-const conCursorFino=()=>matchMedia('(hover: hover) and (pointer: fine)').matches;
-gallery.querySelectorAll('[data-floor]').forEach(b=>{b.ondblclick=()=>openFloor(b.dataset.floor);b.onkeydown=e=>{if(e.key==='Enter'&&conCursorFino()){e.preventDefault();openFloor(b.dataset.floor);}};});
+$('pisoVolver').onclick=()=>irAModulos();
+$('moduloContinuar').onclick=continuarModulo;
+// Volver a lo que estaba abierto, sin cambiar de módulo.
+$('moduloVolver').onclick=()=>{marcarModulo(moduloAbierto);openFloor(active.id);};
 $('floorHomeButton').onclick=()=>home();
-// «Pisos» vuelve a la portada. Las acciones internas «Volver al plano» siguen en el visor.
-document.addEventListener('click',e=>{if(e.target.closest('#bottomMap')){e.preventDefault();e.stopImmediatePropagation();home();}},true);
+// «Pisos» y «Módulos» vuelven a la portada. Las acciones internas «Volver al plano» siguen en el visor.
+document.addEventListener('click',e=>{if(e.target.closest('#bottomMap')){e.preventDefault();e.stopImmediatePropagation();home();}else if(e.target.closest('#bottomModulos')){e.preventDefault();e.stopImmediatePropagation();irAModulos();}},true);
 window.addEventListener('atlas-ready',()=>{ready=true;state(document.body.classList.contains('floorHome'));});
 window.addEventListener('popstate',()=>{
- const id=new URLSearchParams(location.search).get('nivel');
- if(id&&floors.some(f=>f.id===id&&f.piso))openFloor(id,false);else home(false);
+ const {nivel,modulo:enDireccion}=leerConsulta(location.search);
+ if(enDireccion)marcarModulo(enDireccion);
+ if(nivel&&floors.some(f=>f.id===nivel&&f.piso)){if(!enDireccion)marcarModulo('plano');openFloor(nivel,false);}
+ else if(enDireccion)home(false);else irAModulos(false);
 });
 // Preserve existing explicit floor links, QR room links, and module deep links.
-const requested=new URLSearchParams(location.search).get('nivel');
-if(floors.some(f=>f.id===requested&&f.piso)||(!requested&&location.hash))openFloor(active.id,false);else state(true);
+if(floors.some(f=>f.id===pedido.nivel&&f.piso)||(!pedido.nivel&&location.hash))openFloor(active.id,false);else{vista=pedido.modulo?'pisos':'modulos';state(true);}
 window.addEventListener('hashchange',()=>{if(location.hash&&document.body.classList.contains('floorHome')){if(ready)state(false);else openFloor(active.id,false);}});
 // Jerarquía de obra: un supervisor o capataz con pisos en su perfil solo abre sus pisos. Sin perfil, todos como hoy.
 async function limitarPisos(){

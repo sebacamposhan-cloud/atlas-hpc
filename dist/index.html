@@ -101,14 +101,18 @@
 <span class="muted">Guardado en este dispositivo</span>
 </div>
 </aside>
-<section id="floorExplorer" aria-labelledby="floorExplorerTitle">
-  <div class="floorIntro"><div><span class="section-label">Explorador de planos</span><h1 id="floorExplorerTitle">Selecciona un plano</h1><p>Elige el piso del hospital para trabajar.</p></div></div>
+<section id="moduloExplorer" aria-labelledby="moduloTitulo" hidden>
+  <div class="floorIntro"><div><span class="section-label">Atlas HPC</span><h1 id="moduloTitulo">Selecciona el módulo</h1><p>Elige con qué información deseas trabajar.</p></div></div>
+  <div class="moduloEscena"><div id="moduloPista" class="ruedaPista" role="group" aria-label="Módulos de Atlas" tabindex="-1"></div></div>
+  <div class="portadaAcciones"><button id="moduloVolver" type="button" hidden>← Volver</button><button id="moduloContinuar" type="button" class="primary">Continuar →</button></div>
+</section>
+<section id="floorExplorer" aria-labelledby="floorExplorerTitle" hidden>
+  <div class="floorIntro"><div><span class="section-label" id="floorModulo">Plano</span><h1 id="floorExplorerTitle">Selecciona el piso</h1><p>Elige el piso del hospital para trabajar.</p></div></div>
   <div class="pisosEscena">
     <div id="floorGrid" class="pisosPila" role="group" aria-label="Pisos del hospital"></div>
     <div id="floorLista" class="pisosLista" role="group" aria-label="Elegir piso"></div>
   </div>
-  <p id="pisoAyuda">Doble clic en un piso para entrar</p>
-  <button id="pisoContinuar" type="button" class="primary" disabled>Continuar →</button>
+  <div class="portadaAcciones"><button id="pisoVolver" type="button">← Volver</button><button id="pisoContinuar" type="button" class="primary" disabled>Continuar →</button></div>
 </section>
 <section id="workspacePanel" hidden aria-label="Espacio de trabajo"></section><aside id="planFilters" hidden aria-labelledby="planFiltersTitle"></aside><main>
 <div class="planheader">
@@ -220,7 +224,7 @@ Ejes A–W · 1–12
 </aside>
 </div>
 <nav class="bottomNav" aria-label="Navegación del plano">
-<button id="bottomMap"><span aria-hidden="true">▦</span>Pisos</button><button id="bottomObra" type="button" aria-controls="ruedaObra" aria-expanded="false" disabled>Control de obra</button>
+<button id="bottomModulos" type="button" disabled><span aria-hidden="true">▤</span>Módulos</button><button id="bottomMap"><span aria-hidden="true">▦</span>Pisos</button><button id="bottomObra" type="button" aria-controls="ruedaObra" aria-expanded="false" disabled>Plano</button>
 </nav>
 <dialog id="modal">
 <button id="closeModal" class="close" aria-label="Cerrar">×</button>

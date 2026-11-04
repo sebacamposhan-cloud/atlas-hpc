@@ -9,8 +9,11 @@
 .obraContador, .ruedaContador, .funcionContador { display: grid; place-items: center; min-width: 22px; height: 22px; box-sizing: border-box; padding: 0 5px; font-size: 13px; font-weight: 800; line-height: 1; }
 .obraContador[hidden], .ruedaContador[hidden], .funcionContador[hidden] { display: none; }
 .obraContador { position: absolute; top: 50%; left: calc(50% + 66px); margin-top: -11px; background: #fff; color: var(--g-texto); }
+#bottomModulos { position: relative; }
+#bottomModulos .obraContador { top: 6px; left: calc(50% + 14px); margin-top: 0; background: var(--g-marca); color: #fff; }
 .ruedaContador { position: absolute; top: 8px; right: 8px; background: var(--g-azul); color: #fff; }
 .ruedaTarjeta.iluminada .ruedaContador, .ruedaPista:not(.conCursor) .ruedaTarjeta.alCentro .ruedaContador { background: #fff; color: var(--g-texto); }
+#bottomObra .obraContador { left: calc(50% + 46px); }
 .funcionContador { position: absolute; top: -4px; left: calc(50% + 12px); border-radius: 50% !important; background: var(--g-marca); color: #fff; }
 
 /* Avisos de la hoja */

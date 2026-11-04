@@ -55,7 +55,7 @@ async function abrir(n, {movil = false} = {}) {
   await context.addInitScript(([token, email]) => { if (!localStorage.getItem('atlas-nube-sesion')) localStorage.setItem('atlas-nube-sesion', JSON.stringify({token, refresh: 'aislado', expira: Date.now() + 36e5, user: {username: email, role: 'editor'}, recordar: true})); }, [tokenFor(actor(n)), correo(n)]);
   const page = await context.newPage(), errores = [];
   page.on('pageerror', e => errores.push(e.message)); page.setDefaultTimeout(20000);
-  await page.goto(base + '/?nivel=N-1');
+  await page.goto(base + '/?nivel=N-1&modulo=control');
   await page.waitForFunction(() => !document.getElementById('bottomObra')?.disabled);
   return {context, page, errores};
 }
@@ -83,8 +83,7 @@ try {
   await paso('Sin perfil todo sigue igual', async () => {
     const {context, page, errores} = await abrir(30);
     await sincronizar(page); await page.waitForTimeout(2500);
-    await page.click('#bottomObra');
-    assert.deepEqual(await page.$$eval('.ruedaTarjeta', b => b.map(x => x.dataset.tarjeta)), ['lastplanner', 'recintos', 'protocolos', 'herramientas']);
+    assert.deepEqual(await page.$$eval('#ruedaObra .ruedaTarjeta', b => b.map(x => x.dataset.tarjeta)), ['lastplanner', 'resumen', 'herramientas']);
     assert.equal(await page.locator('.obraContador:not([hidden])').count(), 0);
     assert.deepEqual(errores, []); await context.close();
   });
@@ -93,9 +92,8 @@ try {
   let codigos;
   await paso('El jefe B recibe su perfil y la libreta en la rueda', async () => {
     await sincronizar(jefe.page); await conPerfil(jefe.page);
-    await jefe.page.click('#bottomObra');
     await jefe.page.waitForSelector('.ruedaTarjeta[data-tarjeta=tareas]');
-    assert.deepEqual(await jefe.page.$$eval('.ruedaTarjeta', b => b.map(x => x.dataset.tarjeta)), ['tareas', 'lastplanner', 'recintos', 'protocolos', 'herramientas']);
+    assert.deepEqual(await jefe.page.$$eval('#ruedaObra .ruedaTarjeta', b => b.map(x => x.dataset.tarjeta)), ['tareas', 'lastplanner', 'resumen', 'herramientas']);
     await foto(jefe.page, 'computador-rueda');
     await jefe.page.click('.ruedaTarjeta[data-tarjeta=tareas]');
     assert.deepEqual(await jefe.page.$$eval('#barraFunciones [data-funcion]', b => b.map(x => x.dataset.funcion)), ['mias', 'asignar', 'equipo']);
@@ -135,8 +133,7 @@ try {
     await sincronizar(page); await conPerfil(page);
     await page.waitForSelector('.obraContador:not([hidden])');
     assert.equal(await page.textContent('.obraContador'), '1');
-    await page.click('#bottomObra');
-    assert.deepEqual(await page.$$eval('.ruedaTarjeta', b => b.map(x => x.dataset.tarjeta)), ['tareas', 'recintos', 'protocolos', 'herramientas'], 'sin Last Planner para el nivel 4');
+    assert.deepEqual(await page.$$eval('#ruedaObra .ruedaTarjeta', b => b.map(x => x.dataset.tarjeta)), ['tareas', 'herramientas'], 'sin Last Planner para el nivel 4');
     await foto(page, 'celular-rueda');
     await page.click('.ruedaTarjeta[data-tarjeta=tareas]');
     await page.waitForSelector('.jerTarea');
@@ -148,7 +145,7 @@ try {
   await paso('En computador la barra de marcado también queda abajo y despejada', async () => {
     const {context, page, errores} = await abrir(11);
     await sincronizar(page); await conPerfil(page);
-    await page.click('#bottomObra'); await page.click('.ruedaTarjeta[data-tarjeta=tareas]');
+    await page.click('.ruedaTarjeta[data-tarjeta=tareas]');
     await page.click('.jerTareaAbrir'); await page.click('[data-jer=marcar]');
     await page.waitForSelector('#jerMarcado:not([hidden])');
     assert.ok(await barraDespejada(page));
@@ -192,7 +189,7 @@ try {
     const page = jefe.page;
     await page.reload(); await page.waitForFunction(() => !document.getElementById('bottomObra')?.disabled);
     await sincronizar(page); await page.waitForSelector('.obraContador:not([hidden])');
-    await page.click('#bottomObra'); await page.click('.ruedaTarjeta[data-tarjeta=tareas]');
+    await page.click('.ruedaTarjeta[data-tarjeta=tareas]');
     await page.click('#barraFunciones [data-funcion=equipo]');
     await page.waitForSelector('[data-jer=confirmar]');
     await foto(page, 'computador-equipo');
@@ -210,9 +207,6 @@ try {
   await paso('Vista del equipo en celular', async () => {
     const page = (await abrir(6, {movil: true})).page;
     await sincronizar(page); await conPerfil(page);
-    await page.click('#bottomObra');
-    // Con cinco tarjetas, «Mis tareas» queda a dos giros de Recintos: se gira como al deslizar con el dedo.
-    await page.keyboard.press('ArrowLeft'); await page.keyboard.press('ArrowLeft');
     await page.click('.ruedaTarjeta[data-tarjeta=tareas]');
     await page.click('#barraFunciones [data-funcion=equipo]'); await page.waitForSelector('.jerEquipo li');
     assert.ok(await sinAncho(page));

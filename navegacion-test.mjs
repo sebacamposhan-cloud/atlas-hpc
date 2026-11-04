@@ -1,36 +1,58 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {TARJETAS, ICONOS, tarjeta, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar, paradaCercana, CLAVE_MEMORIA, tarjetasPara, TARJETA_TAREAS} from './dist/navegacion-model.mjs';
+import {TARJETAS, ICONOS, MODULOS, moduloDe, conPortada, cartasDelModulo, consultaPiso, leerConsulta, tarjeta, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar, paradaCercana, CLAVE_MEMORIA, tarjetasPara, TARJETA_TAREAS} from './dist/navegacion-model.mjs';
 import {funcionesDe} from './dist/jerarquia-model.mjs';
 import {crearFluido, crearOleaje, arrastrar} from './dist/fluido.mjs';
 import {palancaHTML} from './dist/palanca.mjs';
 
 const almacen = (inicial = {}) => { const d = {...inicial}; return {getItem: k => d[k] ?? null, setItem: (k, v) => { d[k] = v; }, d}; };
 
-// Tarjetas: Last Planner abre su panel sin botones; las demás devuelven el plano con sus funciones.
-assert.deepEqual(TARJETAS.map(t => t.id), ['lastplanner', 'recintos', 'protocolos', 'herramientas']);
+// Módulos: Control, Plano y Protocolos. Control y Protocolos parten en sus tarjetas; Plano, en el plano.
+assert.deepEqual(MODULOS.map(m => m.id), ['control', 'plano', 'protocolos']);
+assert.deepEqual(MODULOS.map(m => conPortada(m.id)), [true, false, true]);
+assert.equal(moduloDe('inexistente'), null);
+for (const m of MODULOS) assert.ok(m.titulo && m.texto && m.dibujo, m.id);
+
+// Tarjetas de cada módulo: un panel, una acción sobre el plano, una función de su grupo o sus botones flotantes.
+assert.deepEqual(cartasDelModulo(TARJETAS, 'control').map(t => t.id), ['lastplanner', 'resumen', 'herramientas']);
+assert.deepEqual(cartasDelModulo(TARJETAS, 'plano').map(t => t.id), ['recintos', 'capas']);
+assert.deepEqual(cartasDelModulo(TARJETAS, 'protocolos').map(t => t.id), ['tipos', 'criticos', 'matriz']);
 assert.equal(tarjeta('lastplanner').panel, 'lastplanner');
 assert.equal(tarjeta('lastplanner').funciones.length, 0);
+assert.equal(tarjeta('resumen').panel, 'avance');
+assert.equal(tarjeta('capas').accion, 'filtros');
+assert.equal(tarjeta('tipos').grupo, 'protocolos');
 assert.deepEqual(tarjeta('recintos').funciones.map(([id]) => id), ['avance', 'observaciones', 'resumen']);
-assert.deepEqual(tarjeta('herramientas').funciones.map(([, nombre]) => nombre), ['Proyectos', 'Filtros y capas', 'Más']);
+assert.deepEqual(tarjeta('herramientas').funciones.map(([, nombre]) => nombre), ['Proyectos', 'Más']);
 assert.equal(tarjeta('inexistente'), null);
 assert.equal(tituloNavegacion('recintos', 'observaciones'), 'Recintos · Observaciones');
 assert.equal(tituloNavegacion('protocolos', null), 'Protocolos');
 assert.equal(tituloNavegacion(null, null), 'Plano');
+assert.equal(tituloNavegacion(null, null, 'control'), 'Control');
 
-// Jerarquía de obra: sin perfil la rueda es la de siempre; con perfil, la libreta y lo de su nivel.
+// Dirección de un piso dentro de un módulo: Plano no se escribe, para que los enlaces de siempre sigan iguales.
+assert.equal(consultaPiso({nivel: 'N01'}), '?nivel=N01');
+assert.equal(consultaPiso({nivel: 'N-1', modulo: 'plano'}), '?nivel=N-1');
+assert.equal(consultaPiso({nivel: 'N02', modulo: 'control'}), '?nivel=N02&modulo=control');
+assert.deepEqual(leerConsulta('?nivel=N02&modulo=control'), {nivel: 'N02', modulo: 'control'});
+assert.deepEqual(leerConsulta('?modulo=otro'), {nivel: null, modulo: null});
+
+// Jerarquía de obra: sin perfil, las tarjetas de siempre; con perfil, la libreta y lo de su nivel.
 {
   const perfil = (nivel, extra = {}) => ({id: '00000000-0000-4000-8000-000000000001', nombre: 'Persona de ejemplo', cargo: '', nivel, area: 'linea', jefe: null, pisos: [], empresa: null, activo: true, ...extra});
   assert.equal(tarjetasPara(funcionesDe(null)), TARJETAS);
   assert.equal(tarjetasPara(funcionesDe(perfil(3, {activo: false}))), TARJETAS, 'un perfil inactivo no cambia nada');
   const capataz = tarjetasPara(funcionesDe(perfil(4)));
-  assert.deepEqual(capataz.map(t => t.id), ['tareas', 'recintos', 'protocolos', 'herramientas']);
+  assert.deepEqual(cartasDelModulo(capataz, 'control').map(t => t.id), ['tareas', 'herramientas'], 'sin Last Planner ni resumen de gerencia');
+  assert.deepEqual(cartasDelModulo(capataz, 'plano').map(t => t.id), ['recintos', 'capas']);
+  assert.deepEqual(cartasDelModulo(capataz, 'protocolos').map(t => t.id), ['tipos', 'criticos']);
   assert.deepEqual(capataz[0].funciones.map(([id]) => id), ['mias']);
-  assert.deepEqual(capataz[1].funciones.map(([id]) => id), ['avance', 'observaciones'], 'el resumen de gerencia no va al capataz');
+  assert.deepEqual(capataz.find(t => t.id === 'recintos').funciones.map(([id]) => id), ['avance', 'observaciones'], 'el resumen de gerencia no va al capataz');
   const jefe = tarjetasPara(funcionesDe(perfil(2)));
-  assert.deepEqual(jefe.map(t => t.id), ['tareas', 'lastplanner', 'recintos', 'protocolos', 'herramientas']);
+  assert.deepEqual(cartasDelModulo(jefe, 'control').map(t => t.id), ['tareas', 'lastplanner', 'resumen', 'herramientas']);
   assert.deepEqual(jefe[0].funciones.map(([id]) => id), ['mias', 'asignar', 'equipo']);
-  assert.deepEqual(jefe.slice(1).map(t => t.funciones.length), TARJETAS.map(t => t.funciones.length), 'la jefatura conserva todas sus funciones');
+  assert.deepEqual(jefe.slice(1).map(t => t.id).sort(), TARJETAS.map(t => t.id).sort(), 'la jefatura conserva todas sus tarjetas');
+  assert.deepEqual(jefe.slice(1).map(t => t.funciones.length).sort(), TARJETAS.map(t => t.funciones.length).sort(), 'y todas sus funciones');
   assert.deepEqual(tarjetasPara(funcionesDe(perfil(null, {area: 'calidad'})))[0].funciones.map(([id]) => id), ['equipo']);
   assert.equal(tituloNavegacion('tareas', 'mias'), 'Mis tareas');
   assert.equal(tituloNavegacion('tareas', 'asignar'), 'Mis tareas · Asignar');
@@ -109,11 +131,16 @@ function fluido(opciones = {}) {
 }
 
 // Memoria: recuerda piso y función; ignora datos dañados, funciones momentáneas y tarjetas sin funciones.
-assert.deepEqual(leerMemoria(almacen()), {piso: null, tarjeta: null, funcion: null});
-assert.deepEqual(leerMemoria(almacen({[CLAVE_MEMORIA]: '{mal'})), {piso: null, tarjeta: null, funcion: null});
+const vacia = {piso: null, tarjeta: null, funcion: null, modulo: null};
+assert.deepEqual(leerMemoria(almacen()), vacia);
+assert.deepEqual(leerMemoria(almacen({[CLAVE_MEMORIA]: '{mal'})), vacia);
 const a = almacen();
-guardarMemoria(a, {piso: 'N02'}); guardarMemoria(a, {tarjeta: 'recintos', funcion: 'observaciones'});
-assert.deepEqual(leerMemoria(a), {piso: 'N02', tarjeta: 'recintos', funcion: 'observaciones'});
+guardarMemoria(a, {piso: 'N02'}); guardarMemoria(a, {tarjeta: 'recintos', funcion: 'observaciones'}); guardarMemoria(a, {modulo: 'plano'});
+assert.deepEqual(leerMemoria(a), {piso: 'N02', tarjeta: 'recintos', funcion: 'observaciones', modulo: 'plano'});
+// Lo guardado antes de los módulos se sigue leyendo, y un módulo que no existe se ignora.
+assert.deepEqual(leerMemoria(almacen({[CLAVE_MEMORIA]: JSON.stringify({piso: 'N01', tarjeta: 'protocolos', funcion: 'tipos'})})), {piso: 'N01', tarjeta: 'protocolos', funcion: 'tipos', modulo: null});
+assert.equal(leerMemoria(almacen({[CLAVE_MEMORIA]: JSON.stringify({modulo: 'otro'})})).modulo, null);
+assert.equal(leerMemoria(almacen({[CLAVE_MEMORIA]: JSON.stringify({tarjeta: 'herramientas', funcion: 'filtros'})})).funcion, null, 'Filtros pasó a Plano');
 assert.equal(leerMemoria(almacen({[CLAVE_MEMORIA]: JSON.stringify({tarjeta: 'recintos', funcion: 'resumen'})})).funcion, null);
 assert.equal(leerMemoria(almacen({[CLAVE_MEMORIA]: JSON.stringify({tarjeta: 'lastplanner', funcion: 'x'})})).tarjeta, null);
 assert.equal(leerMemoria(almacen({[CLAVE_MEMORIA]: JSON.stringify({tarjeta: 'recintos', funcion: 'criticos'})})).funcion, null);
@@ -121,9 +148,9 @@ assert.ok(['resumen', 'proyectos', 'filtros', 'mas'].every(momentanea));
 assert.equal(momentanea('avance'), false);
 guardarMemoria({getItem: () => null, setItem: () => { throw Error('sin espacio'); }}, {piso: 'N01'});
 
-// Al entrar se retoma lo que pinta el plano; una lista no se abre sola y Herramientas no se retoma.
+// Al entrar a Plano se retoma lo que pinta el plano; una lista no se abre sola y Herramientas no se retoma.
 assert.deepEqual(aRetomar({tarjeta: 'recintos', funcion: 'avance'}), {tarjeta: 'recintos', funcion: 'avance'});
-assert.deepEqual(aRetomar({tarjeta: 'protocolos', funcion: 'tipos'}), {tarjeta: 'protocolos', funcion: null});
+assert.deepEqual(aRetomar({tarjeta: 'protocolos', funcion: 'tipos'}), {tarjeta: null, funcion: null});
 assert.deepEqual(aRetomar({tarjeta: 'herramientas', funcion: null}), {tarjeta: null, funcion: null});
 
 // Palanca: la parada es la del tramo donde se suelta, sin salirse del riel.
@@ -147,7 +174,12 @@ const index = fs.readFileSync('dist/index.html', 'utf8'), app = fs.readFileSync(
 assert.ok(!index.includes('appSidebar'));
 assert.ok(!app.includes('sideProject'));
 assert.ok(index.includes('href="navegacion.css"'));
-assert.ok(index.includes('id="bottomObra"') && index.includes('id="pisoContinuar"') && index.includes('id="pisoAyuda"'));
+assert.ok(index.includes('id="bottomObra"') && index.includes('id="pisoContinuar"') && index.includes('id="bottomModulos"'));
+// Primero el módulo, después el piso, y «Continuar» siempre: ya no hay doble clic.
+assert.ok(index.indexOf('id="moduloExplorer"') < index.indexOf('id="floorExplorer"'));
+assert.ok(index.includes('id="moduloContinuar"') && index.includes('id="pisoVolver"'));
+assert.ok(!index.includes('pisoAyuda') && !/ondblclick|dblclick/.test(fs.readFileSync('dist/floor-explorer.mjs', 'utf8')));
+assert.ok(!/@media[^{]*\{\s*#floorExplorer #pisoContinuar \{ display: none/.test(fs.readFileSync('dist/navegacion.css', 'utf8')));
 assert.ok(!index.includes('<button data-module'));
 // Sin conexión y Asistente van en la barra superior, no abajo ni en Herramientas.
 assert.ok(!index.includes('bottomOffline') && index.includes('id="offlineOpen"'));
@@ -172,7 +204,7 @@ assert.deepEqual([...new Set(css.replace(/\/\*[\s\S]*?\*\//g, '').match(/#[0-9a-
 const prepare = fs.readFileSync('scripts/prepare-offline.mjs', 'utf8');
 assert.ok(prepare.includes("walk('pisos3d')"));
 for (const piso of ['n-1', 'n01', 'n02', 'n03']) for (const color of ['blanco', 'azul']) assert.ok(fs.statSync(`dist/pisos3d/${piso}-${color}.png`).size > 10000, piso + color);
-for (const nombre of ['navegacion.css', 'navegacion.mjs', 'navegacion-model.mjs', 'palanca.mjs', 'fluido.mjs', 'jerarquia.css']) assert.ok(prepare.includes(`'${nombre}'`), nombre);
+for (const nombre of ['navegacion.css', 'navegacion.mjs', 'navegacion-model.mjs', 'palanca.mjs', 'fluido.mjs', 'jerarquia.css', 'selector-flujo.mjs']) assert.ok(prepare.includes(`'${nombre}'`), nombre);
 
 // Libreta: se carga después de la navegación, con los colores del tema y botones de al menos 44 px.
 const cssTareas = fs.readFileSync('dist/jerarquia.css', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
