@@ -1,5 +1,6 @@
 import {createLastPlannerCloud} from './lastplanner.mjs';
 import {createCampo} from './campo.mjs';
+import {createJerarquia} from './jerarquia.mjs';
 import {crearSesiones} from './sesion.mjs';
 import http from 'node:http';
 import {readFile,realpath} from 'node:fs/promises';
@@ -21,7 +22,7 @@ export async function createAtlasServer({env=process.env,fetchImpl=fetch}={}){
   if(!env.SUPABASE_URL||!env.SUPABASE_ANON_KEY)throw Error('Configura SUPABASE_URL y SUPABASE_ANON_KEY: sin ellas nadie puede iniciar sesión en Atlas.');
  }
  if(env.ATLAS_SESSION_SECRET&&env.ATLAS_SESSION_SECRET.length<32)throw Error('ATLAS_SESSION_SECRET debe tener al menos 32 caracteres.');
- const sesiones=crearSesiones(env),campo=createCampo(env,fetchImpl,sesiones),lastPlanner=createLastPlannerCloud(env,fetchImpl);
+ const sesiones=crearSesiones(env),campo=createCampo(env,fetchImpl,sesiones),lastPlanner=createLastPlannerCloud(env,fetchImpl),jerarquia=createJerarquia(env,fetchImpl);
  const groq=createGroq(env,fetchImpl),data=JSON.parse(await readFile(path.join(root,'data.json')));
  for(const file of otherLevels){const extra=decodeRuntime(JSON.parse(await readFile(path.join(root,file)))).data;data.rooms.push(...extra.rooms);data.documents.push(...extra.documents);}
  const pma=decodePma(JSON.parse(await readFile(path.join(root,'pma/catalog.json'))));
@@ -44,6 +45,7 @@ export async function createAtlasServer({env=process.env,fetchImpl=fetch}={}){
    sesiones.marcarModo(req,res);
    if(url.pathname==='/api/sesion'&&req.method==='GET')return send(res,200,sesiones.activa?{activa:true,usuario:sesion.usuario,rol:sesion.rol}:{activa:false});
    if(url.pathname.startsWith('/api/lastplanner/'))return lastPlanner(req,res,url);
+   if(url.pathname.startsWith('/api/jerarquia/'))return jerarquia(req,res,url);
    if(url.pathname==='/api/campo'||url.pathname.startsWith('/api/campo/'))return campo(req,res,url);
    if(url.pathname==='/api/groq/status'&&req.method==='GET')return send(res,200,groq.status());
    if(url.pathname==='/api/groq/models'&&req.method==='GET')return send(res,200,await groq.models());

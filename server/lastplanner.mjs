@@ -2,6 +2,8 @@ import {validateApu} from './apu.mjs';
 import {createHash} from 'node:crypto';
 import * as C from '../dist/lastplanner-cycle-model.mjs';
 import {validarReunion} from '../dist/lastplanner-model.mjs';
+import {permisosLastPlanner} from '../dist/jerarquia-model.mjs';
+import {perfilDe} from './jerarquia.mjs';
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const error=(status,message)=>Object.assign(Error(message),{status});
 const permission=action=>({migration:'revision',meeting:'attendance',reprogram:'draft'}[action]||action);
@@ -92,6 +94,8 @@ export function createLastPlannerCloud(env,fetchImpl=fetch){
    };
    const profile=await call('/auth/v1/user');if(!profile.ok)throw error(401,'Sesión no válida.');const user=profile.data,actor={id:user.id||user.email,email:user.email,role:user.app_metadata?.campo_role,permissions:user.app_metadata?.lastplanner_permissions==null?null:Array.isArray(user.app_metadata.lastplanner_permissions)?user.app_metadata.lastplanner_permissions:[]};
    if(!['editor','lector'].includes(actor.role))throw error(403,'La cuenta no tiene acceso a Atlas.');
+   // Jerarquía de obra (supabase/jerarquia.sql): con perfil activo, los permisos quedan topados por su nivel. Sin perfil, igual que antes.
+   const perfil=await perfilDe(call,actor.id);if(perfil)actor.permissions=permisosLastPlanner(perfil,actor.permissions);
    if(url.pathname==='/api/lastplanner/session'&&req.method==='GET')return send(200,{actor,permissions:C.PERMISSIONS.filter(p=>C.allowed(actor,p))});
    const read=async limit=>{let size=0;const chunks=[];for await(const chunk of req){size+=chunk.length;if(size>limit)throw error(413,'Envío demasiado grande.');chunks.push(chunk);}return Buffer.concat(chunks);};
    const list=async()=>{const rows=[];for(let offset=0;offset<100000;offset+=500){const r=await call('/rest/v1/atlas_lp_records?select=tipo,id,version,data,updated_at,updated_by&order=tipo.asc,id.asc&limit=500&offset='+offset);if(!r.ok)throw error(503,'Falta configurar Last Planner en Nube: ejecuta supabase/lastplanner-cycle.sql.');rows.push(...r.data);if(r.data.length<500)break;}return rows;};
