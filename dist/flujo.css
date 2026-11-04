@@ -14,6 +14,11 @@
 .ruedaPista.conFlujo .ruedaTarjeta.iluminada { background: var(--g-azul) !important; border-color: var(--g-azul); color: #fff !important; outline: 0; }
 .ruedaPista.conFlujo .ruedaTarjeta.iluminada :is(small, b, strong, span, em) { color: #fff !important; }
 
+/* En una selección, azul es lo elegido: la tarjeta que queda al centro sin estar elegida sigue en blanco. */
+.ruedaPista.conFlujo:not(.conCursor) .ruedaTarjeta.alCentro:not([aria-pressed=true], [aria-selected=true], [aria-checked=true]) { background: #fff; border-color: var(--g-marca); color: var(--g-texto); }
+.ruedaPista.conFlujo:not(.conCursor) .ruedaTarjeta.alCentro:not([aria-pressed=true], [aria-selected=true], [aria-checked=true]) svg { stroke: var(--g-marca); }
+.ruedaPista.conFlujo:not(.conCursor) .ruedaTarjeta.alCentro:not([aria-pressed=true], [aria-selected=true], [aria-checked=true]) svg .f { stroke: var(--g-azul); }
+
 /* Grande: como la rueda, con dibujo. El título largo va un poco más chico para que quepa en dos líneas. */
 .ruedaPista.flujo-grande .ruedaTarjeta strong { font-size: 16px; }
 .ruedaPista.flujo-grande .ruedaTarjeta small { font-size: 12px; font-weight: 500; }

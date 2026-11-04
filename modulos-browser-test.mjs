@@ -187,6 +187,26 @@ try {
       await page.fill('#hojaBuscar', '');
       assert.equal(await page.locator('.hojaLista .ruedaTarjeta:visible').count(), total);
     });
+    await paso(`${nombre}: la matriz y sus filtros de columna usan tarjetas y siguen filtrando`, async () => {
+      await page.click('#bottomObra');
+      await page.waitForSelector('body.ruedaPortada #ruedaObra:not([hidden])');
+      await page.locator('#ruedaObra [data-tarjeta=matriz]').dispatchEvent('click');
+      await page.waitForSelector('.matrixGroup', {state: 'attached'});
+      // Los tipos están dentro de bloques plegados: se abren como lo haría la persona.
+      await page.evaluate(() => { for (let d = document.querySelector('.matrixGroup'); d; d = d.parentElement?.closest('details')) d.open = true; });
+      await page.waitForSelector('.matrixGroup[open] .conFlujo .matrixTypeChoice.ruedaTarjeta');
+      await page.locator('.matrixGroup[open] .matrixTypeChoice').first().dispatchEvent('click');
+      await page.waitForSelector('[data-cf]');
+      await foto(page, nombre + '-matriz');
+      await page.locator('[data-cf]').first().click();
+      await page.waitForSelector('.cfLista.conFlujo .ruedaTarjeta', {state: 'attached'});
+      assert.ok(await page.locator('.cfOrden.conFlujo .ruedaTarjeta').count() === 2);
+      await foto(page, nombre + '-filtro-columna');
+      const marcada = await page.evaluate(() => { const c = document.querySelectorAll('.cfLista .ruedaTarjeta input')[1]; const antes = c.checked; c.closest('label').click(); return antes !== c.checked; });
+      assert.ok(marcada, 'tocar la tarjeta marca o desmarca el valor');
+      assert.ok(await sinAncho(page));
+      await page.click('[data-cf-x]');
+    });
     await paso(`${nombre}: al volver a abrir parte en Módulos con lo último marcado`, async () => {
       await page.goto(base + '/');
       await page.waitForSelector('#moduloExplorer:not([hidden])');
