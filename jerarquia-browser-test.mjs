@@ -2,7 +2,8 @@
 // y personas de ejemplo (sin nombres reales). Jefe B en computador (1366 × 768) asigna con el selector de superficies;
 // el supervisor en celular (375 × 812) recibe la tarea, la marca sin señal tocando el plano y la sube al volver la señal;
 // el jefe la confirma. Una cuenta sin perfil ve la rueda de siempre. No está en el build de Render (requiere PGlite).
-//   PGLITE_MODULE=…/pglite/dist/index.js node jerarquia-browser-test.mjs [carpeta-de-capturas]
+//   PGLITE_MODULE=…/pglite/dist/index.js CHROMIUM_PATH=…/chromium node jerarquia-browser-test.mjs [carpeta-de-capturas]
+// Si Playwright no está en /opt/node-tools, se indica con PLAYWRIGHT_MODULE=…/playwright-core/index.mjs.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createRequire} from 'node:module';
@@ -44,7 +45,7 @@ const fetchImpl = async (url, options = {}) => {
 const server = await createAtlasServer({env: cloud.env, fetchImpl});
 await new Promise(r => server.listen(0, '127.0.0.1', r));
 const base = 'http://127.0.0.1:' + server.address().port;
-const browser = await chromium.launch({headless: true, args: ['--no-sandbox']});
+const browser = await chromium.launch({executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium', headless: true, args: ['--no-sandbox']});
 const metas = async () => (await cloud.db.query('select id,estado,data from public.atlas_metas order by updated_at')).rows;
 let pasos = 0;
 const paso = async (texto, fn) => { await fn(); pasos++; console.log('✓ ' + texto); };
@@ -62,6 +63,14 @@ const foto = async (page, nombre) => { if (capturas) await page.screenshot({path
 const conPerfil = page => page.waitForFunction(() => { try { return !!JSON.parse(localStorage.getItem('atlas-jerarquia-perfil'))?.perfil; } catch { return false; } });
 const sincronizar = page => page.evaluate(() => window.dispatchEvent(new Event('online')));
 const sinAncho = page => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
+// Botones de la libreta y de la barra de marcado que midan menos de 44 px de alto (debe quedar vacío).
+const botonesBajos = page => page.$$eval('#hojaFuncion button, #jerMarcado button', b => b.filter(x => x.offsetParent && x.getBoundingClientRect().height < 44).map(x => x.textContent.trim()));
+// La barra de marcado va pegada sobre la barra inferior, nada tapa «Listo» y los botones flotantes no están.
+const barraDespejada = page => page.evaluate(() => {
+  const barra = document.getElementById('jerMarcado').getBoundingClientRect(), inferior = document.querySelector('.bottomNav').getBoundingClientRect();
+  const listo = document.querySelector('[data-jer-listo]'), c = listo.getBoundingClientRect();
+  return Math.abs(barra.bottom - inferior.top) <= 1 && document.elementFromPoint(c.x + c.width / 2, c.y + c.height / 2) === listo && !document.getElementById('barraFunciones').offsetParent;
+});
 // Centro de un recinto en pantalla, desde el mismo plano que usa Atlas.
 const tocarRecinto = async (page, codigo) => {
   const punto = await page.evaluate(codigo => { const p = [...document.querySelectorAll('#polygons path.roomshape')].find(e => e.querySelector('title')?.textContent?.includes(codigo) || e.dataset.code === codigo); if (!p) return null; const b = p.getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; }, codigo);
@@ -133,15 +142,29 @@ try {
     await page.waitForSelector('.jerTarea');
     assert.match(await page.textContent('.jerTarea'), /Pavimento de pasillo \(ejemplo\)/);
     assert.ok(await sinAncho(page), 'sin desplazamiento horizontal');
+    assert.deepEqual(await botonesBajos(page), []);
     await foto(page, 'celular-libreta');
+  });
+  await paso('En computador la barra de marcado también queda abajo y despejada', async () => {
+    const {context, page, errores} = await abrir(11);
+    await sincronizar(page); await conPerfil(page);
+    await page.click('#bottomObra'); await page.click('.ruedaTarjeta[data-tarjeta=tareas]');
+    await page.click('.jerTareaAbrir'); await page.click('[data-jer=marcar]');
+    await page.waitForSelector('#jerMarcado:not([hidden])');
+    assert.ok(await barraDespejada(page));
+    await foto(page, 'computador-marcar-plano');
+    await page.click('[data-jer-listo]'); await page.waitForSelector('[data-jer=hecha]');
+    assert.deepEqual(errores, []); await context.close();
   });
   await paso('Sin señal marca los recintos en el plano y termina la tarea', async () => {
     const page = sup.page;
     await page.click('.jerTareaAbrir'); await page.waitForSelector('[data-jer=marcar]');
+    assert.deepEqual(await botonesBajos(page), []);
     await foto(page, 'celular-tarea');
     await sup.context.setOffline(true);
     await page.click('[data-jer=marcar]');
     await page.waitForSelector('#jerMarcado:not([hidden])');
+    assert.ok(await barraDespejada(page));
     assert.equal(await page.locator('#jerTareasLayer path').count(), 2, 'el frente asignado se ve en el plano');
     const m = (await metas())[0];
     for (const roomId of [...new Set(m.data.alcances.map(s => s.roomId))]) {
@@ -158,6 +181,7 @@ try {
     await page.click('[data-jer=hecha]');
     await page.waitForSelector('.jerCola');
     assert.match(await page.textContent('.jerCola'), /guardados en este equipo/);
+    await foto(page, 'celular-sin-senal');
     assert.equal((await metas())[0].estado, 'asignada', 'sin señal no sube nada');
     await sup.context.setOffline(false); await sincronizar(page);
     for (let i = 0; i < 60 && (await metas())[0].estado !== 'hecha'; i++) await page.waitForTimeout(500);
@@ -172,6 +196,9 @@ try {
     await page.click('#barraFunciones [data-funcion=equipo]');
     await page.waitForSelector('[data-jer=confirmar]');
     await foto(page, 'computador-equipo');
+    await page.click('[data-jer=pedir][data-tipo=devolver]'); await page.waitForSelector('.jerFormAccion');
+    await foto(page, 'computador-devolver');
+    await page.click('[data-jer=cancelar]');
     await page.click('[data-jer=confirmar]');
     await page.waitForFunction(() => !document.querySelector('[data-jer=confirmar]'));
     assert.match(await page.textContent('.jerTotal b'), /100 %/);
@@ -183,10 +210,16 @@ try {
   await paso('Vista del equipo en celular', async () => {
     const page = (await abrir(6, {movil: true})).page;
     await sincronizar(page); await conPerfil(page);
-    await page.click('#bottomObra'); await page.click('.ruedaTarjeta[data-tarjeta=tareas]');
+    await page.click('#bottomObra');
+    // Con cinco tarjetas, «Mis tareas» queda a dos giros de Recintos: se gira como al deslizar con el dedo.
+    await page.keyboard.press('ArrowLeft'); await page.keyboard.press('ArrowLeft');
+    await page.click('.ruedaTarjeta[data-tarjeta=tareas]');
     await page.click('#barraFunciones [data-funcion=equipo]'); await page.waitForSelector('.jerEquipo li');
     assert.ok(await sinAncho(page));
+    assert.deepEqual(await botonesBajos(page), []);
     await foto(page, 'celular-equipo');
+    // En celular la hoja tapa los botones flotantes: se cierra para cambiar de función.
+    await page.click('#hojaCerrar');
     await page.click('#barraFunciones [data-funcion=asignar]'); await page.waitForSelector('.jerPersona');
     await foto(page, 'celular-asignar');
   });

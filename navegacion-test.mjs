@@ -172,5 +172,12 @@ assert.deepEqual([...new Set(css.replace(/\/\*[\s\S]*?\*\//g, '').match(/#[0-9a-
 const prepare = fs.readFileSync('scripts/prepare-offline.mjs', 'utf8');
 assert.ok(prepare.includes("walk('pisos3d')"));
 for (const piso of ['n-1', 'n01', 'n02', 'n03']) for (const color of ['blanco', 'azul']) assert.ok(fs.statSync(`dist/pisos3d/${piso}-${color}.png`).size > 10000, piso + color);
-for (const nombre of ['navegacion.css', 'navegacion.mjs', 'navegacion-model.mjs', 'palanca.mjs', 'fluido.mjs']) assert.ok(prepare.includes(`'${nombre}'`), nombre);
+for (const nombre of ['navegacion.css', 'navegacion.mjs', 'navegacion-model.mjs', 'palanca.mjs', 'fluido.mjs', 'jerarquia.css']) assert.ok(prepare.includes(`'${nombre}'`), nombre);
+
+// Libreta: se carga después de la navegación, con los colores del tema y botones de al menos 44 px.
+const cssTareas = fs.readFileSync('dist/jerarquia.css', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+assert.ok(index.indexOf('jerarquia.css') > index.indexOf('navegacion.css'));
+assert.deepEqual([...new Set(cssTareas.match(/#[0-9a-f]{3,8}\b(?=[;, )])/gi) || [])].filter(c => c.toLowerCase() !== '#fff'), []);
+assert.ok(!/box-shadow|gradient\(/.test(cssTareas));
+for (const [, alto] of cssTareas.matchAll(/min-height: (\d+)px/g)) assert.ok(Number(alto) >= 44, 'botón de ' + alto + ' px');
 console.log('navegacion-test: ok');
