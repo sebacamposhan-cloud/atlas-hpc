@@ -44,12 +44,14 @@ body.floorHome .bottomNav { display: none; }
 #bottomObra:disabled { background: #fff; color: var(--g-texto2); border-left: 1px solid var(--g-regla); border-right: 1px solid var(--g-regla); }
 
 /* Plano: fuera lo que pasó a Herramientas */
-.planheader, main > footer, .layerbox, .toolbar #markingOpen, .toolbar #planSettingsOpen, .toolbar #reset, .toolbar #isolate { display: none !important; }
+.planheader, main > footer, .layerbox, .toolbar #markingOpen, .toolbar #planSettingsOpen, .toolbar #isolate { display: none !important; }
 main:not([data-discipline=ceilings]):not([data-discipline=floors]):not([data-discipline=doors]) .disciplineBar { display: none; }
 main:not([data-discipline=ceilings]):not([data-discipline=floors]):not([data-discipline=doors]) #viewport { top: 0 !important; }
 main:not([data-discipline=ceilings]):not([data-discipline=floors]):not([data-discipline=doors]) .toolbar { margin-top: 0; }
 .toolbar { top: 12px; right: 10px; width: 48px; flex-direction: column; flex-wrap: nowrap; }
 .toolbar button { min-width: 44px; min-height: 44px; font-size: 20px; }
+.toolbar #reset, .toolbar #reset:hover:not(:disabled) { min-height: 44px; padding: 0; border: 0; border-top: 1px solid var(--g-marca); background: #fff; color: var(--g-texto); font-size: 11px; font-weight: 800; outline: 0; }
+.toolbar #reset:hover:not(:disabled) { text-decoration: underline; }
 .toolbar #back, .toolbar #backResults { width: 110px; margin-left: -62px; font-size: 12px; white-space: normal; }
 .disciplineBar .capasDibujo { display: none; }
 #activeLegend { left: 10px; bottom: 12px; max-height: 38%; }
