@@ -54,4 +54,4 @@ export async function renderProtocolCatalog(root,ctx,options={}){
  function selectionChanged(){const allowed=types();if(chosen&&!allowed.some(type=>type.id===chosen.id))choose('');else{groups();save();}}
  $('matrixSpecialty').onchange=selectionChanged;$('matrixTypeSearch').oninput=selectionChanged;$('matrixType').onchange=event=>choose(event.target.value);groups();if(types().some(type=>type.id===stored.typeId))choose(stored.typeId,true);
 }
-export {loadCatalog as loadProtocolCatalog};
+export {loadCatalog as loadProtocolCatalog,loadType as loadProtocolType};

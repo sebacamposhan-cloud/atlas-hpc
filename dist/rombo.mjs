@@ -14,6 +14,7 @@ import {cargarAvance, m2, unidad} from './avance.mjs';
 import {partidasDeTerminacion, partidasDeMuros, estadoTerminacion, actualizarNodo, sembrarTerminacion, resumenRecinto, EJECUCION, REVISION} from './avance-model.mjs';
 import {guardarAvance} from './avance-store.mjs';
 import {firmante, exigirFirma, pedirSesion} from './firma.mjs';
+import {palancaHTML, activarPalancas} from './palanca.mjs';
 
 const ZONAS = {
   M1: {puntos: '75,85 150,10 225,85 205,105 95,105', texto: [150, 66], aviso: [180, 54]},
@@ -50,9 +51,11 @@ export function romboSVG(partes, elegido, esc = String, interactivo = true) {
 // protocolos previos; se ocultan si el recinto no tiene partidas o protocolos.
 export function createRombo(ctx) {
   const esc = ctx.esc;
-  let elegido = 'PAV';
+  // Dos pasos: el rombo del recinto, y al tocar una parte su menú de avance. abierta: partida con sus palancas desplegadas.
+  let elegido = 'PAV', menu = false, abierta = null, recinto = null;
   async function ficha(root, room, {alGuardar = () => {}, panel = null, previos = null} = {}) {
     const serial = (Number(root.dataset.romboSerial) || 0) + 1; root.dataset.romboSerial = serial;
+    if (recinto !== room.code) { recinto = room.code; menu = false; abierta = null; }
     const vigente = () => root.isConnected && Number(root.dataset.romboSerial) === serial;
     const enPiso = progressFloors[nivel.id] && progressFloor(room.level) === nivel.id;
     let model = null, snapshot = {records: []}, obs = [], avance = null;
@@ -82,67 +85,70 @@ export function createRombo(ctx) {
     const ps = aplica ? partidasDe(elegido) : [], conPartidas = ps.length > 0, directo = aplica && !conPartidas;
     const previa = conPartidas && !ps.some(p => p.registrada) ? marcada(elegido) : null, traspasar = previa && !previa.stale && previa.installation !== 'Sin registrar';
     const lista = obs.filter(o => elegido === 'M' ? esMuro(o.terminacion) : o.terminacion === elegido).sort((a, b) => b.actualizada.localeCompare(a.actualizada));
-    const boton = (attr, valor, actualV, extra = '') => `<button type="button" ${attr}="${esc(valor)}" aria-pressed="${valor === actualV}" ${extra}>${esc(valor)}</button>`;
     const cantidad = n => n.cantidad != null ? `${m2(n.m2Ejecutado)} de ${m2(n.cantidad)} ${esc(unidad(n.unidad))} ejecutados · <b>${m2(n.m2Pendiente)} ${esc(unidad(n.unidad))} pendientes</b>` : 'Sin superficie por recinto en el PMA: avance en %';
     const resumen = n => (n.ejecucion === 'En ejecución' && n.pctIndicado != null ? 'En ejecución · ' + n.pctIndicado + ' %' : n.ejecucion) + (n.revision === 'Sin revisar' ? '' : ' · ' + n.revision);
     const nombre = b => b.tipo === 'protocolo' ? b.nombre : b.item + ' ' + b.nombre;
-    const partida = n => `<li data-partida="${esc(n.id)}"><div class="romboPartidaCab"><span><b>${esc(n.item)}</b> ${esc(n.nombre)}</span><span class="romboPct">${esc(resumen(n))}</span></div>
-      <small>${cantidad(n)}</small>${n.bloqueadoPor.length ? `<small class="romboBloqueo">Para quedar conforme falta liberar: ${esc(n.bloqueadoPor.map(nombre).join(', '))}</small>` : ''}
-      <div class="romboFila"><span>Ejecución</span><div class="romboBotones">${EJECUCION.map(v => boton('data-p-ejec', v, n.ejecucion)).join('')}</div></div>
-      ${n.ejecucion === 'En ejecución' ? `<label class="romboPctCampo">% ejecutado<input type="number" inputmode="numeric" min="1" max="99" step="1" data-p-pct value="${n.pctIndicado ?? ''}" placeholder="1 a 99"></label>` : ''}
-      <div class="romboFila"><span>Revisión</span><div class="romboBotones">${REVISION.map(v => boton('data-p-rev', v, n.revision, v === 'Conforme' && n.ejecucion !== 'Instalado' ? 'disabled title="Primero márcala instalada"' : v === 'Conforme' && n.bloqueadoPor.length ? 'disabled title="Falta liberar su previo"' : '')).join('')}</div></div></li>`;
+    const protocoloDe = id => avance?.nodos.find(n => n.id === id && n.tipo === 'protocolo');
+    const previo = n => n.prereq.map(id => avance.nodos.find(x => x.id === id)).filter(Boolean).map(p => `${esc(nombre(p))}: <b>${esc(p.tipo === 'protocolo' ? p.estado : resumen(p))}</b>`).join(' · ');
+    const palancaProtocolo = n => palancaHTML({titulo: 'Protocolo', esc, valor: n.estado, opciones: ['Pendiente', 'Liberado'].map(v => ({valor: v, atributo: 'data-prot', dato: n.id + '|' + v}))});
+    // Cada partida se despliega en sus palancas: protocolo previo, ejecución y revisión, en el orden en que se avanza.
+    const partida = n => {
+      const desplegada = ps.length === 1 || abierta === n.id, suyos = n.prereq.map(protocoloDe).filter(Boolean);
+      const revision = v => v !== 'Conforme' ? '' : n.ejecucion !== 'Instalado' ? 'Primero márcala instalada.' : n.bloqueadoPor.length ? 'Falta liberar su previo: ' + n.bloqueadoPor.map(nombre).join(', ') + '.' : '';
+      return `<li data-partida="${esc(n.id)}"><button type="button" class="romboPartidaCab" data-partida-abrir aria-expanded="${desplegada}"><span><b>${esc(n.item)}</b> ${esc(n.nombre)}</span><span class="romboPct">${esc(resumen(n))}</span></button>
+      ${desplegada ? `<div class="romboMando"><small>${cantidad(n)}</small>${n.bloqueadoPor.length ? `<small class="romboBloqueo">Para quedar conforme falta liberar: ${esc(n.bloqueadoPor.map(nombre).join(', '))}</small>` : ''}${suyos.map(p => `<small>Protocolo previo: <b>${esc(p.nombre)}</b> · REV1 ${esc(p.ref)}${p.prereq.length ? ' · Previo: ' + previo(p) : ''}</small>`).join('')}
+        <div class="palancas">${suyos.map(palancaProtocolo).join('')}${palancaHTML({titulo: 'Ejecución', esc, valor: n.ejecucion, opciones: EJECUCION.map(v => ({valor: v, atributo: 'data-p-ejec'}))})}${palancaHTML({titulo: 'Revisión', esc, valor: n.revision, opciones: REVISION.map(v => ({valor: v, atributo: 'data-p-rev', bloqueo: revision(v)}))})}</div>
+        ${n.ejecucion === 'En ejecución' ? `<label class="romboPctCampo">% ejecutado<input type="number" inputmode="numeric" min="1" max="99" step="1" data-p-pct value="${n.pctIndicado ?? ''}" placeholder="1 a 99"></label>` : ''}</div>` : ''}</li>`;
+    };
     const ultimo = conPartidas ? (avance.registro ? `Último cambio: ${fecha(avance.registro.fecha)} · ${avance.registro.responsable}` : 'Sin registros todavía.')
       : directo ? (t.stale ? 'La fuente cambió desde el último registro: vuelve a marcar.' : actual ? `Último cambio: ${fecha(actual.date)} · ${actual.responsible}` : 'Sin registros todavía.') : '';
-    root.innerHTML = `<div class="romboCaja">${romboSVG(partes, elegido, esc, true)}
+    root.closest('#detail')?.classList.toggle('fichaEnMenu', menu);
+    root.innerHTML = !menu ? `<div class="romboCaja"><p class="romboPista">Toca una parte del rombo para marcar su avance</p>${romboSVG(partes, null, esc, true)}
       <div class="romboLeyenda">${ESTADOS_PARTIDA.filter(e => e !== 'Sin definición').map(e => `<span><i class="${e === 'No aplica' ? 'na' : ''}" style="background:${COLOR_PARTIDA[e]}"></i>${esc(e)}</span>`).join('')}<span><i class="obs"></i>Observaciones pendientes</span></div></div>
       ${registrable ? '' : `<p class="romboNota">${enPiso ? 'Este recinto no tiene correspondencia en el PMA: el rombo muestra los códigos, pero el avance no se puede registrar.' : 'El recinto no pertenece al piso activo.'}</p>`}
-      ${avisos.map(w => `<p class="pmaWarning">${esc(w)}</p>`).join('')}
-      <section class="romboPartida" aria-live="polite"><div class="romboTitulo"><span class="romboChip" style="--c:${COLOR_PARTIDA[estado]}">${esc(estado)}</span><h4>${esc(nombreElegido)} · ${elegido === 'M' ? '' : esc(elegido) + ' · '}${esc(codigoElegido)}</h4></div>
+      ${avisos.map(w => `<p class="pmaWarning">${esc(w)}</p>`).join('')}` : `
+      <section class="romboPartida" aria-live="polite"><button type="button" class="romboVolver" data-rombo-volver>← Rombo</button>
+        <div class="romboEncabezado"><div class="romboMini">${romboSVG(partes, elegido, esc, true)}</div><div class="romboTitulo"><h4>${esc(nombreElegido)} · ${elegido === 'M' ? '' : esc(elegido) + ' · '}${esc(codigoElegido)}</h4><span class="romboChip" style="--c:${COLOR_PARTIDA[estado]}">${esc(estado)}</span></div></div>
         <p class="romboDesc">${esc(t?.description || room.finishes?.find(f => f.field === elegido)?.description || 'Sin descripción en el PMA')}${t && elegido !== 'PAV' && t.asepsis ? ` · Asepsia ${esc(t.asepsis)}` : ''}${ctx.verCodigo && !['—', 'N/A', '-'].includes(codigoElegido) ? ` <button type="button" class="romboVerCodigo" data-rombo-ver-codigo>Ver en el plano los recintos con ${elegido === 'M' ? 'muros' : esc(elegido)} ${esc(codigoElegido.split(' / ')[0])}</button>` : ''}</p>
         ${aplica && !firmante() ? '<p class="romboNota romboSesion">Inicia sesión en Atlas para marcar el avance. <button type="button" data-rombo-entrar>Entrar</button></p>' : ''}
         ${traspasar ? '<p class="romboNota">Marcada antes en el rombo: al marcar una partida, ese estado pasa a todas las de esta terminación.</p>' : ''}
         ${conPartidas ? `<ul class="romboPartidas">${ps.map(partida).join('')}</ul>`
-        : directo ? `<div class="romboFila"><span>Ejecución</span><div class="romboBotones">${['No iniciado', 'En proceso', 'Instalado'].map(v => boton('data-rombo-inst', v, t.installation)).join('')}</div></div>
-          <div class="romboFila"><span>Revisión</span><div class="romboBotones">${['Sin revisar', 'Con observaciones', 'Conforme'].map(v => boton('data-rombo-cal', v, t.quality, v === 'Conforme' && t.installation !== 'Instalado' ? 'disabled title="Primero márcala instalada"' : '')).join('')}</div></div>`
+        : directo ? `<div class="palancas">${palancaHTML({titulo: 'Ejecución', esc, valor: t.installation, opciones: ['No iniciado', 'En proceso', 'Instalado'].map(v => ({valor: v, atributo: 'data-rombo-inst'}))})}${palancaHTML({titulo: 'Revisión', esc, valor: t.quality, opciones: ['Sin revisar', 'Con observaciones', 'Conforme'].map(v => ({valor: v, atributo: 'data-rombo-cal', bloqueo: v === 'Conforme' && t.installation !== 'Instalado' ? 'Primero márcala instalada.' : ''}))})}</div>`
         : registrable ? `<p class="romboNota">${(t && !t.applicable) || (elegido === 'M' && !t) ? 'No aplica según el PMA: fuera del cálculo de avance.' : 'Requiere definición documental en el PMA: fuera del porcentaje.'}</p>` : ''}
         <p class="romboMensaje" role="status">${esc(ultimo)}</p>
         <div class="romboObs"><div class="romboTitulo"><h4>Observaciones en ${esc(NOMBRE_OBS[elegido])} <small>${lista.length}</small></h4><button type="button" data-rombo-obs-nueva>+ Observación con foto</button></div>
           ${lista.length ? `<ul class="romboObsLista">${lista.map(o => `<li><button type="button" data-rombo-obs="${esc(o.id)}"><b>${elegido === 'M' ? esc(o.terminacion) + ' · ' : ''}${esc(o.descripcion)}</b><small>${esc(o.estado === 'Corregida' ? 'Por validar' : o.estado)} · ${esc(o.responsable || 'Sin responsable')}${o.plazo ? ' · plazo ' + esc(o.plazo.split('-').reverse().join('-')) : ''}${o.fotos.length ? ` · ${o.fotos.length} foto${o.fotos.length === 1 ? '' : 's'}` : ''}</small></button></li>`).join('')}</ul>` : '<p class="romboNota">Sin observaciones en este elemento.</p>'}</div></section>`;
-    // Panel de avance: % del recinto, barras de pavimento, cielo y muros con el color del rombo (tocar una abre esa
-    // terminación) y conformes / protocolos liberados. Una terminación sin partidas muestra su estado, no un %.
+    // Avance general del recinto: el detalle por partida está en el menú de cada parte del rombo.
     const res = avance ? resumenRecinto(avance.nodos, avance.row) : null;
-    const barra = g => {
-      const tt = todas.length ? tarea(g.campo) : null, e = g.estado ? estadoPartida({applicable: true, documented: true, ...g.estado}) : tt ? estadoPartida(tt) : 'No aplica';
-      // Con partidas, su %; si aún no tienen registro pero la terminación se marcó antes directo, ese estado.
-      const conPct = g.partidas.length && (g.estado || e === 'Sin registrar');
-      return `<button type="button" class="arFila" data-ar-campo="${g.campo}"><span>${esc(g.nombre)}</span><span class="arBarra"><i style="width:${conPct ? Math.round(g.pct) : 0}%;background:${COLOR_PARTIDA[e] || '#fff'}"></i></span><b>${esc(conPct ? Math.round(g.pct) + ' %' : e)}</b></button>`;
-    };
     if (panel) {
-      panel.innerHTML = res?.partidas ? `<div class="arCabecera"><span>Avance del recinto</span><b>${Math.round(res.pct)} %</b></div>${res.grupos.map(barra).join('')}
+      panel.innerHTML = res?.partidas ? `<div class="arCabecera"><span>Avance del recinto</span><b>${Math.round(res.pct)} %</b></div><span class="arBarra"><i style="width:${Math.round(res.pct)}%"></i></span>
         <p class="arPie">${res.conformes} de ${res.partidas} partidas conformes${res.protocolos ? ` · ${res.liberados} de ${res.protocolos} protocolos previos liberados` : ''}</p>` : '';
       panel.hidden = !panel.innerHTML;
     }
-    // Protocolos previos de todas las partidas del recinto, con su referencia REV1 y lo que piden liberado antes.
+    // Los protocolos previos se marcan con su partida, en el menú de avance. Aquí quedan solo los que no pertenecen a ninguna.
     const protos = avance ? avance.nodos.filter(n => n.tipo === 'protocolo') : [];
-    const previo = n => n.prereq.map(id => avance.nodos.find(x => x.id === id)).filter(Boolean).map(p => `${esc(nombre(p))}: <b>${esc(p.tipo === 'protocolo' ? p.estado : resumen(p))}</b>`).join(' · ');
+    const conPartida = new Set(['PAV', 'CIE', 'M'].flatMap(c => partidasDe(c)).flatMap(p => p.prereq)), sueltos = protos.filter(n => !conPartida.has(n.id));
     if (previos) {
-      previos.innerHTML = protos.length ? `<div class="section-label">PROTOCOLOS PREVIOS</div><ul class="previosLista">${protos.map(n => `<li><div class="previoTexto"><b>${esc(n.nombre)}</b><small>REV1 ${esc(n.ref)}${n.prereq.length ? ' · Previo: ' + previo(n) : ''}</small></div>
-        <div class="romboBotones romboDos">${['Pendiente', 'Liberado'].map(v => `<button type="button" data-prot="${esc(n.id)}|${v}" aria-pressed="${n.estado === v}">${v}</button>`).join('')}</div></li>`).join('')}</ul><p class="romboMensaje previosMensaje" role="status"></p>` : '';
+      previos.innerHTML = sueltos.length ? `<div class="section-label">PROTOCOLOS PREVIOS</div><ul class="previosLista">${sueltos.map(n => `<li><div class="previoTexto"><b>${esc(n.nombre)}</b><small>REV1 ${esc(n.ref)}${n.prereq.length ? ' · Previo: ' + previo(n) : ''}</small></div><div class="palancas">${palancaProtocolo(n)}</div></li>`).join('')}</ul><p class="romboMensaje previosMensaje" role="status"></p>` : '';
       previos.hidden = !previos.innerHTML;
     }
     const volver = () => ficha(root, room, {alGuardar, panel, previos});
-    const elegir = campo => { elegido = campo; volver(); };
-    panel?.querySelectorAll('[data-ar-campo]').forEach(b => b.onclick = async () => { elegido = b.dataset.arCampo; await volver(); root.querySelector('.romboPartida')?.scrollIntoView({block: 'start', behavior: 'smooth'}); });
+    const alInicio = () => root.closest('.right')?.scrollTo(0, 0);
+    const elegir = async campo => { elegido = campo; menu = true; abierta = null; await volver(); alInicio(); };
+    root.querySelector('[data-rombo-volver]')?.addEventListener('click', async () => { menu = false; await volver(); alInicio(); });
+    root.querySelectorAll('[data-partida-abrir]').forEach(b => b.onclick = () => { const id = b.closest('[data-partida]').dataset.partida; abierta = abierta === id ? null : id; volver(); });
+    const avisoPalanca = texto => { const m = root.querySelector('.romboMensaje'); if (m) m.textContent = texto; };
+    activarPalancas(root, {aviso: avisoPalanca}); if (previos) activarPalancas(previos, {aviso: avisoPalanca});
     // Tocar cualquier muro elige los cuatro.
     const campoDe = g => esMuro(g.dataset.rombo) ? 'M' : g.dataset.rombo;
     root.querySelectorAll('[data-rombo]').forEach(g => { g.addEventListener('click', () => elegir(campoDe(g))); g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); elegir(campoDe(g)); } }); });
     // Una observación en muros se registra en un muro concreto (se elige en el formulario; parte en el primero que aplica).
-    root.querySelector('[data-rombo-obs-nueva]').onclick = () => ctx.nuevaObservacion(room, elegido === 'M' ? primerMuro || 'M1' : elegido, volver);
+    root.querySelector('[data-rombo-obs-nueva]')?.addEventListener('click', () => ctx.nuevaObservacion(room, elegido === 'M' ? primerMuro || 'M1' : elegido, volver));
     root.querySelector('[data-rombo-ver-codigo]')?.addEventListener('click', () => ctx.verCodigo(elegido === 'M' ? primerMuro || 'M1' : elegido, codigoElegido.split(' / ')[0]));
     root.querySelector('[data-rombo-entrar]')?.addEventListener('click', () => pedirSesion());
     root.querySelectorAll('[data-rombo-obs]').forEach(b => b.onclick = () => ctx.abrirObservacion(b.dataset.romboObs, volver));
     // Cada toque guarda al instante; mientras se guarda, la ficha no acepta otro toque.
-    const controles = () => [root, previos].filter(Boolean).flatMap(el => [...el.querySelectorAll('.romboPartida button:not([data-rombo-obs-nueva]):not([data-rombo-obs]):not([data-rombo-ver-codigo]), .romboPartida input, [data-prot]')]);
+    const controles = () => [root, previos].filter(Boolean).flatMap(el => [...el.querySelectorAll('.romboPartida button:not([data-rombo-obs-nueva]):not([data-rombo-obs]):not([data-rombo-ver-codigo]):not([data-rombo-volver]), .romboPartida input, [data-prot]')]);
     async function registrar(guardar, mensaje = () => root.querySelector('.romboMensaje')) {
       let firma; try { firma = exigirFirma(); } catch (e) { const m = mensaje(); if (m) m.textContent = e.message; return; }
       controles().forEach(c => { c.disabled = true; });
@@ -157,7 +163,7 @@ export function createRombo(ctx) {
       return nodo.tipo === 'protocolo' ? `${nodo.nombre}: ${cambio.estado}.` : `${nodo.item} ${nodo.nombre}: ${Object.values(cambio).join(' ')}${'pct' in cambio ? ' %' : ''}.`;
     }, mensaje);
     const sinCambio = b => b.getAttribute('aria-pressed') === 'true';
-    previos?.querySelectorAll('[data-prot]').forEach(b => b.onclick = () => { if (sinCambio(b)) return; const [id, estado] = b.dataset.prot.split('|'); guardarNodo(id, {estado}, () => previos.querySelector('.previosMensaje')); });
+    [root, previos].filter(Boolean).forEach(el => el.querySelectorAll('[data-prot]').forEach(b => b.onclick = () => { if (sinCambio(b)) return; const [id, estado] = b.dataset.prot.split('|'); guardarNodo(id, {estado}, () => el.querySelector('.romboMensaje')); }));
     if (!aplica) return;
     // Sin partidas, «Muros» marca a la vez todos los muros que aplican (un solo registro nuevo del recinto).
     const guardarDirecto = cambio => registrar(async firma => {
