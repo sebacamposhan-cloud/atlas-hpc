@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {TARJETAS, ICONOS, tarjeta, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar, paradaCercana, CLAVE_MEMORIA} from './dist/navegacion-model.mjs';
-import {crearFluido, seguirCursor, crearOleaje, arrastrar} from './dist/fluido.mjs';
+import {crearFluido, crearOleaje, arrastrar} from './dist/fluido.mjs';
 import {palancaHTML} from './dist/palanca.mjs';
 
 const almacen = (inicial = {}) => { const d = {...inicial}; return {getItem: k => d[k] ?? null, setItem: (k, v) => { d[k] = v; }, d}; };
@@ -48,27 +48,17 @@ function fluido(opciones = {}) {
   const g = fluido(); g.f.fijar(3); assert.deepEqual(g.posiciones(), [3, 3, 3, 3]); assert.equal(g.f.indice(), 3); assert.equal(g.cambios.length, 0);
 }
 
-// Pasar el cursor: solo el mouse sin apretar mueve la rueda, las tarjetas acompañan al cursor y al detenerse se asienta.
+// Si caben todas las tarjetas la rueda queda centrada: se mueve con la mano y vuelve al centro, sin quedar en otra tarjeta.
 {
-  const elemento = () => ({oyentes: {}, addEventListener(tipo, f) { this.oyentes[tipo] = f; }});
-  const pasar = (el, datos) => el.oyentes.pointermove({pointerType: 'mouse', buttons: 0, ...datos});
-  const a = fluido(), zona = elemento();
-  seguirCursor(zona, a.f, {paso: () => 220, espera: 5});
-  pasar(zona, {clientX: 100, timeStamp: 1});
-  assert.equal(a.f.objetivo(), 1, 'el primer movimiento solo toma la referencia');
-  pasar(zona, {clientX: 500, timeStamp: 40});
-  assert.ok(a.f.objetivo() < 1, 'al mover a la derecha las tarjetas también van a la derecha');
-  pasar(zona, {clientX: 900, timeStamp: 80, pointerType: 'touch'});
-  pasar(zona, {clientX: 950, timeStamp: 90, buttons: 1});
-  const conDedo = a.f.objetivo();
-  await new Promise(r => setTimeout(r, 20));
-  a.correr();
-  assert.ok(Number.isInteger(a.f.objetivo()), 'se asienta sobre una tarjeta');
-  assert.ok(conDedo > .2 && conDedo < 1, 'el dedo y el arrastre no suman movimiento de cursor');
-  const b = fluido(), otra = elemento();
-  seguirCursor(otra, b.f, {paso: () => 220, quieto: () => true});
-  pasar(otra, {clientX: 100, timeStamp: 1}); pasar(otra, {clientX: 500, timeStamp: 40});
-  assert.equal(b.f.objetivo(), 1, 'con movimiento reducido el cursor no mueve la rueda');
+  const a = fluido({centro: () => 1.5});
+  a.f.fijar(1.5); a.f.tomar(); a.f.llevar(3); a.correr(40);
+  assert.ok(a.posiciones()[0] > 1.5 && a.posiciones()[0] < 3, 'se resiste');
+  a.f.soltar(.4); a.correr();
+  assert.deepEqual(a.posiciones(), [1.5, 1.5, 1.5, 1.5]);
+  assert.equal(a.f.objetivo(), 1.5);
+  // Se asienta rápido: menos de un segundo y medio a 60 cuadros por segundo.
+  const r = fluido(); r.f.ir(3);
+  assert.ok(r.correr() < 90);
   // Oleaje: se inclina hacia el cursor, el lejano llega después y al salir todo vuelve a cero.
   const cola = []; let x = [], fila = [], fuerza = [];
   const o = crearOleaje({cantidad: 4, cuadro: q => cola.push(q), dibujar: (a, b, c) => { x = [...a]; fila = [...b]; fuerza = [...c]; }});
@@ -135,7 +125,7 @@ const index = fs.readFileSync('dist/index.html', 'utf8'), app = fs.readFileSync(
 assert.ok(!index.includes('appSidebar'));
 assert.ok(!app.includes('sideProject'));
 assert.ok(index.includes('href="navegacion.css"'));
-assert.ok(index.includes('id="bottomObra"') && index.includes('id="pisoContinuar"'));
+assert.ok(index.includes('id="bottomObra"') && index.includes('id="pisoContinuar"') && index.includes('id="pisoAyuda"'));
 assert.ok(!index.includes('<button data-module'));
 assert.ok(index.indexOf('navegacion.css') > index.indexOf('gerencial.css'), 'navegacion.css debe cargarse después del tema');
 

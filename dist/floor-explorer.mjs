@@ -60,6 +60,9 @@ async function openFloor(id,push=true){
 }
 gallery.querySelectorAll('[data-floor]').forEach(b=>b.onclick=()=>elegir(b.dataset.floor));
 $('pisoContinuar').onclick=()=>{if(elegido)openFloor(elegido);};
+// En computador no hay «Continuar»: doble clic sobre un piso entra a él. Con teclado, Enter.
+const conCursorFino=()=>matchMedia('(hover: hover) and (pointer: fine)').matches;
+gallery.querySelectorAll('[data-floor]').forEach(b=>{b.ondblclick=()=>openFloor(b.dataset.floor);b.onkeydown=e=>{if(e.key==='Enter'&&conCursorFino()){e.preventDefault();openFloor(b.dataset.floor);}};});
 $('floorHomeButton').onclick=()=>home();
 // «Pisos» vuelve a la portada. Las acciones internas «Volver al plano» siguen en el visor.
 document.addEventListener('click',e=>{if(e.target.closest('#bottomMap')){e.preventDefault();e.stopImmediatePropagation();home();}},true);

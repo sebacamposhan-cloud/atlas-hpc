@@ -1,6 +1,6 @@
 // Barra inferior, rueda de Control de obra y botones de función sobre el plano. La lógica vive en navegacion-model.mjs.
 import {TARJETAS, ICONOS, tarjeta as buscarTarjeta, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar} from './navegacion-model.mjs';
-import {crearFluido, arrastrar, seguirCursor} from './fluido.mjs';
+import {crearFluido, arrastrar, crearOleaje} from './fluido.mjs';
 import {nivel} from './level.mjs';
 import {loadProtocolCatalog, loadProtocolType} from './protocol-catalog.mjs';
 import {scopeProtocolCatalog, scopedProtocolRows} from './protocol-scope.mjs';
@@ -34,29 +34,40 @@ export function createNavegacion(ctx) {
     tarjetas.forEach(t => t.classList.toggle('iluminada', t === bajo));
     pista.classList.toggle('conCursor', !!bajo);
   }
-  pista.addEventListener('pointermove', e => { if (e.pointerType === 'mouse') { cursor = [e.clientX, e.clientY]; iluminar(); } });
-  pista.addEventListener('pointerleave', () => { cursor = null; iluminar(); });
-  // La tarjeta del centro queda de frente y las demás giran alrededor, como una rueda. Se toma con el mouse o el dedo.
+  // Si caben todas las tarjetas, la rueda queda centrada y no gira: el cursor ilumina y acerca la que tiene debajo, sin
+  // desplazar el grupo. Si no caben (celular), la del centro queda de frente y las demás giran alrededor.
   const distancia = () => tarjetas[0].offsetWidth + 12;
-  const giro = crearFluido({cantidad: tarjetas.length, inicial: 1, quieto: quietud, dibujar: posiciones => {
-    const tramo = distancia();
+  const caben = () => pista.clientWidth >= tarjetas.length * distancia() + 40;
+  const centro = () => caben() ? (tarjetas.length - 1) / 2 : null;
+  let posiciones = [], lado = [], fila = [], fuerza = [];
+  function pintar() {
+    const tramo = distancia(), abierta = caben();
     tarjetas.forEach((t, i) => {
-      const d = i - posiciones[i], a = Math.max(-1.6, Math.min(1.6, d));
-      t.style.transform = `translateX(${(d * tramo).toFixed(1)}px) rotateY(${(a * -24).toFixed(1)}deg) scale(${(1 - Math.abs(a) * .12).toFixed(3)})`;
-      t.classList.toggle('alCentro', Math.abs(d) < .5);
+      const d = i - (posiciones[i] ?? 0), a = Math.max(-1.6, Math.min(1.6, d)), h = fuerza[i] || 0, dh = i - (fila[i] || 0), cerca = Math.exp(-dh * dh * 2.5);
+      t.style.transform = `translate(${(d * tramo + (lado[i] || 0) * h * 10).toFixed(1)}px, ${(-8 * h * cerca).toFixed(1)}px) rotateY(${(a * (abierta ? -12 : -24) * (1 - h * cerca)).toFixed(1)}deg) scale(${(1 - Math.abs(a) * (abierta ? .04 : .12) + .05 * h * cerca).toFixed(3)})`;
+      t.classList.toggle('alCentro', !abierta && Math.abs(d) < .5);
     });
     if (cursor) iluminar();
-  }});
+  }
+  const giro = crearFluido({cantidad: tarjetas.length, inicial: 1, quieto: quietud, centro, dibujar: p => { posiciones = p; pintar(); }});
+  const oleaje = crearOleaje({cantidad: tarjetas.length, quieto: quietud, rapidez: .3, dibujar: (x, f, h) => { lado = x; fila = f; fuerza = h; pintar(); }});
   arrastrar(pista, giro, {eje: 'x', paso: distancia});
-  seguirCursor(pista, giro, {paso: distancia, quieto: quietud});
-  addEventListener('resize', () => { if (!rueda.hidden) giro.redibujar(); });
+  pista.addEventListener('pointermove', e => {
+    if (e.pointerType !== 'mouse') return;
+    cursor = [e.clientX, e.clientY]; iluminar();
+    if (e.buttons) return;
+    const r = pista.getBoundingClientRect(), medio = r.left + r.width / 2;
+    oleaje.mover(Math.max(-1, Math.min(1, (e.clientX - medio) / (r.width / 2))), giro.objetivo() + (e.clientX - medio) / distancia());
+  });
+  pista.addEventListener('pointerleave', () => { cursor = null; iluminar(); oleaje.soltar(); });
+  addEventListener('resize', () => { if (!rueda.hidden) giro.fijar(centro() ?? giro.indice()); });
   const indiceDe = id => Math.max(0, tarjetas.findIndex(t => t.dataset.tarjeta === id));
   function abrirRueda() {
     if (ctx.ocupado?.()) return;
     cerrarHoja(); ui.show('map'); document.body.classList.add('hideRight'); document.body.classList.remove('fichaMinima');
     rueda.hidden = false; document.body.classList.add('ruedaAbierta'); $('bottomObra').setAttribute('aria-expanded', 'true');
-    giro.fijar(indiceDe(actual || 'recintos'));
-    tarjetas[giro.indice()].focus({preventScroll: true});
+    giro.fijar(centro() ?? indiceDe(actual || 'recintos'));
+    tarjetas[indiceDe(actual || 'recintos')].focus({preventScroll: true});
   }
   function cerrarRueda(foco = false) {
     if (rueda.hidden) return;
@@ -167,8 +178,9 @@ export function createNavegacion(ctx) {
     if (e.key === 'Escape') cerrarRueda(true);
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
       e.preventDefault();
-      const siguiente = Math.max(0, Math.min(tarjetas.length - 1, giro.indice() + (e.key === 'ArrowRight' ? 1 : -1)));
-      giro.ir(siguiente); tarjetas[siguiente].focus({preventScroll: true});
+      const enfocada = tarjetas.indexOf(document.activeElement), siguiente = Math.max(0, Math.min(tarjetas.length - 1, (enfocada < 0 ? giro.indice() : enfocada) + (e.key === 'ArrowRight' ? 1 : -1)));
+      if (centro() === null) giro.ir(siguiente);
+      tarjetas[siguiente].focus({preventScroll: true});
     }
   });
   window.addEventListener('atlas-floor-home', () => { cerrarRueda(); cerrarHoja(); });

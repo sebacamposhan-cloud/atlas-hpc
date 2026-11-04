@@ -137,6 +137,12 @@ body:not(.hideLeft) #barraFunciones { visibility: hidden; }
 .pisoEtiqueta.iluminado::before, .pisoEtiqueta.iluminado::after { background: var(--g-azul); }
 #floorExplorer #pisoContinuar { flex: none; align-self: center; width: 100%; max-width: 460px; min-height: 58px; border-radius: 14px !important; box-shadow: 0 8px 20px rgba(15, 84, 153, .28) !important; font-size: 18px; font-weight: 800; }
 #floorExplorer #pisoContinuar:disabled { background: #fff; color: var(--g-texto2); border-color: var(--g-regla); box-shadow: none !important; }
+#pisoAyuda { display: none; flex: none; margin: 0; text-align: center; font-size: 15px; font-weight: 600; color: var(--g-texto2); }
+@media (hover: hover) and (pointer: fine) {
+  #floorExplorer #pisoContinuar { display: none; }
+  #pisoAyuda { display: block; }
+  .pisosEscena { --placa: min(calc(100vw - 150px), calc((100dvh - 232px) / 1.5), 560px); }
+}
 #navLogo { display: none; height: 38px; width: auto; }
 body.floorHome #navLogo { display: block; }
 body.floorHome header .project b, body.floorHome header .project span { display: none; }
