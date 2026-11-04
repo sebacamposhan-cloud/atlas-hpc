@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {TARJETAS, ICONOS, tarjeta, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar, paradaCercana, CLAVE_MEMORIA} from './dist/navegacion-model.mjs';
-import {crearFluido, seguirCursor, crearOleaje} from './dist/fluido.mjs';
+import {crearFluido, seguirCursor, crearOleaje, arrastrar} from './dist/fluido.mjs';
 import {palancaHTML} from './dist/palanca.mjs';
 
 const almacen = (inicial = {}) => { const d = {...inicial}; return {getItem: k => d[k] ?? null, setItem: (k, v) => { d[k] = v; }, d}; };
@@ -79,6 +79,21 @@ function fluido(opciones = {}) {
   assert.deepEqual(x, [1, 1, 1, 1]); assert.deepEqual(fuerza, [1, 1, 1, 1]); assert.deepEqual(fila, [0, 0, 0, 0]);
   o.soltar(); correr(2000);
   assert.deepEqual(x, [0, 0, 0, 0]); assert.deepEqual(fuerza, [0, 0, 0, 0]);
+}
+
+// Arrastrar avisa al soltar, para dejar fijo el piso que quedó elegido.
+{
+  const oyentes = {}, el = {classList: {add() {}, remove() {}}, setPointerCapture() {}, addEventListener(t, f) { oyentes[t] = f; }};
+  let soltados = 0;
+  const a = fluido();
+  arrastrar(el, a.f, {eje: 'y', sentido: 1, paso: () => 100, alSoltar: () => soltados++});
+  oyentes.pointerdown({button: 0, pointerId: 1, clientY: 0, timeStamp: 1});
+  oyentes.pointerup({pointerId: 1, timeStamp: 2});
+  assert.equal(soltados, 0, 'un toque sin moverse no es un arrastre');
+  oyentes.pointerdown({button: 0, pointerId: 1, clientY: 0, timeStamp: 10});
+  oyentes.pointermove({pointerId: 1, clientY: 100, timeStamp: 20});
+  oyentes.pointerup({pointerId: 1, timeStamp: 30});
+  assert.equal(soltados, 1);
 }
 
 // Memoria: recuerda piso y función; ignora datos dañados, funciones momentáneas y tarjetas sin funciones.

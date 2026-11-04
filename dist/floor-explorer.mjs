@@ -13,20 +13,26 @@ const almacen=()=>{try{return localStorage;}catch{return {getItem:()=>null,setIt
 const pila=[...floors].reverse();let elegido=null;
 $('floorGrid').innerHTML=pila.map(({id,numero,piso},i)=>`<button type="button" class="pisoCapa" data-floor="${id}" style="--i:${i}" aria-label="Piso ${numero}" aria-pressed="false" ${piso?'':'disabled'}>>${piso?`<img class="pisoBlanco" src="pisos3d/${id.toLowerCase()}-blanco.png" alt="" width="760" height="490" decoding="async"><img class="pisoAzul" src="pisos3d/${id.toLowerCase()}-azul.png" alt="" width="760" height="490" decoding="async">`:''}</button>`).join('');
 $('floorLista').innerHTML=pila.map(({id,numero,piso},i)=>`<button type="button" class="pisoEtiqueta" data-floor="${id}" style="--i:${i}" aria-pressed="false" ${piso?'':'disabled'}>Piso ${numero}</button>`).join('');
-function marcar(id){elegido=floors.some(f=>f.id===id&&f.piso)?id:null;gallery.querySelectorAll('[data-floor]').forEach(b=>{const marcado=b.dataset.floor===elegido;b.setAttribute('aria-pressed',String(marcado));if(b.classList.contains('pisoEtiqueta'))b.textContent=b.textContent.replace(' ✓','')+(marcado?' ✓':'');});$('pisoContinuar').disabled=!elegido;}
+// Azul: el piso bajo el cursor o, sin cursor encima, el elegido. El elegido lleva ✓ y es el que abre «Continuar».
+let bajoCursor=null;
+function iluminar(){const azul=bajoCursor??elegido;gallery.querySelectorAll('[data-floor]').forEach(b=>b.classList.toggle('iluminado',b.dataset.floor===azul));}
+function marcar(id){elegido=floors.some(f=>f.id===id&&f.piso)?id:null;gallery.querySelectorAll('[data-floor]').forEach(b=>{const marcado=b.dataset.floor===elegido;b.setAttribute('aria-pressed',String(marcado));if(b.classList.contains('pisoEtiqueta'))b.textContent=b.textContent.replace(' ✓','')+(marcado?' ✓':'');});const piso=floors.find(f=>f.id===elegido);$('pisoContinuar').disabled=!elegido;$('pisoContinuar').textContent=elegido?`Continuar a Piso ${piso.numero} →`:'Continuar →';iluminar();}
 // Al arrastrar los pisos cambia el elegido; los demás se abren a su alrededor y vuelven con un leve retraso, como agua.
 const capas=[...gallery.querySelectorAll('.pisoCapa')],etiquetas=[...gallery.querySelectorAll('.pisoEtiqueta')],lugarDe=id=>pila.findIndex(f=>f.id===id);
 const quietud=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
-// Pasar el cursor mueve los pisos como oleaje, pero no cambia el elegido: camino a «Continuar» se cruzaría con los de abajo.
+// Pasar el cursor ilumina el piso y lo mueve con el mismo flujo del arrastre. Al salir, todo vuelve al piso elegido.
 let elegidos=[],lado=[],fila=[],fuerza=[];
-function pintarPisos(){const ancho=$('floorGrid').offsetWidth,abre=ancho*.05;capas.forEach((capa,i)=>{const d=i-(elegidos[i]??0),h=fuerza[i]||0,dh=i-(fila[i]||0),cerca=Math.exp(-dh*dh*3),y=abre*Math.tanh(d*1.6)+h*(abre*.8*Math.tanh(dh*1.5)-ancho*.03*cerca);capa.style.setProperty('--y',y.toFixed(1)+'px');capa.style.setProperty('--x',((lado[i]||0)*h*ancho*.035).toFixed(1)+'px');capa.style.setProperty('--e',(1+.04*Math.exp(-d*d*3)+.025*h*cerca).toFixed(3));etiquetas[i].style.setProperty('--y',y.toFixed(1)+'px');etiquetas[i].classList.toggle('bajoCursor',h>.5&&Math.round(fila[i])===i);});}
-const pisos=crearFluido({cantidad:pila.length,inicial:Math.max(0,lugarDe(leerMemoria(almacen()).piso)),quieto:quietud,alCambiar:i=>{if(pila[i].piso)marcar(pila[i].id);},dibujar:posiciones=>{elegidos=posiciones;pintarPisos();}});
+function pintarPisos(){const ancho=$('floorGrid').offsetWidth,abre=ancho*.05;capas.forEach((capa,i)=>{const d=i-(elegidos[i]??0),h=fuerza[i]||0,dh=i-(fila[i]||0),cerca=Math.exp(-dh*dh*3),y=abre*Math.tanh(d*1.6)+h*(abre*.8*Math.tanh(dh*1.5)-ancho*.03*cerca);capa.style.setProperty('--y',y.toFixed(1)+'px');capa.style.setProperty('--x',((lado[i]||0)*h*ancho*.035).toFixed(1)+'px');capa.style.setProperty('--e',(1+.04*Math.exp(-d*d*3)+.025*h*cerca).toFixed(3));etiquetas[i].style.setProperty('--y',y.toFixed(1)+'px');});}
+const pisos=crearFluido({cantidad:pila.length,inicial:Math.max(0,lugarDe(leerMemoria(almacen()).piso)),quieto:quietud,alCambiar:i=>{if(!pila[i].piso)return;if(bajoCursor){bajoCursor=pila[i].id;iluminar();}else marcar(pila[i].id);},dibujar:posiciones=>{elegidos=posiciones;pintarPisos();}});
 const oleaje=crearOleaje({cantidad:pila.length,quieto:quietud,dibujar:(x,f,h)=>{lado=x;fila=f;fuerza=h;pintarPisos();}});
 function elegir(id){marcar(id);if(elegido)pisos.ir(lugarDe(elegido));}
 marcar(leerMemoria(almacen()).piso);pisos.redibujar();
-arrastrar($('floorGrid'),pisos,{eje:'y',sentido:1,paso:()=>$('floorGrid').offsetWidth*.285});
-$('floorGrid').addEventListener('pointermove',e=>{if(e.pointerType!=='mouse'||e.buttons)return;const r=$('floorGrid').getBoundingClientRect();oleaje.mover(Math.max(-1,Math.min(1,(e.clientX-r.left)/r.width*2-1)),Math.max(-.5,Math.min(pila.length-.5,(e.clientY-r.top-r.width*.29)/(r.width*.285))));});
-$('floorGrid').addEventListener('pointerleave',()=>oleaje.soltar());
+arrastrar($('floorGrid'),pisos,{eje:'y',sentido:1,paso:()=>$('floorGrid').offsetWidth*.285,alSoltar:()=>{const id=pila[pisos.indice()].id;bajoCursor=null;marcar(id);}});
+function seguir(lugar,ladoCursor){const i=Math.round(Math.max(0,Math.min(pila.length-1,lugar)));if(quietud()){bajoCursor=pila[i].id;iluminar();return;}bajoCursor=pila[i].id;iluminar();pisos.tomar();pisos.llevar(Math.max(0,Math.min(pila.length-1,lugar)));oleaje.mover(ladoCursor,lugar);}
+function dejar(){if(!bajoCursor)return;bajoCursor=null;iluminar();oleaje.soltar();if(elegido)pisos.ir(lugarDe(elegido));else pisos.soltar();}
+$('floorGrid').addEventListener('pointermove',e=>{if(e.pointerType!=='mouse'||e.buttons)return;const r=$('floorGrid').getBoundingClientRect();seguir((e.clientY-r.top-r.width*.29)/(r.width*.285),Math.max(-1,Math.min(1,(e.clientX-r.left)/r.width*2-1)));});
+$('floorGrid').addEventListener('pointerleave',e=>{if(e.pointerType==='mouse'&&!e.buttons)dejar();});
+etiquetas.forEach((b,i)=>{b.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse'&&!e.buttons)seguir(i,.6);});b.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')dejar();});});
 const safeToLeave=()=>window.dispatchEvent(new Event('atlas-before-floor-change',{cancelable:true}));
 function state(home){
  document.body.classList.toggle('floorHome',home);gallery.hidden=!home;$('floorHomeButton').hidden=home;

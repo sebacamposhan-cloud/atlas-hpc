@@ -86,7 +86,7 @@ export function crearOleaje({cantidad, dibujar, cuadro = f => requestAnimationFr
 }
 
 // Conecta un fluido al mouse, al dedo y a la rueda del mouse. sentido: 1 si el elemento sigue a la mano, -1 si avanza al revés.
-export function arrastrar(elemento, fluido, {eje = 'x', paso, sentido = -1}) {
+export function arrastrar(elemento, fluido, {eje = 'x', paso, sentido = -1, alSoltar = () => {}}) {
   const lugar = e => eje === 'x' ? e.clientX : e.clientY;
   let toque = null, soltado = -1e9, espera = 0;
   elemento.addEventListener('pointerdown', e => { if (!e.button) toque = {id: e.pointerId, inicio: lugar(e), base: fluido.objetivo(), movido: false, marcas: [[e.timeStamp, lugar(e)]]}; });
@@ -108,6 +108,7 @@ export function arrastrar(elemento, fluido, {eje = 'x', paso, sentido = -1}) {
     elemento.classList.remove('tomado'); soltado = e.timeStamp;
     const [t0, p0] = marcas[0], [t1, p1] = marcas.at(-1), ms = t1 - t0;
     fluido.soltar(ms > 0 && e.timeStamp - t1 < 80 ? sentido * (p1 - p0) / ms * 16.7 / paso() : 0);
+    alSoltar();
   };
   elemento.addEventListener('pointerup', fin);
   elemento.addEventListener('pointercancel', fin);
@@ -116,6 +117,6 @@ export function arrastrar(elemento, fluido, {eje = 'x', paso, sentido = -1}) {
   elemento.addEventListener('wheel', e => {
     e.preventDefault();
     fluido.tomar(); fluido.llevar(fluido.objetivo() + (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) * .6 / paso());
-    clearTimeout(espera); espera = setTimeout(() => fluido.soltar(), 130);
+    clearTimeout(espera); espera = setTimeout(() => { fluido.soltar(); alSoltar(); }, 130);
   }, {passive: false});
 }

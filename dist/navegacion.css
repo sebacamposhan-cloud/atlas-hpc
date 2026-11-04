@@ -88,8 +88,8 @@ body:not(.hideLeft) #barraFunciones { visibility: hidden; }
 .ruedaTarjeta strong { font-size: 18px; font-weight: 800; line-height: 1.15; color: inherit; }
 .ruedaTarjeta small { font-size: 12px; line-height: 1.3; color: inherit; }
 .ruedaTarjeta svg { width: 100%; height: 84px; fill: none; stroke-width: 1.5; }
-.ruedaTarjeta.alCentro, .ruedaTarjeta.alCentro:hover:not(:disabled) { background: var(--g-azul); color: #fff; border-color: var(--g-azul); outline: 0; }
-.ruedaTarjeta.alCentro svg, .ruedaTarjeta.alCentro svg .f { stroke: #fff; }
+.ruedaPista:not(.conCursor) .ruedaTarjeta.alCentro, .ruedaTarjeta.iluminada, .ruedaTarjeta.iluminada:hover:not(:disabled) { background: var(--g-azul); color: #fff; border-color: var(--g-azul); outline: 0; }
+.ruedaPista:not(.conCursor) .ruedaTarjeta.alCentro svg, .ruedaPista:not(.conCursor) .ruedaTarjeta.alCentro svg .f, .ruedaTarjeta.iluminada svg, .ruedaTarjeta.iluminada svg .f { stroke: #fff; }
 @media (prefers-reduced-motion: reduce) { .ruedaTarjeta { transition: none; } #ruedaObra { animation: none; } }
 
 /* Hoja de una función: lista sobre el plano */
@@ -126,15 +126,15 @@ body:not(.hideLeft) #barraFunciones { visibility: hidden; }
 .pisoCapa::after { content: ""; position: absolute; inset: 0; clip-path: polygon(50% 4%, 95% 40%, 56% 86%, 5% 46%); pointer-events: auto; cursor: pointer; }
 .pisoCapa img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; transition: opacity .18s ease-out; pointer-events: none; }
 .pisoCapa .pisoAzul { opacity: 0; }
-.pisoCapa[aria-pressed=true] .pisoAzul { opacity: 1; }
+.pisoCapa.iluminado .pisoAzul { opacity: 1; }
 .pisoCapa:focus-visible::before { content: ""; position: absolute; inset: 8% 6%; border: 2px solid var(--g-cian); }
 .pisosLista { position: relative; flex: none; width: 86px; height: var(--alto); margin-left: -22px; z-index: 5; }
 .pisoEtiqueta, .pisoEtiqueta:hover:not(:disabled) { position: absolute; left: 0; top: calc(var(--paso) * var(--i) + var(--placa) * .17); width: 86px; min-height: 46px; padding: 4px 6px; border: 1px solid transparent; outline: 0; border-radius: 999px !important; background: #fff; color: var(--g-texto); font-size: 15px; font-weight: 700; box-shadow: 0 4px 14px rgba(27, 42, 86, .16) !important; transform: translateY(var(--y, 0)); }
 .pisoEtiqueta::before { content: ""; position: absolute; right: calc(100% + 4px); top: 50%; width: 30px; height: 1px; background: var(--g-regla); }
 .pisoEtiqueta::after { content: ""; position: absolute; right: calc(100% + 32px); top: calc(50% - 2px); width: 5px; height: 5px; border-radius: 50% !important; background: var(--g-regla); }
-.pisoEtiqueta.bajoCursor { border-color: var(--g-azul); }
-.pisoEtiqueta[aria-pressed=true], .pisoEtiqueta[aria-pressed=true]:hover:not(:disabled) { background: var(--g-azul) !important; border-color: var(--g-azul); color: #fff !important; box-shadow: 0 6px 16px rgba(15, 84, 153, .35) !important; }
-.pisoEtiqueta[aria-pressed=true]::before, .pisoEtiqueta[aria-pressed=true]::after { background: var(--g-azul); }
+#floorExplorer .pisoEtiqueta[aria-pressed=true], #floorExplorer .pisoEtiqueta[aria-pressed=true]:hover:not(:disabled) { background: #fff !important; color: var(--g-texto) !important; }
+#floorExplorer .pisoEtiqueta.iluminado, #floorExplorer .pisoEtiqueta.iluminado:hover:not(:disabled), #floorExplorer .pisoEtiqueta.iluminado[aria-pressed=true], #floorExplorer .pisoEtiqueta.iluminado[aria-pressed=true]:hover:not(:disabled) { background: var(--g-azul) !important; border-color: var(--g-azul); color: #fff !important; box-shadow: 0 6px 16px rgba(15, 84, 153, .35) !important; }
+.pisoEtiqueta.iluminado::before, .pisoEtiqueta.iluminado::after { background: var(--g-azul); }
 #floorExplorer #pisoContinuar { flex: none; align-self: center; width: 100%; max-width: 460px; min-height: 58px; border-radius: 14px !important; box-shadow: 0 8px 20px rgba(15, 84, 153, .28) !important; font-size: 18px; font-weight: 800; }
 #floorExplorer #pisoContinuar:disabled { background: #fff; color: var(--g-texto2); border-color: var(--g-regla); box-shadow: none !important; }
 #navLogo { display: none; height: 38px; width: auto; }
