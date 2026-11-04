@@ -7,7 +7,7 @@ Pensada para capataces y jefes de terreno, que trabajan en un solo piso.
 1. Después de iniciar sesión se elige el piso entre las maquetas 3D apiladas. El último piso queda marcado.
 2. El plano del piso queda de base, con búsqueda, zoom, **Pisos**, **Control de obra** y **Sin conexión**.
 3. **Control de obra** abre una rueda de tarjetas desde abajo, sin salir del plano.
-4. Cada tarjeta devuelve el plano con sus botones de función:
+4. Cada tarjeta devuelve el plano con sus botones de función, circulares y flotantes en el borde izquierdo:
 
 | Tarjeta | Botones |
 |---|---|
@@ -17,6 +17,8 @@ Pensada para capataces y jefes de terreno, que trabajan en un solo piso.
 | Herramientas | Proyectos, Filtros y capas, y Más |
 
 Atlas recuerda en cada equipo el último piso y la última función. Recintos se retoma pintando el plano; Protocolos deja sus botones sin abrir la lista.
+
+La rueda y los pisos se mueven con el mouse, el dedo o la rueda del mouse (`dist/fluido.mjs`): siguen con suavidad, al soltar frenan solos y los vecinos llegan con un leve retraso. En los pisos, arrastrar cambia el piso elegido.
 
 ## Menú del recinto
 

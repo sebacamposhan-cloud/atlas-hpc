@@ -1,5 +1,6 @@
 // Barra inferior, rueda de Control de obra y botones de función sobre el plano. La lógica vive en navegacion-model.mjs.
-import {TARJETAS, tarjeta as buscarTarjeta, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar} from './navegacion-model.mjs';
+import {TARJETAS, ICONOS, tarjeta as buscarTarjeta, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar} from './navegacion-model.mjs';
+import {crearFluido, arrastrar} from './fluido.mjs';
 import {nivel} from './level.mjs';
 import {loadProtocolCatalog, loadProtocolType} from './protocol-catalog.mjs';
 import {scopeProtocolCatalog, scopedProtocolRows} from './protocol-scope.mjs';
@@ -26,28 +27,25 @@ export function createNavegacion(ctx) {
   main.append(barra, hoja, rueda);
   const pista = rueda.querySelector('.ruedaPista'), tarjetas = [...pista.querySelectorAll('.ruedaTarjeta')];
 
-  // La tarjeta del centro queda de frente y las demás giran alrededor, como una rueda.
-  function girar() {
-    const centro = pista.getBoundingClientRect().left + pista.clientWidth / 2;
-    for (const t of tarjetas) {
-      const r = t.getBoundingClientRect(), d = (r.left + r.width / 2 - centro) / (r.width + 12), a = Math.max(-1.6, Math.min(1.6, d));
-      t.style.transform = quietud() ? '' : `rotateY(${(a * -24).toFixed(1)}deg) scale(${(1 - Math.abs(a) * .12).toFixed(3)})`;
+  // La tarjeta del centro queda de frente y las demás giran alrededor, como una rueda. Se toma con el mouse o el dedo.
+  const distancia = () => tarjetas[0].offsetWidth + 12;
+  const giro = crearFluido({cantidad: tarjetas.length, inicial: 1, quieto: quietud, dibujar: posiciones => {
+    const tramo = distancia();
+    tarjetas.forEach((t, i) => {
+      const d = i - posiciones[i], a = Math.max(-1.6, Math.min(1.6, d));
+      t.style.transform = `translateX(${(d * tramo).toFixed(1)}px) rotateY(${(a * -24).toFixed(1)}deg) scale(${(1 - Math.abs(a) * .12).toFixed(3)})`;
       t.classList.toggle('alCentro', Math.abs(d) < .5);
-    }
-  }
-  pista.addEventListener('scroll', () => requestAnimationFrame(girar), {passive: true});
-  addEventListener('resize', () => { if (!rueda.hidden) girar(); });
-
-  function centrar(id, suave = false) {
-    const t = tarjetas.find(x => x.dataset.tarjeta === id) || tarjetas[1];
-    pista.scrollTo({left: t.offsetLeft - (pista.clientWidth - t.offsetWidth) / 2, behavior: suave && !quietud() ? 'smooth' : 'auto'});
-  }
+    });
+  }});
+  arrastrar(pista, giro, {eje: 'x', paso: distancia});
+  addEventListener('resize', () => { if (!rueda.hidden) giro.redibujar(); });
+  const indiceDe = id => Math.max(0, tarjetas.findIndex(t => t.dataset.tarjeta === id));
   function abrirRueda() {
     if (ctx.ocupado?.()) return;
     cerrarHoja(); ui.show('map'); document.body.classList.add('hideRight'); document.body.classList.remove('fichaMinima');
     rueda.hidden = false; document.body.classList.add('ruedaAbierta'); $('bottomObra').setAttribute('aria-expanded', 'true');
-    centrar(actual || 'recintos'); girar();
-    tarjetas.find(t => t.dataset.tarjeta === (actual || 'recintos'))?.focus({preventScroll: true});
+    giro.fijar(indiceDe(actual || 'recintos'));
+    tarjetas[giro.indice()].focus({preventScroll: true});
   }
   function cerrarRueda(foco = false) {
     if (rueda.hidden) return;
@@ -63,12 +61,16 @@ export function createNavegacion(ctx) {
     const t = buscarTarjeta(actual);
     document.body.classList.toggle('conFunciones', !!t);
     barra.hidden = !t;
-    if (t) {
+    // Solo se vuelven a crear al cambiar de tarjeta, para que los botones no reaparezcan con cada toque.
+    if (t && barra.dataset.tarjeta !== t.id) {
+      barra.dataset.tarjeta = t.id;
       barra.setAttribute('aria-label', 'Funciones de ' + t.titulo);
-      barra.innerHTML = `<span class="funcionesTitulo">${esc(t.titulo)}</span><div class="funcionesBotones">${t.funciones.map(([id, nombre]) => `<button type="button" data-funcion="${id}" aria-pressed="${funcion === id}">${esc(nombre)}</button>`).join('')}</div><button type="button" id="funcionesCerrar" aria-label="Cerrar ${esc(t.titulo)}">×</button>`;
+      barra.innerHTML = t.funciones.map(([id, nombre], i) => `<button type="button" class="funcionFlotante" style="--n:${i}" data-funcion="${id}" aria-pressed="false"><span class="funcionCirculo">${ICONOS[id]}</span><span class="funcionNombre">${esc(nombre)}</span></button>`).join('') + `<button type="button" id="funcionesCerrar" class="funcionFlotante" style="--n:${t.funciones.length}" aria-label="Cerrar ${esc(t.titulo)}"><span class="funcionCirculo">${ICONOS.cerrar}</span></button>`;
       barra.querySelectorAll('[data-funcion]').forEach(b => b.onclick = () => elegirFuncion(b.dataset.funcion));
       $('funcionesCerrar').onclick = cerrarTarjeta;
     }
+    if (!t) delete barra.dataset.tarjeta;
+    barra.querySelectorAll('[data-funcion]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.funcion === funcion)));
     const titulo = document.querySelector('header .project span');
     if (titulo) titulo.textContent = tituloNavegacion(actual, funcion);
   }
@@ -153,8 +155,8 @@ export function createNavegacion(ctx) {
     if (e.key === 'Escape') cerrarRueda(true);
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
       e.preventDefault();
-      const i = tarjetas.findIndex(t => t.classList.contains('alCentro')), siguiente = tarjetas[Math.max(0, Math.min(tarjetas.length - 1, i + (e.key === 'ArrowRight' ? 1 : -1)))];
-      centrar(siguiente.dataset.tarjeta, true); siguiente.focus({preventScroll: true});
+      const siguiente = Math.max(0, Math.min(tarjetas.length - 1, giro.indice() + (e.key === 'ArrowRight' ? 1 : -1)));
+      giro.ir(siguiente); tarjetas[siguiente].focus({preventScroll: true});
     }
   });
   window.addEventListener('atlas-floor-home', () => { cerrarRueda(); cerrarHoja(); });
