@@ -156,11 +156,42 @@ try {
       assert.ok(await sinAncho(page));
       await foto(page, nombre + '-observaciones');
     });
+    await paso(`${nombre}: las listas desplegables son tarjetas y siguen filtrando`, async () => {
+      await page.click('.panelBack');
+      await page.waitForSelector('body.ruedaPortada #ruedaObra:not([hidden])');
+      await page.click('#ruedaObra [data-tarjeta=lastplanner]');
+      await page.waitForSelector('.lpCycleFilters .flujoLista .ruedaTarjeta', {state: 'attached'});
+      await page.evaluate(() => document.querySelector('.lpCycleFilters')?.closest('details')?.setAttribute('open', ''));
+      const antes = await page.evaluate(() => { const s = [...document.querySelectorAll('.lpCycleFilters select')].find(x => [...x.options].some(o => o.value === 'N01')); return {nombre: s.name || s.id, valor: s.value, oculto: getComputedStyle(s).opacity}; });
+      assert.equal(antes.oculto, '0', 'la lista original queda oculta');
+      await page.evaluate(() => { const s = [...document.querySelectorAll('.lpCycleFilters select')].find(x => [...x.options].some(o => o.value === 'N01')); s.nextElementSibling.querySelector('[data-valor=N01]').click(); });
+      await page.waitForFunction(() => [...document.querySelectorAll('.lpCycleFilters select')].some(s => s.value === 'N01'));
+      await page.waitForSelector('.lpCycleFilters .flujoLista [aria-pressed=true]', {state: 'attached'});
+      assert.ok(await sinAncho(page));
+      await foto(page, nombre + '-filtros');
+    });
+    await paso(`${nombre}: la lista de protocolos es de tarjetas y la búsqueda las acorta`, async () => {
+      await page.click('#bottomModulos');
+      await elegirModulo(page, 'protocolos');
+      await page.click('#moduloContinuar');
+      await page.waitForSelector('#floorExplorer:not([hidden])');
+      await page.click('#pisoContinuar');
+      await page.waitForSelector('body.ruedaPortada #ruedaObra:not([hidden])');
+      await page.click('#ruedaObra [data-tarjeta=tipos]');
+      await page.waitForSelector('.hojaLista.conFlujo .ruedaTarjeta');
+      const total = await page.locator('.hojaLista .ruedaTarjeta:visible').count();
+      assert.ok(total > 3);
+      await foto(page, nombre + '-protocolos-tarjetas');
+      await page.fill('#hojaBuscar', 'xxxxxx');
+      await page.waitForSelector('.hojaVacia:not([hidden])');
+      await page.fill('#hojaBuscar', '');
+      assert.equal(await page.locator('.hojaLista .ruedaTarjeta:visible').count(), total);
+    });
     await paso(`${nombre}: al volver a abrir parte en Módulos con lo último marcado`, async () => {
       await page.goto(base + '/');
       await page.waitForSelector('#moduloExplorer:not([hidden])');
-      assert.equal(await page.textContent('#moduloContinuar'), 'Continuar a Control →');
-      assert.equal(await page.getAttribute('#moduloPista [data-modulo=control]', 'aria-pressed'), 'true');
+      assert.equal(await page.textContent('#moduloContinuar'), 'Continuar a Protocolos →');
+      assert.equal(await page.getAttribute('#moduloPista [data-modulo=protocolos]', 'aria-pressed'), 'true');
     });
     await paso(`${nombre}: un enlace directo a un piso entra a Plano sin pasar por Módulos`, async () => {
       await page.goto(base + '/?nivel=N01');

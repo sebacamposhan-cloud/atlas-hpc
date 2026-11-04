@@ -1,40 +1,40 @@
 /* Selecciones con tarjetas de flujo (selector-flujo.mjs). Se carga al final porque reemplaza la forma de pestañas antiguas
    que tienen sus estilos repartidos en varios archivos. Los colores son los del tema: blanco, azul marino y azul. */
-.ruedaPista.conFlujo { --ancho: 208px; --alto: 176px; display: block !important; flex: none; width: auto; max-width: none; margin: 10px 0 16px; padding: 0; border: 0; background: transparent; height: calc(var(--alto) + 16px); }
-.ruedaPista.conFlujo > .ruedaTarjeta, .ruedaPista.conFlujo > .ruedaTarjeta:disabled { position: absolute; left: 50%; top: 6px; flex: none; width: var(--ancho); min-width: 0; max-width: none; margin: 0 0 0 calc(var(--ancho) / -2); min-height: var(--alto); box-sizing: border-box; padding: 10px 12px 12px; border: 1px solid var(--g-marca); background: #fff; color: var(--g-texto); font-size: 13px; font-weight: 600; text-align: left; white-space: normal; }
-.ruedaPista.conFlujo > .ruedaTarjeta:disabled { opacity: .55; }
+.ruedaPista.conFlujo { --ancho: 208px; --alto: 176px; display: block !important; overflow: hidden; flex: none; width: auto; max-width: none; margin: 10px 0 16px; padding: 0; border: 0; background: transparent; height: calc(var(--alto) + 16px); }
+.ruedaPista.conFlujo .ruedaTarjeta, .ruedaPista.conFlujo .ruedaTarjeta:disabled { position: absolute; left: 50%; top: 6px; flex: none; width: var(--ancho); min-width: 0; max-width: none; margin: 0 0 0 calc(var(--ancho) / -2); min-height: var(--alto); box-sizing: border-box; padding: 10px 12px 12px; border: 1px solid var(--g-marca); background: #fff; color: var(--g-texto); font-size: 13px; font-weight: 600; text-align: left; white-space: normal; }
+.ruedaPista.conFlujo .ruedaTarjeta:disabled { opacity: .55; }
 /* Elegida: azul. Iluminada por el cursor: azul, y la elegida se apaga mientras tanto. Igual que los pisos. */
-.ruedaPista.conFlujo > .ruedaTarjeta:is([aria-pressed=true], [aria-selected=true], [aria-checked=true]) { background: var(--g-azul) !important; border-color: var(--g-azul); color: #fff !important; }
+.ruedaPista.conFlujo .ruedaTarjeta:is([aria-pressed=true], [aria-selected=true], [aria-checked=true]) { background: var(--g-azul) !important; border-color: var(--g-azul); color: #fff !important; }
 .ruedaTarjeta:is([aria-pressed=true], [aria-selected=true], [aria-checked=true]) :is(svg, svg .f) { stroke: #fff; }
 .ruedaTarjeta:is([aria-pressed=true], [aria-selected=true], [aria-checked=true]) :is(small, b, strong, span, em) { color: #fff !important; }
-.ruedaPista.conFlujo.conCursor > .ruedaTarjeta:is([aria-pressed=true], [aria-selected=true], [aria-checked=true]):not(.iluminada) { background: #fff !important; border-color: var(--g-marca); color: var(--g-texto) !important; }
-.ruedaPista.conFlujo.conCursor > .ruedaTarjeta:is([aria-pressed=true], [aria-selected=true], [aria-checked=true]):not(.iluminada) :is(small, b, strong, span, em) { color: var(--g-texto) !important; }
-.ruedaPista.conFlujo.conCursor > .ruedaTarjeta:is([aria-pressed=true], [aria-selected=true], [aria-checked=true]):not(.iluminada) svg { stroke: var(--g-marca); }
-.ruedaPista.conFlujo.conCursor > .ruedaTarjeta:is([aria-pressed=true], [aria-selected=true], [aria-checked=true]):not(.iluminada) svg .f { stroke: var(--g-azul); }
-.ruedaPista.conFlujo > .ruedaTarjeta.iluminada { background: var(--g-azul) !important; border-color: var(--g-azul); color: #fff !important; outline: 0; }
-.ruedaPista.conFlujo > .ruedaTarjeta.iluminada :is(small, b, strong, span, em) { color: #fff !important; }
+.ruedaPista.conFlujo.conCursor .ruedaTarjeta:is([aria-pressed=true], [aria-selected=true], [aria-checked=true]):not(.iluminada) { background: #fff !important; border-color: var(--g-marca); color: var(--g-texto) !important; }
+.ruedaPista.conFlujo.conCursor .ruedaTarjeta:is([aria-pressed=true], [aria-selected=true], [aria-checked=true]):not(.iluminada) :is(small, b, strong, span, em) { color: var(--g-texto) !important; }
+.ruedaPista.conFlujo.conCursor .ruedaTarjeta:is([aria-pressed=true], [aria-selected=true], [aria-checked=true]):not(.iluminada) svg { stroke: var(--g-marca); }
+.ruedaPista.conFlujo.conCursor .ruedaTarjeta:is([aria-pressed=true], [aria-selected=true], [aria-checked=true]):not(.iluminada) svg .f { stroke: var(--g-azul); }
+.ruedaPista.conFlujo .ruedaTarjeta.iluminada { background: var(--g-azul) !important; border-color: var(--g-azul); color: #fff !important; outline: 0; }
+.ruedaPista.conFlujo .ruedaTarjeta.iluminada :is(small, b, strong, span, em) { color: #fff !important; }
 
 /* Grande: como la rueda, con dibujo. El título largo va un poco más chico para que quepa en dos líneas. */
-.ruedaPista.flujo-grande > .ruedaTarjeta strong { font-size: 16px; }
-.ruedaPista.flujo-grande > .ruedaTarjeta small { font-size: 12px; font-weight: 500; }
+.ruedaPista.flujo-grande .ruedaTarjeta strong { font-size: 16px; }
+.ruedaPista.flujo-grande .ruedaTarjeta small { font-size: 12px; font-weight: 500; }
 
 /* Media: texto y un número, sin dibujo. */
 .ruedaPista.flujo-media { --ancho: 132px; --alto: 84px; }
-.ruedaPista.flujo-media > .ruedaTarjeta { display: grid; align-content: center; justify-items: center; gap: 2px; padding: 6px 8px; text-align: center; }
-.ruedaPista.flujo-media > .ruedaTarjeta b { display: block; margin: 0; font-size: 20px; font-weight: 800; line-height: 1.1; color: inherit; }
-.ruedaPista.flujo-media > .ruedaTarjeta small { display: block; margin: 0; font-size: 11px; color: inherit; }
+.ruedaPista.flujo-media .ruedaTarjeta { display: grid; align-content: center; justify-items: center; gap: 2px; padding: 6px 8px; text-align: center; }
+.ruedaPista.flujo-media .ruedaTarjeta b { display: block; margin: 0; font-size: 20px; font-weight: 800; line-height: 1.1; color: inherit; }
+.ruedaPista.flujo-media .ruedaTarjeta small { display: block; margin: 0; font-size: 11px; color: inherit; }
 
 /* Baja: una línea, para lo que va sobre el plano o dentro de un formulario. */
 .ruedaPista.flujo-baja { --ancho: 124px; --alto: 48px; margin: 6px 0 8px; }
-.ruedaPista.flujo-baja > .ruedaTarjeta { display: grid; grid-auto-flow: column; justify-content: center; align-content: center; align-items: center; gap: 6px; padding: 4px 8px; text-align: center; font-size: 13px; line-height: 1.15; }
+.ruedaPista.flujo-baja .ruedaTarjeta { display: grid; grid-auto-flow: column; justify-content: center; align-content: center; align-items: center; gap: 6px; padding: 4px 8px; text-align: center; font-size: 13px; line-height: 1.15; }
 
 /* Elegir la vista de planificación: la muestra de la vista ocupa el lugar del dibujo. */
 .lpPlanChooser .ruedaPista.conFlujo { --alto: 196px; --ancho: 228px; }
-.lpPlanChooser .ruedaPista.conFlujo > .ruedaTarjeta { display: grid; align-content: start; gap: 6px; }
-.lpPlanChooser .ruedaPista.conFlujo > .ruedaTarjeta em { position: absolute; top: 8px; right: 10px; font-style: normal; }
-.lpPlanChooser .ruedaPista.conFlujo > .ruedaTarjeta span { display: grid; gap: 2px; }
-.lpPlanChooser .ruedaPista.conFlujo > .ruedaTarjeta strong { font-size: 15px; }
-.lpPlanChooser .ruedaPista.conFlujo > .ruedaTarjeta small { font-size: 12px; font-weight: 500; }
+.lpPlanChooser .ruedaPista.conFlujo .ruedaTarjeta { display: grid; align-content: start; gap: 6px; }
+.lpPlanChooser .ruedaPista.conFlujo .ruedaTarjeta em { position: absolute; top: 8px; right: 10px; font-style: normal; }
+.lpPlanChooser .ruedaPista.conFlujo .ruedaTarjeta span { display: grid; gap: 2px; }
+.lpPlanChooser .ruedaPista.conFlujo .ruedaTarjeta strong { font-size: 15px; }
+.lpPlanChooser .ruedaPista.conFlujo .ruedaTarjeta small { font-size: 12px; font-weight: 500; }
 
 /* Franja de pisos: arriba de todo lo que muestra el módulo, cuando hay varios pisos elegidos. */
 #franjaPisos { --alto: 44px; --ancho: 104px; position: absolute; top: 0; left: 0; right: 0; z-index: 32; box-sizing: border-box; height: 60px; margin: 0; background: #fff; border-bottom: 2px solid var(--g-marca); }
@@ -45,4 +45,34 @@ body.conFranja.ruedaPortada #ruedaObra { top: 60px; }
 body.conFranja #barraFunciones, body.conFranja .toolbar { top: 72px; }
 @media (min-width: 701px) { body.conFranja #hojaFuncion { top: 72px; } }
 
-@media (prefers-reduced-motion: reduce) { .ruedaPista.conFlujo > .ruedaTarjeta { transition: none; } }
+/* Listas desplegables: la original queda oculta y las tarjetas la manejan. */
+.selectConFlujo { position: absolute !important; width: 1px !important; height: 1px !important; min-height: 0 !important; padding: 0 !important; border: 0 !important; opacity: 0; pointer-events: none; }
+.ruedaPista.flujoLista { --ancho: 164px; --alto: 48px; }
+.ruedaPista.flujoLista .ruedaTarjeta { font-size: 12px; font-weight: 600; }
+
+/* Listas de personas y de protocolos: nombre arriba y detalle abajo. */
+.jerGente.conFlujo { --ancho: 216px; --alto: 84px; }
+.jerGente.conFlujo .ruedaTarjeta b { font-size: 15px; line-height: 1.15; }
+.hojaLista.conFlujo, .matrixGroup > div.conFlujo { --ancho: 220px; --alto: 96px; }
+.hojaLista.conFlujo li { display: contents; }
+.hojaLista.conFlujo .ruedaTarjeta { display: grid; justify-items: center; align-content: center; gap: 2px; }
+.hojaLista.conFlujo .ruedaTarjeta span { display: grid; gap: 1px; justify-items: center; }
+.hojaLista.conFlujo .ruedaTarjeta :is(b, small, em) { color: inherit; }
+.hojaLista.conFlujo .ruedaTarjeta b { font-size: 15px; line-height: 1.15; }
+.hojaLista.conFlujo .ruedaTarjeta em { font-size: 15px; }
+.matrixGroup > div.conFlujo .ruedaTarjeta { display: grid; align-content: center; gap: 2px; }
+
+/* Estados de levantamiento: conservan su color. */
+.levOpciones.conFlujo .ruedaTarjeta[aria-pressed=true] { background: var(--c, var(--g-azul)) !important; border-color: var(--c, var(--g-azul)); }
+
+/* Fotos: cada grupo de herramientas ocupa su línea para que las tarjetas tengan ancho. */
+.phGrupo.conFlujo { --ancho: 96px; flex: 1 1 100%; }
+.phGrupo.conFlujo .ruedaTarjeta.phColor { padding: 6px; }
+
+/* Filtro de columna: cada valor es una tarjeta que se marca o desmarca. */
+.cfLista.conFlujo, .cfOrden.conFlujo { --ancho: 180px; }
+.cfLista.conFlujo .ruedaTarjeta input { position: absolute; opacity: 0; pointer-events: none; }
+.cfLista.conFlujo .ruedaTarjeta b { font-size: 12px; }
+.cfLista.conFlujo .ruedaTarjeta:has(input:checked) { background: var(--g-azul) !important; border-color: var(--g-azul); color: #fff !important; }
+.cfLista.conFlujo .ruedaTarjeta:has(input:checked) :is(span, b) { color: #fff !important; }
+@media (prefers-reduced-motion: reduce) { .ruedaPista.conFlujo .ruedaTarjeta { transition: none; } }

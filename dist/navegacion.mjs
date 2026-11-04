@@ -1,7 +1,7 @@
 // Barra inferior, rueda de tarjetas de cada módulo y botones de función sobre el plano. La lógica vive en navegacion-model.mjs.
 import {TARJETAS, ICONOS, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar, tarjetasPara, cartasDelModulo, moduloDe, conPortada, consultaPiso} from './navegacion-model.mjs';
 import {funcionesDe} from './jerarquia-model.mjs';
-import {crearPista, activarFlujos} from './selector-flujo.mjs';
+import {crearPista, activarFlujos, rearmarFlujo} from './selector-flujo.mjs';
 import {nivel, pisos} from './level.mjs';
 import {loadProtocolCatalog, loadProtocolType} from './protocol-catalog.mjs';
 import {scopeProtocolCatalog, scopedProtocolRows} from './protocol-scope.mjs';
@@ -175,7 +175,7 @@ export function createNavegacion(ctx) {
     if (hoja.hidden || $('hojaTitulo').textContent !== titulo) return;
     cuerpo.innerHTML = `<input type="search" id="hojaBuscar" aria-label="Buscar protocolo" placeholder="Buscar por nombre o código…" autocomplete="off"><ul class="hojaLista">${filas.map((f, i) => `<li data-texto="${esc((f.tipo.code + ' ' + f.tipo.name).toLocaleLowerCase('es'))}"><button type="button" data-fila="${i}"><span><b>${esc(f.tipo.name || f.tipo.code)}</b><small>${esc(f.tipo.code)}</small></span><em>${f.n.toLocaleString('es-CL')}</em></button></li>`).join('')}</ul><p class="hojaVacia"${filas.length ? ' hidden' : ''}>${esc(vacio)}</p>`;
     const buscar = $('hojaBuscar');
-    buscar.oninput = () => { const q = buscar.value.trim().toLocaleLowerCase('es'); let n = 0; cuerpo.querySelectorAll('li').forEach(li => { li.hidden = !li.dataset.texto.includes(q); if (!li.hidden) n++; }); cuerpo.querySelector('.hojaVacia').hidden = !!n; };
+    buscar.oninput = () => { const q = buscar.value.trim().toLocaleLowerCase('es'); let n = 0; cuerpo.querySelectorAll('li').forEach(li => { li.hidden = !li.dataset.texto.includes(q); if (!li.hidden) n++; }); cuerpo.querySelector('.hojaVacia').hidden = !!n; rearmarFlujo(cuerpo.querySelector('.hojaLista')); };
     cuerpo.querySelectorAll('[data-fila]').forEach(b => b.onclick = async () => {
       const f = filas[Number(b.dataset.fila)];
       b.disabled = true;

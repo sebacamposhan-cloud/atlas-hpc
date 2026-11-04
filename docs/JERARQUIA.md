@@ -16,12 +16,12 @@ Sin personas cargadas, Atlas sigue igual que hoy.
 | Sin nivel | Planificación | No | No | Ve todo | Sí |
 | Sin nivel | Calidad | No | No | Ve todo | Solo verificar, evidencias y restricciones |
 
-El nivel 4 entra con su propia cuenta y ve sus tareas y sus pisos. Sus tarjetas son Mis tareas, Recintos, Protocolos y Herramientas.
+El nivel 4 entra con su propia cuenta y ve sus tareas y sus pisos. En Control ve Mis tareas y Herramientas. Plano y Protocolos los ve como todos, sin los Resumen.
 
 ## Cómo se usa
 
-1. **Asignar.** Control de obra → Mis tareas → Asignar. Atlas pregunta a quién, qué tiene que hacer, en qué piso y, si se quiere, hasta qué fecha. El frente de trabajo se elige en el plano. La tarea puede salir de una actividad de Last Planner.
-2. **Recibir.** Quien la recibe ve un número en Control de obra y la tarea en Mis tareas.
+1. **Asignar.** Control → Mis tareas → Asignar. Atlas pregunta a quién, qué tiene que hacer, en qué piso y, si se quiere, hasta qué fecha. El frente de trabajo se elige en el plano. La tarea puede salir de una actividad de Last Planner.
+2. **Recibir.** Quien la recibe ve un número en Control (o en Módulos, si está en otro módulo) y la tarea en Mis tareas.
 3. **Marcar.** Marcar en el plano → tocar cada recinto terminado → Listo. Una tarea sin frente se marca en porcentaje.
 4. **Terminar.** Terminé esta tarea. Queda esperando confirmación.
 5. **Confirmar.** En Mi equipo, quien la asignó toca Confirmar, o Devolver con el motivo. Una tarea devuelta vuelve a Mis tareas.

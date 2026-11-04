@@ -4,7 +4,7 @@ import {TARJETAS, ICONOS, MODULOS, moduloDe, conPortada, cartasDelModulo, consul
 import {funcionesDe, puedeVariosPisos} from './dist/jerarquia-model.mjs';
 import {crearFluido, crearOleaje, arrastrar} from './dist/fluido.mjs';
 import {palancaHTML} from './dist/palanca.mjs';
-import {GRUPOS, claveDe, indiceActivo} from './dist/selector-flujo.mjs';
+import {GRUPOS, SIN_FLUJO, claveDe, indiceActivo, firmaDeSelect} from './dist/selector-flujo.mjs';
 
 const almacen = (inicial = {}) => { const d = {...inicial}; return {getItem: k => d[k] ?? null, setItem: (k, v) => { d[k] = v; }, d}; };
 const index = fs.readFileSync('dist/index.html', 'utf8');
@@ -160,6 +160,12 @@ function fluido(opciones = {}) {
 // Selecciones con flujo: cada grupo dice qué botones usa y su tamaño; las vistas sobre una tabla llevan dibujo y texto.
 {
   assert.ok(GRUPOS.length >= 9 && GRUPOS.every(g => g.selector && g.boton && ['grande', 'media', 'baja'].includes(g.tamano)));
+  for (const selector of ['.jerPasos', '.jerGente', '.levOpciones', '.cfLista', '.matrixGroup > div', '.hojaLista']) assert.ok(GRUPOS.some(g => g.selector === selector), selector);
+  // El rombo y las palancas quedan como están.
+  assert.ok(!GRUPOS.some(g => /rombo|palanca/i.test(g.selector)));
+  assert.equal(SIN_FLUJO, '.left, [data-sin-flujo]');
+  const uno = firmaDeSelect({disabled: false, options: [{value: 'a', text: 'A', disabled: false}]}), otro = firmaDeSelect({disabled: false, options: [{value: 'a', text: 'A', disabled: true}]});
+  assert.notEqual(uno, otro, 'un bloqueo nuevo vuelve a armar las tarjetas');
   for (const selector of ['.lpCycleNav', '.lpCycleSubnav', '.subVistas']) {
     const g = GRUPOS.find(x => x.selector === selector);
     assert.equal(g.tamano, 'grande', selector);

@@ -7,8 +7,9 @@ const quietud = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // elemento: contenedor con sus tarjetas adentro. alCambiar(i): cambió la tarjeta del centro al girar (solo si no caben todas).
 // conRueda: false si la pista está dentro de algo que se desplaza, para no quitarle la rueda del mouse.
-export function crearPista(elemento, {inicial = 0, alCambiar = () => {}, tarjeta = '.ruedaTarjeta', conRueda = true} = {}) {
-  const tarjetas = [...elemento.querySelectorAll(tarjeta)], fin = new AbortController(), senal = fin.signal;
+// lista: las tarjetas, si no son todas las que hay adentro (una búsqueda esconde algunas).
+export function crearPista(elemento, {inicial = 0, alCambiar = () => {}, tarjeta = '.ruedaTarjeta', conRueda = true, lista = null} = {}) {
+  const tarjetas = lista || [...elemento.querySelectorAll(tarjeta)], fin = new AbortController(), senal = fin.signal;
   let cursor = null, posiciones = [], lado = [], fila = [], fuerza = [];
   // Con el cursor encima se ilumina la tarjeta que tiene debajo, también mientras la rueda se mueve.
   function iluminar() {
@@ -23,6 +24,10 @@ export function crearPista(elemento, {inicial = 0, alCambiar = () => {}, tarjeta
     const tramo = distancia(), abierta = caben();
     tarjetas.forEach((t, i) => {
       const d = i - (posiciones[i] ?? 0), a = Math.max(-1.6, Math.min(1.6, d)), h = fuerza[i] || 0, dh = i - (fila[i] || 0), cerca = Math.exp(-dh * dh * 2.5);
+      // En listas largas, lo que está lejos no se dibuja.
+      const lejos = Math.abs(d) > 8;
+      t.style.visibility = lejos ? 'hidden' : '';
+      if (lejos) return;
       t.style.transform = `translate(${(d * tramo + (lado[i] || 0) * h * 10).toFixed(1)}px, ${(-8 * h * cerca).toFixed(1)}px) rotateY(${(a * (abierta ? -12 : -24) * (1 - h * cerca)).toFixed(1)}deg) scale(${(1 - Math.abs(a) * (abierta ? .04 : .12) + .05 * h * cerca).toFixed(3)})`;
       t.classList.toggle('alCentro', !abierta && Math.abs(d) < .5);
     });
@@ -96,13 +101,26 @@ export const GRUPOS = [
   {selector: '.lpDays', boton: 'button', tamano: 'media'},
   {selector: '.planTypes', boton: 'button', tamano: 'baja'},
   {selector: '.filterTiposPlano', boton: 'button', tamano: 'baja'},
-  {selector: '.lpSpatialModes', boton: 'button', tamano: 'baja'}
+  {selector: '.lpSpatialModes', boton: 'button', tamano: 'baja'},
+  // Formularios y listas. soloVisibles: la búsqueda de la lista esconde filas.
+  {selector: '.jerPasos', boton: 'button', tamano: 'baja'},
+  {selector: '.jerGente', boton: '.jerPersona', tamano: 'media'},
+  {selector: '.levOpciones', boton: 'button', tamano: 'baja'},
+  {selector: '.phGrupo[role=group]', boton: 'button', tamano: 'baja'},
+  {selector: '.cfOrden', boton: 'button', tamano: 'baja'},
+  {selector: '.cfLista', boton: 'label', tamano: 'baja'},
+  {selector: '.matrixGroup > div', boton: '.matrixTypeChoice', tamano: 'media'},
+  {selector: '.hojaLista', boton: 'button', tamano: 'media', soloVisibles: true}
 ];
+// Listas desplegables que quedan fuera: las del panel lateral antiguo, que ya no se muestra.
+export const SIN_FLUJO = '.left, [data-sin-flujo]';
 export const claveDe = b => b.dataset.id ?? b.dataset.vista ?? '';
 // Posición de la tarjeta activa, o -1 si ninguna lo está.
 export const indiceActivo = botones => botones.findIndex(b => ['aria-pressed', 'aria-selected', 'aria-checked'].some(a => b.getAttribute(a) === 'true'));
+// Opciones de una lista desplegable: si cambian (valores, textos o bloqueos), sus tarjetas se vuelven a armar.
+export const firmaDeSelect = select => [select.disabled, ...[...select.options].map(o => [o.value, o.text, o.disabled].join('|'))].join('\n');
 
-const armadas = new WeakMap(), ultimoLugar = new Map();
+const armadas = new WeakMap(), desplegables = new WeakMap(), ultimoLugar = new Map();
 function vestir(boton, carta) {
   const titulo = boton.textContent.trim();
   boton.replaceChildren();
@@ -112,20 +130,54 @@ function vestir(boton, carta) {
   boton.append(fuerte, chico);
 }
 // Vuelve flujo un grupo de botones. Si la pantalla redibujó el grupo, parte donde estaba y se desliza a la tarjeta activa.
-function armar(contenedor, grupo) {
-  const botones = [...contenedor.querySelectorAll(grupo.boton)];
-  if (!botones.length || botones.every(b => b.classList.contains('ruedaTarjeta'))) return;
+function armar(contenedor, grupo, forzar = false) {
+  const todos = [...contenedor.querySelectorAll(grupo.boton)], botones = grupo.soloVisibles ? todos.filter(b => !b.closest('[hidden]')) : todos;
+  if (!forzar && (!todos.length || todos.every(b => b.classList.contains('ruedaTarjeta')))) return;
   armadas.get(contenedor)?.destruir();
   contenedor.classList.add('ruedaPista', 'conFlujo', 'flujo-' + grupo.tamano);
-  botones.forEach(b => { b.classList.add('ruedaTarjeta'); const carta = grupo.cartas?.[claveDe(b)]; if (carta) vestir(b, carta); });
+  todos.forEach(b => { if (b.classList.contains('ruedaTarjeta')) return; b.classList.add('ruedaTarjeta'); const carta = grupo.cartas?.[claveDe(b)]; if (carta) vestir(b, carta); });
   const activo = Math.max(0, indiceActivo(botones)), previo = ultimoLugar.get(grupo.selector);
-  const pista = crearPista(contenedor, {inicial: previo ?? activo, conRueda: false});
+  const pista = crearPista(contenedor, {inicial: previo ?? activo, conRueda: false, lista: botones});
   armadas.set(contenedor, pista);
-  pista.acomodar(Math.min(previo ?? activo, botones.length - 1));
+  pista.acomodar(Math.min(previo ?? activo, Math.max(0, botones.length - 1)));
   pista.ir(activo);
   ultimoLugar.set(grupo.selector, activo);
 }
-function revisar() { for (const grupo of GRUPOS) document.querySelectorAll(grupo.selector).forEach(c => armar(c, grupo)); }
+// Una búsqueda escondió o mostró filas: la pista se vuelve a armar con las que quedan.
+export function rearmarFlujo(contenedor) {
+  const grupo = contenedor && GRUPOS.find(g => contenedor.matches(g.selector));
+  if (grupo) armar(contenedor, grupo, true);
+}
+// Lista desplegable: se conserva en la página, oculta, con su valor y sus avisos. Las tarjetas la manejan por dentro, así
+// cada pantalla sigue leyendo su select y escuchando sus cambios como siempre.
+function marcarOpcion(select, caja) { caja.querySelectorAll('[data-valor]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.valor === select.value))); }
+function armarSelect(select) {
+  if (select.multiple || !select.options.length || select.closest(SIN_FLUJO)) return;
+  const firma = firmaDeSelect(select), previo = desplegables.get(select);
+  if (previo?.firma === firma) { if (previo.caja.querySelector('[aria-pressed=true]')?.dataset.valor !== select.value) marcarOpcion(select, previo.caja); return; }
+  previo?.pista.destruir(); previo?.caja.remove();
+  const caja = document.createElement('div');
+  caja.className = 'ruedaPista conFlujo flujo-baja flujoLista'; caja.setAttribute('role', 'group');
+  const nombre = select.getAttribute('aria-label') || select.title || select.closest('label')?.firstChild?.textContent?.trim();
+  if (nombre) caja.setAttribute('aria-label', nombre);
+  for (const o of select.options) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'ruedaTarjeta'; b.dataset.valor = o.value; b.textContent = o.text; b.disabled = o.disabled || select.disabled;
+    b.onclick = () => { select.value = o.value; marcarOpcion(select, caja); select.dispatchEvent(new Event('input', {bubbles: true})); select.dispatchEvent(new Event('change', {bubbles: true})); };
+    caja.append(b);
+  }
+  select.classList.add('selectConFlujo'); select.after(caja); select.setAttribute('tabindex', '-1');
+  marcarOpcion(select, caja);
+  const activo = Math.max(0, [...select.options].findIndex(o => o.value === select.value));
+  const pista = crearPista(caja, {inicial: activo, conRueda: false});
+  pista.acomodar(activo);
+  desplegables.set(select, {firma, caja, pista});
+  select.addEventListener('change', () => { if (select.isConnected) marcarOpcion(select, caja); });
+}
+function revisar() {
+  for (const grupo of GRUPOS) document.querySelectorAll(grupo.selector).forEach(c => armar(c, grupo));
+  document.querySelectorAll('select').forEach(armarSelect);
+}
 // Mira la página y arma cada grupo apenas aparece, sin que cada pantalla tenga que pedirlo. El plano (SVG) no cuenta.
 export function activarFlujos() {
   let pendiente = false;
