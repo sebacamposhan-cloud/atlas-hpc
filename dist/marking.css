@@ -37,7 +37,11 @@ body.markingOpen .toolbar, body.markingOpen main > footer { right: 332px; }
 #markingOpen[aria-expanded=true] { background: #dfeafa; color: #245b95; }
 #markingDialog { max-width: 620px; }
 .markingLibrary { display: grid; gap: 10px; margin: 20px 0; max-height: 40vh; overflow: auto; }
-.markingLibrary > button { padding: 12px; text-align: left; white-space: normal; overflow-wrap: anywhere; }
+.markingLibrary .markingFila { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: stretch; }
+.markingFila > [data-open-marking] { padding: 12px; text-align: left; white-space: normal; overflow-wrap: anywhere; min-width: 0; }
+.markingEliminar { min-width: 88px; padding: 6px 10px; font-size: 13px; color: #c21f1f; border-color: #c21f1f; }
+.markingEliminar:hover:not(:disabled) { color: #c21f1f; border-color: #c21f1f; outline-color: #c21f1f; }
+.markingEliminar.confirmar, .markingEliminar.confirmar:hover:not(:disabled) { background: #c21f1f; color: #fff; }
 .markingLibrary b, .markingLibrary span, .markingLibrary small { display: block; }
 .markingLibrary small { margin-top: 5px; }
 #markingForm input:not([type=color]), #markingForm textarea { display: block; width: 100%; font-size: 16px; }

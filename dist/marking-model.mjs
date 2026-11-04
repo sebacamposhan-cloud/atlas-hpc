@@ -22,6 +22,9 @@ function validarEstados(estados) {
   }
   return ids;
 }
+// Eliminar un proyecto: se marca y se guarda como una versión más. Así llega a los demás equipos, porque la nube no borra
+// registros y sin la marca el proyecto volvería en la siguiente sincronización. Las listas no muestran los marcados.
+export const marcarEliminado = (doc, {autor = '', at = new Date().toISOString()} = {}) => ({...doc, eliminado: {at, autor}, version: doc.version + 1, updatedAt: at});
 export function validateMarking(doc) {
   if (esLevantamiento(doc)) return validarLevantamiento(doc);
   if (!doc || ![1, 2].includes(doc.schema) || doc.specialty !== 'architecture' || !text(doc.id, 100) || !text(doc.level, 30)) throw Error('Documento de Arquitectura inválido.');

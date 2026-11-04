@@ -48,6 +48,27 @@
 .progressEditor .chartHeading > span { display: flex; gap: 6px; }
 .progressEditor #progressRombo { max-width: 560px; margin: 0 auto; }
 
+/* Curva de avance real contra programado, junto al trabajo pendiente por sector. */
+.progressCurva { grid-column: 1 / -1; display: grid; gap: 8px; min-width: 0; }
+@media (min-width: 1100px) { .chartGrid:has(.progressCurva) { grid-template-columns: repeat(3, minmax(0, 1fr)); } .progressCurva { grid-column: span 2; } }
+.curvaResumen { display: flex; flex-wrap: wrap; gap: 4px 20px; font-size: 13px; color: #262626; }
+.curvaResumen b { font-size: 20px; color: #000; }
+.curvaLeyenda { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12px; color: #000; }
+.curvaLeyenda span { display: inline-flex; align-items: center; gap: 6px; }
+.curvaLeyenda i { width: 20px; height: 0; border-top: 2px solid var(--g-azul, #0f5499); }
+.curvaLeyenda i.programado { border-top: 2px dashed var(--g-cian, #29a8df); }
+.curvaGrafico { position: relative; min-height: 230px; }
+.curvaGrafico svg { display: block; width: 100%; height: 230px; touch-action: pan-y; }
+.curvaGrafico svg:focus { outline: none; }
+.curvaGrafico svg:focus-visible { outline: 2px solid var(--g-cian, #29a8df); }
+.curvaGrafico text { font: 400 11px "Google Sans Flex", "Segoe UI", sans-serif; fill: #262626; font-variant-numeric: tabular-nums; }
+.curvaGrafico text.fuerte { font-size: 12px; font-weight: 700; fill: #000; }
+.curvaGrilla { stroke: #d9d9d9; stroke-width: 1; }
+.curvaHoy, .curvaCruz { stroke: #8c8c8c; stroke-width: 1; }
+.curvaDato { position: absolute; z-index: 2; width: 132px; padding: 6px 8px; background: #fff; border: 1px solid var(--g-marca, #1b2a56); font-size: 12px; color: #000; pointer-events: none; }
+.curvaDato small { display: block; margin-bottom: 2px; color: #262626; }
+.curvaTabla table { width: 100%; font-size: 12px; }
+
 /* Partidas de la terminación elegida: m² ejecutados y pendientes (sin montos) y sus dos filas, ejecución y revisión, que
    se guardan al tocarlas. Arriba, los protocolos previos que piden liberadas. */
 .romboVerCodigo, .romboVerCodigo:hover:not(:disabled) { display: inline; background: transparent; border: 0; outline: 0; padding: 0; min-height: 0; color: var(--g-azul, #0f5499); text-decoration: underline; text-underline-offset: 3px; font-size: 12px; font-weight: 700; cursor: pointer; text-align: left; }

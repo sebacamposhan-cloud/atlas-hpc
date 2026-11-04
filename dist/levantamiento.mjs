@@ -149,7 +149,7 @@ export function createLevantamiento(ctx) {
       try {
         if (doc) {
           await ctx.change(d => L.fijarColumnas(d, columnas));
-          for (const otro of (await readMarkings()).filter(o => doc.grupo && o.grupo === doc.grupo && o.id !== doc.id)) await saveMarking({...L.fijarColumnas(otro, columnas), version: otro.version + 1, updatedAt: new Date().toISOString()}, otro.version);
+          for (const otro of (await readMarkings()).filter(o => doc.grupo && o.grupo === doc.grupo && o.id !== doc.id && !o.eliminado)) await saveMarking({...L.fijarColumnas(otro, columnas), version: otro.version + 1, updatedAt: new Date().toISOString()}, otro.version);
           ctx.dialog.close();
         } else {
           const nuevo = L.nuevoLevantamiento({name: v.name, author: v.author, purpose: v.purpose, columnas, grupo: crypto.randomUUID()}, ctx.level, crypto.randomUUID());
@@ -202,7 +202,7 @@ export function createLevantamiento(ctx) {
   // ---------- Exportar a Excel (todos los pisos del levantamiento) ----------
   async function exportarExcel(doc) {
     try {
-      const docs = doc.grupo ? (await readMarkings()).filter(d => d.grupo === doc.grupo && d.tipo === 'levantamiento') : [doc];
+      const docs = doc.grupo ? (await readMarkings()).filter(d => d.grupo === doc.grupo && d.tipo === 'levantamiento' && !d.eliminado) : [doc];
       const enlazados = Object.fromEntries(await Promise.all(docs.map(async d => [d.level, await enlacePiso(d.level)])));
       const aoa = L.exportar(docs.map(d => d.id === doc.id ? doc : d), enlazados);
       await loadVendor('xlsx'); const X = window.XLSX, ws = X.utils.aoa_to_sheet(aoa), wb = X.utils.book_new();
