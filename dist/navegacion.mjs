@@ -1,7 +1,7 @@
 // Barra inferior, rueda de tarjetas de cada módulo y botones de función sobre el plano. La lógica vive en navegacion-model.mjs.
 import {TARJETAS, ICONOS, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar, tarjetasPara, cartasDelModulo, moduloDe, conPortada} from './navegacion-model.mjs';
 import {funcionesDe} from './jerarquia-model.mjs';
-import {crearPista} from './selector-flujo.mjs';
+import {crearPista, activarFlujos} from './selector-flujo.mjs';
 import {nivel} from './level.mjs';
 import {loadProtocolCatalog, loadProtocolType} from './protocol-catalog.mjs';
 import {scopeProtocolCatalog, scopedProtocolRows} from './protocol-scope.mjs';
@@ -196,6 +196,7 @@ export function createNavegacion(ctx) {
 
   $('bottomObra').onclick = () => { if (rueda.hidden) abrirRueda(); else if (!portada()) cerrarRueda(true); };
   construirRueda(); rotular();
+  activarFlujos();
   // Al sincronizar puede llegar (o irse) el perfil: se rearma la rueda y se actualiza el contador.
   function alCambiarTareas() {
     if (construirRueda() && actual && !buscarTarjeta(actual)) cerrarTarjeta();

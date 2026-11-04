@@ -31,6 +31,8 @@ const foto = async (page, nombre) => { if (capturas) await page.screenshot({path
 const cartas = page => page.$$eval('#ruedaObra .ruedaTarjeta', b => b.map(x => x.dataset.tarjeta));
 const sinAncho = page => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1);
 const rotulo = page => page.$eval('#bottomObra', b => b.firstChild.textContent);
+// En celular la tarjeta puede estar a dos giros: el toque se envía directo, como si ya hubiera deslizado.
+const elegirModulo = (page, id) => page.locator('#moduloPista [data-modulo=' + id + ']').dispatchEvent('click');
 const listo = page => page.waitForFunction(() => !document.getElementById('bottomObra')?.disabled, null, {timeout: 60000});
 
 async function abrir({movil = false, ruta = '/'} = {}) {
@@ -55,7 +57,7 @@ try {
       await foto(page, nombre + '-modulos');
     });
     await paso(`${nombre}: Plano pide un piso con Continuar, sin doble clic`, async () => {
-      await page.click('#moduloPista [data-modulo=plano]');
+      await elegirModulo(page, 'plano');
       assert.equal(await page.textContent('#moduloContinuar'), 'Continuar a Plano →');
       await page.click('#moduloContinuar');
       await page.waitForSelector('#floorExplorer:not([hidden])');
@@ -83,7 +85,7 @@ try {
       await page.click('#bottomModulos');
       await page.waitForSelector('#moduloExplorer:not([hidden])');
       assert.equal(await page.isVisible('#moduloVolver'), true);
-      await page.click('#moduloPista [data-modulo=control]');
+      await elegirModulo(page, 'control');
       await page.click('#moduloContinuar');
       await page.waitForSelector('#floorExplorer:not([hidden])');
       await page.click('#pisoContinuar');
@@ -104,7 +106,7 @@ try {
     });
     await paso(`${nombre}: Protocolos abre sus listas desde las tarjetas`, async () => {
       await page.click('#bottomModulos');
-      await page.click('#moduloPista [data-modulo=protocolos]');
+      await elegirModulo(page, 'protocolos');
       await page.click('#moduloContinuar');
       await page.waitForSelector('#floorExplorer:not([hidden])');
       await page.click('#pisoContinuar');
@@ -115,11 +117,42 @@ try {
       assert.deepEqual(await page.$$eval('#barraFunciones [data-funcion]', b => b.map(x => x.dataset.funcion)), ['tipos', 'criticos', 'resumen']);
       await foto(page, nombre + '-protocolos');
     });
+    await paso(`${nombre}: Last Planner cambia de vista con tarjetas de flujo`, async () => {
+      await page.click('#bottomModulos');
+      await elegirModulo(page, 'control');
+      await page.click('#moduloContinuar');
+      await page.waitForSelector('#floorExplorer:not([hidden])');
+      await page.click('#pisoContinuar');
+      await page.waitForSelector('body.ruedaPortada #ruedaObra:not([hidden])');
+      await page.click('#ruedaObra [data-tarjeta=lastplanner]');
+      await page.waitForSelector('.lpCycleNav.conFlujo .ruedaTarjeta');
+      assert.equal(await page.locator('.lpCycleNav .ruedaTarjeta').count(), 4);
+      assert.equal(await page.locator('.lpCycleNav .ruedaTarjeta svg').count(), 4, 'cada vista lleva su dibujo');
+      assert.ok(await sinAncho(page));
+      await foto(page, nombre + '-lastplanner');
+      await page.click('.lpCycleNav [data-id=planificacion]');
+      await page.waitForFunction(() => document.querySelector('.lpCycleNav [data-id=planificacion]')?.getAttribute('aria-pressed') === 'true');
+      await page.waitForSelector('.lpCycleNav.conFlujo .ruedaTarjeta');
+      await page.waitForFunction(() => Math.abs((r => r.left + r.width / 2)(document.querySelector('.lpCycleNav [aria-pressed=true]').getBoundingClientRect()) - innerWidth / 2) < innerWidth * .4);
+      await foto(page, nombre + '-lastplanner-planificacion');
+    });
+    await paso(`${nombre}: los paneles de Resumen cambian de vista con tarjetas de flujo`, async () => {
+      await page.click('.panelBack');
+      await page.waitForSelector('body.ruedaPortada #ruedaObra:not([hidden])');
+      await page.click('#ruedaObra [data-tarjeta=resumen]');
+      await page.waitForSelector('.subVistas.conFlujo .ruedaTarjeta');
+      assert.equal(await page.locator('.subVistas .ruedaTarjeta').count(), 3);
+      await page.click('.subVistas [data-vista=observaciones]');
+      await page.waitForFunction(() => document.querySelector('.subVistas [data-vista=observaciones]')?.getAttribute('aria-selected') === 'true');
+      await page.waitForSelector('.obsStateTabs.conFlujo .ruedaTarjeta');
+      assert.ok(await sinAncho(page));
+      await foto(page, nombre + '-observaciones');
+    });
     await paso(`${nombre}: al volver a abrir parte en Módulos con lo último marcado`, async () => {
       await page.goto(base + '/');
       await page.waitForSelector('#moduloExplorer:not([hidden])');
-      assert.equal(await page.textContent('#moduloContinuar'), 'Continuar a Protocolos →');
-      assert.equal(await page.getAttribute('#moduloPista [data-modulo=protocolos]', 'aria-pressed'), 'true');
+      assert.equal(await page.textContent('#moduloContinuar'), 'Continuar a Control →');
+      assert.equal(await page.getAttribute('#moduloPista [data-modulo=control]', 'aria-pressed'), 'true');
     });
     await paso(`${nombre}: un enlace directo a un piso entra a Plano sin pasar por Módulos`, async () => {
       await page.goto(base + '/?nivel=N01');

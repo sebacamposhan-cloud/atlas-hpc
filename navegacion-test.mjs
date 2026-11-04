@@ -4,8 +4,10 @@ import {TARJETAS, ICONOS, MODULOS, moduloDe, conPortada, cartasDelModulo, consul
 import {funcionesDe} from './dist/jerarquia-model.mjs';
 import {crearFluido, crearOleaje, arrastrar} from './dist/fluido.mjs';
 import {palancaHTML} from './dist/palanca.mjs';
+import {GRUPOS, claveDe, indiceActivo} from './dist/selector-flujo.mjs';
 
 const almacen = (inicial = {}) => { const d = {...inicial}; return {getItem: k => d[k] ?? null, setItem: (k, v) => { d[k] = v; }, d}; };
+const index = fs.readFileSync('dist/index.html', 'utf8');
 
 // Módulos: Control, Plano y Protocolos. Control y Protocolos parten en sus tarjetas; Plano, en el plano.
 assert.deepEqual(MODULOS.map(m => m.id), ['control', 'plano', 'protocolos']);
@@ -130,6 +132,35 @@ function fluido(opciones = {}) {
   assert.equal(soltados, 1);
 }
 
+// Rueda del mouse: una pista dentro de un panel la deja pasar para poder bajar por él, y las escuchas se pueden quitar.
+{
+  const tipos = [], el = {classList: {add() {}, remove() {}}, addEventListener(t, f, op) { tipos.push([t, op]); }}, senal = {};
+  arrastrar(el, fluido().f, {paso: () => 100, conRueda: false, senal});
+  assert.ok(!tipos.some(([t]) => t === 'wheel'));
+  assert.ok(tipos.every(([, op]) => op?.signal === senal));
+}
+
+// Selecciones con flujo: cada grupo dice qué botones usa y su tamaño; las vistas sobre una tabla llevan dibujo y texto.
+{
+  assert.ok(GRUPOS.length >= 9 && GRUPOS.every(g => g.selector && g.boton && ['grande', 'media', 'baja'].includes(g.tamano)));
+  for (const selector of ['.lpCycleNav', '.lpCycleSubnav', '.subVistas']) {
+    const g = GRUPOS.find(x => x.selector === selector);
+    assert.equal(g.tamano, 'grande', selector);
+    for (const [clave, c] of Object.entries(g.cartas)) assert.ok(c.dibujo.startsWith('<') && c.texto.length <= 26, clave);
+  }
+  assert.deepEqual(Object.keys(GRUPOS.find(g => g.selector === '.lpCycleNav').cartas), ['resumen', 'planificacion', 'ejecucion', 'revision']);
+  const boton = (attrs, dataset = {}) => ({getAttribute: a => attrs[a] ?? null, dataset});
+  assert.equal(indiceActivo([boton({'aria-pressed': 'false'}), boton({'aria-pressed': 'true'})]), 1);
+  assert.equal(indiceActivo([boton({'aria-selected': 'true'})]), 0);
+  assert.equal(indiceActivo([boton({'aria-checked': 'false'}), boton({'aria-checked': 'true'})]), 1);
+  assert.equal(indiceActivo([boton({})]), -1);
+  assert.equal(claveDe(boton({}, {id: 'resumen'})), 'resumen');
+  assert.equal(claveDe(boton({}, {vista: 'matriz'})), 'matriz');
+  // Último selector en cargar: manda sobre los estilos de las pestañas antiguas.
+  assert.ok(index.indexOf('flujo.css') > index.indexOf('jerarquia.css'));
+  assert.ok(!/box-shadow|border-radius|gradient\(/.test(fs.readFileSync('dist/flujo.css', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')));
+}
+
 // Memoria: recuerda piso y función; ignora datos dañados, funciones momentáneas y tarjetas sin funciones.
 const vacia = {piso: null, tarjeta: null, funcion: null, modulo: null};
 assert.deepEqual(leerMemoria(almacen()), vacia);
@@ -170,7 +201,7 @@ assert.match(html, /data-p-rev="Conforme" aria-pressed="false" disabled data-blo
 assert.match(palancaHTML({titulo: 'Protocolo', valor: 'Liberado', opciones: [{valor: 'Pendiente', atributo: 'data-prot', dato: 'P-1|Pendiente'}, {valor: 'Liberado', atributo: 'data-prot', dato: 'P-1|Liberado'}]}), /--i:1.*data-prot="P-1\|Liberado" aria-pressed="true"/s);
 
 // Portada y barra: sin barra lateral, con la rueda y sin copias de botones.
-const index = fs.readFileSync('dist/index.html', 'utf8'), app = fs.readFileSync('dist/app.js', 'utf8');
+const app = fs.readFileSync('dist/app.js', 'utf8');
 assert.ok(!index.includes('appSidebar'));
 assert.ok(!app.includes('sideProject'));
 assert.ok(index.includes('href="navegacion.css"'));
@@ -204,7 +235,7 @@ assert.deepEqual([...new Set(css.replace(/\/\*[\s\S]*?\*\//g, '').match(/#[0-9a-
 const prepare = fs.readFileSync('scripts/prepare-offline.mjs', 'utf8');
 assert.ok(prepare.includes("walk('pisos3d')"));
 for (const piso of ['n-1', 'n01', 'n02', 'n03']) for (const color of ['blanco', 'azul']) assert.ok(fs.statSync(`dist/pisos3d/${piso}-${color}.png`).size > 10000, piso + color);
-for (const nombre of ['navegacion.css', 'navegacion.mjs', 'navegacion-model.mjs', 'palanca.mjs', 'fluido.mjs', 'jerarquia.css', 'selector-flujo.mjs']) assert.ok(prepare.includes(`'${nombre}'`), nombre);
+for (const nombre of ['navegacion.css', 'navegacion.mjs', 'navegacion-model.mjs', 'palanca.mjs', 'fluido.mjs', 'jerarquia.css', 'selector-flujo.mjs', 'flujo.css']) assert.ok(prepare.includes(`'${nombre}'`), nombre);
 
 // Libreta: se carga después de la navegación, con los colores del tema y botones de al menos 44 px.
 const cssTareas = fs.readFileSync('dist/jerarquia.css', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
