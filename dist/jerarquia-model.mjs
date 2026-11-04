@@ -126,6 +126,9 @@ export function funcionesDe(perfil) {
   if (perfil.area === 'linea' && perfil.nivel === 4) return {tareas, tarjetas: ['tareas', 'herramientas', 'recintos', 'capas', 'protocolos', 'tipos', 'criticos'], funciones: {recintos: ['avance', 'observaciones'], protocolos: ['tipos', 'criticos'], herramientas: ['mas']}};
   return {tareas, tarjetas: ['tareas', 'lastplanner', 'resumen', 'herramientas', 'recintos', 'capas', 'protocolos', 'tipos', 'criticos', 'matriz'], funciones: {}};
 }
+// Elegir varios pisos a la vez en Control y Protocolos: jefaturas, Planificación y Calidad. Supervisor, capataz y las
+// cuentas sin perfil eligen uno.
+export const puedeVariosPisos = perfil => perfilActivo(perfil) && (perfil.area !== 'linea' || perfil.nivel < 4);
 // Permisos de Last Planner que quedan para la cuenta. Sin perfil activo: los de la cuenta, sin cambios (null = todos).
 export function permisosLastPlanner(perfil, permisosCuenta) {
   if (!perfilActivo(perfil)) return permisosCuenta ?? null;

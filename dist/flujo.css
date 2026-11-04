@@ -26,7 +26,7 @@
 
 /* Baja: una línea, para lo que va sobre el plano o dentro de un formulario. */
 .ruedaPista.flujo-baja { --ancho: 124px; --alto: 48px; margin: 6px 0 8px; }
-.ruedaPista.flujo-baja > .ruedaTarjeta { display: grid; grid-auto-flow: column; justify-content: center; align-items: center; gap: 6px; padding: 4px 8px; text-align: center; font-size: 13px; line-height: 1.15; }
+.ruedaPista.flujo-baja > .ruedaTarjeta { display: grid; grid-auto-flow: column; justify-content: center; align-content: center; align-items: center; gap: 6px; padding: 4px 8px; text-align: center; font-size: 13px; line-height: 1.15; }
 
 /* Elegir la vista de planificación: la muestra de la vista ocupa el lugar del dibujo. */
 .lpPlanChooser .ruedaPista.conFlujo { --alto: 196px; --ancho: 228px; }
@@ -35,5 +35,14 @@
 .lpPlanChooser .ruedaPista.conFlujo > .ruedaTarjeta span { display: grid; gap: 2px; }
 .lpPlanChooser .ruedaPista.conFlujo > .ruedaTarjeta strong { font-size: 15px; }
 .lpPlanChooser .ruedaPista.conFlujo > .ruedaTarjeta small { font-size: 12px; font-weight: 500; }
+
+/* Franja de pisos: arriba de todo lo que muestra el módulo, cuando hay varios pisos elegidos. */
+#franjaPisos { --alto: 44px; --ancho: 104px; position: absolute; top: 0; left: 0; right: 0; z-index: 32; box-sizing: border-box; height: 60px; margin: 0; background: #fff; border-bottom: 2px solid var(--g-marca); }
+#franjaPisos[hidden], body.floorHome #franjaPisos { display: none !important; }
+#franjaPisos > .ruedaTarjeta { top: 5px; font-size: 14px; font-weight: 700; }
+body.conFranja #workspacePanel { top: 60px; }
+body.conFranja.ruedaPortada #ruedaObra { top: 60px; }
+body.conFranja #barraFunciones, body.conFranja .toolbar { top: 72px; }
+@media (min-width: 701px) { body.conFranja #hojaFuncion { top: 72px; } }
 
 @media (prefers-reduced-motion: reduce) { .ruedaPista.conFlujo > .ruedaTarjeta { transition: none; } }

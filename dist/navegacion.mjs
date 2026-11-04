@@ -1,8 +1,8 @@
 // Barra inferior, rueda de tarjetas de cada módulo y botones de función sobre el plano. La lógica vive en navegacion-model.mjs.
-import {TARJETAS, ICONOS, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar, tarjetasPara, cartasDelModulo, moduloDe, conPortada} from './navegacion-model.mjs';
+import {TARJETAS, ICONOS, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar, tarjetasPara, cartasDelModulo, moduloDe, conPortada, consultaPiso} from './navegacion-model.mjs';
 import {funcionesDe} from './jerarquia-model.mjs';
 import {crearPista, activarFlujos} from './selector-flujo.mjs';
-import {nivel} from './level.mjs';
+import {nivel, pisos} from './level.mjs';
 import {loadProtocolCatalog, loadProtocolType} from './protocol-catalog.mjs';
 import {scopeProtocolCatalog, scopedProtocolRows} from './protocol-scope.mjs';
 import {criticosPorTipo} from './protocol-critical.mjs';
@@ -26,6 +26,14 @@ export function createNavegacion(ctx) {
   hoja.innerHTML = '<div class="hojaCabeza"><h2 id="hojaTitulo"></h2><button type="button" id="hojaCerrar" aria-label="Cerrar">×</button></div><div id="hojaCuerpo" class="hojaCuerpo"></div>';
   hoja.setAttribute('aria-labelledby', 'hojaTitulo');
   main.append(barra, hoja, rueda);
+  // Franja de pisos: con varios pisos elegidos se ve uno a la vez y aquí se cambia. La página tiene cargado un solo piso:
+  // Last Planner cambia sin recargar porque no depende del piso; lo demás recarga y vuelve a abrir lo que estaba abierto.
+  const franja = document.createElement('nav');
+  franja.id = 'franjaPisos'; franja.hidden = true; franja.setAttribute('aria-label', 'Pisos elegidos');
+  document.querySelector('.workspace')?.append(franja);
+  let pisoVisto = nivel.id, pistaPisos = null;
+  const elegidos = () => window.ATLAS_PISOS_ELEGIDOS || [];
+  const pisoCorto = id => pisos.find(p => p.id === id)?.corto || id;
   // Tarjetas de esta cuenta. Se vuelven a armar si cambia su perfil (después de sincronizar).
   let lista = TARJETAS, firma = '', pista = null;
   const buscarTarjeta = id => lista.find(t => t.id === id) || null;
@@ -44,6 +52,40 @@ export function createNavegacion(ctx) {
     pista.acomodar(indiceDe(actual));
     contar();
     return true;
+  }
+  function dibujarFranja() {
+    const lista = elegidos(), visible = portada() && lista.length > 1;
+    franja.hidden = !visible; document.body.classList.toggle('conFranja', visible);
+    pistaPisos?.destruir(); pistaPisos = null;
+    if (!visible) return;
+    franja.className = 'ruedaPista conFlujo flujo-baja';
+    franja.innerHTML = lista.map(id => `<button type="button" class="ruedaTarjeta" data-piso="${esc(id)}" aria-pressed="${id === pisoVisto}">Piso ${esc(pisoCorto(id))}</button>`).join('');
+    pistaPisos = crearPista(franja, {conRueda: false});
+    pistaPisos.acomodar(lista.indexOf(pisoVisto));
+    pistaPisos.tarjetas.forEach(b => b.onclick = () => verPiso(b.dataset.piso));
+  }
+  // Tarjeta y vista abiertas, para retomarlas después de cambiar de piso.
+  function loAbierto() {
+    const panel = ui.panelAbierto();
+    if (panel === 'avance') return 'resumen:' + ui.vistaDe('avance');
+    if (panel === 'matrix') return 'matriz:' + ui.vistaDe('matrix');
+    if (actual === 'protocolos') return funcion === 'criticos' ? 'criticos' : 'tipos';
+    return actual && buscarTarjeta(actual) ? actual : '';
+  }
+  function irAlPiso(id, abierto) {
+    if (!window.dispatchEvent(new Event('atlas-before-floor-change', {cancelable: true}))) return;
+    location.assign((globalThis.ATLAS_RAIZ || '/') + consultaPiso({nivel: id, modulo, pisos: elegidos()}) + (abierto ? '#abrir=' + abierto : ''));
+  }
+  function verPiso(id) {
+    if (id === pisoVisto) return;
+    pisoVisto = id;
+    franja.querySelectorAll('[data-piso]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.piso === id)));
+    pistaPisos?.ir(elegidos().indexOf(id));
+    $('navPiso').textContent = 'Piso ' + pisoCorto(id);
+    // En las tarjetas todavía no hay nada abierto: el piso se usa al elegir una.
+    if (!rueda.hidden) return;
+    if (ui.panelAbierto() === 'lastplanner') { ctx.lastplanner?.verPiso(id); ui.refresh(); return; }
+    irAlPiso(id, loAbierto());
   }
   // Contador de la libreta: lo que la persona tiene por hacer más lo que debe confirmar.
   function contar() {
@@ -114,7 +156,10 @@ export function createNavegacion(ctx) {
   function elegirTarjeta(id) {
     const t = buscarTarjeta(id);
     if (!t) return;
+    // El piso visto no es el cargado: Last Planner sirve igual; para lo demás hay que cargar ese piso.
+    if (pisoVisto !== nivel.id && t.panel !== 'lastplanner') { irAlPiso(pisoVisto, id); return; }
     cerrarRueda();
+    if (t.panel === 'lastplanner') ctx.lastplanner?.verPiso(pisoVisto);
     if (t.panel) { ui.abrirPanel(t.panel, t.vista); return; }
     if (t.accion) { cerrarHoja(); ctx.cerrarModos(); ui.openFilters(); return; }
     if (t.grupo) { cambiarTarjeta(t.grupo); elegirFuncion(t.funcion); return; }
@@ -191,11 +236,19 @@ export function createNavegacion(ctx) {
       actual = null; funcion = null; modulo = pedido;
       construirRueda(); rotular(); contar(); dibujarBarra();
     }
+    pisoVisto = nivel.id; dibujarFranja();
     if (portada()) abrirRueda(); else cerrarRueda();
+  }
+  // Abre una tarjeta por dirección (#abrir=tarjeta:vista), al volver de cambiar de piso.
+  function abrirTarjeta(id, vista) {
+    const t = buscarTarjeta(id);
+    if (!t) return;
+    if (t.panel) { cerrarRueda(); ui.abrirPanel(t.panel, vista || t.vista); return; }
+    elegirTarjeta(id);
   }
 
   $('bottomObra').onclick = () => { if (rueda.hidden) abrirRueda(); else if (!portada()) cerrarRueda(true); };
-  construirRueda(); rotular();
+  construirRueda(); rotular(); dibujarFranja();
   activarFlujos();
   // Al sincronizar puede llegar (o irse) el perfil: se rearma la rueda y se actualiza el contador.
   function alCambiarTareas() {
@@ -204,10 +257,10 @@ export function createNavegacion(ctx) {
     contar();
   }
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !rueda.hidden && !portada()) cerrarRueda(true); });
-  window.addEventListener('atlas-floor-home', () => { cerrarRueda(); cerrarHoja(); });
+  window.addEventListener('atlas-floor-home', () => { cerrarRueda(); cerrarHoja(); franja.hidden = true; document.body.classList.remove('conFranja'); });
   window.addEventListener('atlas-floor-resume', entrar);
   window.addEventListener('atlas-piso-visible', dibujarBarra);
   // Abre una función de la libreta desde otro módulo (por ejemplo, «Asignar a mi equipo» en Last Planner).
   function abrirTareas(id) { if (!buscarTarjeta('tareas')?.funciones.some(([f]) => f === id)) return false; cerrarRueda(); if (actual !== 'tareas') { cerrarHoja(); ctx.cerrarModos(); if (actual === 'recintos' && funcion) ui.setLayer(null); actual = 'tareas'; funcion = null; dibujarBarra(); } elegirFuncion(id); return true; }
-  return {abrirRueda, cerrarRueda, cerrarHoja, retomar, volverProtocolos, dibujarBarra, alLimpiar, alCambiarTareas, abrirTareas, contar, modulo: () => modulo, tituloModulo};
+  return {abrirRueda, cerrarRueda, cerrarHoja, retomar, volverProtocolos, dibujarBarra, alLimpiar, alCambiarTareas, abrirTareas, abrirTarjeta, contar, modulo: () => modulo, tituloModulo, nombrePiso: () => pisos.find(p => p.id === pisoVisto)?.nombre};
 }

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {TARJETAS, ICONOS, MODULOS, moduloDe, conPortada, cartasDelModulo, consultaPiso, leerConsulta, tarjeta, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar, paradaCercana, CLAVE_MEMORIA, tarjetasPara, TARJETA_TAREAS} from './dist/navegacion-model.mjs';
-import {funcionesDe} from './dist/jerarquia-model.mjs';
+import {TARJETAS, ICONOS, MODULOS, moduloDe, conPortada, cartasDelModulo, consultaPiso, leerConsulta, pisosEnOrden, pisoParaAbrir, tarjeta, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar, paradaCercana, CLAVE_MEMORIA, tarjetasPara, TARJETA_TAREAS} from './dist/navegacion-model.mjs';
+import {funcionesDe, puedeVariosPisos} from './dist/jerarquia-model.mjs';
 import {crearFluido, crearOleaje, arrastrar} from './dist/fluido.mjs';
 import {palancaHTML} from './dist/palanca.mjs';
 import {GRUPOS, claveDe, indiceActivo} from './dist/selector-flujo.mjs';
@@ -36,8 +36,25 @@ assert.equal(tituloNavegacion(null, null, 'control'), 'Control');
 assert.equal(consultaPiso({nivel: 'N01'}), '?nivel=N01');
 assert.equal(consultaPiso({nivel: 'N-1', modulo: 'plano'}), '?nivel=N-1');
 assert.equal(consultaPiso({nivel: 'N02', modulo: 'control'}), '?nivel=N02&modulo=control');
-assert.deepEqual(leerConsulta('?nivel=N02&modulo=control'), {nivel: 'N02', modulo: 'control'});
-assert.deepEqual(leerConsulta('?modulo=otro'), {nivel: null, modulo: null});
+assert.deepEqual(leerConsulta('?nivel=N02&modulo=control'), {nivel: 'N02', modulo: 'control', pisos: []});
+assert.deepEqual(leerConsulta('?modulo=otro'), {nivel: null, modulo: null, pisos: []});
+
+// Varios pisos: la dirección los conserva, siguen el orden del edificio y se abre el ya cargado si es uno de ellos.
+assert.equal(consultaPiso({nivel: 'N02', modulo: 'control', pisos: ['N02']}), '?nivel=N02&modulo=control', 'un piso no se escribe dos veces');
+assert.deepEqual(leerConsulta(consultaPiso({nivel: 'N02', modulo: 'protocolos', pisos: ['N-1', 'N02']})), {nivel: 'N02', modulo: 'protocolos', pisos: ['N-1', 'N02']});
+assert.deepEqual(pisosEnOrden(['N03', 'N-1'], ['N-1', 'N01', 'N02', 'N03']), ['N-1', 'N03']);
+assert.equal(pisoParaAbrir(['N01', 'N02'], 'N02'), 'N02');
+assert.equal(pisoParaAbrir(['N01', 'N02'], 'N-1'), 'N01');
+assert.equal(pisoParaAbrir([], 'N-1'), null);
+{
+  const perfil = (nivel, extra = {}) => ({id: '00000000-0000-4000-8000-000000000001', nombre: 'Persona de ejemplo', cargo: '', nivel, area: 'linea', jefe: null, pisos: [], empresa: null, activo: true, ...extra});
+  for (const nivel of [0, 1, 2, 3]) assert.equal(puedeVariosPisos(perfil(nivel)), true, 'nivel ' + nivel);
+  assert.equal(puedeVariosPisos(perfil(4)), false);
+  assert.equal(puedeVariosPisos(perfil(null, {area: 'planificacion'})), true);
+  assert.equal(puedeVariosPisos(perfil(null, {area: 'calidad'})), true);
+  assert.ok(!puedeVariosPisos(null), 'sin perfil, un piso');
+  assert.ok(!puedeVariosPisos(perfil(2, {activo: false})));
+}
 
 // Jerarquía de obra: sin perfil, las tarjetas de siempre; con perfil, la libreta y lo de su nivel.
 {
@@ -162,14 +179,14 @@ function fluido(opciones = {}) {
 }
 
 // Memoria: recuerda piso y función; ignora datos dañados, funciones momentáneas y tarjetas sin funciones.
-const vacia = {piso: null, tarjeta: null, funcion: null, modulo: null};
+const vacia = {piso: null, tarjeta: null, funcion: null, modulo: null, pisos: []};
 assert.deepEqual(leerMemoria(almacen()), vacia);
 assert.deepEqual(leerMemoria(almacen({[CLAVE_MEMORIA]: '{mal'})), vacia);
 const a = almacen();
-guardarMemoria(a, {piso: 'N02'}); guardarMemoria(a, {tarjeta: 'recintos', funcion: 'observaciones'}); guardarMemoria(a, {modulo: 'plano'});
-assert.deepEqual(leerMemoria(a), {piso: 'N02', tarjeta: 'recintos', funcion: 'observaciones', modulo: 'plano'});
+guardarMemoria(a, {piso: 'N02'}); guardarMemoria(a, {tarjeta: 'recintos', funcion: 'observaciones'}); guardarMemoria(a, {modulo: 'plano', pisos: ['N02']});
+assert.deepEqual(leerMemoria(a), {piso: 'N02', tarjeta: 'recintos', funcion: 'observaciones', modulo: 'plano', pisos: ['N02']});
 // Lo guardado antes de los módulos se sigue leyendo, y un módulo que no existe se ignora.
-assert.deepEqual(leerMemoria(almacen({[CLAVE_MEMORIA]: JSON.stringify({piso: 'N01', tarjeta: 'protocolos', funcion: 'tipos'})})), {piso: 'N01', tarjeta: 'protocolos', funcion: 'tipos', modulo: null});
+assert.deepEqual(leerMemoria(almacen({[CLAVE_MEMORIA]: JSON.stringify({piso: 'N01', tarjeta: 'protocolos', funcion: 'tipos'})})), {piso: 'N01', tarjeta: 'protocolos', funcion: 'tipos', modulo: null, pisos: []});
 assert.equal(leerMemoria(almacen({[CLAVE_MEMORIA]: JSON.stringify({modulo: 'otro'})})).modulo, null);
 assert.equal(leerMemoria(almacen({[CLAVE_MEMORIA]: JSON.stringify({tarjeta: 'herramientas', funcion: 'filtros'})})).funcion, null, 'Filtros pasó a Plano');
 assert.equal(leerMemoria(almacen({[CLAVE_MEMORIA]: JSON.stringify({tarjeta: 'recintos', funcion: 'resumen'})})).funcion, null);

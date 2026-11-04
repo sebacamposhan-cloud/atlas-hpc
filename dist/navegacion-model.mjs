@@ -78,10 +78,10 @@ export function tituloNavegacion(idTarjeta, idFuncion, idModulo = null) {
 export const CLAVE_MEMORIA = 'atlas-navegacion-v1';
 export function leerMemoria(almacen) {
   let v = null;
-  try { v = JSON.parse(almacen.getItem(CLAVE_MEMORIA) || 'null'); } catch { return {piso: null, tarjeta: null, funcion: null, modulo: null}; }
+  try { v = JSON.parse(almacen.getItem(CLAVE_MEMORIA) || 'null'); } catch { return {piso: null, tarjeta: null, funcion: null, modulo: null, pisos: []}; }
   const piso = typeof v?.piso === 'string' ? v.piso : null, t = tarjeta(v?.tarjeta);
   const conFunciones = t && t.funciones.length ? t.id : null;
-  return {piso, tarjeta: conFunciones, funcion: conFunciones && funcionDe(conFunciones, v?.funcion) && !momentanea(v.funcion) ? v.funcion : null, modulo: moduloDe(v?.modulo)?.id || null};
+  return {piso, tarjeta: conFunciones, funcion: conFunciones && funcionDe(conFunciones, v?.funcion) && !momentanea(v.funcion) ? v.funcion : null, modulo: moduloDe(v?.modulo)?.id || null, pisos: Array.isArray(v?.pisos) ? v.pisos.filter(p => typeof p === 'string') : []};
 }
 export function guardarMemoria(almacen, cambio) {
   const v = {...leerMemoria(almacen), ...cambio};
@@ -94,15 +94,21 @@ export function aRetomar({tarjeta: idTarjeta, funcion}) {
 }
 
 // Dirección de un piso dentro de un módulo. Plano es lo que abre un enlace directo, así que no se escribe.
-export function consultaPiso({nivel, modulo = null}) {
+// pisos: los elegidos, si son varios. La página siempre carga un solo piso, el que se está viendo.
+export function consultaPiso({nivel, modulo = null, pisos = []}) {
   const q = new URLSearchParams({nivel});
   if (modulo && modulo !== 'plano') q.set('modulo', modulo);
+  if (pisos.length > 1) q.set('pisos', pisos.join(','));
   return '?' + q;
 }
 export function leerConsulta(busqueda) {
   const q = new URLSearchParams(busqueda);
-  return {nivel: q.get('nivel'), modulo: moduloDe(q.get('modulo'))?.id || null};
+  return {nivel: q.get('nivel'), modulo: moduloDe(q.get('modulo'))?.id || null, pisos: (q.get('pisos') || '').split(',').filter(Boolean)};
 }
+// Los pisos elegidos, en el orden del edificio.
+export const pisosEnOrden = (elegidos, orden) => orden.filter(id => elegidos.includes(id));
+// Piso que se abre: el que ya está cargado si es uno de los elegidos, para no recargar sin necesidad.
+export const pisoParaAbrir = (elegidos, cargado) => elegidos.includes(cargado) ? cargado : elegidos[0] || null;
 
 // Parada de la palanca más cercana a una posición (px) del riel, sin salirse de las paradas.
 export function paradaCercana(posicion, largoRiel, paradas) {

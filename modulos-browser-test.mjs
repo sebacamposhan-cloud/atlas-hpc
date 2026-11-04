@@ -33,11 +33,19 @@ const sinAncho = page => page.evaluate(() => document.documentElement.scrollWidt
 const rotulo = page => page.$eval('#bottomObra', b => b.firstChild.textContent);
 // En celular la tarjeta puede estar a dos giros: el toque se envía directo, como si ya hubiera deslizado.
 const elegirModulo = (page, id) => page.locator('#moduloPista [data-modulo=' + id + ']').dispatchEvent('click');
-const listo = page => page.waitForFunction(() => !document.getElementById('bottomObra')?.disabled, null, {timeout: 60000});
+const listo = page => page.waitForFunction(() => document.getElementById('bottomObra')?.disabled === false, null, {timeout: 60000});
 
-async function abrir({movil = false, ruta = '/'} = {}) {
+// Cuenta de ejemplo con su perfil ya guardado en el equipo, como queda después de sincronizar. Sin nube: las API no responden.
+const cuentaDe = perfil => {
+  const id = '00000000-0000-4000-8000-000000000042', claims = {sub: id, email: 'cuenta@example.test', app_metadata: {campo_role: 'editor'}};
+  const token = 'x.' + Buffer.from(JSON.stringify(claims)).toString('base64url') + '.y';
+  return {id, sesion: JSON.stringify({token, refresh: 'aislado', expira: Date.now() + 36e5, user: {username: 'cuenta@example.test', role: 'editor'}, recordar: true}), perfil: JSON.stringify({id, perfil: {id, nombre: 'Cuenta de ejemplo', cargo: '', area: 'linea', jefe: null, pisos: [], empresa: null, activo: true, ...perfil}})};
+};
+async function abrir({movil = false, ruta = '/', perfil = null} = {}) {
   const context = await browser.newContext(movil ? {viewport: {width: 375, height: 812}, deviceScaleFactor: 2, isMobile: true, hasTouch: true, serviceWorkers: 'block'} : {viewport: {width: 1366, height: 768}, serviceWorkers: 'block'});
   await context.addCookies([{name: 'atlas_sin_login', value: '1', url: base}]);
+  if (perfil) await context.addInitScript(c => { localStorage.setItem('atlas-nube-sesion', c.sesion); localStorage.setItem('atlas-jerarquia-perfil', c.perfil); }, cuentaDe(perfil));
+  await context.route('**/api/**', r => r.abort());
   const page = await context.newPage(), errores = [];
   page.on('pageerror', e => errores.push(e.message)); page.setDefaultTimeout(30000);
   await page.goto(base + ruta);
@@ -162,6 +170,83 @@ try {
     });
     assert.deepEqual(errores, []);
     await context.close();
+
+    // Un jefe de terreno elige varios pisos en Control y se mueve entre ellos con la franja.
+    const jefe = await abrir({movil, perfil: {nivel: 2}}), p = jefe.page;
+    await paso(`${nombre}: un jefe elige varios pisos en Control`, async () => {
+      await p.waitForSelector('#moduloExplorer:not([hidden])');
+      await elegirModulo(p, 'control');
+      await p.click('#moduloContinuar');
+      await p.waitForSelector('#floorExplorer:not([hidden])');
+      assert.equal(await p.textContent('#floorExplorerTitle'), 'Selecciona uno o más pisos');
+      await p.click('.pisoEtiqueta[data-floor=N01]');
+      await p.click('.pisoEtiqueta[data-floor=N03]');
+      await p.click('.pisoEtiqueta[data-floor="N-1"]');
+      assert.deepEqual((await p.$$eval('.pisoEtiqueta[aria-pressed=true]', b => b.map(x => x.dataset.floor))).sort(), ['N01', 'N03']);
+      assert.equal(await p.textContent('#pisoContinuar'), 'Continuar a 2 pisos →');
+      await foto(p, nombre + '-varios-pisos');
+      await p.click('#pisoContinuar');
+      await p.waitForSelector('body.conFranja #franjaPisos:not([hidden])');
+      assert.deepEqual(await p.$$eval('#franjaPisos [data-piso]', b => b.map(x => x.dataset.piso)), ['N01', 'N03']);
+      assert.equal(await p.textContent('#navPiso'), 'Piso 1');
+      assert.ok(await sinAncho(p));
+      await foto(p, nombre + '-control-varios');
+    });
+    await paso(`${nombre}: Last Planner cambia de piso sin recargar y queda filtrado por ese piso`, async () => {
+      await p.click('#ruedaObra [data-tarjeta=lastplanner]');
+      await p.waitForSelector('.lpCycleNav.conFlujo');
+      await p.evaluate(() => { window.sinRecargar = true; });
+      await p.click('#franjaPisos [data-piso=N03]');
+      await p.waitForFunction(() => document.getElementById('navPiso').textContent === 'Piso 3');
+      await p.waitForSelector('.lpCycleNav.conFlujo');
+      assert.equal(await p.evaluate(() => window.sinRecargar), true);
+      assert.equal(await p.getAttribute('#franjaPisos [data-piso=N03]', 'aria-pressed'), 'true');
+      assert.equal(await p.evaluate(() => [...document.querySelectorAll('.lpCycleFilters select')].find(s => [...s.options].some(o => o.value === 'N03'))?.value), 'N03');
+      assert.match(await p.textContent('#workspacePanel .section-label'), /NIVEL 3/);
+      assert.ok(await sinAncho(p));
+      await foto(p, nombre + '-lastplanner-franja');
+    });
+    await paso(`${nombre}: Avance recarga al cambiar de piso y vuelve a la misma vista`, async () => {
+      await p.click('.panelBack');
+      await p.waitForSelector('body.ruedaPortada #ruedaObra:not([hidden])');
+      await p.click('#ruedaObra [data-tarjeta=resumen]');
+      await p.waitForFunction(() => new URLSearchParams(location.search).get('nivel') === 'N03' && document.querySelector('.subVistas.conFlujo'), null, {timeout: 60000});
+      await p.click('.subVistas [data-vista=valorizado]');
+      await p.waitForFunction(() => document.querySelector('.subVistas [data-vista=valorizado]')?.getAttribute('aria-selected') === 'true');
+      await p.click('#franjaPisos [data-piso=N01]');
+      await p.waitForFunction(() => new URLSearchParams(location.search).get('nivel') === 'N01' && document.querySelector('.subVistas [data-vista=valorizado]')?.getAttribute('aria-selected') === 'true', null, {timeout: 60000});
+      assert.equal(await p.textContent('#navPiso'), 'Piso 1');
+      assert.deepEqual(await p.$$eval('#franjaPisos [data-piso]', b => b.map(x => x.dataset.piso)), ['N01', 'N03']);
+    });
+    await paso(`${nombre}: en Plano solo se elige un piso`, async () => {
+      await p.click('#bottomModulos');
+      await elegirModulo(p, 'plano');
+      await p.click('#moduloContinuar');
+      await p.waitForSelector('#floorExplorer:not([hidden])');
+      assert.equal(await p.textContent('#floorExplorerTitle'), 'Selecciona el piso');
+      assert.equal(await p.locator('.pisoEtiqueta[aria-pressed=true]').count(), 1);
+      await p.click('.pisoEtiqueta[data-floor=N02]');
+      assert.equal(await p.locator('.pisoEtiqueta[aria-pressed=true]').count(), 1);
+      await p.click('#pisoContinuar');
+      await listo(p);
+      assert.equal(await p.isVisible('#franjaPisos'), false);
+      assert.equal(await p.textContent('#navPiso'), 'Piso 2');
+    });
+    assert.deepEqual(jefe.errores, []);
+    await jefe.context.close();
+
+    // Un capataz con un solo piso se salta la pantalla de pisos.
+    const capataz = await abrir({movil, perfil: {nivel: 4, pisos: ['N02']}}), c = capataz.page;
+    await paso(`${nombre}: un capataz con un piso entra directo después del módulo`, async () => {
+      await c.waitForSelector('#moduloExplorer:not([hidden])');
+      await elegirModulo(c, 'plano');
+      await c.click('#moduloContinuar');
+      await listo(c);
+      assert.equal(await c.isVisible('#floorExplorer'), false);
+      assert.equal(await c.textContent('#navPiso'), 'Piso 2');
+    });
+    assert.deepEqual(capataz.errores, []);
+    await capataz.context.close();
   }
   console.log(`Módulos en navegador: ${pasos} recorridos aprobados.`);
 } catch (error) { console.error(error); process.exitCode = 1; }

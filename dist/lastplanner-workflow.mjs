@@ -238,5 +238,5 @@ export function createWorkflowUI(ctx){
  window.addEventListener('atlas-session-changed',()=>{if(dialog.open){dialog.querySelector('[type=submit]').disabled=!sessionActor();}else refresh();});
  window.addEventListener('beforeunload',event=>{if(dialogDirty||saving){event.preventDefault();event.returnValue='';}});
  for(const name of ['atlas-before-floor-change','atlas-before-update'])window.addEventListener(name,event=>{if(dialogDirty||saving){event.preventDefault();ctx.toast('Guarda o cancela el formulario antes de cambiar de piso o actualizar.');}});
- return {panel,period:()=>state.week,editarActividad:editActivity,reporte:()=>renderCycleReport(data,{...state},ctx)};
+ return {panel,verPiso:id=>{state.level=id;},period:()=>state.week,editarActividad:editActivity,reporte:()=>renderCycleReport(data,{...state},ctx)};
 }
