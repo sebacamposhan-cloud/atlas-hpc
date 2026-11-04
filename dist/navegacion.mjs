@@ -143,7 +143,7 @@ export function createNavegacion(ctx) {
 
   function verMas() {
     const cuerpo = abrirHoja('Más herramientas');
-    const opciones = [['exportPlan', 'Exportar plano'], ['legend', 'Ver simbología'], ['original', 'Documentos fuente'], ['diamondCatalogOpen', 'Rombos'], ['import', 'Respaldos'], ['reset', 'Limpiar plano'], ...(ctx.escritorio() ? [['editorContornos', 'Editor de contornos']] : [])].filter(([id]) => $(id));
+    const opciones = [['exportPlan', 'Exportar plano'], ['legend', 'Ver simbología'], ['original', 'Documentos fuente'], ['diamondCatalogOpen', 'Rombos'], ['import', 'Respaldos'], ...(ctx.escritorio() ? [['editorContornos', 'Editor de contornos']] : [])].filter(([id]) => $(id));
     cuerpo.innerHTML = `<ul class="hojaLista">${opciones.map(([id, nombre]) => `<li><button type="button" data-mas="${id}"><span><b>${esc(nombre)}</b></span></button></li>`).join('')}</ul>`;
     cuerpo.querySelectorAll('[data-mas]').forEach(b => b.onclick = () => { const destino = $(b.dataset.mas); cerrarHoja(); destino.click(); });
   }
@@ -160,6 +160,8 @@ export function createNavegacion(ctx) {
     else if (id === 'mas') verMas();
     recordar(); dibujarBarra();
   }
+  // «Limpiar» apaga los colores del plano: la función de Recintos deja de verse activa. La tarjeta sigue abierta.
+  function alLimpiar() { cerrarHoja(); if (actual === 'recintos' || ['tipos', 'criticos'].includes(funcion)) { funcion = null; recordar(); dibujarBarra(); } }
   // Al salir de la lista de folios se vuelve a la lista desde la que se abrió.
   function volverProtocolos() { if (tipoAbierto === 'criticos') verCriticos(); else verTipos(); }
 
@@ -185,5 +187,5 @@ export function createNavegacion(ctx) {
   });
   window.addEventListener('atlas-floor-home', () => { cerrarRueda(); cerrarHoja(); });
   window.addEventListener('atlas-piso-visible', dibujarBarra);
-  return {abrirRueda, cerrarRueda, cerrarHoja, retomar, volverProtocolos, dibujarBarra};
+  return {abrirRueda, cerrarRueda, cerrarHoja, retomar, volverProtocolos, dibujarBarra, alLimpiar};
 }

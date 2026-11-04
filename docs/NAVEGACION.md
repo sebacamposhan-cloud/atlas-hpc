@@ -5,7 +5,7 @@ Pensada para capataces y jefes de terreno, que trabajan en un solo piso.
 ## Flujo
 
 1. Después de iniciar sesión se elige el piso entre las maquetas 3D apiladas. El último piso queda marcado. En celular y tablet se toca y se presiona «Continuar»; en computador se entra con doble clic.
-2. El plano del piso queda de base. Arriba están la búsqueda, **Asistente**, **Sin conexión** y **Cerrar sesión**; abajo, **Pisos** y **Control de obra**.
+2. El plano del piso queda de base. Arriba están la búsqueda, **Asistente**, **Sin conexión** y **Cerrar sesión**; abajo, **Pisos** y **Control de obra**. Junto al zoom, **Limpiar** quita en cualquier momento búsqueda, filtros, colores y selección.
 3. **Control de obra** abre una rueda de tarjetas desde abajo, sin salir del plano.
 4. Cada tarjeta devuelve el plano con sus botones de función, circulares y flotantes en el borde izquierdo:
 
@@ -27,7 +27,9 @@ Pasar el cursor también ilumina en azul lo que tiene debajo. Si las cuatro tarj
 Avance y Observaciones solo cambian lo que pinta el plano. Al tocar un recinto se abre siempre el mismo menú:
 
 1. Rombo, avance general, observaciones y protocolos abiertos, todo en una pantalla.
-2. Al tocar una parte del rombo se abre su menú de avance: partidas y observaciones de esa parte.
+2. Al tocar una parte del rombo se abre su menú de avance: el tipo de pavimento, muro o cielo en grande, y sus partidas y observaciones.
+
+En celular y tablet, buscar un código ilumina el recinto y lo centra en el plano, sin abrir el menú; el menú se abre al tocar el recinto. En computador se abre de inmediato, a media pantalla.
 
 Cada partida se despliega en palancas, en el orden en que se avanza: protocolo previo, ejecución y revisión. El pomo se arrastra o se toca la posición. Cada parada es un botón normal, y el guardado es el mismo de antes.
 

@@ -130,7 +130,16 @@ assert.ok(!index.includes('<button data-module'));
 // Sin conexión y Asistente van en la barra superior, no abajo ni en Herramientas.
 assert.ok(!index.includes('bottomOffline') && index.includes('id="offlineOpen"'));
 assert.ok(!fs.readFileSync('dist/navegacion.mjs', 'utf8').includes('assistantOpen'));
+// Limpiar queda junto al zoom, no dentro de Herramientas.
+assert.ok(!fs.readFileSync('dist/navegacion.mjs', 'utf8').includes("['reset'"));
+assert.ok(!/\.toolbar #reset[^{]*\{ display: none/.test(fs.readFileSync('dist/navegacion.css', 'utf8')) && !fs.readFileSync('dist/navegacion.css', 'utf8').includes('.toolbar #planSettingsOpen, .toolbar #reset'));
 assert.ok(index.indexOf('navegacion.css') > index.indexOf('gerencial.css'), 'navegacion.css debe cargarse después del tema');
+
+// Menú del recinto: el tipo se ve en grande, los submenús llevan flecha y la búsqueda en celular solo ilumina.
+assert.match(fs.readFileSync('dist/rombo.mjs', 'utf8'), /class="romboTipo"/);
+assert.match(fs.readFileSync('dist/navegacion.css', 'utf8'), /\.protRecinto\[open\] > summary::after/);
+assert.match(app, /selectRoom\(hallado\.id,true,\{abrir\}\)/);
+assert.match(app, /const abrir=!fichaCompleta\(\)/);
 
 // Colores: solo los del tema, sin bordes redondeados ni sombras.
 const css = fs.readFileSync('dist/navegacion.css', 'utf8').replace(/\/\* Portada:[\s\S]*?(?=\/\* Menú del recinto)/, '').replace(/\/\* Flotantes:[\s\S]*?(?=\/\* Rueda de Control)/, '');
