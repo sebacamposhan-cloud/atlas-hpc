@@ -1,18 +1,41 @@
-// Navegación de terreno: Control de obra es una rueda de tarjetas sobre el plano. Cada tarjeta devuelve el plano con sus
-// botones de función, para que las funciones no se mezclen. Last Planner es para jefatura y abre su panel tal como está.
+// Navegación de Atlas: primero se elige el módulo (Control, Plano o Protocolos) y después el piso. Cada módulo tiene sus
+// tarjetas con flujo. Control y Protocolos no dependen del plano: sus tarjetas son su pantalla de inicio. En Plano, la rueda
+// sube sobre el plano. Cada tarjeta abre un panel o devuelve el plano con sus botones de función, para que no se mezclen.
 // Sin DOM: lo prueba navegacion-test.mjs.
-export const TARJETAS = [
-  {id: 'lastplanner', titulo: 'Last Planner', texto: 'Planificación y seguimiento semanal', panel: 'lastplanner', funciones: [],
-    dibujo: '<rect x="14" y="14" width="132" height="72"/><path d="M14 28h132M40 14v72M66 14v72M92 14v72M118 14v72"/><path class="f" d="M42 33h48v10H42zM68 50h48v10H68zM94 67h22v10H94z"/>'},
-  {id: 'recintos', titulo: 'Recintos', texto: 'Avance y observaciones', funciones: [['avance', 'Avance'], ['observaciones', 'Observaciones'], ['resumen', 'Resumen']],
-    dibujo: '<path d="M80 8l42 42-42 42-42-42z"/><path class="f" d="M62 34h36v32H62z"/><path d="M62 50h36"/>'},
-  {id: 'protocolos', titulo: 'Protocolos', texto: 'Por tipo y críticos', funciones: [['tipos', 'Por tipo'], ['criticos', 'Críticos'], ['resumen', 'Resumen']],
-    dibujo: '<rect x="44" y="12" width="72" height="76"/><path class="f" d="M44 12h72v14H44z"/><path d="M58 42l5 5 9-9M58 64l5 5 9-9M82 43h22M82 65h22"/>'},
-  {id: 'herramientas', titulo: 'Herramientas', texto: 'Proyectos, filtros y capas', funciones: [['proyectos', 'Proyectos'], ['filtros', 'Filtros y capas'], ['mas', 'Más']],
-    dibujo: '<path d="M30 28h100M30 50h100M30 72h100"/><rect class="f" x="52" y="21" width="16" height="14"/><rect class="f" x="96" y="43" width="16" height="14"/><rect class="f" x="66" y="65" width="16" height="14"/>'}
+const HOJA = '<rect x="44" y="12" width="72" height="76"/><path class="f" d="M44 12h72v14H44z"/><path d="M58 42l5 5 9-9M58 64l5 5 9-9M82 43h22M82 65h22"/>';
+const DESLIZADORES = '<path d="M30 28h100M30 50h100M30 72h100"/><rect class="f" x="52" y="21" width="16" height="14"/><rect class="f" x="96" y="43" width="16" height="14"/><rect class="f" x="66" y="65" width="16" height="14"/>';
+
+export const MODULOS = [
+  {id: 'control', titulo: 'Control', texto: 'Gestión, avance, actividades y estado de obra',
+    dibujo: '<path d="M36 86h88"/><path d="M48 86V58h16v28zM72 86V38h16v48z"/><path class="f" d="M96 86V20h16v66z"/>'},
+  {id: 'plano', titulo: 'Plano', texto: 'Visualización de planos, capas y recintos',
+    dibujo: '<path d="M80 12l54 24-54 24-54-24z"/><path class="f" d="M26 52l54 24 54-24"/><path d="M26 68l54 24 54-24"/>'},
+  {id: 'protocolos', titulo: 'Protocolos', texto: 'Revisión de protocolos, terminaciones y cumplimiento', dibujo: HOJA}
 ];
-// Libreta de la jerarquía de obra (jerarquia-model.mjs). Solo aparece con un perfil activo: sin perfil, la rueda es la de siempre.
-export const TARJETA_TAREAS = {id: 'tareas', titulo: 'Mis tareas', texto: 'Lo que te asignaron y lo de tu equipo', funciones: [['mias', 'Mis tareas'], ['asignar', 'Asignar'], ['equipo', 'Mi equipo']],
+export const moduloDe = id => MODULOS.find(m => m.id === id) || null;
+// Control y Protocolos parten en sus tarjetas; Plano parte en el plano.
+export const conPortada = id => id !== 'plano';
+
+// panel: abre un panel de pantalla completa. accion: hace algo sobre el plano. grupo y funcion: abre esa función de un grupo.
+// oculta: no sale en la rueda; solo agrupa los botones flotantes de sus tarjetas.
+export const TARJETAS = [
+  {id: 'lastplanner', modulo: 'control', titulo: 'Last Planner', texto: 'Planificación y seguimiento semanal', panel: 'lastplanner', funciones: [],
+    dibujo: '<rect x="14" y="14" width="132" height="72"/><path d="M14 28h132M40 14v72M66 14v72M92 14v72M118 14v72"/><path class="f" d="M42 33h48v10H42zM68 50h48v10H68zM94 67h22v10H94z"/>'},
+  {id: 'resumen', modulo: 'control', titulo: 'Avance', texto: 'Resumen de avance y observaciones', panel: 'avance', vista: 'recinto', funciones: [],
+    dibujo: '<path d="M20 86h120M20 14v72"/><path class="f" d="M28 74l28-18 26 8 28-30 22-12"/>'},
+  {id: 'herramientas', modulo: 'control', titulo: 'Herramientas', texto: 'Proyectos y más', funciones: [['proyectos', 'Proyectos'], ['mas', 'Más']], dibujo: DESLIZADORES},
+  {id: 'recintos', modulo: 'plano', titulo: 'Recintos', texto: 'Avance y observaciones', funciones: [['avance', 'Avance'], ['observaciones', 'Observaciones'], ['resumen', 'Resumen']],
+    dibujo: '<path d="M80 8l42 42-42 42-42-42z"/><path class="f" d="M62 34h36v32H62z"/><path d="M62 50h36"/>'},
+  {id: 'capas', modulo: 'plano', titulo: 'Filtros y capas', texto: 'Qué se ve en el plano', accion: 'filtros', funciones: [], dibujo: DESLIZADORES},
+  {id: 'tipos', modulo: 'protocolos', titulo: 'Por tipo', texto: 'Protocolos abiertos de este piso', grupo: 'protocolos', funcion: 'tipos', funciones: [], dibujo: HOJA},
+  {id: 'criticos', modulo: 'protocolos', titulo: 'Críticos', texto: 'Más de un año abiertos', grupo: 'protocolos', funcion: 'criticos', funciones: [],
+    dibujo: '<path d="M80 12l58 76H22z"/><path class="f" d="M80 40v24M80 74v2"/>'},
+  {id: 'matriz', modulo: 'protocolos', titulo: 'Resumen', texto: 'Matriz de protocolos del piso', panel: 'matrix', vista: 'matriz', funciones: [],
+    dibujo: '<rect x="24" y="16" width="112" height="68"/><path class="f" d="M24 32h112"/><path d="M24 50h112M24 67h112M60 16v68M98 16v68"/>'},
+  {id: 'protocolos', modulo: 'protocolos', oculta: true, titulo: 'Protocolos', texto: '', funciones: [['tipos', 'Por tipo'], ['criticos', 'Críticos'], ['resumen', 'Resumen']], dibujo: ''}
+];
+// Libreta de la jerarquía de obra (jerarquia-model.mjs). Solo aparece con un perfil activo: sin perfil, Control no la muestra.
+export const TARJETA_TAREAS = {id: 'tareas', modulo: 'control', titulo: 'Mis tareas', texto: 'Lo que te asignaron y lo de tu equipo', funciones: [['mias', 'Mis tareas'], ['asignar', 'Asignar'], ['equipo', 'Mi equipo']],
   dibujo: '<rect x="40" y="10" width="80" height="80"/><path class="f" d="M40 10h14v80H40z"/><path d="M64 32l5 5 9-9M64 54l5 5 9-9M64 76h0"/><path d="M84 34h24M84 56h24M64 76h44"/>'};
 // Tarjetas y funciones que ve cada nivel. funciones = funcionesDe(perfil) de jerarquia-model.mjs; null = como hoy.
 export function tarjetasPara(funciones) {
@@ -20,8 +43,10 @@ export function tarjetasPara(funciones) {
   const todas = [TARJETA_TAREAS, ...TARJETAS];
   return funciones.tarjetas.map(id => todas.find(t => t.id === id)).filter(Boolean)
     .map(t => t.id === 'tareas' ? {...t, funciones: t.funciones.filter(([f]) => funciones.tareas.includes(f))} : funciones.funciones[t.id] ? {...t, funciones: t.funciones.filter(([f]) => funciones.funciones[t.id].includes(f))} : t)
-    .filter(t => t.panel || t.funciones.length);
+    .filter(t => t.panel || t.accion || t.grupo || t.funciones.length);
 }
+// Tarjetas que se ven en la rueda de un módulo.
+export const cartasDelModulo = (lista, idModulo) => lista.filter(t => t.modulo === idModulo && !t.oculta);
 // Íconos de los botones flotantes (trazo de 24 unidades). Observaciones lleva la cámara.
 const trazo = cuerpo => `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${cuerpo}</svg>`;
 export const ICONOS = {
@@ -44,31 +69,46 @@ export const tarjeta = id => TARJETAS.find(t => t.id === id) || (id === 'tareas'
 export const momentanea = funcion => MOMENTANEAS.has(funcion);
 export const funcionDe = (idTarjeta, idFuncion) => tarjeta(idTarjeta)?.funciones.find(([id]) => id === idFuncion) || null;
 
-export function tituloNavegacion(idTarjeta, idFuncion) {
+export function tituloNavegacion(idTarjeta, idFuncion, idModulo = null) {
   const t = tarjeta(idTarjeta), f = funcionDe(idTarjeta, idFuncion);
-  return !t ? 'Plano' : f && f[1] !== t.titulo ? t.titulo + ' · ' + f[1] : t.titulo;
+  return !t ? moduloDe(idModulo)?.titulo || 'Plano' : f && f[1] !== t.titulo ? t.titulo + ' · ' + f[1] : t.titulo;
 }
 
-// Lo último elegido en este equipo: el piso queda marcado en la portada y la función se retoma al entrar.
+// Lo último elegido en este equipo: el módulo y el piso quedan marcados al entrar, y la función del plano se retoma.
 export const CLAVE_MEMORIA = 'atlas-navegacion-v1';
 export function leerMemoria(almacen) {
   let v = null;
-  try { v = JSON.parse(almacen.getItem(CLAVE_MEMORIA) || 'null'); } catch { return {piso: null, tarjeta: null, funcion: null}; }
+  try { v = JSON.parse(almacen.getItem(CLAVE_MEMORIA) || 'null'); } catch { return {piso: null, tarjeta: null, funcion: null, modulo: null, pisos: []}; }
   const piso = typeof v?.piso === 'string' ? v.piso : null, t = tarjeta(v?.tarjeta);
   const conFunciones = t && t.funciones.length ? t.id : null;
-  return {piso, tarjeta: conFunciones, funcion: conFunciones && funcionDe(conFunciones, v?.funcion) && !momentanea(v.funcion) ? v.funcion : null};
+  return {piso, tarjeta: conFunciones, funcion: conFunciones && funcionDe(conFunciones, v?.funcion) && !momentanea(v.funcion) ? v.funcion : null, modulo: moduloDe(v?.modulo)?.id || null, pisos: Array.isArray(v?.pisos) ? v.pisos.filter(p => typeof p === 'string') : []};
 }
 export function guardarMemoria(almacen, cambio) {
   const v = {...leerMemoria(almacen), ...cambio};
   try { almacen.setItem(CLAVE_MEMORIA, JSON.stringify(v)); } catch {}
   return v;
 }
-// Al entrar a un piso solo se retoma lo que pinta el plano. Lo que abre una lista (Protocolos) deja sus botones, sin abrirla.
+// Al entrar a Plano solo se retoma lo que pinta el plano.
 export function aRetomar({tarjeta: idTarjeta, funcion}) {
-  if (idTarjeta === 'recintos') return {tarjeta: idTarjeta, funcion};
-  if (idTarjeta === 'protocolos') return {tarjeta: idTarjeta, funcion: null};
-  return {tarjeta: null, funcion: null};
+  return idTarjeta === 'recintos' ? {tarjeta: idTarjeta, funcion} : {tarjeta: null, funcion: null};
 }
+
+// Dirección de un piso dentro de un módulo. Plano es lo que abre un enlace directo, así que no se escribe.
+// pisos: los elegidos, si son varios. La página siempre carga un solo piso, el que se está viendo.
+export function consultaPiso({nivel, modulo = null, pisos = []}) {
+  const q = new URLSearchParams({nivel});
+  if (modulo && modulo !== 'plano') q.set('modulo', modulo);
+  if (pisos.length > 1) q.set('pisos', pisos.join(','));
+  return '?' + q;
+}
+export function leerConsulta(busqueda) {
+  const q = new URLSearchParams(busqueda);
+  return {nivel: q.get('nivel'), modulo: moduloDe(q.get('modulo'))?.id || null, pisos: (q.get('pisos') || '').split(',').filter(Boolean)};
+}
+// Los pisos elegidos, en el orden del edificio.
+export const pisosEnOrden = (elegidos, orden) => orden.filter(id => elegidos.includes(id));
+// Piso que se abre: el que ya está cargado si es uno de los elegidos, para no recargar sin necesidad.
+export const pisoParaAbrir = (elegidos, cargado) => elegidos.includes(cargado) ? cargado : elegidos[0] || null;
 
 // Parada de la palanca más cercana a una posición (px) del riel, sin salirse de las paradas.
 export function paradaCercana(posicion, largoRiel, paradas) {

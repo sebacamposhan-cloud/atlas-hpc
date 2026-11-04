@@ -98,8 +98,8 @@ export function createTareas(ctx) {
     if (b.paso === 3) return `<p class="jerListo" role="status">Tarea asignada a <b>${esc(quien(b.asignadaA))}</b>. Le aparece en su libreta cuando ambos tengan señal.</p>
       <div class="jerAcciones"><button type="button" class="primary" data-jer="otra">Asignar otra</button><button type="button" data-jer="ir-equipo">Ver mi equipo</button></div>`;
     if (b.paso === 1) return `${b.actividadId ? `<p class="jerDato">Desde Last Planner: <b>${esc(b.titulo)}</b></p>` : ''}<h3 class="jerPregunta">¿A quién?</h3>
-      ${gente.map(p => `<button type="button" class="jerPersona" data-jer="persona" data-id="${p.id}"><b>${esc(J.nombreDe(p))}</b><small>${esc(J.cargoDe(p))}${p.pisos.length ? ' · Piso ' + p.pisos.map(pisoCorto).map(esc).join(', ') : ''}${p.empresa ? ' · ' + esc(p.empresa) : ''}</small></button>`).join('')
-      || '<p class="jerVacio">Aún no tienes personas a tu cargo en la jerarquía. Pide a la administración que las cargue.</p>'}`;
+      ${gente.length ? `<div class="jerGente" role="group" aria-label="Personas a tu cargo">${gente.map(p => `<button type="button" class="jerPersona" data-jer="persona" data-id="${p.id}"><b>${esc(J.nombreDe(p))}</b><small>${esc(J.cargoDe(p))}${p.pisos.length ? ' · Piso ' + p.pisos.map(pisoCorto).map(esc).join(', ') : ''}${p.empresa ? ' · ' + esc(p.empresa) : ''}</small></button>`).join('')}</div>`
+      : '<p class="jerVacio">Aún no tienes personas a tu cargo en la jerarquía. Pide a la administración que las cargue.</p>'}`;
     const destino = datos.personas.find(p => p.id === b.asignadaA), pisosDestino = ctx.pisos.filter(p => J.trabajaEnPiso(destino, p.id));
     const recibidas = datos.metas.filter(m => m.asignadaA === yo() && J.ABIERTAS.includes(m.estado) && (!m.piso || m.piso === b.piso));
     const lps = actividades.filter(a => a.level === b.piso), recintos = new Set(b.alcances.map(s => s.roomId)).size;
@@ -162,7 +162,7 @@ export function createTareas(ctx) {
     const tipo = accion.tipo, rapidos = tipo === 'devolver' ? MOTIVOS_DEVOLVER : tipo === 'reasignar' ? MOTIVOS_REASIGNAR : [];
     const otros = tipo === 'reasignar' ? J.asignables(datos.personas, yo()).filter(p => p.id !== m.asignadaA && J.trabajaEnPiso(p, m.piso)) : [];
     return `<div class="jerFormAccion"><b>${tipo === 'devolver' ? '¿Qué falta?' : tipo === 'reasignar' ? '¿A quién se la pasas?' : '¿Por qué se anula?'}</b>
-      ${tipo === 'reasignar' ? (otros.map(p => `<button type="button" class="jerPersona" data-jer="destino" data-id="${p.id}" aria-pressed="${accion.destino === p.id}"><b>${esc(J.nombreDe(p))}</b><small>${esc(J.cargoDe(p))}</small></button>`).join('') || '<p class="jerVacio">No hay otra persona a tu cargo en ese piso.</p>') : ''}
+      ${tipo === 'reasignar' ? (otros.length ? `<div class="jerGente" role="group" aria-label="Personas a tu cargo">${otros.map(p => `<button type="button" class="jerPersona" data-jer="destino" data-id="${p.id}" aria-pressed="${accion.destino === p.id}"><b>${esc(J.nombreDe(p))}</b><small>${esc(J.cargoDe(p))}</small></button>`).join('')}</div>` : '<p class="jerVacio">No hay otra persona a tu cargo en ese piso.</p>') : ''}
       ${rapidos.length ? `<div class="jerPasos">${rapidos.map(r => `<button type="button" data-jer="motivo" data-valor="${esc(r)}" aria-pressed="${accion.motivo === r}">${esc(r)}</button>`).join('')}</div>` : ''}
       <input data-jer-motivo value="${esc(accion.motivo || '')}" maxlength="2000" placeholder="Escribe el motivo" aria-label="Motivo">
       <div class="jerAcciones"><button type="button" class="primary" data-jer="aplicar" data-id="${m.id}">${tipo === 'devolver' ? 'Devolver' : tipo === 'reasignar' ? 'Reasignar' : 'Anular tarea'}</button><button type="button" data-jer="cancelar">Cancelar</button></div></div>`;

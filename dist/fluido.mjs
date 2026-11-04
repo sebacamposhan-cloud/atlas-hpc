@@ -67,10 +67,13 @@ export function crearOleaje({cantidad, dibujar, cuadro = f => requestAnimationFr
 }
 
 // Conecta un fluido al mouse, al dedo y a la rueda del mouse. sentido: 1 si el elemento sigue a la mano, -1 si avanza al revés.
-export function arrastrar(elemento, fluido, {eje = 'x', paso, sentido = -1, alSoltar = () => {}}) {
+// conRueda: false deja pasar la rueda del mouse, para que una pista dentro de un panel no impida bajar por él.
+// senal: AbortSignal que quita las escuchas cuando el elemento se vuelve a armar.
+export function arrastrar(elemento, fluido, {eje = 'x', paso, sentido = -1, alSoltar = () => {}, conRueda = true, senal}) {
   const lugar = e => eje === 'x' ? e.clientX : e.clientY;
   let toque = null, soltado = -1e9, espera = 0;
-  elemento.addEventListener('pointerdown', e => { if (!e.button) toque = {id: e.pointerId, inicio: lugar(e), base: fluido.objetivo(), movido: false, marcas: [[e.timeStamp, lugar(e)]]}; });
+  const op = senal ? {signal: senal} : undefined;
+  elemento.addEventListener('pointerdown', e => { if (!e.button) toque = {id: e.pointerId, inicio: lugar(e), base: fluido.objetivo(), movido: false, marcas: [[e.timeStamp, lugar(e)]]}; }, op);
   elemento.addEventListener('pointermove', e => {
     if (!toque || e.pointerId !== toque.id) return;
     const d = lugar(e) - toque.inicio;
@@ -81,7 +84,7 @@ export function arrastrar(elemento, fluido, {eje = 'x', paso, sentido = -1, alSo
     fluido.llevar(toque.base + sentido * d / paso());
     toque.marcas.push([e.timeStamp, lugar(e)]);
     while (toque.marcas.length > 2 && e.timeStamp - toque.marcas[0][0] > 100) toque.marcas.shift();
-  });
+  }, op);
   const fin = e => {
     if (!toque || e.pointerId !== toque.id) return;
     const {movido, marcas} = toque; toque = null;
@@ -91,13 +94,14 @@ export function arrastrar(elemento, fluido, {eje = 'x', paso, sentido = -1, alSo
     fluido.soltar(ms > 0 && e.timeStamp - t1 < 80 ? sentido * (p1 - p0) / ms * 16.7 / paso() : 0);
     alSoltar();
   };
-  elemento.addEventListener('pointerup', fin);
-  elemento.addEventListener('pointercancel', fin);
+  elemento.addEventListener('pointerup', fin, op);
+  elemento.addEventListener('pointercancel', fin, op);
   // Un arrastre no debe contar como toque sobre lo que quedó bajo el puntero.
-  elemento.addEventListener('click', e => { if (e.timeStamp - soltado < 350) { e.preventDefault(); e.stopPropagation(); } }, true);
+  elemento.addEventListener('click', e => { if (e.timeStamp - soltado < 350) { e.preventDefault(); e.stopPropagation(); } }, {capture: true, ...op});
+  if (!conRueda) return;
   elemento.addEventListener('wheel', e => {
     e.preventDefault();
     fluido.tomar(); fluido.llevar(fluido.objetivo() + (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) * .6 / paso());
     clearTimeout(espera); espera = setTimeout(() => { fluido.soltar(); alSoltar(); }, 130);
-  }, {passive: false});
+  }, {passive: false, ...op});
 }
