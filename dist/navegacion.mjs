@@ -1,6 +1,6 @@
 // Barra inferior, rueda de Control de obra y botones de función sobre el plano. La lógica vive en navegacion-model.mjs.
 import {TARJETAS, ICONOS, tarjeta as buscarTarjeta, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar} from './navegacion-model.mjs';
-import {crearFluido, arrastrar} from './fluido.mjs';
+import {crearFluido, arrastrar, seguirCursor} from './fluido.mjs';
 import {nivel} from './level.mjs';
 import {loadProtocolCatalog, loadProtocolType} from './protocol-catalog.mjs';
 import {scopeProtocolCatalog, scopedProtocolRows} from './protocol-scope.mjs';
@@ -38,6 +38,7 @@ export function createNavegacion(ctx) {
     });
   }});
   arrastrar(pista, giro, {eje: 'x', paso: distancia});
+  seguirCursor(pista, giro, {paso: distancia, quieto: quietud});
   addEventListener('resize', () => { if (!rueda.hidden) giro.redibujar(); });
   const indiceDe = id => Math.max(0, tarjetas.findIndex(t => t.dataset.tarjeta === id));
   function abrirRueda() {

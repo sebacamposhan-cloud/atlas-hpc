@@ -20,6 +20,8 @@ Atlas recuerda en cada equipo el último piso y la última función. Recintos se
 
 La rueda y los pisos se mueven con el mouse, el dedo o la rueda del mouse (`dist/fluido.mjs`): siguen con suavidad, al soltar frenan solos y los vecinos llegan con un leve retraso. En los pisos, arrastrar cambia el piso elegido.
 
+Pasar el cursor sin apretar también los mueve. La rueda acompaña al cursor y se asienta al detenerse. Los pisos se mecen hacia el cursor, pero el elegido solo cambia al tocarlo, arrastrarlo o usar la rueda del mouse: si cambiara al pasar, camino a «Continuar» se elegiría el piso de más abajo.
+
 ## Menú del recinto
 
 Avance y Observaciones solo cambian lo que pinta el plano. Al tocar un recinto se abre siempre el mismo menú:

@@ -40,6 +40,51 @@ export function crearFluido({cantidad, inicial = 0, dibujar, alCambiar = () => {
   };
 }
 
+// Pasar el cursor sin apretar, como arrastrar un palito por el agua: lo que está debajo acompaña un poco el movimiento y,
+// al detenerse, se asienta solo. La fuerza es menor que al arrastrar, así una tarjeta sigue siendo fácil de alcanzar.
+export function seguirCursor(elemento, fluido, {paso, sentido = -1, fuerza = .35, quieto = () => false, espera = 120}) {
+  let anterior = null, ultimoCambio = 0, tiempo = 0, ritmo = 0, movio = false;
+  const asentar = () => { if (movio) { movio = false; fluido.soltar(ritmo); } ritmo = 0; };
+  elemento.addEventListener('pointermove', e => {
+    if (e.pointerType !== 'mouse' || e.buttons || quieto()) { anterior = null; return; }
+    if (anterior === null) { anterior = e.clientX; ultimoCambio = e.timeStamp; return; }
+    const d = e.clientX - anterior, ms = Math.max(1, e.timeStamp - ultimoCambio);
+    anterior = e.clientX; ultimoCambio = e.timeStamp;
+    if (!d) return;
+    if (!movio) { movio = true; fluido.tomar(); }
+    const avance = sentido * d * fuerza / paso();
+    fluido.llevar(fluido.objetivo() + avance);
+    ritmo = avance / ms * 16.7;
+    clearTimeout(tiempo); tiempo = setTimeout(asentar, espera);
+  });
+  elemento.addEventListener('pointerleave', () => { anterior = null; clearTimeout(tiempo); asentar(); });
+}
+
+// Oleaje al pasar el cursor por los pisos: cada elemento se inclina hacia el cursor con su propio retraso y vuelve al salir.
+// No cambia la selección. dibujar(x, fila, fuerza): lado (-1 a 1), fila bajo el cursor y fuerza (0 a 1) por elemento.
+export function crearOleaje({cantidad, dibujar, cuadro = f => requestAnimationFrame(f), quieto = () => false}) {
+  const x = Array(cantidad).fill(0), fila = Array(cantidad).fill(0), fuerza = Array(cantidad).fill(0);
+  let metaX = 0, metaFila = 0, metaFuerza = 0, pendiente = false, primera = true;
+  const acercar = (lista, i, meta, k) => { const n = lista[i] + (meta - lista[i]) * k; lista[i] = Math.abs(meta - n) < .002 ? meta : n; return lista[i] !== meta; };
+  const pedir = () => { if (!pendiente) { pendiente = true; cuadro(paso); } };
+  function paso() {
+    pendiente = false;
+    let sigue = false;
+    for (let i = 0; i < cantidad; i++) {
+      const k = quieto() ? 1 : .16 / (1 + .7 * Math.abs(i - metaFila));
+      if (acercar(x, i, metaX, k)) sigue = true;
+      if (acercar(fila, i, metaFila, k)) sigue = true;
+      if (acercar(fuerza, i, metaFuerza, k)) sigue = true;
+    }
+    dibujar(x, fila, fuerza);
+    if (sigue) pedir();
+  }
+  return {
+    mover(lado, filaCursor) { if (primera) { fila.fill(filaCursor); primera = false; } metaX = lado; metaFila = filaCursor; metaFuerza = 1; pedir(); },
+    soltar() { metaX = 0; metaFuerza = 0; primera = true; pedir(); }
+  };
+}
+
 // Conecta un fluido al mouse, al dedo y a la rueda del mouse. sentido: 1 si el elemento sigue a la mano, -1 si avanza al revés.
 export function arrastrar(elemento, fluido, {eje = 'x', paso, sentido = -1}) {
   const lugar = e => eje === 'x' ? e.clientX : e.clientY;

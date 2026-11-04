@@ -2,7 +2,7 @@
 import './offline.mjs';
 import {iniciarNube} from './nube.mjs';
 import {leerMemoria,guardarMemoria} from './navegacion-model.mjs';
-import {crearFluido,arrastrar} from './fluido.mjs';
+import {crearFluido,arrastrar,crearOleaje} from './fluido.mjs';
 iniciarNube();
 const $=id=>document.getElementById(id),floors=window.ATLAS_TARJETAS,active=window.ATLAS_PISO;
 const root=window.ATLAS_RAIZ;
@@ -17,10 +17,16 @@ function marcar(id){elegido=floors.some(f=>f.id===id&&f.piso)?id:null;gallery.qu
 // Al arrastrar los pisos cambia el elegido; los demás se abren a su alrededor y vuelven con un leve retraso, como agua.
 const capas=[...gallery.querySelectorAll('.pisoCapa')],etiquetas=[...gallery.querySelectorAll('.pisoEtiqueta')],lugarDe=id=>pila.findIndex(f=>f.id===id);
 const quietud=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
-const pisos=crearFluido({cantidad:pila.length,inicial:Math.max(0,lugarDe(leerMemoria(almacen()).piso)),quieto:quietud,alCambiar:i=>{if(pila[i].piso)marcar(pila[i].id);},dibujar:posiciones=>{const abre=$('floorGrid').offsetWidth*.05;posiciones.forEach((p,i)=>{const d=i-p,y=(abre*Math.tanh(d*1.6)).toFixed(1)+'px',escala=(1+.04*Math.exp(-d*d*3)).toFixed(3);capas[i].style.setProperty('--y',y);capas[i].style.setProperty('--e',escala);etiquetas[i].style.setProperty('--y',y);});}});
+// Pasar el cursor mueve los pisos como oleaje, pero no cambia el elegido: camino a «Continuar» se cruzaría con los de abajo.
+let elegidos=[],lado=[],fila=[],fuerza=[];
+function pintarPisos(){const ancho=$('floorGrid').offsetWidth,abre=ancho*.05;capas.forEach((capa,i)=>{const d=i-(elegidos[i]??0),h=fuerza[i]||0,dh=i-(fila[i]||0),cerca=Math.exp(-dh*dh*3),y=abre*Math.tanh(d*1.6)+h*(abre*.8*Math.tanh(dh*1.5)-ancho*.03*cerca);capa.style.setProperty('--y',y.toFixed(1)+'px');capa.style.setProperty('--x',((lado[i]||0)*h*ancho*.035).toFixed(1)+'px');capa.style.setProperty('--e',(1+.04*Math.exp(-d*d*3)+.025*h*cerca).toFixed(3));etiquetas[i].style.setProperty('--y',y.toFixed(1)+'px');etiquetas[i].classList.toggle('bajoCursor',h>.5&&Math.round(fila[i])===i);});}
+const pisos=crearFluido({cantidad:pila.length,inicial:Math.max(0,lugarDe(leerMemoria(almacen()).piso)),quieto:quietud,alCambiar:i=>{if(pila[i].piso)marcar(pila[i].id);},dibujar:posiciones=>{elegidos=posiciones;pintarPisos();}});
+const oleaje=crearOleaje({cantidad:pila.length,quieto:quietud,dibujar:(x,f,h)=>{lado=x;fila=f;fuerza=h;pintarPisos();}});
 function elegir(id){marcar(id);if(elegido)pisos.ir(lugarDe(elegido));}
 marcar(leerMemoria(almacen()).piso);pisos.redibujar();
 arrastrar($('floorGrid'),pisos,{eje:'y',sentido:1,paso:()=>$('floorGrid').offsetWidth*.285});
+$('floorGrid').addEventListener('pointermove',e=>{if(e.pointerType!=='mouse'||e.buttons)return;const r=$('floorGrid').getBoundingClientRect();oleaje.mover(Math.max(-1,Math.min(1,(e.clientX-r.left)/r.width*2-1)),Math.max(-.5,Math.min(pila.length-.5,(e.clientY-r.top-r.width*.29)/(r.width*.285))));});
+$('floorGrid').addEventListener('pointerleave',()=>oleaje.soltar());
 const safeToLeave=()=>window.dispatchEvent(new Event('atlas-before-floor-change',{cancelable:true}));
 function state(home){
  document.body.classList.toggle('floorHome',home);gallery.hidden=!home;$('floorHomeButton').hidden=home;
