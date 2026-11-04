@@ -127,6 +127,9 @@ assert.ok(!app.includes('sideProject'));
 assert.ok(index.includes('href="navegacion.css"'));
 assert.ok(index.includes('id="bottomObra"') && index.includes('id="pisoContinuar"') && index.includes('id="pisoAyuda"'));
 assert.ok(!index.includes('<button data-module'));
+// Sin conexión y Asistente van en la barra superior, no abajo ni en Herramientas.
+assert.ok(!index.includes('bottomOffline') && index.includes('id="offlineOpen"'));
+assert.ok(!fs.readFileSync('dist/navegacion.mjs', 'utf8').includes('assistantOpen'));
 assert.ok(index.indexOf('navegacion.css') > index.indexOf('gerencial.css'), 'navegacion.css debe cargarse después del tema');
 
 // Colores: solo los del tema, sin bordes redondeados ni sombras.

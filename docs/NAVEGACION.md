@@ -5,7 +5,7 @@ Pensada para capataces y jefes de terreno, que trabajan en un solo piso.
 ## Flujo
 
 1. Después de iniciar sesión se elige el piso entre las maquetas 3D apiladas. El último piso queda marcado. En celular y tablet se toca y se presiona «Continuar»; en computador se entra con doble clic.
-2. El plano del piso queda de base, con búsqueda, zoom, **Pisos**, **Control de obra** y **Sin conexión**.
+2. El plano del piso queda de base. Arriba están la búsqueda, **Asistente**, **Sin conexión** y **Cerrar sesión**; abajo, **Pisos** y **Control de obra**.
 3. **Control de obra** abre una rueda de tarjetas desde abajo, sin salir del plano.
 4. Cada tarjeta devuelve el plano con sus botones de función, circulares y flotantes en el borde izquierdo:
 

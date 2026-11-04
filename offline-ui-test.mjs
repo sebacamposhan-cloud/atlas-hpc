@@ -23,7 +23,7 @@ assert.equal(cached.calls.update,0,'offline opening must not attempt an update')
 assert(cached.get('offlineStatus').textContent.includes('Listo'));
 assert(cached.get('offlineSave').disabled);
 await cached.get('offlineOpen').onclick();assert(cached.get('offlineDialog').open);assert.equal(cached.calls.get,1);
-cached.get('offlineDialog').close();await cached.get('bottomOffline').onclick();assert(cached.get('offlineDialog').open,'bottom navigation opens the same offline controls');
+cached.get('offlineDialog').close();
 const before=cached.calls.status;cached.documentEvents.visibilitychange();await new Promise(setImmediate);assert(cached.calls.status>before,'returning from suspension refreshes the saved status');
 cached.navigator.onLine=true;cached.windowEvents.online();await new Promise(setImmediate);assert.equal(cached.calls.update,1);
 const retry=page({saved:false,online:true,failFirst:true});await retry.windowEvents['atlas-ready']();assert(retry.get('offlineStatus').textContent.includes('interrumpida'));
