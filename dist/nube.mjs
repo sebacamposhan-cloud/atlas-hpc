@@ -97,7 +97,7 @@ export function iniciarNube({toast = aviso} = {}) {
     try {
       await bloquear(async () => {
         await renovar();
-        const sincronizar = async () => {const resultado=await motor(leerSesion().user.role),lp=await syncLastPlanner(api,leerSesion().user.role);if(lp.conflictos)throw error('Last Planner tiene conflictos con otro equipo. Los datos locales se conservan; descarga un respaldo antes de resolverlos.',409);return {...resultado,lastPlanner:lp};};
+        const sincronizar = async () => {const resultado=await motor(leerSesion().user.role),lp=await syncLastPlanner(api,leerSesion().user.role);if(lp.conflictos)throw error('Last Planner tiene conflictos con otro equipo. Los datos locales se conservan; descarga un respaldo antes de resolverlos.',409);if(lp.avisos?.length)toast('Mis tareas: '+lp.avisos.at(-1));return {...resultado,lastPlanner:lp};};
         try { return await sincronizar(); }
         catch (e) { if (e.status !== 401) throw e; await renovar(true); return sincronizar(); }
       });
@@ -144,7 +144,7 @@ export function iniciarNube({toast = aviso} = {}) {
     toast(event.detail?.cambiarCuenta ? 'Para entrar con otra cuenta, usa «Cerrar sesión» y vuelve a entrar.' : 'Tu cuenta no tiene permiso para esta operación. Pide a la administración que te lo asigne.');
   });
 
-  for (const nombre of ['atlas-observaciones-changed', 'atlas-markings-changed','atlas-lastplanner-changed']) window.addEventListener(nombre, e => { if (e.detail?.origen !== 'nube' && leerSesion()) programar(); });
+  for (const nombre of ['atlas-observaciones-changed', 'atlas-markings-changed','atlas-lastplanner-changed','atlas-jerarquia-changed']) window.addEventListener(nombre, e => { if (e.detail?.origen !== 'nube' && leerSesion()) programar(); });
   window.addEventListener('online', () => programar(1000));
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && leerSesion()) programar(1000); });
   setInterval(() => { if (document.visibilityState === 'visible' && leerSesion()) sincronizar(); }, 180000);

@@ -1,6 +1,8 @@
 // Offline queue for the existing Last Planner database, using the existing personal Nube session.
 import {abrirLP} from './lastplanner-store.mjs';
 import {TABLES,canonical,validateActivity} from './lastplanner-cycle-model.mjs';
+// Tareas de la jerarquía de obra: viajan en la misma cola, en orden, pero a su propia ruta (/api/jerarquia/metas).
+import {subirTarea,bajarJerarquia} from './jerarquia-store.mjs';
 const req=q=>new Promise((resolve,reject)=>{q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);});
 async function read(table){const db=await abrirLP();try{return await req(db.transaction(table).objectStore(table).getAll());}finally{db.close();}}
 async function commit(changes){const db=await abrirLP();try{await new Promise((resolve,reject)=>{const tx=db.transaction([...new Set(changes.map(c=>c.table))],'readwrite');for(const change of changes){const table=tx.objectStore(change.table);if(change.remove)table.delete(change.id);else table.put(change.data);}tx.oncomplete=resolve;tx.onabort=tx.onerror=()=>reject(tx.error);});}finally{db.close();}}
@@ -8,12 +10,13 @@ const sha=async bytes=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',b
 let running=null;
 export function syncLastPlanner(api,role){if(running)return running;running=sync(api,role).finally(()=>{running=null;});return running;}
 async function sync(api,role){
- const result={subidos:0,bajados:0,conflictos:0,archivos:0};
+ const result={subidos:0,bajados:0,conflictos:0,archivos:0,tareas:0,avisos:[]};
  try{
   let remote=(await api('GET','/api/lastplanner/records')).registros;
   const metadata=new Map((await read('sync')).filter(r=>r.id!=='status').map(r=>[r.id,r]));
   const jobs=(await read('pendientes')).sort((a,b)=>a.order-b.order);
   if(role==='editor')for(const job of jobs){
+   if(job.action==='meta'){const r=await subirTarea(api,job,metadata);if(r.estado==='subida')result.subidos++;else result.avisos.push(r.mensaje);continue;}
    const adopted=[];
    const pending=job.ops.filter(op=>{if(job.action!=='migration')return true;const row=remote.find(r=>r.tipo===op.table&&r.id===op.data.id);if(!row||canonical(row.data)!==canonical(op.data))return true;const meta={id:row.tipo+':'+row.id,remoteVersion:row.version,lastData:row.data};metadata.set(meta.id,meta);adopted.push({table:'sync',data:meta});return false;});
    if(!pending.length){await commit([...adopted,{table:'pendientes',remove:true,id:job.order}]);continue;}
@@ -37,6 +40,7 @@ async function sync(api,role){
    const changes=[{table:'sync',data:{id:key,remoteVersion:row.version,lastData:row.data}}];if(canonical(record)!==canonical(row.data)){changes.push({table:row.tipo,data:row.data});result.bajados++;changed=true;}await commit(changes);
   }
   const files=new Set((await read('archivos')).map(file=>file.id));for(const row of remote.filter(r=>r.tipo==='evidencias'&&!files.has(r.id))){const bytes=await api('GET','/api/lastplanner/files/'+row.id,null,{binario:true});if(await sha(bytes)!==row.data.sha256)throw Error('La evidencia descargada no coincide con su huella.');await commit([{table:'archivos',data:{id:row.id,bytes,mime:row.data.mime,sha256:row.data.sha256}}]);result.archivos++;}
+  const tareas=await bajarJerarquia(api);if(tareas)result.tareas=tareas.cambios;
   await commit([{table:'sync',data:{id:'status',state:result.conflictos?'conflict':'ready',at:new Date().toISOString(),result}}]);
   if(changed||result.archivos)window.dispatchEvent(new CustomEvent('atlas-lastplanner-changed',{detail:{origen:'nube'}}));
   return result;

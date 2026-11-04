@@ -75,5 +75,17 @@ window.addEventListener('popstate',()=>{
 const requested=new URLSearchParams(location.search).get('nivel');
 if(floors.some(f=>f.id===requested&&f.piso)||(!requested&&location.hash))openFloor(active.id,false);else state(true);
 window.addEventListener('hashchange',()=>{if(location.hash&&document.body.classList.contains('floorHome')){if(ready)state(false);else openFloor(active.id,false);}});
+// Jerarquía de obra: un supervisor o capataz con pisos en su perfil solo abre sus pisos. Sin perfil, todos como hoy.
+async function limitarPisos(){
+ try{
+  const [{sessionActor,perfilGuardado},{pisoVisible}]=await Promise.all([import('./lastplanner-session.mjs'),import('./jerarquia-model.mjs')]);
+  const actor=sessionActor(),perfil=actor&&perfilGuardado(actor.id);
+  for(const f of floors){if(!f.original)f.original=f.piso||null;f.piso=f.original&&pisoVisible(perfil,f.id)?f.original:null;}
+  gallery.querySelectorAll('[data-floor]').forEach(b=>{b.disabled=!floors.find(f=>f.id===b.dataset.floor)?.piso;});
+  if(elegido&&!floors.some(f=>f.id===elegido&&f.piso))marcar(floors.find(f=>f.piso)?.id||null);
+  if(!document.body.classList.contains('floorHome')&&!floors.some(f=>f.id===active.id&&f.piso))home();
+ }catch{}
+}
+limitarPisos();window.addEventListener('atlas-jerarquia-changed',limitarPisos);window.addEventListener('atlas-session-changed',limitarPisos);
 // Set up update detection even when the user stays on the cards without opening a plan.
 window.dispatchEvent(new Event('atlas-shell-ready'));

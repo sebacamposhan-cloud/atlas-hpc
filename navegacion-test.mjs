@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {TARJETAS, ICONOS, tarjeta, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar, paradaCercana, CLAVE_MEMORIA} from './dist/navegacion-model.mjs';
+import {TARJETAS, ICONOS, tarjeta, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar, paradaCercana, CLAVE_MEMORIA, tarjetasPara, TARJETA_TAREAS} from './dist/navegacion-model.mjs';
+import {funcionesDe} from './dist/jerarquia-model.mjs';
 import {crearFluido, crearOleaje, arrastrar} from './dist/fluido.mjs';
 import {palancaHTML} from './dist/palanca.mjs';
 
@@ -16,6 +17,27 @@ assert.equal(tarjeta('inexistente'), null);
 assert.equal(tituloNavegacion('recintos', 'observaciones'), 'Recintos · Observaciones');
 assert.equal(tituloNavegacion('protocolos', null), 'Protocolos');
 assert.equal(tituloNavegacion(null, null), 'Plano');
+
+// Jerarquía de obra: sin perfil la rueda es la de siempre; con perfil, la libreta y lo de su nivel.
+{
+  const perfil = (nivel, extra = {}) => ({id: '00000000-0000-4000-8000-000000000001', nombre: 'Persona de ejemplo', cargo: '', nivel, area: 'linea', jefe: null, pisos: [], empresa: null, activo: true, ...extra});
+  assert.equal(tarjetasPara(funcionesDe(null)), TARJETAS);
+  assert.equal(tarjetasPara(funcionesDe(perfil(3, {activo: false}))), TARJETAS, 'un perfil inactivo no cambia nada');
+  const capataz = tarjetasPara(funcionesDe(perfil(4)));
+  assert.deepEqual(capataz.map(t => t.id), ['tareas', 'recintos', 'protocolos', 'herramientas']);
+  assert.deepEqual(capataz[0].funciones.map(([id]) => id), ['mias']);
+  assert.deepEqual(capataz[1].funciones.map(([id]) => id), ['avance', 'observaciones'], 'el resumen de gerencia no va al capataz');
+  const jefe = tarjetasPara(funcionesDe(perfil(2)));
+  assert.deepEqual(jefe.map(t => t.id), ['tareas', 'lastplanner', 'recintos', 'protocolos', 'herramientas']);
+  assert.deepEqual(jefe[0].funciones.map(([id]) => id), ['mias', 'asignar', 'equipo']);
+  assert.deepEqual(jefe.slice(1).map(t => t.funciones.length), TARJETAS.map(t => t.funciones.length), 'la jefatura conserva todas sus funciones');
+  assert.deepEqual(tarjetasPara(funcionesDe(perfil(null, {area: 'calidad'})))[0].funciones.map(([id]) => id), ['equipo']);
+  assert.equal(tituloNavegacion('tareas', 'mias'), 'Mis tareas');
+  assert.equal(tituloNavegacion('tareas', 'asignar'), 'Mis tareas · Asignar');
+  assert.equal(TARJETAS.some(t => t.id === TARJETA_TAREAS.id), false, 'la libreta no se agrega a la rueda de siempre');
+  for (const [id] of TARJETA_TAREAS.funciones) assert.match(ICONOS[id] || '', /<svg/, id);
+  assert.equal(momentanea('asignar'), true);
+}
 
 // Cada función tiene su ícono; Observaciones lleva la cámara.
 for (const t of TARJETAS) for (const [id] of t.funciones) assert.match(ICONOS[id] || '', /<svg/, id);

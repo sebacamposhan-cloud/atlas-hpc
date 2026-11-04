@@ -197,4 +197,23 @@ t('avance real de la actividad de Last Planner', () => {
   assert.equal(J.avanceActividad(conLps, []).avance, .375);
 });
 
+// La sesión de este equipo (lastplanner-session.mjs) aplica el mismo tope con el perfil de la última sincronización.
+{
+  const guardado = {};
+  globalThis.localStorage = {getItem: k => guardado[k] ?? null, setItem: (k, v) => { guardado[k] = String(v); }, removeItem: k => { delete guardado[k]; }};
+  const S = await import('./dist/lastplanner-session.mjs');
+  const jwt = n => 'x.' + Buffer.from(JSON.stringify({sub: id(n), email: 'cuenta' + n + '@example.test', app_metadata: {campo_role: 'editor'}})).toString('base64url') + '.y';
+  localStorage.setItem(S.SESSION_KEY, JSON.stringify({token: jwt(11), user: {username: 'cuenta11@example.test', role: 'editor'}}));
+  assert.equal(S.sessionActor().permissions, null, 'sin perfil guardado, como hoy');
+  localStorage.setItem(S.PERFIL_KEY, JSON.stringify({id: id(11), perfil: P(11)}));
+  assert.deepEqual(S.sessionActor().permissions, ['execution', 'attendance', 'restriction', 'evidence']);
+  assert.equal(S.can('publish'), false); assert.equal(S.can('attendance'), true);
+  localStorage.setItem(S.PERFIL_KEY, JSON.stringify({id: id(12), perfil: P(12)}));
+  assert.equal(S.sessionActor().permissions, null, 'el perfil guardado de otra cuenta no se aplica');
+  localStorage.setItem(S.PERFIL_KEY, JSON.stringify({id: id(11), perfil: {...P(11), activo: false}}));
+  assert.equal(S.sessionActor().permissions, null, 'un perfil inactivo no topa');
+  delete globalThis.localStorage;
+  pruebas++;
+}
+
 console.log(`Jerarquía de obra: ${pruebas} grupos de pruebas aprobados (cadena, asignación, funciones, permisos, estados, avance y control del servidor).`);
