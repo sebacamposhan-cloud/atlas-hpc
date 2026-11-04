@@ -1,6 +1,6 @@
 // Barra inferior, rueda de Control de obra y botones de función sobre el plano. La lógica vive en navegacion-model.mjs.
 import {TARJETAS, ICONOS, tarjeta as buscarTarjeta, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar} from './navegacion-model.mjs';
-import {crearFluido, arrastrar} from './fluido.mjs';
+import {crearFluido, arrastrar, seguirCursor} from './fluido.mjs';
 import {nivel} from './level.mjs';
 import {loadProtocolCatalog, loadProtocolType} from './protocol-catalog.mjs';
 import {scopeProtocolCatalog, scopedProtocolRows} from './protocol-scope.mjs';
@@ -27,6 +27,15 @@ export function createNavegacion(ctx) {
   main.append(barra, hoja, rueda);
   const pista = rueda.querySelector('.ruedaPista'), tarjetas = [...pista.querySelectorAll('.ruedaTarjeta')];
 
+  // Con el cursor encima se ilumina la tarjeta que tiene debajo, también mientras la rueda se mueve.
+  let cursor = null;
+  function iluminar() {
+    const bajo = cursor && document.elementFromPoint(cursor[0], cursor[1])?.closest('.ruedaTarjeta');
+    tarjetas.forEach(t => t.classList.toggle('iluminada', t === bajo));
+    pista.classList.toggle('conCursor', !!bajo);
+  }
+  pista.addEventListener('pointermove', e => { if (e.pointerType === 'mouse') { cursor = [e.clientX, e.clientY]; iluminar(); } });
+  pista.addEventListener('pointerleave', () => { cursor = null; iluminar(); });
   // La tarjeta del centro queda de frente y las demás giran alrededor, como una rueda. Se toma con el mouse o el dedo.
   const distancia = () => tarjetas[0].offsetWidth + 12;
   const giro = crearFluido({cantidad: tarjetas.length, inicial: 1, quieto: quietud, dibujar: posiciones => {
@@ -36,8 +45,10 @@ export function createNavegacion(ctx) {
       t.style.transform = `translateX(${(d * tramo).toFixed(1)}px) rotateY(${(a * -24).toFixed(1)}deg) scale(${(1 - Math.abs(a) * .12).toFixed(3)})`;
       t.classList.toggle('alCentro', Math.abs(d) < .5);
     });
+    if (cursor) iluminar();
   }});
   arrastrar(pista, giro, {eje: 'x', paso: distancia});
+  seguirCursor(pista, giro, {paso: distancia, quieto: quietud});
   addEventListener('resize', () => { if (!rueda.hidden) giro.redibujar(); });
   const indiceDe = id => Math.max(0, tarjetas.findIndex(t => t.dataset.tarjeta === id));
   function abrirRueda() {
@@ -49,6 +60,7 @@ export function createNavegacion(ctx) {
   }
   function cerrarRueda(foco = false) {
     if (rueda.hidden) return;
+    cursor = null; iluminar();
     rueda.hidden = true; document.body.classList.remove('ruedaAbierta'); $('bottomObra').setAttribute('aria-expanded', 'false');
     if (foco) $('bottomObra').focus();
   }

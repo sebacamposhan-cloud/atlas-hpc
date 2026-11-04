@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {TARJETAS, ICONOS, tarjeta, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar, paradaCercana, CLAVE_MEMORIA} from './dist/navegacion-model.mjs';
-import {crearFluido} from './dist/fluido.mjs';
+import {crearFluido, seguirCursor, crearOleaje, arrastrar} from './dist/fluido.mjs';
 import {palancaHTML} from './dist/palanca.mjs';
 
 const almacen = (inicial = {}) => { const d = {...inicial}; return {getItem: k => d[k] ?? null, setItem: (k, v) => { d[k] = v; }, d}; };
@@ -46,6 +46,54 @@ function fluido(opciones = {}) {
   // Con movimiento reducido salta directo y sin inercia.
   const d = fluido({quieto: () => true}); d.f.soltar(.5); d.f.ir(2); assert.ok(d.correr() <= 2); assert.deepEqual(d.posiciones(), [2, 2, 2, 2]);
   const g = fluido(); g.f.fijar(3); assert.deepEqual(g.posiciones(), [3, 3, 3, 3]); assert.equal(g.f.indice(), 3); assert.equal(g.cambios.length, 0);
+}
+
+// Pasar el cursor: solo el mouse sin apretar mueve la rueda, las tarjetas acompañan al cursor y al detenerse se asienta.
+{
+  const elemento = () => ({oyentes: {}, addEventListener(tipo, f) { this.oyentes[tipo] = f; }});
+  const pasar = (el, datos) => el.oyentes.pointermove({pointerType: 'mouse', buttons: 0, ...datos});
+  const a = fluido(), zona = elemento();
+  seguirCursor(zona, a.f, {paso: () => 220, espera: 5});
+  pasar(zona, {clientX: 100, timeStamp: 1});
+  assert.equal(a.f.objetivo(), 1, 'el primer movimiento solo toma la referencia');
+  pasar(zona, {clientX: 500, timeStamp: 40});
+  assert.ok(a.f.objetivo() < 1, 'al mover a la derecha las tarjetas también van a la derecha');
+  pasar(zona, {clientX: 900, timeStamp: 80, pointerType: 'touch'});
+  pasar(zona, {clientX: 950, timeStamp: 90, buttons: 1});
+  const conDedo = a.f.objetivo();
+  await new Promise(r => setTimeout(r, 20));
+  a.correr();
+  assert.ok(Number.isInteger(a.f.objetivo()), 'se asienta sobre una tarjeta');
+  assert.ok(conDedo > .2 && conDedo < 1, 'el dedo y el arrastre no suman movimiento de cursor');
+  const b = fluido(), otra = elemento();
+  seguirCursor(otra, b.f, {paso: () => 220, quieto: () => true});
+  pasar(otra, {clientX: 100, timeStamp: 1}); pasar(otra, {clientX: 500, timeStamp: 40});
+  assert.equal(b.f.objetivo(), 1, 'con movimiento reducido el cursor no mueve la rueda');
+  // Oleaje: se inclina hacia el cursor, el lejano llega después y al salir todo vuelve a cero.
+  const cola = []; let x = [], fila = [], fuerza = [];
+  const o = crearOleaje({cantidad: 4, cuadro: q => cola.push(q), dibujar: (a, b, c) => { x = [...a]; fila = [...b]; fuerza = [...c]; }});
+  const correr = max => { let n = 0; while (cola.length && n++ < max) cola.shift()(); };
+  o.mover(1, 0); correr(6);
+  assert.ok(x[0] > x[3] && x[3] > 0, 'el cercano se mueve antes');
+  correr(2000);
+  assert.deepEqual(x, [1, 1, 1, 1]); assert.deepEqual(fuerza, [1, 1, 1, 1]); assert.deepEqual(fila, [0, 0, 0, 0]);
+  o.soltar(); correr(2000);
+  assert.deepEqual(x, [0, 0, 0, 0]); assert.deepEqual(fuerza, [0, 0, 0, 0]);
+}
+
+// Arrastrar avisa al soltar, para dejar fijo el piso que quedó elegido.
+{
+  const oyentes = {}, el = {classList: {add() {}, remove() {}}, setPointerCapture() {}, addEventListener(t, f) { oyentes[t] = f; }};
+  let soltados = 0;
+  const a = fluido();
+  arrastrar(el, a.f, {eje: 'y', sentido: 1, paso: () => 100, alSoltar: () => soltados++});
+  oyentes.pointerdown({button: 0, pointerId: 1, clientY: 0, timeStamp: 1});
+  oyentes.pointerup({pointerId: 1, timeStamp: 2});
+  assert.equal(soltados, 0, 'un toque sin moverse no es un arrastre');
+  oyentes.pointerdown({button: 0, pointerId: 1, clientY: 0, timeStamp: 10});
+  oyentes.pointermove({pointerId: 1, clientY: 100, timeStamp: 20});
+  oyentes.pointerup({pointerId: 1, timeStamp: 30});
+  assert.equal(soltados, 1);
 }
 
 // Memoria: recuerda piso y función; ignora datos dañados, funciones momentáneas y tarjetas sin funciones.
