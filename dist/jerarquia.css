@@ -1,0 +1,137 @@
+/* Libreta «Mis tareas», asignación, vista del equipo, contadores y barra de marcado (jerarquia-ui.mjs, navegacion.mjs).
+   Se carga después de navegacion.css y sigue gerencial.css: blanco, títulos y texto negros, azules de Sacyr como
+   estructura y sin tonos claros. Lo que se distingue, se distingue con bordes, colores sólidos y texto.
+   App de terreno: botones de al menos 44 px y letra de 16 px en los campos (así el celular no acerca la pantalla). */
+
+/* Contadores: cuadrados como el resto del tema; el del botón flotante es redondo, igual que su botón. */
+#bottomObra { position: relative; }
+#barraFunciones .funcionFlotante { position: relative; }
+.obraContador, .ruedaContador, .funcionContador { display: grid; place-items: center; min-width: 22px; height: 22px; box-sizing: border-box; padding: 0 5px; font-size: 13px; font-weight: 800; line-height: 1; }
+.obraContador[hidden], .ruedaContador[hidden], .funcionContador[hidden] { display: none; }
+.obraContador { position: absolute; top: 50%; left: calc(50% + 66px); margin-top: -11px; background: #fff; color: var(--g-texto); }
+.ruedaContador { position: absolute; top: 8px; right: 8px; background: var(--g-azul); color: #fff; }
+.ruedaTarjeta.iluminada .ruedaContador, .ruedaPista:not(.conCursor) .ruedaTarjeta.alCentro .ruedaContador { background: #fff; color: var(--g-texto); }
+.funcionContador { position: absolute; top: -4px; left: calc(50% + 12px); border-radius: 50% !important; background: var(--g-marca); color: #fff; }
+
+/* Avisos de la hoja */
+.jerCola { margin: 0 0 10px; padding: 8px 10px; border: 1px solid var(--g-azul); font-size: 13px; font-weight: 600; color: var(--g-texto); }
+.jerAviso { display: grid; gap: 8px; margin: 0 0 10px; padding: 10px; border: 2px solid var(--g-marca); }
+.jerAviso p { margin: 0; font-size: 14px; color: var(--g-texto); }
+.jerAviso button { justify-self: start; min-height: 44px; padding: 0 16px; font-size: 14px; }
+.jerVacio { margin: 12px 0; font-size: 14px; line-height: 1.35; color: var(--g-texto2); }
+.jerListo { margin: 10px 0 14px; padding: 12px; border: 2px solid var(--g-listo); font-size: 15px; line-height: 1.35; color: var(--g-texto); }
+
+/* Encabezados y textos */
+.jerResumen { margin: 2px 0 10px; font-size: 14px; color: var(--g-texto); }
+.jerResumen b { font-size: 24px; font-weight: 800; }
+.jerTitulo { margin: 4px 0 6px; font-size: 19px; font-weight: 800; line-height: 1.2; color: var(--g-texto); }
+.jerPregunta { margin: 4px 0 10px; font-size: 17px; font-weight: 800; color: var(--g-texto); }
+.jerSeccion { margin: 16px 0 6px; font-size: 14px; font-weight: 800; color: var(--g-texto); }
+.jerDato { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0 0 8px; font-size: 13px; line-height: 1.3; color: var(--g-texto2); }
+.jerTexto { margin: 0 0 10px; font-size: 14px; line-height: 1.35; color: var(--g-texto); white-space: pre-line; }
+.jerAyuda { display: block; margin-top: 6px; font-size: 12px; color: var(--g-texto2); }
+.jerVolver, .jerVolver:hover:not(:disabled) { display: block; min-height: 44px; margin: 0 0 2px -2px; padding: 0 2px; border: 0; outline: 0; background: #fff; font-size: 14px; font-weight: 700; text-align: left; }
+.jerVolver:hover:not(:disabled) { text-decoration: underline; }
+
+/* Tarjeta de una tarea */
+.jerTarea { margin: 0 0 8px; border: 1px solid var(--g-marca); background: #fff; }
+.jerTarea.vencida { border-width: 2px; }
+.jerTarea.vencida > .jerTareaAbrir small { font-weight: 700; color: var(--g-texto); }
+.jerTareaAbrir { display: grid; gap: 5px; width: 100%; min-height: 44px; padding: 10px 12px; border: 0; background: #fff; text-align: left; white-space: normal; }
+.jerTareaTitulo { font-size: 15px; font-weight: 800; line-height: 1.2; color: var(--g-texto); }
+.jerTareaAbrir small { font-size: 12px; font-weight: 400; line-height: 1.3; color: var(--g-texto2); }
+.jerTareaFila { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.jerTareaFila b { flex: none; min-width: 42px; font-size: 13px; font-weight: 800; text-align: right; color: var(--g-texto); }
+.jerTarea > .jerAcciones { padding: 0 12px 12px; }
+.jerMotivo { display: block; margin: 0 0 8px; padding: 6px 8px; border: 1px solid var(--g-marca); font-size: 13px; font-weight: 700; color: var(--g-texto); }
+.jerTareaAbrir .jerMotivo { margin: 0; }
+
+/* Estado: color sólido más el nombre, nunca el color solo. */
+.jerEstado { flex: none; display: inline-block; padding: 3px 8px; border: 1px solid var(--g-marca); background: #fff; font-size: 12px; font-weight: 700; line-height: 1.2; color: var(--g-texto); white-space: nowrap; }
+.jerEstado[data-estado=en_curso] { border-color: var(--g-azul); background: var(--g-azul); color: #fff; }
+.jerEstado[data-estado=hecha] { border-color: var(--g-cian); background: var(--g-cian); color: var(--g-texto); }
+.jerEstado[data-estado=confirmada] { border-color: var(--g-listo); background: var(--g-listo); color: #fff; }
+.jerEstado[data-estado=devuelta] { background: var(--g-marca); color: #fff; }
+.jerEstado[data-estado=anulada] { border-color: var(--g-regla); text-decoration: line-through; }
+
+/* Barra de avance */
+.jerBarra { flex: 1; display: block; min-width: 40px; height: 10px; box-sizing: border-box; border: 1px solid var(--g-marca); background: #fff; }
+.jerBarra i { display: block; height: 100%; background: var(--g-azul); }
+.jerAvanceGrande { display: flex; align-items: center; gap: 10px; margin: 10px 0 12px; }
+.jerAvanceGrande .jerBarra { height: 16px; }
+.jerAvanceGrande b { flex: none; font-size: 22px; font-weight: 800; color: var(--g-texto); }
+
+/* Botones */
+.jerAcciones { display: flex; flex-wrap: wrap; gap: 8px; }
+.jerAcciones button { flex: 1 1 130px; min-height: 44px; padding: 6px 10px; font-size: 14px; white-space: normal; }
+/* El botón principal queda siempre a la vista al final de la hoja, aunque la lista de recintos sea larga.
+   Los −14 px descuentan el margen inferior de .hojaCuerpo: así no asoma la lista por debajo del botón. */
+button.jerPrincipal { position: sticky; bottom: -14px; z-index: 1; display: block; width: 100%; min-height: 52px; margin-top: 16px; font-size: 16px; font-weight: 800; }
+.jerPersona { display: grid; gap: 2px; width: 100%; min-height: 56px; margin: 0 0 8px; padding: 8px 12px; text-align: left; white-space: normal; }
+.jerPersona b { font-size: 15px; font-weight: 800; }
+.jerPersona small { font-size: 12px; font-weight: 400; line-height: 1.3; color: var(--g-texto2); }
+.jerPasos { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: 8px; }
+.jerPasos button { min-height: 44px; padding: 6px; font-size: 14px; white-space: normal; }
+
+/* Recintos del frente */
+.jerRecintos { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--g-regla); }
+.jerRecintos li { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 52px; padding: 4px 0; border-bottom: 1px solid var(--g-regla); }
+.jerRecintos span { min-width: 0; display: grid; gap: 1px; }
+.jerRecintos b { font-size: 14px; font-weight: 800; color: var(--g-texto); }
+.jerRecintos small { font-size: 12px; color: var(--g-texto2); }
+.jerRecintos button { flex: none; min-width: 112px; min-height: 44px; padding: 0 10px; font-size: 13px; }
+.jerRecintos em { flex: none; font-size: 13px; font-style: normal; font-weight: 700; color: var(--g-texto); }
+
+/* Confirmadas, plegadas */
+.jerListas { margin-top: 14px; border-top: 1px solid var(--g-regla); }
+.jerListas summary { display: flex; align-items: center; min-height: 44px; font-size: 14px; font-weight: 800; color: var(--g-texto); cursor: pointer; }
+
+/* Formulario de asignación */
+.jerCampo { display: grid; gap: 4px; margin: 0 0 12px; font-size: 13px; font-weight: 700; color: var(--g-texto); }
+.jerCampo input, .jerCampo select, .jerCampo textarea, .jerFormAccion input { width: 100%; min-height: 44px; box-sizing: border-box; padding: 8px 10px; font: inherit; font-size: 16px; font-weight: 400; }
+.jerCampo textarea { resize: vertical; }
+div.jerFrente { display: grid; gap: 8px; margin: 0 0 12px; padding: 10px; border: 1px solid var(--g-marca); }
+div.jerFrente span { display: grid; gap: 2px; min-width: 0; }
+div.jerFrente b { font-size: 14px; font-weight: 800; color: var(--g-texto); }
+div.jerFrente small { font-size: 12px; line-height: 1.3; color: var(--g-texto2); }
+div.jerFrente button { min-height: 44px; padding: 6px 10px; font-size: 14px; }
+.jerFormAccion { display: grid; gap: 8px; margin: 0 12px 12px; padding-top: 10px; border-top: 1px solid var(--g-marca); }
+.jerFormAccion > b { font-size: 14px; font-weight: 800; color: var(--g-texto); }
+.jerFormAccion .jerPersona { margin: 0; }
+
+/* Mi equipo */
+.jerTotal { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 10px; margin: 0 0 10px; padding: 10px 12px; border: 2px solid var(--g-marca); }
+.jerTotal span { font-size: 14px; font-weight: 800; color: var(--g-texto); }
+.jerTotal b { font-size: 28px; font-weight: 800; line-height: 1; color: var(--g-texto); }
+.jerTotal small { grid-column: 1 / -1; font-size: 12px; color: var(--g-texto2); }
+.jerEquipo { list-style: none; margin: 0; padding: 0; }
+.jerEquipo button { display: grid; gap: 6px; width: 100%; min-height: 64px; margin: 0 0 8px; padding: 10px 12px; text-align: left; white-space: normal; }
+.jerEquipoNombre { display: grid; gap: 1px; min-width: 0; }
+.jerEquipoNombre b { font-size: 15px; font-weight: 800; color: var(--g-texto); }
+.jerEquipoNombre small, .jerEquipoDato small { font-size: 12px; font-weight: 400; color: var(--g-texto2); }
+.jerEquipoDato { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 8px; min-width: 0; }
+.jerEquipoDato b { font-size: 14px; font-weight: 800; color: var(--g-texto); }
+.jerEquipoDato small { grid-column: 1 / -1; }
+
+/* Ficha de una actividad en Last Planner */
+.jerEnActividad { margin: 12px 0; padding: 10px 12px; border: 1px solid var(--g-marca); font-size: 13px; }
+.jerEnActividad p { margin: 0 0 6px; color: var(--g-texto); }
+.jerEnActividad ul { margin: 0 0 8px; padding: 0 0 0 16px; color: var(--g-texto2); }
+.jerEnActividad button { min-height: 44px; padding: 6px 12px; font-size: 14px; }
+
+/* Barra para marcar en el plano: abajo, justo sobre la barra inferior y encima de lo que flota en el plano. Mientras se
+   marca solo queda esta función: se ocultan los botones flotantes y la leyenda. La rueda y las hojas, si se abren, mandan. */
+#jerMarcado { position: absolute; left: 0; right: 0; bottom: 0; z-index: 30; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 6px 14px; padding: 8px 12px; background: #fff; border-top: 3px solid var(--g-marca); }
+#jerMarcado[hidden], body.jerMarcando.ruedaAbierta #jerMarcado, body.jerMarcando.hojaAbierta #jerMarcado { display: none; }
+#jerMarcado > div { display: grid; gap: 1px; min-width: 0; }
+#jerMarcado > div b { font-size: 15px; font-weight: 800; line-height: 1.2; color: var(--g-texto); overflow-wrap: anywhere; }
+#jerMarcado > div small { font-size: 12px; line-height: 1.3; color: var(--g-texto2); }
+.jerMarcadoCuenta { font-size: 14px; color: var(--g-texto); white-space: nowrap; }
+.jerMarcadoCuenta b { font-size: 24px; font-weight: 800; }
+#jerMarcado button { min-width: 112px; min-height: 48px; padding: 0 16px; font-size: 16px; font-weight: 800; }
+body.jerMarcando #barraFunciones, body.jerMarcando #activeLegend { display: none; }
+@media (max-width: 700px) {
+  #jerMarcado { grid-template-columns: minmax(0, 1fr) auto; }
+  #jerMarcado > div { grid-column: 1 / -1; }
+}
+@media (min-width: 1024px) and (pointer: fine) { body:not(.hideRight) #jerMarcado { right: calc(var(--detail) + 24px); } }

@@ -6,12 +6,15 @@ import {migrateActivity,migrateRestrictions,migrateWeeks} from './lastplanner-cy
 
 export function abrirLP() {
   return new Promise((resolve,reject)=>{
-    const r=indexedDB.open('atlas-lastplanner',2);
-    r.onupgradeneeded=()=>{
+    // v3 agrega las tareas de la jerarquía de obra (metas) y los perfiles visibles (personas), con la misma cola.
+    const r=indexedDB.open('atlas-lastplanner',3);
+    r.onupgradeneeded=event=>{
       const db=r.result,tx=r.transaction;
       if(!db.objectStoreNames.contains('actividades')){const t=db.createObjectStore('actividades',{keyPath:'id'});t.createIndex('level','level');t.createIndex('semana','semana');}
       if(!db.objectStoreNames.contains('reuniones'))db.createObjectStore('reuniones',{keyPath:'id'}).createIndex('fecha','fecha');
-      for(const table of ['restricciones','asistencias','semanas','evidencias','archivos','pendientes','sync'])if(!db.objectStoreNames.contains(table))db.createObjectStore(table,table==='pendientes'?{keyPath:'order',autoIncrement:true}:{keyPath:'id'});
+      for(const table of ['restricciones','asistencias','semanas','evidencias','archivos','pendientes','sync','metas','personas'])if(!db.objectStoreNames.contains(table))db.createObjectStore(table,table==='pendientes'?{keyPath:'order',autoIncrement:true}:{keyPath:'id'});
+      // La migración del registro v1 corre una sola vez: en una base v2 ya hecha no se vuelve a ejecutar.
+      if(event.oldVersion>=2)return;
       const q=tx.objectStore('actividades').getAll();q.onsuccess=()=>{
         const activities=q.result.map(migrateActivity);for(const a of activities)tx.objectStore('actividades').put(a);
         const weeks=migrateWeeks(activities);for(const item of weeks)tx.objectStore('semanas').put(item);

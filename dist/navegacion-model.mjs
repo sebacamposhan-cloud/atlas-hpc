@@ -11,6 +11,17 @@ export const TARJETAS = [
   {id: 'herramientas', titulo: 'Herramientas', texto: 'Proyectos, filtros y capas', funciones: [['proyectos', 'Proyectos'], ['filtros', 'Filtros y capas'], ['mas', 'Más']],
     dibujo: '<path d="M30 28h100M30 50h100M30 72h100"/><rect class="f" x="52" y="21" width="16" height="14"/><rect class="f" x="96" y="43" width="16" height="14"/><rect class="f" x="66" y="65" width="16" height="14"/>'}
 ];
+// Libreta de la jerarquía de obra (jerarquia-model.mjs). Solo aparece con un perfil activo: sin perfil, la rueda es la de siempre.
+export const TARJETA_TAREAS = {id: 'tareas', titulo: 'Mis tareas', texto: 'Lo que te asignaron y lo de tu equipo', funciones: [['mias', 'Mis tareas'], ['asignar', 'Asignar'], ['equipo', 'Mi equipo']],
+  dibujo: '<rect x="40" y="10" width="80" height="80"/><path class="f" d="M40 10h14v80H40z"/><path d="M64 32l5 5 9-9M64 54l5 5 9-9M64 76h0"/><path d="M84 34h24M84 56h24M64 76h44"/>'};
+// Tarjetas y funciones que ve cada nivel. funciones = funcionesDe(perfil) de jerarquia-model.mjs; null = como hoy.
+export function tarjetasPara(funciones) {
+  if (!funciones) return TARJETAS;
+  const todas = [TARJETA_TAREAS, ...TARJETAS];
+  return funciones.tarjetas.map(id => todas.find(t => t.id === id)).filter(Boolean)
+    .map(t => t.id === 'tareas' ? {...t, funciones: t.funciones.filter(([f]) => funciones.tareas.includes(f))} : funciones.funciones[t.id] ? {...t, funciones: t.funciones.filter(([f]) => funciones.funciones[t.id].includes(f))} : t)
+    .filter(t => t.panel || t.funciones.length);
+}
 // Íconos de los botones flotantes (trazo de 24 unidades). Observaciones lleva la cámara.
 const trazo = cuerpo => `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${cuerpo}</svg>`;
 export const ICONOS = {
@@ -22,17 +33,20 @@ export const ICONOS = {
   proyectos: trazo('<rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 12h16M12 4v16"/><path d="M6.5 6.5h3v3h-3zM14.5 14.5h3v3h-3z" fill="currentColor"/>'),
   filtros: trazo('<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>'),
   mas: trazo('<circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/>'),
+  mias: trazo('<rect x="5" y="3" width="14" height="18" rx="1"/><path d="m8.5 9 1.5 1.5 3-3M8.5 15.5l1.5 1.5 3-3"/>'),
+  asignar: trazo('<circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M18 8v6M15 11h6"/>'),
+  equipo: trazo('<circle cx="8" cy="8" r="2.8"/><circle cx="16" cy="8" r="2.8"/><path d="M3 19a5 5 0 0 1 10 0M11 19a5 5 0 0 1 10 0"/>'),
   cerrar: trazo('<path d="M6 6l12 12M18 6 6 18"/>')
 };
 // Abren algo por un momento y no cambian la función activa del plano.
-const MOMENTANEAS = new Set(['resumen', 'proyectos', 'filtros', 'mas']);
-export const tarjeta = id => TARJETAS.find(t => t.id === id) || null;
+const MOMENTANEAS = new Set(['resumen', 'proyectos', 'filtros', 'mas', 'mias', 'asignar', 'equipo']);
+export const tarjeta = id => TARJETAS.find(t => t.id === id) || (id === 'tareas' ? TARJETA_TAREAS : null);
 export const momentanea = funcion => MOMENTANEAS.has(funcion);
 export const funcionDe = (idTarjeta, idFuncion) => tarjeta(idTarjeta)?.funciones.find(([id]) => id === idFuncion) || null;
 
 export function tituloNavegacion(idTarjeta, idFuncion) {
   const t = tarjeta(idTarjeta), f = funcionDe(idTarjeta, idFuncion);
-  return !t ? 'Plano' : f ? t.titulo + ' · ' + f[1] : t.titulo;
+  return !t ? 'Plano' : f && f[1] !== t.titulo ? t.titulo + ' · ' + f[1] : t.titulo;
 }
 
 // Lo último elegido en este equipo: el piso queda marcado en la portada y la función se retoma al entrar.

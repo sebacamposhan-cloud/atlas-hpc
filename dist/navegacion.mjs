@@ -1,5 +1,6 @@
 // Barra inferior, rueda de Control de obra y botones de función sobre el plano. La lógica vive en navegacion-model.mjs.
-import {TARJETAS, ICONOS, tarjeta as buscarTarjeta, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar} from './navegacion-model.mjs';
+import {TARJETAS, ICONOS, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar, tarjetasPara} from './navegacion-model.mjs';
+import {funcionesDe} from './jerarquia-model.mjs';
 import {crearFluido, arrastrar, crearOleaje} from './fluido.mjs';
 import {nivel} from './level.mjs';
 import {loadProtocolCatalog, loadProtocolType} from './protocol-catalog.mjs';
@@ -9,7 +10,8 @@ import {criticosPorTipo} from './protocol-critical.mjs';
 const memoria = () => { try { return localStorage; } catch { return {getItem: () => null, setItem: () => {}}; } };
 const quietud = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// ctx: {esc, toast, ui, cerrarModos, verProtocolos, escritorio}
+// ctx: {esc, toast, ui, cerrarModos, verProtocolos, escritorio, perfil, tareas}. perfil() es el de la jerarquía de obra:
+// con perfil activo la rueda muestra lo de su nivel y la libreta «Mis tareas»; sin perfil, la rueda de siempre.
 export function createNavegacion(ctx) {
   const {esc, ui} = ctx, $ = id => document.getElementById(id), main = document.querySelector('main');
   let actual = null, funcion = null, tipoAbierto = null;
@@ -18,14 +20,14 @@ export function createNavegacion(ctx) {
   barra.id = 'barraFunciones'; barra.hidden = true; barra.setAttribute('aria-label', 'Funciones');
   const rueda = document.createElement('section');
   rueda.id = 'ruedaObra'; rueda.hidden = true; rueda.setAttribute('aria-label', 'Control de obra');
-  rueda.innerHTML = `<div class="ruedaCabeza"><h2>Control de obra</h2><button type="button" id="ruedaCerrar" aria-label="Cerrar Control de obra">×</button></div>
-    <div class="ruedaPista" tabindex="-1">${TARJETAS.map(t => `<button type="button" class="ruedaTarjeta" data-tarjeta="${t.id}"><svg class="panelArt" viewBox="0 0 160 100" aria-hidden="true">${t.dibujo}</svg><strong>${esc(t.titulo)}</strong><small>${esc(t.texto)}</small></button>`).join('')}</div>`;
   const hoja = document.createElement('aside');
   hoja.id = 'hojaFuncion'; hoja.hidden = true;
   hoja.innerHTML = '<div class="hojaCabeza"><h2 id="hojaTitulo"></h2><button type="button" id="hojaCerrar" aria-label="Cerrar">×</button></div><div id="hojaCuerpo" class="hojaCuerpo"></div>';
   hoja.setAttribute('aria-labelledby', 'hojaTitulo');
   main.append(barra, hoja, rueda);
-  const pista = rueda.querySelector('.ruedaPista'), tarjetas = [...pista.querySelectorAll('.ruedaTarjeta')];
+  // Tarjetas de esta cuenta. Se vuelven a armar si cambia su perfil (después de sincronizar).
+  let lista = TARJETAS, firma = '', pista, tarjetas = [], giro, oleaje;
+  const buscarTarjeta = id => lista.find(t => t.id === id) || null;
 
   // Con el cursor encima se ilumina la tarjeta que tiene debajo, también mientras la rueda se mueve.
   let cursor = null;
@@ -49,17 +51,42 @@ export function createNavegacion(ctx) {
     });
     if (cursor) iluminar();
   }
-  const giro = crearFluido({cantidad: tarjetas.length, inicial: 1, quieto: quietud, centro, dibujar: p => { posiciones = p; pintar(); }});
-  const oleaje = crearOleaje({cantidad: tarjetas.length, quieto: quietud, rapidez: .3, dibujar: (x, f, h) => { lado = x; fila = f; fuerza = h; pintar(); }});
-  arrastrar(pista, giro, {eje: 'x', paso: distancia});
-  pista.addEventListener('pointermove', e => {
-    if (e.pointerType !== 'mouse') return;
-    cursor = [e.clientX, e.clientY]; iluminar();
-    if (e.buttons) return;
-    const r = pista.getBoundingClientRect(), medio = r.left + r.width / 2;
-    oleaje.mover(Math.max(-1, Math.min(1, (e.clientX - medio) / (r.width / 2))), giro.objetivo() + (e.clientX - medio) / distancia());
-  });
-  pista.addEventListener('pointerleave', () => { cursor = null; iluminar(); oleaje.soltar(); });
+  function construirRueda() {
+    const nuevas = tarjetasPara(funcionesDe(ctx.perfil?.() || null)), clave = nuevas.map(t => t.id + ':' + t.funciones.map(([f]) => f).join(',')).join('|');
+    if (clave === firma && pista) return false;
+    firma = clave; lista = nuevas; posiciones = []; lado = []; fila = []; fuerza = [];
+    rueda.innerHTML = `<div class="ruedaCabeza"><h2>Control de obra</h2><button type="button" id="ruedaCerrar" aria-label="Cerrar Control de obra">×</button></div>
+    <div class="ruedaPista" tabindex="-1">${lista.map(t => `<button type="button" class="ruedaTarjeta" data-tarjeta="${t.id}"><svg class="panelArt" viewBox="0 0 160 100" aria-hidden="true">${t.dibujo}</svg><strong>${esc(t.titulo)}</strong><small>${esc(t.texto)}</small>${t.id === 'tareas' ? '<b class="ruedaContador" hidden></b>' : ''}</button>`).join('')}</div>`;
+    pista = rueda.querySelector('.ruedaPista'); tarjetas = [...pista.querySelectorAll('.ruedaTarjeta')];
+    giro = crearFluido({cantidad: tarjetas.length, inicial: Math.min(1, tarjetas.length - 1), quieto: quietud, centro, dibujar: p => { posiciones = p; pintar(); }});
+    oleaje = crearOleaje({cantidad: tarjetas.length, quieto: quietud, rapidez: .3, dibujar: (x, f, h) => { lado = x; fila = f; fuerza = h; pintar(); }});
+    arrastrar(pista, giro, {eje: 'x', paso: distancia});
+    pista.addEventListener('pointermove', e => {
+      if (e.pointerType !== 'mouse') return;
+      cursor = [e.clientX, e.clientY]; iluminar();
+      if (e.buttons) return;
+      const r = pista.getBoundingClientRect(), medio = r.left + r.width / 2;
+      oleaje.mover(Math.max(-1, Math.min(1, (e.clientX - medio) / (r.width / 2))), giro.objetivo() + (e.clientX - medio) / distancia());
+    });
+    pista.addEventListener('pointerleave', () => { cursor = null; iluminar(); oleaje.soltar(); });
+    tarjetas.forEach(t => t.onclick = () => elegirTarjeta(t.dataset.tarjeta));
+    $('ruedaCerrar').onclick = () => cerrarRueda(true);
+    giro.fijar(centro() ?? indiceDe(actual || 'recintos'));
+    contar();
+    return true;
+  }
+  // Contador de la libreta: lo que la persona tiene por hacer más lo que debe confirmar.
+  function contar() {
+    const n = ctx.tareas?.contador?.() || 0, texto = n > 99 ? '99+' : String(n);
+    const enTarjeta = rueda.querySelector('.ruedaContador');
+    if (enTarjeta) { enTarjeta.hidden = !n; enTarjeta.textContent = texto; enTarjeta.setAttribute('aria-label', n + ' pendientes'); }
+    let enBarra = $('bottomObra').querySelector('.obraContador');
+    if (!enBarra) { enBarra = document.createElement('b'); enBarra.className = 'obraContador'; $('bottomObra').append(enBarra); }
+    const conLibreta = lista.some(t => t.id === 'tareas');
+    enBarra.hidden = !n || !conLibreta; enBarra.textContent = texto; enBarra.setAttribute('aria-label', n + ' tareas pendientes');
+    const boton = barra.querySelector('[data-funcion=mias] .funcionCirculo');
+    if (boton) { let b = boton.querySelector('.funcionContador'); if (!b) { b = document.createElement('b'); b.className = 'funcionContador'; boton.append(b); } b.hidden = !n; b.textContent = texto; }
+  }
   addEventListener('resize', () => { if (!rueda.hidden) giro.fijar(centro() ?? giro.indice()); });
   const indiceDe = id => Math.max(0, tarjetas.findIndex(t => t.dataset.tarjeta === id));
   function abrirRueda() {
@@ -78,7 +105,7 @@ export function createNavegacion(ctx) {
 
   function abrirHoja(titulo) { $('hojaTitulo').textContent = titulo; $('hojaCuerpo').innerHTML = '<p role="status">Cargando…</p>'; hoja.hidden = false; document.body.classList.add('hojaAbierta'); return $('hojaCuerpo'); }
   function cerrarHoja() { if (hoja.hidden) return; hoja.hidden = true; document.body.classList.remove('hojaAbierta'); $('hojaCuerpo').replaceChildren(); }
-  $('hojaCerrar').onclick = () => { cerrarHoja(); if (['tipos', 'criticos'].includes(funcion)) { funcion = null; dibujarBarra(); } };
+  $('hojaCerrar').onclick = () => { cerrarHoja(); if (['tipos', 'criticos', 'mias', 'asignar', 'equipo'].includes(funcion)) { funcion = null; dibujarBarra(); } };
 
   function dibujarBarra() {
     const t = buscarTarjeta(actual);
@@ -91,6 +118,7 @@ export function createNavegacion(ctx) {
       barra.innerHTML = t.funciones.map(([id, nombre], i) => `<button type="button" class="funcionFlotante" style="--n:${i}" data-funcion="${id}" aria-pressed="false"><span class="funcionCirculo">${ICONOS[id]}</span><span class="funcionNombre">${esc(nombre)}</span></button>`).join('') + `<button type="button" id="funcionesCerrar" class="funcionFlotante" style="--n:${t.funciones.length}" aria-label="Cerrar ${esc(t.titulo)}"><span class="funcionCirculo">${ICONOS.cerrar}</span></button>`;
       barra.querySelectorAll('[data-funcion]').forEach(b => b.onclick = () => elegirFuncion(b.dataset.funcion));
       $('funcionesCerrar').onclick = cerrarTarjeta;
+      contar();
     }
     if (!t) delete barra.dataset.tarjeta;
     barra.querySelectorAll('[data-funcion]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.funcion === funcion)));
@@ -109,10 +137,13 @@ export function createNavegacion(ctx) {
     if (!t) return;
     cerrarRueda();
     if (t.panel) { ui.abrirPanel(t.panel); return; }
-    if (actual === id) return;
-    cerrarHoja(); ctx.cerrarModos();
-    if (actual === 'recintos' && funcion) ui.setLayer(null);
-    actual = id; funcion = null; recordar(); dibujarBarra();
+    if (actual !== id) {
+      cerrarHoja(); ctx.cerrarModos();
+      if (actual === 'recintos' && funcion) ui.setLayer(null);
+      actual = id; funcion = null; recordar(); dibujarBarra();
+    }
+    // Una libreta con una sola función (supervisores y capataces) se abre directo: un toque menos.
+    if (id === 'tareas' && t.funciones.length === 1) elegirFuncion(t.funciones[0][0]);
   }
 
   async function listaProtocolos(titulo, cargar, vacio) {
@@ -158,6 +189,7 @@ export function createNavegacion(ctx) {
     else if (id === 'proyectos') $('markingOpen')?.click();
     else if (id === 'filtros') ui.openFilters();
     else if (id === 'mas') verMas();
+    else if (actual === 'tareas') { funcion = id; const nombre = buscarTarjeta('tareas')?.funciones.find(([f]) => f === id)?.[1] || 'Mis tareas'; ctx.tareas?.mostrar(id, abrirHoja(nombre), {titulo: texto => { $('hojaTitulo').textContent = texto; }, cerrar: () => { cerrarHoja(); funcion = null; dibujarBarra(); }}); }
     recordar(); dibujarBarra();
   }
   // «Limpiar» apaga los colores del plano: la función de Recintos deja de verse activa. La tarjeta sigue abierta.
@@ -173,8 +205,13 @@ export function createNavegacion(ctx) {
   }
 
   $('bottomObra').onclick = () => rueda.hidden ? abrirRueda() : cerrarRueda(true);
-  $('ruedaCerrar').onclick = () => cerrarRueda(true);
-  tarjetas.forEach(t => t.onclick = () => elegirTarjeta(t.dataset.tarjeta));
+  construirRueda();
+  // Al sincronizar puede llegar (o irse) el perfil: se rearma la rueda y se actualiza el contador.
+  function alCambiarTareas() {
+    if (construirRueda() && actual && !buscarTarjeta(actual)) cerrarTarjeta();
+    else if (actual && barra.dataset.tarjeta && buscarTarjeta(actual)?.funciones.map(([f]) => f).join() !== [...barra.querySelectorAll('[data-funcion]')].map(b => b.dataset.funcion).join()) { delete barra.dataset.tarjeta; dibujarBarra(); }
+    contar();
+  }
   document.addEventListener('keydown', e => {
     if (rueda.hidden) return;
     if (e.key === 'Escape') cerrarRueda(true);
@@ -187,5 +224,7 @@ export function createNavegacion(ctx) {
   });
   window.addEventListener('atlas-floor-home', () => { cerrarRueda(); cerrarHoja(); });
   window.addEventListener('atlas-piso-visible', dibujarBarra);
-  return {abrirRueda, cerrarRueda, cerrarHoja, retomar, volverProtocolos, dibujarBarra, alLimpiar};
+  // Abre una función de la libreta desde otro módulo (por ejemplo, «Asignar a mi equipo» en Last Planner).
+  function abrirTareas(id) { if (!buscarTarjeta('tareas')?.funciones.some(([f]) => f === id)) return false; cerrarRueda(); if (actual !== 'tareas') { cerrarHoja(); ctx.cerrarModos(); if (actual === 'recintos' && funcion) ui.setLayer(null); actual = 'tareas'; funcion = null; dibujarBarra(); } elegirFuncion(id); return true; }
+  return {abrirRueda, cerrarRueda, cerrarHoja, retomar, volverProtocolos, dibujarBarra, alLimpiar, alCambiarTareas, abrirTareas, contar};
 }
