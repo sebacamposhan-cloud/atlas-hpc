@@ -1,14 +1,15 @@
 // Movimiento fluido, como agua: lo tomas, te sigue con suavidad, al soltar sigue un poco y frena solo. Cada elemento llega
 // con un leve retraso según su distancia, y eso forma la onda. Lo usan la rueda de Control de obra y los pisos apilados.
-const ROZAMIENTO = .93, RESORTE = .2, RETRASO = .55, ELASTICO = .3, VELOCIDAD_MINIMA = .006, MARGEN = .0005;
+const ROZAMIENTO = .9, RESORTE = .3, RETRASO = .4, ELASTICO = .3, VELOCIDAD_MINIMA = .008, MARGEN = .0005;
 
 // dibujar(posiciones): una posición por elemento, en unidades de elemento. alCambiar(i): cambió el elemento más cercano.
-export function crearFluido({cantidad, inicial = 0, dibujar, alCambiar = () => {}, cuadro = f => requestAnimationFrame(f), quieto = () => false}) {
-  const ultimo = cantidad - 1, tope = v => Math.max(0, Math.min(ultimo, v)), asentar = v => Math.round(tope(v));
+// centro(): punto fijo de reposo, o null. Con centro, lo que se mueva con la mano vuelve ahí y no se asienta en otro elemento.
+export function crearFluido({cantidad, inicial = 0, dibujar, alCambiar = () => {}, cuadro = f => requestAnimationFrame(f), quieto = () => false, centro = () => null}) {
+  const ultimo = cantidad - 1, tope = v => Math.max(0, Math.min(ultimo, v)), redondo = v => Math.round(tope(v)), asentar = v => centro() ?? redondo(v);
   // Pasado el borde se resiste, como una cuerda elástica.
-  const estirar = v => v < 0 ? v * ELASTICO : v > ultimo ? ultimo + (v - ultimo) * ELASTICO : v;
+  const estirar = v => { const c = centro(); return c !== null ? c + (v - c) * ELASTICO : v < 0 ? v * ELASTICO : v > ultimo ? ultimo + (v - ultimo) * ELASTICO : v; };
   const pos = Array.from({length: cantidad}, () => inicial);
-  let objetivo = inicial, velocidad = 0, tomado = false, pendiente = false, indice = asentar(inicial);
+  let objetivo = inicial, velocidad = 0, tomado = false, pendiente = false, indice = redondo(inicial);
   const pedir = () => { if (!pendiente) { pendiente = true; cuadro(paso); } };
   function paso() {
     pendiente = false;
@@ -23,7 +24,7 @@ export function crearFluido({cantidad, inicial = 0, dibujar, alCambiar = () => {
       pos[i] = Math.abs(meta - n) < MARGEN ? meta : n;
       if (pos[i] !== meta) sigue = true;
     }
-    const cercano = asentar(meta);
+    const cercano = redondo(meta);
     if (cercano !== indice) { indice = cercano; alCambiar(cercano); }
     dibujar(pos);
     if (sigue) pedir();
@@ -33,36 +34,16 @@ export function crearFluido({cantidad, inicial = 0, dibujar, alCambiar = () => {
     objetivo: () => objetivo,
     tomar() { tomado = true; velocidad = 0; pedir(); },
     llevar(v) { objetivo = v; pedir(); },
-    soltar(v = 0) { tomado = false; velocidad = quieto() ? 0 : v; if (!velocidad) objetivo = asentar(objetivo); pedir(); },
+    soltar(v = 0) { tomado = false; velocidad = quieto() || centro() !== null ? 0 : v; if (!velocidad) objetivo = asentar(objetivo); pedir(); },
     ir(i) { tomado = false; velocidad = 0; objetivo = tope(i); pedir(); },
-    fijar(i) { tomado = false; velocidad = 0; objetivo = tope(i); indice = asentar(i); pos.fill(objetivo); dibujar(pos); },
+    fijar(i) { tomado = false; velocidad = 0; objetivo = tope(i); indice = redondo(i); pos.fill(objetivo); dibujar(pos); },
     redibujar() { dibujar(pos); }
   };
 }
 
-// Pasar el cursor sin apretar, como arrastrar un palito por el agua: lo que está debajo acompaña un poco el movimiento y,
-// al detenerse, se asienta solo. La fuerza es menor que al arrastrar, así una tarjeta sigue siendo fácil de alcanzar.
-export function seguirCursor(elemento, fluido, {paso, sentido = -1, fuerza = .35, quieto = () => false, espera = 120}) {
-  let anterior = null, ultimoCambio = 0, tiempo = 0, ritmo = 0, movio = false;
-  const asentar = () => { if (movio) { movio = false; fluido.soltar(ritmo); } ritmo = 0; };
-  elemento.addEventListener('pointermove', e => {
-    if (e.pointerType !== 'mouse' || e.buttons || quieto()) { anterior = null; return; }
-    if (anterior === null) { anterior = e.clientX; ultimoCambio = e.timeStamp; return; }
-    const d = e.clientX - anterior, ms = Math.max(1, e.timeStamp - ultimoCambio);
-    anterior = e.clientX; ultimoCambio = e.timeStamp;
-    if (!d) return;
-    if (!movio) { movio = true; fluido.tomar(); }
-    const avance = sentido * d * fuerza / paso();
-    fluido.llevar(fluido.objetivo() + avance);
-    ritmo = avance / ms * 16.7;
-    clearTimeout(tiempo); tiempo = setTimeout(asentar, espera);
-  });
-  elemento.addEventListener('pointerleave', () => { anterior = null; clearTimeout(tiempo); asentar(); });
-}
-
-// Oleaje al pasar el cursor por los pisos: cada elemento se inclina hacia el cursor con su propio retraso y vuelve al salir.
+// Oleaje al pasar el cursor: cada elemento se inclina hacia el cursor con su propio retraso y vuelve al salir.
 // No cambia la selección. dibujar(x, fila, fuerza): lado (-1 a 1), fila bajo el cursor y fuerza (0 a 1) por elemento.
-export function crearOleaje({cantidad, dibujar, cuadro = f => requestAnimationFrame(f), quieto = () => false}) {
+export function crearOleaje({cantidad, dibujar, cuadro = f => requestAnimationFrame(f), quieto = () => false, rapidez = .24}) {
   const x = Array(cantidad).fill(0), fila = Array(cantidad).fill(0), fuerza = Array(cantidad).fill(0);
   let metaX = 0, metaFila = 0, metaFuerza = 0, pendiente = false, primera = true;
   const acercar = (lista, i, meta, k) => { const n = lista[i] + (meta - lista[i]) * k; lista[i] = Math.abs(meta - n) < .002 ? meta : n; return lista[i] !== meta; };
@@ -71,7 +52,7 @@ export function crearOleaje({cantidad, dibujar, cuadro = f => requestAnimationFr
     pendiente = false;
     let sigue = false;
     for (let i = 0; i < cantidad; i++) {
-      const k = quieto() ? 1 : .16 / (1 + .7 * Math.abs(i - metaFila));
+      const k = quieto() ? 1 : rapidez / (1 + .5 * Math.abs(i - metaFila));
       if (acercar(x, i, metaX, k)) sigue = true;
       if (acercar(fila, i, metaFila, k)) sigue = true;
       if (acercar(fuerza, i, metaFuerza, k)) sigue = true;

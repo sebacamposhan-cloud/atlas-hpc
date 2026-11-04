@@ -6,8 +6,23 @@
 
 /* Cabecera */
 body > header { margin-left: 0; }
-header #navToggle, header .brand, header #dashboard, header #detailToggle, #floorHomeButton, header #assistantOpen, header #diamondsOpen, header #diamondCatalogOpen { display: none !important; }
-body:not(.floorHome) header #offlineOpen { display: none; }
+header #navToggle, header .brand, header #dashboard, header #detailToggle, #floorHomeButton, header #diamondsOpen, header #diamondCatalogOpen { display: none !important; }
+/* Orden de la barra: piso, búsqueda, Asistente, Sin conexión y Cerrar sesión. En celular, los tres botones quedan solo con ícono. */
+header .project { order: 0; }
+.globalSearchWrap { order: 1; }
+header #assistantOpen { order: 2; }
+header #offlineOpen { order: 3; }
+header .logoutButton { order: 4; }
+header #assistantOpen, header #offlineOpen, header .logoutButton { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: none; min-width: 0; max-width: none; min-height: 40px; padding: 6px 10px; border: 1px solid var(--g-marca); background: #fff; color: var(--g-texto); font-size: 13px !important; font-weight: 600; line-height: 1; white-space: nowrap; }
+body.floorHome header #assistantOpen { display: none; }
+header .offlineButton.ready { background: #fff; color: var(--g-texto); border-color: var(--g-marca); }
+header .offlineButton.ready svg { color: var(--g-listo); }
+#offlineLabel { color: inherit; }
+header #offlineOpen:hover:not(:disabled) svg, header #assistantOpen:hover:not(:disabled) svg { color: inherit; }
+@media (max-width: 700px) {
+  header #assistantOpen, header #offlineOpen, header .logoutButton { width: 40px; padding: 0; }
+  header #assistantOpen span, header #offlineOpen span { display: none; }
+}
 header .project { display: block !important; flex: 0 0 auto; min-width: 0; font-size: 11px; line-height: 1.25; padding: 0; color: var(--g-texto); }
 header .project span { display: block; font-size: 11px; color: var(--g-texto2); white-space: nowrap; }
 #navPiso { font-size: 15px; font-weight: 800; color: var(--g-texto); white-space: nowrap; }
@@ -20,7 +35,7 @@ body.floorHome header .logoutButton { margin-left: 8px; }
 /* Espacio de trabajo y barra inferior */
 .workspace, body.hideRight .workspace, body.hideLeft .workspace, body.hideLeft.hideRight .workspace { margin-left: 0; height: calc(100dvh - var(--cabecera) - var(--barra-obra) - env(safe-area-inset-bottom)); }
 body.floorHome .workspace, body.floorHome.hideRight .workspace, body.floorHome.hideLeft .workspace, body.floorHome.hideLeft.hideRight .workspace { height: calc(100dvh - var(--cabecera)); }
-.bottomNav { display: grid; grid-template-columns: 1fr minmax(0, 1.7fr) 1fr; gap: 0; height: calc(var(--barra-obra) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); z-index: 35; background: #fff; }
+.bottomNav { display: grid; grid-template-columns: minmax(96px, 1fr) minmax(0, 3fr); gap: 0; height: calc(var(--barra-obra) + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); z-index: 35; background: #fff; }
 body.floorHome .bottomNav { display: none; }
 .bottomNav button, .bottomNav button.active { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-width: 0; height: 100%; padding: 4px 6px; border: 0; background: #fff; color: var(--g-texto); font-size: 12px; font-weight: 700; }
 .bottomNav button span { font-size: 18px; line-height: 1; }
@@ -137,6 +152,12 @@ body:not(.hideLeft) #barraFunciones { visibility: hidden; }
 .pisoEtiqueta.iluminado::before, .pisoEtiqueta.iluminado::after { background: var(--g-azul); }
 #floorExplorer #pisoContinuar { flex: none; align-self: center; width: 100%; max-width: 460px; min-height: 58px; border-radius: 14px !important; box-shadow: 0 8px 20px rgba(15, 84, 153, .28) !important; font-size: 18px; font-weight: 800; }
 #floorExplorer #pisoContinuar:disabled { background: #fff; color: var(--g-texto2); border-color: var(--g-regla); box-shadow: none !important; }
+#pisoAyuda { display: none; flex: none; margin: 0; text-align: center; font-size: 15px; font-weight: 600; color: var(--g-texto2); }
+@media (hover: hover) and (pointer: fine) {
+  #floorExplorer #pisoContinuar { display: none; }
+  #pisoAyuda { display: block; }
+  .pisosEscena { --placa: min(calc(100vw - 150px), calc((100dvh - 232px) / 1.5), 560px); }
+}
 #navLogo { display: none; height: 38px; width: auto; }
 body.floorHome #navLogo { display: block; }
 body.floorHome header .project b, body.floorHome header .project span { display: none; }

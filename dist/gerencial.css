@@ -12,6 +12,7 @@
   --g-regla: #8c8c8c;   /* líneas entre filas */
   --g-texto: #000;
   --g-texto2: #262626;  /* texto secundario */
+  --g-listo: #1a7f37;   /* estado correcto */
   --ink: #000; --muted: #262626; --line: #1b2a56; --paper: #fff; --teal: #0f5499; --navy: #1b2a56;
 }
 /* Google Sans Flex (SIL OFL 1.1, ver fonts/OFL.txt), variable en grosor, subconjunto latino de Fontsource 5.3.2.

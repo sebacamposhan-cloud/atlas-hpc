@@ -4,8 +4,8 @@ Pensada para capataces y jefes de terreno, que trabajan en un solo piso.
 
 ## Flujo
 
-1. Después de iniciar sesión se elige el piso entre las maquetas 3D apiladas. El último piso queda marcado.
-2. El plano del piso queda de base, con búsqueda, zoom, **Pisos**, **Control de obra** y **Sin conexión**.
+1. Después de iniciar sesión se elige el piso entre las maquetas 3D apiladas. El último piso queda marcado. En celular y tablet se toca y se presiona «Continuar»; en computador se entra con doble clic.
+2. El plano del piso queda de base. Arriba están la búsqueda, **Asistente**, **Sin conexión** y **Cerrar sesión**; abajo, **Pisos** y **Control de obra**.
 3. **Control de obra** abre una rueda de tarjetas desde abajo, sin salir del plano.
 4. Cada tarjeta devuelve el plano con sus botones de función, circulares y flotantes en el borde izquierdo:
 
@@ -20,7 +20,7 @@ Atlas recuerda en cada equipo el último piso y la última función. Recintos se
 
 La rueda y los pisos se mueven con el mouse, el dedo o la rueda del mouse (`dist/fluido.mjs`): siguen con suavidad, al soltar frenan solos y los vecinos llegan con un leve retraso. En los pisos, arrastrar cambia el piso elegido.
 
-Pasar el cursor sin apretar también los mueve e ilumina en azul lo que tiene debajo. La rueda acompaña al cursor y se asienta al detenerse. En los pisos, el azul y la apertura siguen al cursor con el mismo flujo del arrastre; al salir, vuelven al piso elegido. El piso queda elegido, con ✓, al tocarlo, arrastrarlo o usar la rueda del mouse, y el botón dice a qué piso entra: «Continuar a Piso 2».
+Pasar el cursor también ilumina en azul lo que tiene debajo. Si las cuatro tarjetas caben en la pantalla, la rueda queda centrada: la tarjeta bajo el cursor se acerca sin desplazar el grupo, y lo que se mueva con la mano vuelve al centro. En los pisos, el azul y la apertura siguen al cursor con el mismo flujo del arrastre; al salir, vuelven al piso elegido. El piso queda elegido, con ✓, al tocarlo, arrastrarlo o usar la rueda del mouse.
 
 ## Menú del recinto
 

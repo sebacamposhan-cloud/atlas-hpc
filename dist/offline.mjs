@@ -72,7 +72,6 @@ async function download(pack) {
 }
 const openOffline = async () => { $('offlineDialog').showModal();await setup();if (registration?.active) await refresh().catch(e => {failure=e.message;paint();}); };
 $('offlineOpen').onclick = openOffline;
-$('bottomOffline').onclick = openOffline;
 $('offlineClose').onclick = () => $('offlineDialog').close();
 $('offlineDialog').addEventListener('click', event => {if(event.target === $('offlineDialog')) $('offlineDialog').close();});
 $('offlineSave').onclick = () => download('plan');
