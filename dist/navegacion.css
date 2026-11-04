@@ -180,6 +180,11 @@ body.floorHome header .project b, body.floorHome header .project span { display:
 .obsRoom .obsFichaCabecera .primary { width: 100%; min-height: 48px; font-size: 15px; }
 .obsPendientes { margin-top: 6px; }
 .protRecinto > summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; font-size: 14px; }
+/* Flecha de los submenús: apunta hacia abajo cerrado y hacia arriba desplegado. */
+.protRecinto > summary, .obsCerradas > summary { display: flex; align-items: center; gap: 12px; list-style: none; cursor: pointer; }
+.protRecinto > summary::-webkit-details-marker, .obsCerradas > summary::-webkit-details-marker { display: none; }
+.protRecinto > summary::after, .obsCerradas > summary::after { content: ""; flex: none; width: 9px; height: 9px; margin-top: -4px; border-right: 2px solid var(--g-marca); border-bottom: 2px solid var(--g-marca); transform: rotate(45deg); transition: transform .15s ease-out; }
+.protRecinto[open] > summary::after, .obsCerradas[open] > summary::after { margin-top: 4px; transform: rotate(-135deg); }
 #detail.fichaEnMenu > .detailCode, #detail.fichaEnMenu > .avanceRecinto, #detail.fichaEnMenu > .obsRoom, #detail.fichaEnMenu > .protocolosPrevios, #detail.fichaEnMenu > .protRecinto { display: none; }
 .romboPartida { border: 0; padding: 0; margin-top: 0; }
 .romboVolver { justify-self: start; min-height: 44px; padding: 6px 12px; font-size: 14px; font-weight: 700; }
@@ -190,6 +195,7 @@ body.floorHome header .project b, body.floorHome header .project span { display:
 .romboEncabezado h4 { font-size: 16px; }
 .romboEncabezado .romboChip { order: 0; }
 .romboDesc { font-size: 13px; }
+#detail .romboTipo { margin: 2px 0 0; font-size: 26px; line-height: 1.15; font-weight: 800; letter-spacing: -.3px; color: var(--g-texto); }
 .romboPartidas li { padding: 0; border: 1px solid var(--g-marca); }
 .romboPartidaCab, .romboPartidaCab:hover:not(:disabled) { display: flex; justify-content: space-between; align-items: center; gap: 4px 10px; flex-wrap: wrap; width: 100%; min-height: 56px; padding: 8px 10px; border: 0; outline: 0; background: #fff; text-align: left; font-size: 13px; font-weight: 500; white-space: normal; }
 .romboPartidaCab[aria-expanded=true] { border-bottom: 1px solid var(--g-marca); }
@@ -215,6 +221,9 @@ body.floorHome header .project b, body.floorHome header .project span { display:
 .palancaRiel .palancaParada:focus-visible { outline: 2px solid var(--g-cian); }
 .previosLista .palancas { max-width: 180px; }
 @media (min-width: 1024px) { .palancas { max-width: 560px; } }
+
+/* Recinto elegido o hallado en la búsqueda: iluminado en azul sobre el plano */
+#selectionHighlight .selectionOutline { fill: var(--g-azul); fill-opacity: .28; fill-rule: evenodd; }
 
 /* Con la ficha bajada, la barra del recinto queda sobre la navegación inferior */
 @media (max-width: 1023px), (pointer: coarse) {
