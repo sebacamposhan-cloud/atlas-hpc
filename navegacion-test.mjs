@@ -17,7 +17,8 @@ for (const m of MODULOS) assert.ok(m.titulo && m.texto && m.dibujo, m.id);
 
 // Tarjetas de cada módulo: un panel, una acción sobre el plano, una función de su grupo o sus botones flotantes.
 assert.deepEqual(cartasDelModulo(TARJETAS, 'control').map(t => t.id), ['lastplanner', 'resumen', 'herramientas']);
-assert.deepEqual(cartasDelModulo(TARJETAS, 'plano').map(t => t.id), ['recintos', 'capas', 'puertas']);
+assert.deepEqual(cartasDelModulo(TARJETAS, 'plano').map(t => t.id), ['recintos', 'capas', 'puertas', 'impermeabilizacion']);
+assert.deepEqual(tarjeta('impermeabilizacion').niveles,['N-1']);
 assert.equal(tarjeta('puertas').accion, 'puertas', 'Puertas abre su plano propio');
 assert.deepEqual(cartasDelModulo(TARJETAS, 'protocolos').map(t => t.id), ['tipos', 'criticos', 'matriz']);
 assert.equal(tarjeta('lastplanner').panel, 'lastplanner');
@@ -65,7 +66,7 @@ assert.equal(pisoParaAbrir([], 'N-1'), null);
   const capataz = tarjetasPara(funcionesDe(perfil(4)));
   assert.deepEqual(cartasDelModulo(capataz, 'control').map(t => t.id), ['tareas', 'lastplanner', 'herramientas'], 'Last Planner para su reporte diario; sin el resumen de gerencia');
   assert.deepEqual(capataz.find(t => t.id === 'herramientas').funciones.map(([id]) => id), ['proyectos', 'mas'], 'Proyectos completo para supervisor o capataz');
-  assert.deepEqual(cartasDelModulo(capataz, 'plano').map(t => t.id), ['recintos', 'capas', 'puertas']);
+  assert.deepEqual(cartasDelModulo(capataz, 'plano').map(t => t.id), ['recintos', 'capas', 'puertas', 'impermeabilizacion']);
   assert.deepEqual(cartasDelModulo(capataz, 'protocolos').map(t => t.id), ['tipos', 'criticos']);
   assert.deepEqual(capataz[0].funciones.map(([id]) => id), ['mias']);
   assert.deepEqual(capataz.find(t => t.id === 'recintos').funciones.map(([id]) => id), ['avance', 'observaciones'], 'el resumen de gerencia no va al capataz');

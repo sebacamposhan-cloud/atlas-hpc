@@ -99,7 +99,7 @@ export const GRUPOS = [
   {selector: '.lpPlanChooser [role=radiogroup]', boton: '[role=radio]', tamano: 'grande'},
   {selector: '.obsStateTabs', boton: 'button', tamano: 'media'},
   {selector: '.lpDays', boton: 'button', tamano: 'media'},
-  {selector: '.planTypes', boton: 'button', tamano: 'baja'},
+  {selector: '.planTypes:not([data-sin-flujo])', boton: 'button', tamano: 'baja'},
   {selector: '.filterTiposPlano', boton: 'button', tamano: 'baja'},
   {selector: '.lpSpatialModes', boton: 'button', tamano: 'baja'},
   // Formularios y listas. soloVisibles: la búsqueda de la lista esconde filas.

@@ -47,7 +47,8 @@ export function createNavegacion(ctx) {
   const tituloModulo = () => moduloDe(modulo).titulo;
 
   function construirRueda() {
-    const todas = tarjetasPara(funcionesDe(ctx.perfil?.() || null)), nuevas = ctx.escritorio() ? todas : paraTerreno(todas), cartas = cartasDelModulo(nuevas, modulo), clave = modulo + '|' + nuevas.map(t => t.id + ':' + t.funciones.map(([f]) => f).join(',')).join('|');
+    const permitidas = tarjetasPara(funcionesDe(ctx.perfil?.() || null)), todas = permitidas.filter(t=>!t.niveles||t.niveles.includes(nivel.id));
+    const nuevas = ctx.escritorio() ? todas : paraTerreno(todas), cartas = cartasDelModulo(nuevas, modulo), clave = modulo + '|' + nuevas.map(t => t.id + ':' + t.funciones.map(([f]) => f).join(',')).join('|');
     if (clave === firma && pista) return false;
     firma = clave; lista = nuevas;
     rueda.setAttribute('aria-label', tituloModulo());
@@ -177,6 +178,7 @@ export function createNavegacion(ctx) {
     if (t.panel === 'lastplanner') ctx.lastplanner?.verPiso(pisoVisto);
     if (t.panel) { ui.abrirPanel(t.panel, t.vista); return; }
     if (t.accion === 'puertas') { cerrarHoja(); ctx.cerrarModos(); ctx.abrirPuertas?.(); return; }
+    if (t.accion === 'impermeabilizacion') { cerrarHoja(); ctx.cerrarModos(); ctx.abrirImpermeabilizacion?.(); return; }
     if (t.accion) { cerrarHoja(); ctx.cerrarModos(); ui.openFilters(); return; }
     if (t.grupo) { cambiarTarjeta(t.grupo); elegirFuncion(t.funcion); return; }
     cambiarTarjeta(id);

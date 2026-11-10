@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {createHash} from 'node:crypto';
+import {validateMarking} from './dist/marking-model.mjs';
+import {containsPoint} from './dist/contour-geometry.mjs';
+import {nuevoAvanceIMP,registrarAvanceIMP,ultimoAvanceIMP,impPath} from './dist/impermeabilizacion-model.mjs';
+import {paqueteProyecto,copiaProyecto,crearSincronizador} from './dist/nube-sync.mjs';
+const c=JSON.parse(fs.readFileSync('dist/impermeabilizacion/s01.json'));
+assert.equal(c.rooms.length,326);assert.equal(new Set(c.rooms.map(r=>r.id)).size,326);
+assert.equal(c.rooms.filter(r=>/^(CT|CU)\./.test(r.code)).length,44);
+assert.equal(c.registration.checks.length,41);assert(c.registration.maxErrorPoints<.1);
+assert.equal(createHash('sha256').update(fs.readFileSync('dist/source/imp-s01.pdf')).digest('hex'),c.document.sha256);
+assert.deepEqual(c.uncontouredCodes,['9.1.3.1.9-1','9.1.3.1.9-2','RT.(-1)-14']);
+for(const r of c.rooms)for(const p of r.parts)for(const ring of [p.polygon,...p.holes]){assert(ring.length>=3);assert(ring.every(([x,y])=>x>=0&&y>=0&&x<=1100&&y<=1560));}
+const room=c.rooms.find(r=>r.code==='3.1.1.4.1-2'),corridor=c.rooms.find(r=>r.code==='CT.F.(-1)-4');assert(room&&corridor);assert(impPath(room.parts).includes('Z'));
+const withHole=c.rooms.find(r=>r.parts.some(p=>p.holes.length));assert(withHole);const hole=withHole.parts.find(p=>p.holes.length).holes[0];const center=hole.reduce((v,p)=>v.map((x,i)=>x+p[i]/hole.length),[0,0]);assert(!containsPoint(withHole.parts,center),'holes cannot select a room');
+let d=nuevoAvanceIMP(c,'QA', '2026-11-10T10:00:00Z');
+d=registrarAvanceIMP(d,room,{state:'parcial',date:'2026-11-09',note:'Prueba QA',author:'QA',id:'event1',at:'2026-11-10T10:01:00Z'});
+assert.strictEqual(registrarAvanceIMP(d,room,{state:'parcial',date:'2026-11-09',note:'Prueba QA',author:'QA',id:'duplicate'}),d);
+const before=structuredClone(d);
+d=registrarAvanceIMP(d,room,{state:'terminado',date:'2026-11-10',author:'QA',id:'event2',at:'2026-11-10T10:02:00Z'});
+d=registrarAvanceIMP(d,corridor,{state:'ejecucion',date:'2026-11-10',author:'QA',id:'event3',at:'2026-11-10T10:03:00Z'});
+assert.deepEqual(d.history[0],before.history[0]);assert.equal(ultimoAvanceIMP(d,room.id,'2026-11-09').state,'parcial');assert.equal(ultimoAvanceIMP(d,room.id).state,'terminado');assert.equal(ultimoAvanceIMP(d,corridor.id).state,'ejecucion');
+assert.equal(validateMarking(d),d);assert.equal(validateMarking({...paqueteProyecto(d).doc,version:1}).history.length,3);assert.equal(validateMarking(copiaProyecto(d,'conflict-copy','2026-11-10T11:00:00Z')).history.length,3);
+for(const values of [{state:'inventado'},{date:'2026-02-30'},{author:''},{id:'event1'}])assert.throws(()=>registrarAvanceIMP(d,room,{state:'observado',date:'2026-11-10',author:'QA',id:'event4',...values}));
+assert(!('areaM2' in room));assert(!('quantity' in d));assert(fs.statSync('dist/impermeabilizacion/s01-export.pdf').size>100000);
+// Actual project synchronizer: one device uploads, another retrieves the same IMP project.
+const remote=new Map();
+const api=async(method,path,body)=>{if(method==='GET')return {registros:[...remote.values()]};assert.equal(body.tipo,'proyecto');const old=remote.get(body.id);assert.equal(body.version,old?.version||0);const row={...body,version:(old?.version||0)+1,updated_at:'2026-11-10T12:00:00Z'};remote.set(row.id,row);return row;};
+const device=initial=>{let docs=initial;const versions=new Map();return {local:{proyectos:async()=>docs,escribirProyecto:async x=>{const v=validateMarking({...x,version:1});docs=[v];return v;},crearProyecto:async x=>{docs.push(validateMarking(x));return x;},observaciones:async()=>[],idsFotos:async()=>new Set()},meta:{leer:async k=>versions.get(k),escribir:async(k,v)=>versions.set(k,v),desde:async()=>null,guardarDesde:async()=>{}},docs:()=>docs};};
+const first=device([d]),second=device([]);const push=await crearSincronizador({api,...first})('editor');assert.equal(push.subidos,1);const pull=await crearSincronizador({api,...second})('editor');assert.equal(pull.bajados,1);assert.deepEqual(second.docs()[0].history,d.history);assert.equal((await crearSincronizador({api,...second})('editor')).subidos,0);
+console.log('IMP: original SHA256, 41-axis registration, 326 contours / 44 corridors, holes, stable IDs, independent append-only progress, date cuts, duplicate prevention, cloud project validation and conflict copies passed.');
