@@ -1,5 +1,7 @@
 // Convierte el plano vectorial del nivel 2 (extraído de los DWG) al formato de Atlas.
-// Entrada: data/n02/plano.json y data/n02/fuentes.json. Salida: dist/n02/.
+// Entrada: data/n02/plano.json, data/n02/fuentes.json y data/n02/contornos-recalculados.json. Salida: dist/n02/.
+// Contornos: el recalculado desde las láminas DWG (scripts/n02-plano/recalcular-contornos.mjs) si el recinto cierra; si no,
+// el de plano.json corrido con el desfase medido, para que calce con los muros del plano dibujado.
 // Uso: node scripts/import-n02.mjs
 import fs from 'node:fs';
 import path from 'node:path';
@@ -70,7 +72,9 @@ const areaM2 = ring => { let a = 0; for (let i = 0; i < ring.length; i++) { cons
 const sinCruces = p => { const x = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]); for (let i = 0; i < p.length; i++) for (let j = i + 2; j < p.length; j++) { if (i === 0 && j === p.length - 1) continue; const a = p[i], b = p[(i + 1) % p.length], c = p[j], d = p[(j + 1) % p.length]; if (x(a, b, c) * x(a, b, d) < 0 && x(c, d, a) * x(c, d, b) < 0) return false; } return true; };
 // Si el contorno era casi todo arco (no queda forma válida), se usa una superficie auxiliar de selección: un cuadrado
 // de un cuarto de la superficie declarada centrado en el rótulo. Permite tocar el recinto sin inventar un límite.
-let rectificados = 0, auxiliares = 0; const seleccion = []; // superficies auxiliares (mismo formato que dist/selection.json)
+const recalculo = leer('data/n02/contornos-recalculados.json') || {desfase: [0, 0], recintos: {}}, [desX, desY] = recalculo.desfase;
+const puntos = v => { const p = []; for (let i = 0; i < v.length; i += 2) p.push([v[i], v[i + 1]]); return p; };
+let rectificados = 0, auxiliares = 0, recalculados = 0; const seleccion = []; // superficies auxiliares (mismo formato que dist/selection.json)
 function contornoAbierto(rec, cm) {
   const r = sinArcos(cm), declarada = parseFloat(rec.superficie.replace(',', '.'));
   if (r.length >= 4 && sinCruces(r) && areaM2(r) >= .5 * declarada && areaM2(r) <= 1.25 * declarada) { if (r.length !== cm.length) rectificados++; return {ring: r, auxiliar: false}; }
@@ -78,9 +82,11 @@ function contornoAbierto(rec, cm) {
   return {ring: [[x - m, y - m], [x + m, y - m], [x + m, y + m], [x - m, y + m]], auxiliar: true};
 }
 const rooms = plano.recintos.map(rec => {
-  const doc = docBySector.get(rec.sector), cm = []; for (let i = 0; i < rec.poly.length; i += 2) cm.push([rec.poly[i], rec.poly[i + 1]]);
-  const abierto = rec.aprox ? contornoAbierto(rec, cm) : null, contorno = abierto?.ring || cm;
-  const polygon = contorno.map(([x, y]) => pt(x, y));
+  const doc = docBySector.get(rec.sector), nuevo = recalculo.recintos[rec.codigo], cm = nuevo ? puntos(nuevo.poly) : puntos(rec.poly).map(([x, y]) => [x + desX, y + desY]);
+  if (nuevo) recalculados++;
+  // El cuadrado auxiliar va centrado en el rótulo: no lleva desfase.
+  const abierto = rec.aprox && !nuevo ? contornoAbierto(rec, cm) : null, contorno = abierto?.ring || cm;
+  const polygon = contorno.map(([x, y]) => pt(x, y)), huecos = (nuevo?.huecos || []).map(h => puntos(h).map(([x, y]) => pt(x, y)));
   const dwg = rombosDwg.get(rec.codigo), valores = dwg?.valores || rec.mono, caja = rombosPlano[rec.codigo];
   const finishes = CAMPOS.map(k => terminacion(k, valores[k]));
   if (abierto?.auxiliar) seleccion.push({id: doc.id + ':' + rec.codigo, rings: [{polygon, holes: []}], score: 1});
@@ -91,11 +97,11 @@ const rooms = plano.recintos.map(rec => {
   return {id: doc.id + ':' + rec.codigo, code: rec.codigo, name: rec.nombre, document_id: doc.id, position: pt(rec.p[0], rec.p[1]),
     label_bbox: null, diamond_bbox: imagen && enContorno ? caja : null, finishes, declared_area: rec.superficie, polygon: abierto?.auxiliar ? null : polygon,
     geometry_status: 'Pendiente de revisión',
-    geometry_method: abierto?.auxiliar ? 'Superficie auxiliar de selección: contorno no delimitado en los DWG' : rec.aprox ? 'Contorno aproximado: lados abiertos cerrados con tramos rectos' : 'Contorno vectorial del DWG',
+    geometry_method: abierto?.auxiliar ? 'Superficie auxiliar de selección: contorno no delimitado en los DWG' : nuevo?.metodo === 'zona' ? 'Contorno del DWG: relleno de color del recinto en la lámina' : nuevo ? 'Contorno del DWG: relleno desde el rótulo entre muros, puertas y ventanas' : rec.aprox ? 'Contorno aproximado: lados abiertos cerrados con tramos rectos' : 'Contorno vectorial del DWG',
     status: 'Pendiente de revisión',
     notes: [dwg ? `Monografía leída del rombo de la lámina DWG ${dwg.lamina} (Rev01_V1).` : 'Monografía de la planta DWG del nivel 2 (Rev01_V1); la lámina no dibuja rombo para este recinto.',
-      ...(abierto?.auxiliar ? ['Recinto abierto sin límites dibujados en los DWG: se muestra un cuadrado de selección en el rótulo, no su contorno real.'] : rec.aprox ? ['Recinto abierto: los DWG no delimitan todos sus lados. Contorno aproximado, revisar.'] : [])],
-    source_page: 1, level: '2', sector: doc.sector, holes: [], version: 1,
+      ...(abierto?.auxiliar ? ['Recinto abierto sin límites dibujados en los DWG: se muestra un cuadrado de selección en el rótulo, no su contorno real.'] : rec.aprox && !nuevo ? ['Recinto abierto: los DWG no delimitan todos sus lados. Contorno aproximado, revisar.'] : [])],
+    source_page: 1, level: '2', sector: doc.sector, holes: huecos, version: 1,
     asepsis: [...new Set(finishes.map(f => f.asepsis).filter(Boolean))], diamond_url: imagen, history: []};
 });
 
@@ -140,5 +146,5 @@ for (const doc of documents) fs.writeFileSync(path.join(out, 'geometry', doc.id 
 const original = path.join(root, '..', 'Planos N02', pdf?.archivo || '');
 if (pdf && fs.existsSync(original)) fs.copyFileSync(original, path.join(dist, 'source', PDF));
 console.log(JSON.stringify({rooms: rooms.length, documents: documents.length, width: W, height: H,
-  runtimeBytes: fs.statSync(path.join(out, 'runtime.json')).size, conRombo: rooms.filter(r => r.diamond_url).length, contornosSinArcos: rectificados, superficiesAuxiliares: auxiliares, mosaicos: mosaicos.levels.map(l => l.columns * l.rows).reduce((a, b) => a + b),
+  runtimeBytes: fs.statSync(path.join(out, 'runtime.json')).size, conRombo: rooms.filter(r => r.diamond_url).length, contornosRecalculados: recalculados, desfase: recalculo.desfase, contornosSinArcos: rectificados, superficiesAuxiliares: auxiliares, mosaicos: mosaicos.levels.map(l => l.columns * l.rows).reduce((a, b) => a + b),
   pdf: fs.existsSync(path.join(dist, 'source', PDF)) ? PDF : 'no copiado (falta la carpeta Planos N02)'}));

@@ -72,4 +72,12 @@ for (const [nivel, minimo] of [['n01', 300], ['n03', 245]]) {
 const extra = JSON.parse(fs.readFileSync('data/n02/recintos-extra.json', 'utf8')).recintos;
 assert.equal(extra.length, 48); assert.ok(extra.every(r => r.estado === 'ok'), 'las 48 circulaciones y recintos técnicos del N02 cierran');
 assert.ok(extra.filter(r => r.metodo === 'zona').length >= 40);
+// N02: los recintos de plano.json se recalculan desde las láminas; el desfase con la planta general es el mismo en todo el piso.
+const recalculo = JSON.parse(fs.readFileSync('data/n02/contornos-recalculados.json', 'utf8')), planoN02 = JSON.parse(fs.readFileSync('data/n02/plano.json', 'utf8'));
+assert.equal(recalculo.resumen.recintos, planoN02.recintos.length); assert.ok(recalculo.resumen.recalculados >= 260, 'recalculados: ' + recalculo.resumen.recalculados);
+assert.ok(Math.abs(recalculo.desfase[0] - 18.7) < 3 && Math.abs(recalculo.desfase[1] + 3.6) < 3, 'desfase ' + recalculo.desfase);
+const errorN02 = planoN02.recintos.filter(r => recalculo.recintos[r.codigo]).reduce((t, r, _, l) => t + Math.abs(recalculo.recintos[r.codigo].areaM2 / num(r.superficie) - 1) / l.length, 0);
+assert.ok(errorN02 < .03, 'error medio de área del N02: ' + (100 * errorN02).toFixed(1) + ' %');
+const rtN02 = JSON.parse(fs.readFileSync('dist/n02/runtime.json', 'utf8')).catalog, metodo = rtN02.fields.indexOf('geometry_method');
+assert.ok(rtN02.rows.filter(row => /relleno desde el rótulo|relleno de color del recinto/.test(rtN02.strings[row[metodo]])).length >= 300, 'recintos del N02 publicados con contorno recalculado');
 console.log(`contorno-dwg-test: ok (N02: ${extra.length} agregados con contorno)`);

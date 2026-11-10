@@ -52,7 +52,9 @@ Fuentes, fuera del repo: carpetas «Planos N01», «Planos N02» y «Planos N03�
    - El avance queda en `dist/n0x/map/estado.txt`.
 5. **Importar.**
    - N01 y N03: `node scripts/import-dwg.mjs n0x`
-   - N02: `node scripts/import-n02.mjs`
+   - N02: `node scripts/n02-plano/recalcular-contornos.mjs` y después `node scripts/import-n02.mjs`
+     - El primero recalcula los contornos de `data/n02/plano.json` desde las láminas y los deja en `data/n02/contornos-recalculados.json`.
+     - El importador usa el recalculado si el recinto cierra. Si no, conserva el de `plano.json`, corrido con el desfase medido.
    - Luego `node scripts/recintos-extra.mjs`, que hace dos cosas:
      - agrega los recintos rotulados que el plano no tiene: en el N02, los que quedaron sin polilínea; en el −1, los de las láminas A-511 y A-512;
      - quita de los niveles 2 y 3 los recintos de triple altura del nivel 1.
@@ -82,9 +84,12 @@ En los dos casos:
 | Piso | Con contorno | Parciales | Auxiliares | Error medio de área |
 |---|---|---|---|---|
 | N01 | 308 de 359 (antes 286) | 10 | 41 (antes 64) | 2,5 % (antes 7,8 %) |
+| N02, recintos de `plano.json` | 267 de 311 recalculados | | 44 conservan su contorno anterior | 1,2 % (antes 3,9 %) |
 | N02, recintos agregados | 48 de 48 (antes 30) | 0 | 0 (antes 17) | menos de 1 % |
 | N03 | 251 de 308 (antes 233) | 1 | 56 (antes 71) | 1,8 % (antes 8,0 %) |
 | −1, recintos agregados | 9 de 14 | 2 | 3 (antes 4) | |
+
+**Desfase del N02.** Los contornos de `plano.json` venían de la planta general y estaban corridos 18,7 cm en X y −3,6 cm en Y respecto de los muros de las láminas 1:50 con que se dibuja el plano (medido en 263 recintos, igual en las 8 láminas). Los recalculados calzan con los muros. A los 44 que se conservan (recintos abiertos: estaciones de enfermería, puestos de monitoreo, salas de espera) se les aplica ese desfase.
 
 Los auxiliares que quedan son recintos abiertos, sin muro ni puerta que los separe: estaciones de enfermería, salas de espera, áreas de casilleros y circulaciones de N01 y N03, que no traen relleno de color. Se corrigen en el editor de contornos.
 
