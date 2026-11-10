@@ -294,5 +294,6 @@ export function createTareas(ctx) {
   }
   function agenda(el, abrir) { agendaEl = el; agendaAbrir = abrir; pintarAgenda(); }
   function verTarea(id) { if (!meta(id)) return; vista = 'mias'; detalle = id; pintar(); if (cuerpo) cuerpo.scrollTop = 0; }
-  return {agenda, verTarea, mostrar, recargar, contador, tocar, marcando: () => !!marcando, verEnPlano, marcarEnPlano, limpiarPlano, pintarPlano, resumenActividad, prepararAsignacion, perfil: () => datos.perfil};
+  const cuentaAgenda = () => { if (!datos.perfil || !yo()) return null; const g = agruparAgenda(datos.metas, yo(), isoToday()); return {hoy: g.hoy.length, semana: g.semana.length}; };
+  return {agenda, verTarea, cuentaAgenda, mostrar, recargar, contador, tocar, marcando: () => !!marcando, verEnPlano, marcarEnPlano, limpiarPlano, pintarPlano, resumenActividad, prepararAsignacion, perfil: () => datos.perfil};
 }

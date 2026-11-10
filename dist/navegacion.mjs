@@ -1,6 +1,7 @@
 // Barra inferior, rueda de tarjetas de cada módulo y botones de función sobre el plano. La lógica vive en navegacion-model.mjs.
 import {TARJETAS, ICONOS, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar, tarjetasPara, cartasDelModulo, moduloDe, conPortada, consultaPiso, paraTerreno, opcionesMas} from './navegacion-model.mjs';
 import {alCambiarDispositivo} from './dispositivo.mjs';
+import {createResumenPiso} from './resumen-piso.mjs';
 import {funcionesDe} from './jerarquia-model.mjs';
 import {crearPista, activarFlujos, rearmarFlujo} from './selector-flujo.mjs';
 import {nivel, pisos} from './level.mjs';
@@ -27,6 +28,7 @@ export function createNavegacion(ctx) {
   hoja.innerHTML = '<div class="hojaCabeza"><h2 id="hojaTitulo"></h2><button type="button" id="hojaCerrar" aria-label="Cerrar">×</button></div><div id="hojaCuerpo" class="hojaCuerpo"></div>';
   hoja.setAttribute('aria-labelledby', 'hojaTitulo');
   main.append(barra, hoja, rueda);
+  const resumen = createResumenPiso({esc, rooms: () => ctx.rooms?.() || [], tareas: ctx.tareas, abrirPanel: (panel, vista) => { cerrarRueda(); ui.abrirPanel(panel, vista); }, abrirTareas: id => abrirTareas(id)});
   // Franja de pisos: con varios pisos elegidos se ve uno a la vez y aquí se cambia. La página tiene cargado un solo piso:
   // Last Planner cambia sin recargar porque no depende del piso; lo demás recarga y vuelve a abrir lo que estaba abierto.
   const franja = document.createElement('nav');
@@ -36,7 +38,11 @@ export function createNavegacion(ctx) {
   const elegidos = () => window.ATLAS_PISOS_ELEGIDOS || [];
   const pisoCorto = id => pisos.find(p => p.id === id)?.corto || id;
   // Tarjetas de esta cuenta. Se vuelven a armar si cambia su perfil (después de sincronizar).
-  let lista = TARJETAS, firma = '', pista = null;
+  let lista = TARJETAS, firma = '', pista = null, marcada = null;
+  // Escritorio: las tarjetas del módulo van en la columna izquierda, una debajo de otra, sin deslizar.
+  const pistaFija = c => ({tarjetas: [...c.querySelectorAll('.ruedaTarjeta')], acomodar() {}, ir() {}, soltarCursor() {}, destruir() {}});
+  // Tarjeta abierta: en el escritorio se ve en azul en la columna izquierda.
+  function marcarTarjeta() { rueda.querySelectorAll('.ruedaTarjeta[data-tarjeta]').forEach(c => c.setAttribute('aria-current', String(c.dataset.tarjeta === marcada))); }
   const buscarTarjeta = id => lista.find(t => t.id === id) || null;
   const tituloModulo = () => moduloDe(modulo).titulo;
 
@@ -50,7 +56,8 @@ export function createNavegacion(ctx) {
     rueda.innerHTML = `<div class="ruedaCabeza"><h2>${esc(tituloModulo())}</h2><button type="button" id="ruedaCerrar" aria-label="Cerrar ${esc(tituloModulo())}">×</button></div>
     ${conAgenda ? '<div class="agendaObra" id="agendaObra" aria-label="Agenda" hidden></div>' : ''}
     <div class="ruedaPista" tabindex="-1">${cartas.map(t => `<button type="button" class="ruedaTarjeta" data-tarjeta="${t.id}"><svg class="panelArt" viewBox="0 0 160 100" aria-hidden="true">${t.dibujo}</svg><strong>${esc(t.titulo)}</strong><small>${esc(t.texto)}</small>${t.id === 'tareas' ? '<b class="ruedaContador" hidden></b>' : ''}</button>`).join('')}</div>`;
-    pista = crearPista(rueda.querySelector('.ruedaPista'));
+    pista = ctx.escritorio() ? pistaFija(rueda.querySelector('.ruedaPista')) : crearPista(rueda.querySelector('.ruedaPista'));
+    marcarTarjeta();
     pista.tarjetas.forEach(t => t.onclick = () => elegirTarjeta(t.dataset.tarjeta));
     $('ruedaCerrar').onclick = () => cerrarRueda(true);
     if (conAgenda) ctx.tareas?.agenda?.($('agendaObra'), id => { if (abrirTareas('mias')) ctx.tareas.verTarea(id); });
@@ -114,6 +121,8 @@ export function createNavegacion(ctx) {
     rueda.hidden = false; document.body.classList.add('ruedaAbierta'); document.body.classList.toggle('ruedaPortada', portada()); $('bottomObra').setAttribute('aria-expanded', 'true');
     pista.acomodar(indiceDe(actual));
     pista.tarjetas[indiceDe(actual)]?.focus({preventScroll: true});
+    // Escritorio: la portada de Control y Protocolos muestra el resumen del piso a la derecha, con el plano al centro.
+    if (portada()) { marcada = null; marcarTarjeta(); if (ctx.escritorio()) resumen.mostrar(pisos.find(p => p.id === pisoVisto)?.nombre); }
   }
   function cerrarRueda(foco = false) {
     if (rueda.hidden) return;
@@ -161,6 +170,7 @@ export function createNavegacion(ctx) {
   function elegirTarjeta(id) {
     const t = buscarTarjeta(id);
     if (!t) return;
+    marcada = t.grupo || id; marcarTarjeta();
     // El piso visto no es el cargado: Last Planner sirve igual; para lo demás hay que cargar ese piso.
     if (pisoVisto !== nivel.id && t.panel !== 'lastplanner') { irAlPiso(pisoVisto, id); return; }
     cerrarRueda();

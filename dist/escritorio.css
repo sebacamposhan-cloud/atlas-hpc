@@ -1,1 +1,61 @@
-/* Escritorio: tres paneles (dispositivo.mjs marca body.escritorio). Se completa en la etapa de escritorio. */
+/* Escritorio (dispositivo.mjs marca body.escritorio: 1024 px o más con mouse). Tres paneles dentro de un piso:
+   - izquierda: Módulos, Pisos y las tarjetas del módulo, siempre a la vista (las mismas tarjetas, una debajo de otra);
+   - centro: el plano;
+   - derecha: la ficha, la hoja o la tabla, y en la portada de Control y Protocolos el resumen del piso.
+   La entrada (módulos y pisos 3D) sigue igual, con tarjetas de flujo. En terreno nada de esto aplica. */
+body.escritorio { --izq: 300px; --detail: clamp(440px, 40vw, 660px); --tabla: clamp(640px, calc(100vw - var(--izq) - 300px), 1180px); }
+body.escritorio:not(.floorHome) { --barra-obra: 0px; }
+
+/* La barra de abajo sube a la columna izquierda. */
+body.escritorio:not(.floorHome) .bottomNav { position: fixed; top: var(--cabecera); left: 0; right: auto; bottom: auto; width: var(--izq); height: 56px; padding: 0; box-sizing: border-box; border: 0; border-right: 2px solid var(--g-marca); border-bottom: 1px solid var(--g-marca); z-index: 36; }
+body.escritorio:not(.floorHome) .bottomNav button { font-size: 13px; }
+
+/* Columna izquierda: el módulo y sus tarjetas. */
+body.escritorio:not(.floorHome) #ruedaObra, body.escritorio:not(.floorHome) #ruedaObra[hidden] { display: flex !important; flex-direction: column; justify-content: flex-start; gap: 12px; position: fixed; left: 0; right: auto; top: calc(var(--cabecera) + 56px); bottom: 0; width: var(--izq); box-sizing: border-box; padding: 14px 14px 24px; overflow-y: auto; z-index: 30; background: #fff; border: 0; border-right: 2px solid var(--g-marca); animation: none; }
+body.escritorio:not(.floorHome) #ruedaObra .ruedaCabeza { justify-content: flex-start; min-height: 0; padding: 0; }
+body.escritorio:not(.floorHome) #ruedaObra .ruedaCabeza h2 { font-size: 22px; line-height: 1.15; }
+body.escritorio:not(.floorHome) #ruedaCerrar { display: none !important; }
+body.escritorio:not(.floorHome) #ruedaObra .ruedaPista { display: flex !important; flex-direction: column; gap: 10px; height: auto; min-height: 0; overflow: visible; margin: 0; padding: 0; perspective: none; }
+body.escritorio:not(.floorHome) #ruedaObra .ruedaPista .ruedaTarjeta { position: relative !important; left: auto !important; top: auto !important; transform: none !important; opacity: 1 !important; visibility: visible !important; flex: none; width: 100%; max-width: none; min-height: 0; height: auto; margin: 0; box-sizing: border-box; display: grid; grid-template-columns: 64px minmax(0, 1fr); column-gap: 12px; align-items: center; padding: 10px 12px; border: 1px solid var(--g-marca); background: #fff; color: #000; text-align: left; cursor: pointer; }
+body.escritorio:not(.floorHome) #ruedaObra .ruedaTarjeta svg.panelArt { grid-row: 1 / span 2; width: 64px; height: 40px; margin: 0; }
+body.escritorio:not(.floorHome) #ruedaObra .ruedaTarjeta strong { font-size: 16px; line-height: 1.2; }
+body.escritorio:not(.floorHome) #ruedaObra .ruedaTarjeta small { font-size: 13px; font-weight: 500; line-height: 1.25; }
+body.escritorio:not(.floorHome) #ruedaObra .ruedaTarjeta:hover { border-color: var(--g-azul); box-shadow: inset 0 0 0 1px var(--g-azul); }
+body.escritorio:not(.floorHome) #ruedaObra .ruedaTarjeta[aria-current=true] { background: var(--g-azul) !important; border-color: var(--g-azul); color: #fff !important; }
+body.escritorio:not(.floorHome) #ruedaObra .ruedaTarjeta[aria-current=true] :is(small, strong, b) { color: #fff !important; }
+body.escritorio:not(.floorHome) #ruedaObra .ruedaTarjeta[aria-current=true] :is(svg, svg .f) { stroke: #fff; }
+/* Fuera de la portada, la tarjeta del centro de la rueda no se pinta: azul es solo la tarjeta abierta. */
+body.escritorio:not(.floorHome) #ruedaObra .ruedaTarjeta.alCentro:not([aria-current=true]) { background: #fff !important; color: #000 !important; }
+body.escritorio:not(.floorHome) #ruedaObra .ruedaTarjeta.alCentro:not([aria-current=true]) :is(small, strong, b) { color: #000 !important; }
+body.escritorio:not(.floorHome) #ruedaObra .ruedaTarjeta.alCentro:not([aria-current=true]) svg { stroke: var(--g-marca); }
+body.escritorio:not(.floorHome) .agendaObra { width: 100%; margin: 0; }
+
+/* Centro y derecha: el área de trabajo empieza después de la columna y ocupa todo el alto. */
+body.escritorio:not(.floorHome) .workspace { margin-left: var(--izq) !important; height: calc(100dvh - var(--cabecera)) !important; }
+/* Las tablas grandes (Last Planner, Avance, matriz) usan todo el ancho a la derecha de la columna: el plano vuelve con su tarjeta. */
+body.escritorio:not(.floorHome) #workspacePanel { left: 0 !important; right: 0 !important; width: auto !important; max-width: none; box-sizing: border-box; }
+/* La columna ya dice el módulo y marca la tarjeta abierta: el encabezado y «← Control» sobran. */
+body.escritorio:not(.floorHome) #workspacePanel :is(.moduleHeading, .panelTrail) { display: none !important; }
+body.escritorio:not(.floorHome) #hojaFuncion { top: 0; right: 0; bottom: 0; width: var(--detail); max-width: none; border-width: 0 0 0 2px; }
+body.escritorio:not(.floorHome) #protocolPanel { width: var(--detail); max-width: none; }
+
+/* Resumen del piso (resumen-piso.mjs): a la derecha en la portada de Control y Protocolos. */
+#resumenPiso { display: none; }
+body.escritorio.ruedaPortada:not(.floorHome) #resumenPiso { display: block; position: absolute; top: 0; right: 0; bottom: 0; width: var(--detail); box-sizing: border-box; overflow-y: auto; z-index: 19; padding: 18px 22px; background: #fff; border-left: 2px solid var(--g-marca); color: #000; }
+#resumenPiso h2 { margin: 0 0 14px; font-size: 22px; }
+.resumenGrilla { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.resumenDato { display: grid; align-content: start; gap: 4px; min-height: 108px; padding: 12px 14px; border: 1px solid var(--g-marca); background: #fff; color: #000; text-align: left; font: inherit; }
+button.resumenDato { cursor: pointer; }
+button.resumenDato:hover { border-color: var(--g-azul); box-shadow: inset 0 0 0 1px var(--g-azul); }
+.resumenDato span { font-size: 14px; font-weight: 700; }
+.resumenDato b { font-size: 30px; line-height: 1.1; }
+.resumenDato small { font-size: 13px; color: #262626; }
+.resumenDato.cargando b { color: #595959; }
+.resumenNota { margin: 14px 0 0; font-size: 13px; color: #262626; }
+
+/* La portada no tapa el plano en el escritorio: el plano queda al centro. */
+body.escritorio.ruedaPortada:not(.floorHome) main > :is(svg, .planWrap, #planViewport) { visibility: visible; }
+
+/* El plano se encoge para no quedar debajo del panel derecho (como cuando se abre la ficha). */
+body.escritorio:not(.floorHome):is(.ruedaPortada, .hojaAbierta, .protocolOpen) #viewport { right: var(--detail) !important; }
+body.escritorio:not(.floorHome):is(.ruedaPortada, .hojaAbierta, .protocolOpen) .toolbar { right: calc(var(--detail) + 12px) !important; }
