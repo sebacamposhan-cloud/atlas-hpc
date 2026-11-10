@@ -62,3 +62,25 @@ body.protocolOpen .toolbar, body.protocolOpen main > footer { right: 352px; }
 .protRecGrupo li small { display: block; font-size: 10.5px; margin-top: 2px; }
 .protRecFolio { font-weight: 800; font-variant-numeric: tabular-nums; }
 .protRecNota { font-size: 10.5px; margin-top: 8px; line-height: 1.5; }
+
+/* Ficha de un folio (protocolo-folio.mjs): lo de terreno arriba y los 16 datos de la matriz debajo, siempre a la vista. */
+.folioFicha { margin: 6px 0 10px; padding: 10px 12px; border: 1px solid var(--g-marca, #1b2a56); background: #fff; color: #000; font-size: 14px; }
+.folioTitulo { display: grid; gap: 2px; margin: 0 0 6px; }
+.folioTitulo small { font-size: 13px; color: #262626; }
+.folioEstado { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 8px; }
+.folioChip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border: 1px solid var(--c); font-size: 13px; font-weight: 700; color: #000; }
+.folioChip::before { content: ''; width: 10px; height: 10px; background: var(--c); }
+.folioCritico { color: #b42318; }
+.folioClave, .folioTodo { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; margin: 0; }
+.folioClave > div, .folioTodo > div { display: grid; grid-template-columns: 9.5em minmax(0, 1fr); gap: 8px; padding: 3px 0; border-bottom: 1px solid #d9d9d9; }
+.folioClave dt, .folioTodo dt { font-size: 13px; color: #262626; }
+.folioClave dd, .folioTodo dd { margin: 0; font-size: 14px; overflow-wrap: anywhere; }
+.folioClave dd { font-weight: 700; }
+.folioPlano { width: 100%; min-height: 44px; margin: 10px 0 4px; border: 1px solid var(--g-azul, #0f5499); background: var(--g-azul, #0f5499); color: #fff; font-weight: 700; }
+.folioSeccion { margin: 12px 0 4px; font-size: 14px; }
+.folioCorte, .folioAviso { margin: 8px 0 0; font-size: 13px; color: #262626; }
+.folioAviso { margin: 0 0 8px; padding: 6px 0; border-bottom: 1px solid var(--g-marca, #1b2a56); }
+.protRecSeccion { margin: 10px 0 4px; font-size: 14px; }
+.protRecCerrados { margin-top: 10px; }
+.protRecCerrados > summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; cursor: pointer; }
+#protocolPanel li > button[data-ficha] { display: grid; gap: 2px; width: 100%; text-align: left; background: #fff; border: 0; padding: 6px 0; font: inherit; color: inherit; cursor: pointer; }

@@ -130,9 +130,31 @@ function vestir(boton, carta) {
   boton.append(fuerte, chico);
 }
 // Vuelve flujo un grupo de botones. Si la pantalla redibujó el grupo, parte donde estaba y se desliza a la tarjeta activa.
+// Más de LARGA opciones no se recorren de a una: van en una lista vertical (unas 8 por pantalla) con buscador. Las tarjetas
+// de flujo siguen para módulos, vistas y listas cortas.
+export const LARGA = 8;
+export const esLarga = n => n > LARGA;
+const normal = s => String(s || '').toLocaleLowerCase('es').normalize('NFD').replace(/[̀-ͯ]/g, '');
+// Buscador de una lista larga. Si la pantalla ya trae el suyo (soloVisibles, como la lista de protocolos), no se agrega.
+function buscadorDe(contenedor, botones, nombre) {
+  if (contenedor.previousElementSibling?.classList.contains('flujoBuscar')) return;
+  const input = document.createElement('input');
+  input.type = 'search'; input.className = 'flujoBuscar'; input.autocomplete = 'off';
+  input.placeholder = 'Buscar entre ' + botones.length + ' opciones…'; input.setAttribute('aria-label', 'Buscar ' + (nombre || 'opción'));
+  input.oninput = () => { const q = normal(input.value.trim()); for (const b of contenedor.querySelectorAll('.ruedaTarjeta')) b.hidden = !!q && !normal(b.textContent).includes(q); };
+  contenedor.before(input);
+}
+function armarLarga(contenedor, grupo, todos) {
+  armadas.get(contenedor)?.destruir(); armadas.delete(contenedor);
+  contenedor.classList.add('ruedaPista', 'conFlujo', 'flujoLargo', 'flujo-' + grupo.tamano);
+  todos.forEach(b => { b.classList.add('ruedaTarjeta'); b.style.removeProperty('transform'); });
+  if (!grupo.soloVisibles) buscadorDe(contenedor, todos, contenedor.getAttribute('aria-label'));
+  contenedor.querySelector('.ruedaTarjeta:is([aria-pressed=true],[aria-selected=true],[aria-checked=true])')?.scrollIntoView?.({block: 'nearest'});
+}
 function armar(contenedor, grupo, forzar = false) {
   const todos = [...contenedor.querySelectorAll(grupo.boton)], botones = grupo.soloVisibles ? todos.filter(b => !b.closest('[hidden]')) : todos;
   if (!forzar && (!todos.length || todos.every(b => b.classList.contains('ruedaTarjeta')))) return;
+  if (esLarga(todos.length)) { armarLarga(contenedor, grupo, todos); return; }
   armadas.get(contenedor)?.destruir();
   contenedor.classList.add('ruedaPista', 'conFlujo', 'flujo-' + grupo.tamano);
   todos.forEach(b => { if (b.classList.contains('ruedaTarjeta')) return; b.classList.add('ruedaTarjeta'); const carta = grupo.cartas?.[claveDe(b)]; if (carta) vestir(b, carta); });
@@ -155,7 +177,9 @@ function armarSelect(select) {
   if (select.multiple || !select.options.length || select.closest(SIN_FLUJO)) return;
   const firma = firmaDeSelect(select), previo = desplegables.get(select);
   if (previo?.firma === firma) { if (previo.caja.querySelector('[aria-pressed=true]')?.dataset.valor !== select.value) marcarOpcion(select, previo.caja); return; }
-  previo?.pista.destruir(); previo?.caja.remove();
+  previo?.pista.destruir();
+  if (previo?.caja.previousElementSibling?.classList.contains('flujoBuscar')) previo.caja.previousElementSibling.remove();
+  previo?.caja.remove();
   const caja = document.createElement('div');
   caja.className = 'ruedaPista conFlujo flujo-baja flujoLista'; caja.setAttribute('role', 'group');
   const nombre = select.getAttribute('aria-label') || select.title || select.closest('label')?.firstChild?.textContent?.trim();
@@ -169,9 +193,14 @@ function armarSelect(select) {
   select.classList.add('selectConFlujo'); select.after(caja); select.setAttribute('tabindex', '-1');
   marcarOpcion(select, caja);
   const activo = Math.max(0, [...select.options].findIndex(o => o.value === select.value));
-  const pista = crearPista(caja, {inicial: activo, conRueda: false});
-  pista.acomodar(activo);
-  desplegables.set(select, {firma, caja, pista});
+  if (esLarga(select.options.length)) {
+    caja.classList.add('flujoLargo'); buscadorDe(caja, [...caja.children], nombre);
+    desplegables.set(select, {firma, caja, pista: {destruir() {}}});
+  } else {
+    const pista = crearPista(caja, {inicial: activo, conRueda: false});
+    pista.acomodar(activo);
+    desplegables.set(select, {firma, caja, pista});
+  }
   select.addEventListener('change', () => { if (select.isConnected) marcarOpcion(select, caja); });
 }
 function revisar() {

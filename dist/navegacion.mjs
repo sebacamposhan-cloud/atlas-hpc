@@ -1,5 +1,7 @@
 // Barra inferior, rueda de tarjetas de cada módulo y botones de función sobre el plano. La lógica vive en navegacion-model.mjs.
-import {TARJETAS, ICONOS, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar, tarjetasPara, cartasDelModulo, moduloDe, conPortada, consultaPiso} from './navegacion-model.mjs';
+import {TARJETAS, ICONOS, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar, tarjetasPara, cartasDelModulo, moduloDe, conPortada, consultaPiso, paraTerreno, opcionesMas} from './navegacion-model.mjs';
+import {alCambiarDispositivo} from './dispositivo.mjs';
+import {createResumenPiso} from './resumen-piso.mjs';
 import {funcionesDe} from './jerarquia-model.mjs';
 import {crearPista, activarFlujos, rearmarFlujo} from './selector-flujo.mjs';
 import {nivel, pisos} from './level.mjs';
@@ -26,6 +28,7 @@ export function createNavegacion(ctx) {
   hoja.innerHTML = '<div class="hojaCabeza"><h2 id="hojaTitulo"></h2><button type="button" id="hojaCerrar" aria-label="Cerrar">×</button></div><div id="hojaCuerpo" class="hojaCuerpo"></div>';
   hoja.setAttribute('aria-labelledby', 'hojaTitulo');
   main.append(barra, hoja, rueda);
+  const resumen = createResumenPiso({esc, rooms: () => ctx.rooms?.() || [], tareas: ctx.tareas, abrirPanel: (panel, vista) => { cerrarRueda(); ui.abrirPanel(panel, vista); }, abrirTareas: id => abrirTareas(id)});
   // Franja de pisos: con varios pisos elegidos se ve uno a la vez y aquí se cambia. La página tiene cargado un solo piso:
   // Last Planner cambia sin recargar porque no depende del piso; lo demás recarga y vuelve a abrir lo que estaba abierto.
   const franja = document.createElement('nav');
@@ -35,20 +38,29 @@ export function createNavegacion(ctx) {
   const elegidos = () => window.ATLAS_PISOS_ELEGIDOS || [];
   const pisoCorto = id => pisos.find(p => p.id === id)?.corto || id;
   // Tarjetas de esta cuenta. Se vuelven a armar si cambia su perfil (después de sincronizar).
-  let lista = TARJETAS, firma = '', pista = null;
+  let lista = TARJETAS, firma = '', pista = null, marcada = null;
+  // Escritorio: las tarjetas del módulo van en la columna izquierda, una debajo de otra, sin deslizar.
+  const pistaFija = c => ({tarjetas: [...c.querySelectorAll('.ruedaTarjeta')], acomodar() {}, ir() {}, soltarCursor() {}, destruir() {}});
+  // Tarjeta abierta: en el escritorio se ve en azul en la columna izquierda.
+  function marcarTarjeta() { rueda.querySelectorAll('.ruedaTarjeta[data-tarjeta]').forEach(c => c.setAttribute('aria-current', String(c.dataset.tarjeta === marcada))); }
   const buscarTarjeta = id => lista.find(t => t.id === id) || null;
   const tituloModulo = () => moduloDe(modulo).titulo;
 
   function construirRueda() {
-    const nuevas = tarjetasPara(funcionesDe(ctx.perfil?.() || null)), cartas = cartasDelModulo(nuevas, modulo), clave = modulo + '|' + nuevas.map(t => t.id + ':' + t.funciones.map(([f]) => f).join(',')).join('|');
+    const todas = tarjetasPara(funcionesDe(ctx.perfil?.() || null)), nuevas = ctx.escritorio() ? todas : paraTerreno(todas), cartas = cartasDelModulo(nuevas, modulo), clave = modulo + '|' + nuevas.map(t => t.id + ':' + t.funciones.map(([f]) => f).join(',')).join('|');
     if (clave === firma && pista) return false;
     firma = clave; lista = nuevas;
     rueda.setAttribute('aria-label', tituloModulo());
+    // Control con libreta: la agenda (Hoy y Esta semana) va arriba de las tarjetas.
+    const conAgenda = modulo === 'control' && cartas.some(t => t.id === 'tareas');
     rueda.innerHTML = `<div class="ruedaCabeza"><h2>${esc(tituloModulo())}</h2><button type="button" id="ruedaCerrar" aria-label="Cerrar ${esc(tituloModulo())}">×</button></div>
+    ${conAgenda ? '<div class="agendaObra" id="agendaObra" aria-label="Agenda" hidden></div>' : ''}
     <div class="ruedaPista" tabindex="-1">${cartas.map(t => `<button type="button" class="ruedaTarjeta" data-tarjeta="${t.id}"><svg class="panelArt" viewBox="0 0 160 100" aria-hidden="true">${t.dibujo}</svg><strong>${esc(t.titulo)}</strong><small>${esc(t.texto)}</small>${t.id === 'tareas' ? '<b class="ruedaContador" hidden></b>' : ''}</button>`).join('')}</div>`;
-    pista = crearPista(rueda.querySelector('.ruedaPista'));
+    pista = ctx.escritorio() ? pistaFija(rueda.querySelector('.ruedaPista')) : crearPista(rueda.querySelector('.ruedaPista'));
+    marcarTarjeta();
     pista.tarjetas.forEach(t => t.onclick = () => elegirTarjeta(t.dataset.tarjeta));
     $('ruedaCerrar').onclick = () => cerrarRueda(true);
+    if (conAgenda) ctx.tareas?.agenda?.($('agendaObra'), id => { if (abrirTareas('mias')) ctx.tareas.verTarea(id); });
     pista.acomodar(indiceDe(actual));
     contar();
     return true;
@@ -109,6 +121,8 @@ export function createNavegacion(ctx) {
     rueda.hidden = false; document.body.classList.add('ruedaAbierta'); document.body.classList.toggle('ruedaPortada', portada()); $('bottomObra').setAttribute('aria-expanded', 'true');
     pista.acomodar(indiceDe(actual));
     pista.tarjetas[indiceDe(actual)]?.focus({preventScroll: true});
+    // Escritorio: la portada de Control y Protocolos muestra el resumen del piso a la derecha, con el plano al centro.
+    if (portada()) { marcada = null; marcarTarjeta(); if (ctx.escritorio()) resumen.mostrar(pisos.find(p => p.id === pisoVisto)?.nombre); }
   }
   function cerrarRueda(foco = false) {
     if (rueda.hidden) return;
@@ -156,11 +170,13 @@ export function createNavegacion(ctx) {
   function elegirTarjeta(id) {
     const t = buscarTarjeta(id);
     if (!t) return;
+    marcada = t.grupo || id; marcarTarjeta();
     // El piso visto no es el cargado: Last Planner sirve igual; para lo demás hay que cargar ese piso.
     if (pisoVisto !== nivel.id && t.panel !== 'lastplanner') { irAlPiso(pisoVisto, id); return; }
     cerrarRueda();
     if (t.panel === 'lastplanner') ctx.lastplanner?.verPiso(pisoVisto);
     if (t.panel) { ui.abrirPanel(t.panel, t.vista); return; }
+    if (t.accion === 'puertas') { cerrarHoja(); ctx.cerrarModos(); ctx.abrirPuertas?.(); return; }
     if (t.accion) { cerrarHoja(); ctx.cerrarModos(); ui.openFilters(); return; }
     if (t.grupo) { cambiarTarjeta(t.grupo); elegirFuncion(t.funcion); return; }
     cambiarTarjeta(id);
@@ -168,12 +184,13 @@ export function createNavegacion(ctx) {
     if (id === 'tareas' && t.funciones.length === 1) elegirFuncion(t.funciones[0][0]);
   }
 
+  let corteMatriz = '';
   async function listaProtocolos(titulo, cargar, vacio) {
     const cuerpo = abrirHoja(titulo);
     let filas;
     try { filas = await cargar(); } catch (e) { if (!hoja.hidden) cuerpo.innerHTML = `<p role="alert">${esc(e.message)}</p>`; return; }
     if (hoja.hidden || $('hojaTitulo').textContent !== titulo) return;
-    cuerpo.innerHTML = `<input type="search" id="hojaBuscar" aria-label="Buscar protocolo" placeholder="Buscar por nombre o código…" autocomplete="off"><ul class="hojaLista">${filas.map((f, i) => `<li data-texto="${esc((f.tipo.code + ' ' + f.tipo.name).toLocaleLowerCase('es'))}"><button type="button" data-fila="${i}"><span><b>${esc(f.tipo.name || f.tipo.code)}</b><small>${esc(f.tipo.code)}</small></span><em>${f.n.toLocaleString('es-CL')}</em></button></li>`).join('')}</ul><p class="hojaVacia"${filas.length ? ' hidden' : ''}>${esc(vacio)}</p>`;
+    cuerpo.innerHTML = `${corteMatriz ? `<p class="folioAviso">Matriz al ${esc(corteMatriz.split('-').reverse().join('-'))} · ${filas.length} ${filas.length === 1 ? 'tipo' : 'tipos'}</p>` : ''}<input type="search" id="hojaBuscar" aria-label="Buscar protocolo" placeholder="Buscar por nombre o código…" autocomplete="off"><ul class="hojaLista">${filas.map((f, i) => `<li data-texto="${esc((f.tipo.code + ' ' + f.tipo.name).toLocaleLowerCase('es'))}"><button type="button" data-fila="${i}"><span><b>${esc(f.tipo.name || f.tipo.code)}</b><small>${esc(f.tipo.code)}${f.detalle ? ' · ' + esc(f.detalle) : ''}</small></span><em>${f.n.toLocaleString('es-CL')}</em></button></li>`).join('')}</ul><p class="hojaVacia"${filas.length ? ' hidden' : ''}>${esc(vacio)}</p>`;
     const buscar = $('hojaBuscar');
     buscar.oninput = () => { const q = buscar.value.trim().toLocaleLowerCase('es'); let n = 0; cuerpo.querySelectorAll('li').forEach(li => { li.hidden = !li.dataset.texto.includes(q); if (!li.hidden) n++; }); cuerpo.querySelector('.hojaVacia').hidden = !!n; rearmarFlujo(cuerpo.querySelector('.hojaLista')); };
     cuerpo.querySelectorAll('[data-fila]').forEach(b => b.onclick = async () => {
@@ -185,7 +202,10 @@ export function createNavegacion(ctx) {
   }
   const verTipos = () => listaProtocolos('Protocolos abiertos de este piso', async () => {
     const catalogo = await loadProtocolCatalog(), alcance = scopeProtocolCatalog(catalogo, nivel.id, 'ABIERTO');
-    return [...alcance.types].sort((a, b) => b.visibleCount - a.visibleCount || a.code.localeCompare(b.code, 'es')).map(tipo => ({tipo, n: tipo.visibleCount,
+    // Total del tipo en el piso, todos los estados: el plano los dibuja todos y se filtran por estado en su panel.
+    const totales = new Map(scopeProtocolCatalog(catalogo, nivel.id, '').types.map(t => [t.id, t.visibleCount]));
+    corteMatriz = catalogo.source?.cutoff || '';
+    return [...alcance.types].sort((a, b) => b.visibleCount - a.visibleCount || a.code.localeCompare(b.code, 'es')).map(tipo => ({tipo, n: tipo.visibleCount, detalle: `${tipo.visibleCount.toLocaleString('es-CL')} abiertos · ${(totales.get(tipo.id) ?? tipo.visibleCount).toLocaleString('es-CL')} en total`,
       abrir: async () => ({tipo, filas: scopedProtocolRows(await loadProtocolType(catalogo, tipo), nivel.id)})}));
   }, 'Este piso no tiene protocolos abiertos.');
   const verCriticos = () => listaProtocolos('Críticos · más de un año abiertos', async () => {
@@ -196,7 +216,7 @@ export function createNavegacion(ctx) {
 
   function verMas() {
     const cuerpo = abrirHoja('Más herramientas');
-    const opciones = [['exportPlan', 'Exportar plano'], ['legend', 'Ver simbología'], ['original', 'Documentos fuente'], ['diamondCatalogOpen', 'Rombos'], ['import', 'Respaldos'], ...(ctx.escritorio() ? [['editorContornos', 'Editor de contornos']] : [])].filter(([id]) => $(id));
+    const opciones = opcionesMas(ctx.escritorio()).filter(([id]) => $(id));
     cuerpo.innerHTML = `<ul class="hojaLista">${opciones.map(([id, nombre]) => `<li><button type="button" data-mas="${id}"><span><b>${esc(nombre)}</b></span></button></li>`).join('')}</ul>`;
     cuerpo.querySelectorAll('[data-mas]').forEach(b => b.onclick = () => { const destino = $(b.dataset.mas); cerrarHoja(); destino.click(); });
   }
@@ -262,5 +282,20 @@ export function createNavegacion(ctx) {
   window.addEventListener('atlas-piso-visible', dibujarBarra);
   // Abre una función de la libreta desde otro módulo (por ejemplo, «Asignar a mi equipo» en Last Planner).
   function abrirTareas(id) { if (!buscarTarjeta('tareas')?.funciones.some(([f]) => f === id)) return false; cerrarRueda(); if (actual !== 'tareas') { cerrarHoja(); ctx.cerrarModos(); if (actual === 'recintos' && funcion) ui.setLayer(null); actual = 'tareas'; funcion = null; dibujarBarra(); } elegirFuncion(id); return true; }
-  return {abrirRueda, cerrarRueda, cerrarHoja, retomar, volverProtocolos, dibujarBarra, alLimpiar, alCambiarTareas, abrirTareas, abrirTarjeta, contar, modulo: () => modulo, tituloModulo, nombrePiso: () => pisos.find(p => p.id === pisoVisto)?.nombre};
+  // Búsqueda en terreno con varios resultados: una lista en la hoja, sin abrir el panel de oficina. Tocar uno lo muestra
+  // encendido y centrado en el plano, como cuando se busca un código exacto.
+  function listaRecintos(filas, elegir) {
+    const cuerpo = abrirHoja('Recintos encontrados');
+    const vistas = filas.slice(0, 300);
+    cuerpo.innerHTML = `<p class="hojaNota">${filas.length === 1 ? '1 recinto' : filas.length.toLocaleString('es-CL') + ' recintos'}${filas.length > vistas.length ? ' · se muestran los primeros ' + vistas.length : ''}. Toca uno para verlo en el plano.</p><ul class="hojaLista">${vistas.map((r, i) => `<li><button type="button" data-recinto="${i}"><span><b>${esc(r.code)}</b><small>${esc(r.name || '')}</small></span></button></li>`).join('')}</ul>`;
+    cuerpo.querySelectorAll('[data-recinto]').forEach(b => b.onclick = () => { const r = vistas[Number(b.dataset.recinto)]; cerrarHoja(); elegir(r.id); });
+  }
+  // «Reporte diario» desde una tarea con actividad de Last Planner: abre Ejecución y seguimiento de la semana.
+  window.addEventListener('atlas-reporte-diario', () => {
+    if (!buscarTarjeta('lastplanner')) { ctx.toast('Tu cuenta no tiene Last Planner.'); return; }
+    cerrarHoja(); cerrarRueda(); ctx.lastplanner?.verPiso(pisoVisto); ui.abrirPanel('lastplanner', 'ejecucion');
+  });
+  // Al pasar de terreno a escritorio (o al revés) cambian las tarjetas de oficina: se rearma la rueda.
+  alCambiarDispositivo(() => { firma = ''; alCambiarTareas(); });
+  return {abrirRueda, cerrarRueda, cerrarHoja, retomar, volverProtocolos, dibujarBarra, alLimpiar, alCambiarTareas, abrirTareas, abrirTarjeta, contar, listaRecintos, modulo: () => modulo, tituloModulo, nombrePiso: () => pisos.find(p => p.id === pisoVisto)?.nombre};
 }

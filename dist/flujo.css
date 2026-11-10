@@ -81,3 +81,16 @@ body.conFranja #barraFunciones, body.conFranja .toolbar { top: 72px; }
 .cfLista.conFlujo .ruedaTarjeta:has(input:checked) { background: var(--g-azul) !important; border-color: var(--g-azul); color: #fff !important; }
 .cfLista.conFlujo .ruedaTarjeta:has(input:checked) :is(span, b) { color: #fff !important; }
 @media (prefers-reduced-motion: reduce) { .ruedaPista.conFlujo .ruedaTarjeta { transition: none; } }
+
+/* Listas largas (más de 8 opciones): lista vertical con buscador, sin deslizar de a una (selector-flujo.mjs). */
+.ruedaPista.conFlujo.flujoLargo { display: flex !important; flex-direction: column; gap: 6px; height: auto; max-height: none; overflow: visible; margin: 6px 0 12px; padding: 0; list-style: none; perspective: none; }
+.ruedaPista.conFlujo.flujoLargo > li { display: block; margin: 0; padding: 0; border: 0; }
+.ruedaPista.conFlujo.flujoLargo > li[hidden], .ruedaPista.conFlujo.flujoLargo .ruedaTarjeta[hidden] { display: none !important; }
+.ruedaPista.conFlujo.flujoLargo .ruedaTarjeta, .ruedaPista.conFlujo.flujoLargo .ruedaTarjeta:disabled { position: static !important; transform: none !important; opacity: 1 !important; visibility: visible !important; pointer-events: auto !important; left: auto; top: auto; width: 100%; max-width: none; margin: 0; min-height: 48px; height: auto; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; text-align: left; font-size: 14px; }
+.ruedaPista.conFlujo.flujoLargo .ruedaTarjeta:disabled { opacity: .55 !important; }
+.ruedaPista.conFlujo.flujoLargo .ruedaTarjeta svg.panelArt { display: none; }
+.ruedaPista.conFlujo.flujoLargo .ruedaTarjeta > span { display: grid; gap: 2px; }
+.ruedaPista.conFlujo.flujoLargo .ruedaTarjeta em { font-style: normal; font-weight: 700; white-space: nowrap; }
+.flujoBuscar { display: block; width: 100%; box-sizing: border-box; min-height: 44px; margin: 6px 0; padding: 8px 12px; border: 1px solid var(--g-marca); font: inherit; font-size: 15px; background: #fff; }
+.ruedaPista.conFlujo.flujoLargo .ruedaTarjeta > span { justify-items: start; text-align: left; }
+.ruedaPista.conFlujo.flujoLargo .ruedaTarjeta small { text-align: left; font-size: 13px; font-weight: 500; }

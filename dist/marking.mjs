@@ -1,7 +1,7 @@
 import {newMarking, validateMarking, addMarkedRoom, removeMarkedRoom, markingBackup, upgradeMarking, setEstados, addCut, removeCut, compareCuts, markingItems, actual, PLANTILLAS, CAMBIOS, MAX_ESTADOS, esLevantamiento} from './marking-model.mjs';
 import {readMarkings, saveMarking, importMarkings} from './marking-store.mjs';
 import {createLevantamiento} from './levantamiento.mjs';
-import {marcarEliminado} from './marking-model.mjs';
+import {marcarEliminado, esPuertas} from './marking-model.mjs';
 import {firmante} from './firma.mjs';
 
 // Proyectos de marcado: se parte de un piso, se definen estados con leyenda (por ejemplo Pendiente / En ejecución / Terminado),
@@ -149,14 +149,14 @@ export function createMarking(ctx) {
       const docs = (await readMarkings()).filter(doc => doc.level === ctx.level && doc.specialty === 'architecture' && !doc.eliminado).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
       showDialog(`<h2>Mis proyectos</h2><p>Arquitectura · ${esc(ctx.levelName)}. Un proyecto pinta recintos por estado (por ejemplo, pisos vinílicos instalados) y guarda cortes para comparar el avance; un levantamiento lleva una tabla con tus columnas y se importa o exporta en Excel.</p>
         <div class="markingNuevo"><button id="newMarking" class="primary">+ Nuevo proyecto</button><label class="markingImportar">Importar planilla (Excel o CSV)<input id="levImportar" type="file" accept=".xlsx,.xls,.csv,.txt"></label></div>
-        <div class="markingLibrary">${docs.map(doc => `<div class="markingFila"><button data-open-marking="${esc(doc.id)}"><b>${esc(doc.name)}</b><span>${esLevantamiento(doc) ? `Levantamiento · ${doc.filas.length} recintos · ${doc.columnas.length} columnas` : `${esc(doc.author)} · ${doc.rooms.length} recintos${doc.cortes?.length ? ` · ${doc.cortes.length} cortes` : ''}`}</span><small>${esc(doc.purpose)}</small></button><button class="markingEliminar" data-eliminar-marking="${esc(doc.id)}" aria-label="Eliminar ${esc(doc.name)}">Eliminar</button></div>`).join('') || '<p>Aún no hay proyectos para este piso.</p>'}</div>
+        <div class="markingLibrary">${docs.map(doc => `<div class="markingFila"><button data-open-marking="${esc(doc.id)}"><b>${esc(doc.name)}</b><span>${esPuertas(doc) ? `Puertas · ${Object.keys(doc.filas).length} cambios en terreno · plano «${esc(doc.fuente.archivo)}»` : esLevantamiento(doc) ? `Levantamiento · ${doc.filas.length} recintos · ${doc.columnas.length} columnas` : `${esc(doc.author)} · ${doc.rooms.length} recintos${doc.cortes?.length ? ` · ${doc.cortes.length} cortes` : ''}`}</span><small>${esc(doc.purpose)}</small></button><button class="markingEliminar" data-eliminar-marking="${esc(doc.id)}" aria-label="Eliminar ${esc(doc.name)}">Eliminar</button></div>`).join('') || '<p>Aún no hay proyectos para este piso.</p>'}</div>
         <button id="markingBackupAll" ${docs.length ? '' : 'disabled'}>Respaldar proyectos de este piso</button><label>Restaurar respaldo JSON<input id="markingRestore" type="file" accept=".json,application/json"></label>
         <p>Se guarda en este equipo. Se sincroniza con los demás equipos con tu sesión de Atlas; el respaldo queda como copia adicional.</p>`);
       dialog.querySelector('#newMarking').onclick = () => tipoNuevo();
       dialog.querySelector('#levImportar').onchange = event => { const file = event.target.files[0]; if (file) lev.importar(file); };
       dialog.querySelector('#markingBackupAll').onclick = () => download(docs);
       dialog.querySelectorAll('[data-open-marking]').forEach(button => {button.onclick = () => {
-        try {open(docs.find(doc => doc.id === button.dataset.openMarking));} catch (failure) {dialog.querySelector('#markingError').textContent = failure.message;}
+        try {const doc = docs.find(doc => doc.id === button.dataset.openMarking); if (esPuertas(doc)) { if (doc.level !== ctx.level) throw Error('El documento pertenece a otro piso.'); dialog.close(); close(); dispatchEvent(new CustomEvent('atlas-puertas-abrir', {detail: {id: doc.id}})); } else open(doc);} catch (failure) {dialog.querySelector('#markingError').textContent = failure.message;}
       };});
       // Dos toques: el primero pide confirmar y el segundo elimina, también en los demás equipos.
       let porEliminar = null;
@@ -188,7 +188,9 @@ export function createMarking(ctx) {
   function tipoNuevo() {
     showDialog(`<h2>Nuevo proyecto</h2><p>Arquitectura · ${esc(ctx.levelName)}</p><div class="markingTipos">
       <button data-tipo="marcado"><b>Marcado</b><span>Un estado por recinto, con leyenda y cortes para comparar el avance.</span></button>
-      <button data-tipo="levantamiento"><b>Levantamiento</b><span>Una tabla con tus columnas (estado, lista o texto), vista «Listo para instalar», enlace con el rombo y Excel.</span></button></div>`);
+      <button data-tipo="levantamiento"><b>Levantamiento</b><span>Una tabla con tus columnas (estado, lista o texto), vista «Listo para instalar», enlace con el rombo y Excel.</span></button>
+      <button data-tipo="puertas"><b>Puertas</b><span>Una fila por puerta del plano de avance: modelo, llave, vano y estado (Teisa y Protego). Se marca en el plano de puertas y se exporta a Excel.</span></button></div>`);
+    dialog.querySelector('[data-tipo=puertas]').onclick = () => { dialog.close(); dispatchEvent(new CustomEvent('atlas-puertas-nuevo')); };
     dialog.querySelector('[data-tipo=marcado]').onclick = () => editor();
     dialog.querySelector('[data-tipo=levantamiento]').onclick = () => lev.editor();
   }
