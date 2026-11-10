@@ -1,8 +1,9 @@
 // Ajustes de recintos sobre el plano publicado de cada piso:
 // - Agrega los recintos que las láminas DWG rotulan y el plano no tiene: en el nivel 2, los que la extracción dejó sin
 //   polilínea (circulaciones, recintos técnicos, «Disponible»); en el −1, los de las láminas A-511 y A-512, fuera del
-//   juego PDF con que se armó ese plano. El contorno sale del relleno desde el rótulo entre muros (dwg-plano/contorno.mjs);
-//   si no cierra, el recinto lleva una superficie auxiliar de selección en el rótulo.
+//   juego PDF con que se armó ese plano. El contorno lo calcula dwg-plano/contorno.mjs: el relleno de color del recinto en
+//   la lámina o, si no lo trae, el relleno desde el rótulo entre muros con las puertas cerradas de jamba a jamba. Si no
+//   cierra, el recinto lleva una superficie auxiliar de selección junto al rótulo, recortada por los muros.
 // - Quita de los niveles 2 y 3 los recintos de triple altura del nivel 1 que esas láminas también rotulan.
 // Lo calculado queda en data/<nivel>/recintos-extra.json (el relleno necesita barreras.json, que no está en git), así que
 // se puede volver a aplicar sin los DWG. Correr después de import-n02, import-dwg o prepare-runtime, y antes de
@@ -39,9 +40,11 @@ for (const [nivel, piso] of Object.entries(PISOS)) {
   let extra = [];
   if (piso.agregar) {
     const archivo = `data/${nivel}/recintos-extra.json`, lam = leer(`data/${nivel}/laminas.json`), barreras = leer(`data/${nivel}/barreras.json`);
-    const excluir = new Set(piso.excluir || []), publicados = new Set(c.rows.map(codigoDe).filter(code => !excluir.has(code)));
+    // Lo que este script agregó en una corrida anterior no cuenta como publicado: se vuelve a calcular.
+    const previos = new Set((leer(archivo)?.recintos || []).map(e => e.codigo));
+    const excluir = new Set(piso.excluir || []), publicados = new Set(c.rows.map(codigoDe).filter(code => !excluir.has(code) && !previos.has(code)));
     if (barreras && lam) {
-      const contorno = crearContorno(barreras), porCodigo = new Map(pma.main.filter(r => r.level === piso.pma).map(r => [String(r.code).trim(), r]));
+      const contorno = crearContorno(barreras, {vanos: leer('data/' + nivel + '/vanos.json')?.vanos, zonas: leer('data/' + nivel + '/zonas.json')?.zonas}), porCodigo = new Map(pma.main.filter(r => r.level === piso.pma).map(r => [String(r.code).trim(), r]));
       const rombos = new Map(); for (const r of lam.rombos || []) { const k = r.codigo || r.etiqueta; if (k && !rombos.has(k)) rombos.set(k, r); }
       const vistos = new Set();
       for (const rot of lam.rotulos) {
@@ -50,7 +53,7 @@ for (const [nivel, piso] of Object.entries(PISOS)) {
         const valores = rombos.get(rot.codigo)?.valores || (fila ? {M1: fila.M1, M2: fila.M2, M3: fila.M3, M4: fila.M4, CIE: fila.CIE, PAV: fila.PAV} : {});
         extra.push({codigo: rot.codigo, nombre: fila?.name?.trim() || rot.nombre || 'Sin nombre en la lámina', superficie, lamina: rot.lamina, p: rot.p, valores, ...contorno(rot.p, numero(fila?.area) || numero(superficie))});
       }
-      fs.writeFileSync(path.join(repo, archivo), JSON.stringify({nota: 'Recintos rotulados en las láminas DWG que el plano publicado no tenía; contorno por relleno desde el rótulo (cm del DWG). Lo aplica scripts/recintos-extra.mjs.', recintos: extra}));
+      fs.writeFileSync(path.join(repo, archivo), JSON.stringify({nota: 'Recintos rotulados en las láminas DWG que el plano publicado no tenía; contorno desde el relleno de color del recinto o por relleno desde el rótulo (cm del DWG). Lo aplica scripts/recintos-extra.mjs.', recintos: extra}));
     } else extra = leer(archivo)?.recintos || [];
   }
   const quitar = new Set([...(piso.excluir || []), ...extra.map(e => e.codigo)]);
@@ -68,19 +71,21 @@ for (const [nivel, piso] of Object.entries(PISOS)) {
   let contornos = 0, auxiliares = 0;
   for (const e of extra) {
     const docId = piso.documento(e), doc = c.base.documents.find(d => d.id === docId), id = docId + ':' + e.codigo;
-    const anillo = e.poly ? Array.from({length: e.poly.length / 2}, (_, i) => piso.marco([e.poly[2 * i], e.poly[2 * i + 1]])) : null;
+    const puntos = v => Array.from({length: v.length / 2}, (_, i) => piso.marco([v[2 * i], v[2 * i + 1]]));
+    const anillo = e.poly ? puntos(e.poly) : null, huecos = anillo ? (e.huecos || []).map(puntos) : [];
     const pos = piso.marco(e.p), auxiliar = !anillo;
-    const cuadrado = (() => { const m = Math.sqrt(numero(e.superficie) || 9) * 25, [x, y] = e.p; return [[x - m, y - m], [x + m, y - m], [x + m, y + m], [x - m, y + m]].map(piso.marco); })();
+    // Superficie auxiliar: la parte que rodea al rótulo recortada por los muros (e.aux) o, si no la hay, un cuadrado en el rótulo.
+    const cuadrado = e.aux ? puntos(e.aux) : (() => { const m = Math.sqrt(numero(e.superficie) || 9) * 25, [x, y] = e.p; return [[x - m, y - m], [x + m, y - m], [x + m, y + m], [x - m, y + m]].map(piso.marco); })();
     if (auxiliar) { auxiliares++; (bundle.selection ||= {schema: 1, rooms: []}).rooms.push({id, rings: [{polygon: cuadrado, holes: []}], score: 1}); } else contornos++;
     const finishes = CAMPOS.map(k => terminacion(k, e.valores?.[k])), caja = cajas[e.codigo], imagen = caja && fs.existsSync(path.join(repo, 'dist', piso.rombos, 'rombos', e.codigo + '.png'));
     const conRombo = imagen && dentroDe([(caja[0] + caja[2]) / 2, (caja[1] + caja[3]) / 2], anillo || cuadrado);
     const room = {id, code: e.codigo, name: e.nombre, document_id: intern(docId), position: pos, label_bbox: null, diamond_bbox: conRombo ? caja : null,
       finishes: finishes.map(t => [fin(t), null]), declared_area: e.superficie ? e.superficie + ' m²' : '', polygon: anillo,
       geometry_status: intern('Pendiente de revisión'),
-      geometry_method: intern(auxiliar ? 'Superficie auxiliar de selección: contorno no delimitado en los DWG' : e.estado === 'parcial' ? 'Contorno parcial por relleno desde el rótulo entre muros del DWG' : 'Contorno por relleno desde el rótulo entre muros del DWG'),
+      geometry_method: intern(auxiliar ? 'Superficie auxiliar de selección: contorno no delimitado en los DWG' : e.estado === 'parcial' ? 'Contorno parcial por relleno desde el rótulo entre muros del DWG' : e.metodo === 'zona' ? 'Contorno del relleno de color del recinto en la lámina DWG' : 'Contorno por relleno desde el rótulo entre muros del DWG'),
       status: intern('Pendiente de revisión'),
       notes: [intern(`Recinto agregado desde el rótulo de la lámina DWG ${e.lamina}: el plano publicado no lo tenía.`), ...(e.motivo ? [intern('Contorno: ' + e.motivo + '. Revisar.')] : [])],
-      source_page: 1, level: plantilla.level, sector: intern(piso.sector ? piso.sector(e) : doc?.sector || texto(plantilla.sector)), holes: [], version: 1,
+      source_page: 1, level: plantilla.level, sector: intern(piso.sector ? piso.sector(e) : doc?.sector || texto(plantilla.sector)), holes: huecos, version: 1,
       asepsis: [...new Set(finishes.map(f => f.asepsis).filter(Boolean))], diamond_url: conRombo ? `${piso.rombos}/rombos/${encodeURIComponent(e.codigo)}.png` : null, history: [], has_polygon: !!anillo};
     c.rows.push(c.fields.map(k => room[k]));
   }

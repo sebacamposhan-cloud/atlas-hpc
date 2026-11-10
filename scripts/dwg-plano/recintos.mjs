@@ -1,8 +1,9 @@
 // Recintos de un nivel dibujado desde DWG: código y posición del rótulo, monografía del rombo y contorno.
-// El contorno se obtiene como en scripts/n02-plano/dwg-contornos.mjs: se rasterizan muros, puertas, ventanales, pilares y
-// escaleras (data/<nivel>/barreras.json) en una grilla de 3 cm, se rellena desde el rótulo y se toma el borde.
-// Se acepta si el relleno no se escapa y su área queda entre 80 % y 120 % de la superficie del PMA (o del rótulo); entre 60 % y
-// 80 % queda como contorno parcial. Si no, el recinto lleva una superficie auxiliar de selección en el rótulo (no se inventa un límite).
+// El contorno lo calcula scripts/dwg-plano/contorno.mjs: relleno desde el rótulo entre muros, ventanales, pilares y escaleras
+// (data/<nivel>/barreras.json), con cada puerta cerrada de jamba a jamba (vanos.json), o el relleno de color del recinto
+// si las láminas lo traen (zonas.json). Se acepta si su área queda entre 80 % y 120 % de la superficie del PMA (o del
+// rótulo); entre 60 % y 80 % queda como contorno parcial. Si no, el recinto lleva una superficie auxiliar de selección:
+// la parte que rodea al rótulo, recortada por los muros (no se inventa un límite).
 // Uso: node scripts/dwg-plano/recintos.mjs <nivel: n01|n03>  -> data/<nivel>/recintos.json
 import fs from 'node:fs';
 import path from 'node:path';
@@ -12,11 +13,12 @@ const nivel = process.argv[2];
 if (!/^n0[13]$/.test(nivel || '')) throw Error('Indica el nivel: n01 o n03 (el N02 conserva sus contornos de data/n02/plano.json).');
 const leer = f => JSON.parse(fs.readFileSync(path.join(repo, 'data', nivel, f), 'utf8'));
 const {rotulos, rombos} = leer('laminas.json'), barreras = leer('barreras.json');
+const opcional = f => fs.existsSync(path.join(repo, 'data', nivel, f)) ? leer(f) : {};
 const {decodePma} = await import(pathToFileURL(path.join(repo, 'dist/pma-model.mjs')).href);
 const {crearContorno, numero} = await import(pathToFileURL(path.join(repo, 'scripts/dwg-plano/contorno.mjs')).href);
 const pma = decodePma(JSON.parse(fs.readFileSync(path.join(repo, 'dist/pma/catalog.json'), 'utf8')));
 const nivelPma = 'A-' + nivel.toUpperCase(), porCodigo = new Map(pma.main.filter(r => r.level === nivelPma).map(r => [String(r.code).trim(), r]));
-const contorno = crearContorno(barreras);
+const contorno = crearContorno(barreras, {vanos: opcional('vanos.json').vanos, zonas: opcional('zonas.json').zonas});
 
 // Un recinto por código: rótulo de la primera lámina donde aparece; rombo con código si lo hay.
 const conRombo = new Map(); for (const r of rombos) if (r.codigo && !conRombo.has(r.codigo)) conRombo.set(r.codigo, r);
@@ -32,6 +34,6 @@ for (const [codigo, rot] of unicos) {
 }
 const resumen = {recintos: recintos.length, contornos: recintos.filter(r => r.estado === 'ok').length, parciales: recintos.filter(r => r.estado === 'parcial').length, auxiliares: recintos.filter(r => r.estado === 'auxiliar').length,
   sinPma: recintos.filter(r => !r.enPma).map(r => r.codigo), pmaSinRotulo: [...porCodigo.keys()].filter(c => !unicos.has(c)).length, segundos: Math.round((Date.now() - t0) / 1000),
-  motivos: Object.entries(recintos.filter(r => r.motivo).reduce((a, r) => { const k = r.motivo.replace(/\(.*\)/, '').trim(); a[k] = (a[k] || 0) + 1; return a; }, {}))};
-fs.writeFileSync(path.join(repo, 'data', nivel, 'recintos.json'), JSON.stringify({nota: 'Recintos del nivel leídos de las láminas DWG. Coordenadas en cm del modelo; contorno por relleno desde el rótulo.', resumen, recintos}));
+  motivos: Object.entries(recintos.filter(r => r.motivo).reduce((a, r) => { const k = r.motivo.replace(/\(.*\)/, '').replace(/pasa de .*/, 'se une con otro recinto').trim(); a[k] = (a[k] || 0) + 1; return a; }, {}))};
+fs.writeFileSync(path.join(repo, 'data', nivel, 'recintos.json'), JSON.stringify({nota: 'Recintos del nivel leídos de las láminas DWG. Coordenadas en cm del modelo; contorno por relleno desde el rótulo con las puertas cerradas de jamba a jamba.', resumen, recintos}));
 console.log(JSON.stringify(resumen));

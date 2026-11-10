@@ -5,7 +5,8 @@
 // Lector LibreDWG en WebAssembly (GPL), instalado fuera del repo como en scripts/n02-plano; no forma parte del sitio.
 // Uso: node scripts/dwg-plano/extraer.mjs <carpeta con node_modules del lector> <carpeta de láminas> <nivel: n01|n02|n03|s01>
 //   (s01 es el nivel −1: su marco se calza después con el plano PDF existente, ver scripts/s01-plano/ajuste.mjs)
-//   -> data/<nivel>/laminas.json y marco.json; dibujo.json y barreras.json son datos intermedios grandes (no se publican)
+//   -> data/<nivel>/laminas.json, marco.json, vanos.json (vano de cada puerta, de jamba a jamba) y zonas.json (rellenos de
+//      color de recinto, si las láminas los traen); dibujo.json y barreras.json son datos intermedios grandes (no se publican)
 import fs from 'node:fs';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
@@ -117,6 +118,9 @@ function bordesSombreado(e) {
 const archivos = fs.readdirSync(carpeta).filter(f => new RegExp('^HPC-ARQ-PLA-' + nivel.toUpperCase() + '-A-5\\d\\d.*\\.dwg$', 'i').test(f)).sort();
 if (!archivos.length) throw Error('No hay láminas HPC-ARQ-PLA-' + nivel.toUpperCase() + '-A-5xx en ' + carpeta);
 const capas = {base: [], mobiliario: [], ejes: [], relleno: []}, vistos = new Set(), barreras = [], rotulos = [], rombos = [], bloquesRombo = {}, laminas = [];
+// vanos: una puerta por vano, con el eje del muro. zonas: rellenos sólidos de color de recinto (A-AREA-PATT), sin recortar.
+const vanos = [], vanosVistos = new Set(), zonas = [];
+const GEOMETRIA_PUERTA = /^(A-DOOR|A-DETL-GENF)/;
 for (const archivo of archivos) {
   const bytes = fs.readFileSync(path.join(carpeta, archivo));
   const dwg = libredwg.dwg_read_data(bytes, Dwg_File_Type.DWG), db = libredwg.convert(dwg); libredwg.dwg_free(dwg);
@@ -138,8 +142,10 @@ for (const archivo of archivos) {
   let n = 0;
   const agregar = (g, prim) => { const k = g + JSON.stringify(prim); if (vistos.has(k)) return; vistos.add(k); capas[g].push(prim); n++; };
   const colorCapa = L => capasDwg.get(L)?.color, tipoCapa = L => capasDwg.get(L)?.lineType || '';
-  // puerta: la entidad está dentro de un bloque de puerta; su hoja y su barrido (capas A-DETL-GENF*) también cierran el recinto.
-  function visitar(e, M, capaPadre, colorPadre, prof, puerta = false) {
+  // puerta: la entidad está dentro de un bloque de puerta. La hoja, el barrido y el marco no limitan el recinto: el vano se
+  // cierra con una recta de jamba a jamba sobre el eje del muro (el eje X del bloque, que Revit alinea con el muro).
+  // En puerta se anota cuánto se extiende su dibujo a lo largo del muro (a) y a través (v), en cm.
+  function visitar(e, M, capaPadre, colorPadre, prof, puerta = null) {
     if (e.isVisible === false) return;
     const L = e.layer === '0' ? capaPadre : e.layer, capa = capasDwg.get(L);
     if (OMITIR.test(L) || capa?.off || capa?.frozen) return;
@@ -153,17 +159,26 @@ for (const archivo of archivos) {
       for (let i = 0; i < Math.max(1, e.columnCount || 1); i++) for (let j = 0; j < Math.max(1, e.rowCount || 1); j++) {
         const ox = i * (e.columnSpacing || 0), oy = j * (e.rowSpacing || 0), ix = e.insertionPoint.x + c * ox - s * oy, iy = e.insertionPoint.y + s * ox + c * oy;
         const N = [c * sx, s * sx, -s * sy, c * sy, ix - (c * sx * bp.x - s * sy * bp.y), iy - (s * sx * bp.x + c * sy * bp.y)];
-        for (const h of b.entities || []) visitar(h, mul(M, N), L, color, prof + 1, puerta || e.layer === 'A-DOOR');
+        const MN = mul(M, N);
+        let esta = puerta;
+        if (!puerta && e.layer === 'A-DOOR') {
+          const c = aplicar(MN[4], MN[5]), q = aplicar(MN[4] + MN[0], MN[5] + MN[1]), largo = Math.hypot(q[0] - c[0], q[1] - c[1]) || 1;
+          esta = {c, u: [(q[0] - c[0]) / largo, (q[1] - c[1]) / largo], a0: Infinity, a1: -Infinity, v0: Infinity, v1: -Infinity, nombre: e.name};
+        }
+        for (const h of b.entities || []) visitar(h, MN, L, color, prof + 1, esta);
+        if (esta && !puerta && esta.a1 - esta.a0 >= 40) crudos.push(['p', esta]);
       }
       return;
     }
     const g = grupo(L), gris = tinta(color), lt = e.lineType && !/^(bylayer|byblock)$/i.test(e.lineType) ? e.lineType : tipoCapa(L), raya = !/^(continuous|bylayer|byblock|)$/i.test(lt) ? 1 : 0;
-    // En una puerta, el arco de barrido no limita: el vano se cierra con las rectas del pivote a cada extremo del arco
-    // (una coincide con la hoja abierta y la otra con la puerta cerrada). Así el contorno no bordea el barrido.
-    const arcoPuerta = puerta && e.type === 'ARC';
-    const limita = !arcoPuerta && (BARRERA.test(L) || (puerta && /^A-DETL-GENF/.test(L)));
-    const linea = pts => { if (pts.length > 1) crudos.push(['l', g, L, gris, raya, pts.map(tp), limita]); };
-    if (arcoPuerta) for (const a of [e.startAngle, e.endAngle]) crudos.push(['b', [tp([e.center.x, e.center.y]), tp([e.center.x + e.radius * Math.cos(a), e.center.y + e.radius * Math.sin(a)])]]);
+    const limita = !puerta && BARRERA.test(L);
+    const medir = puerta && GEOMETRIA_PUERTA.test(L) && e.type !== 'HATCH';
+    const linea = pts => {
+      if (pts.length < 2) return;
+      const q = pts.map(tp);
+      if (medir) for (const [x, y] of q) { const a = (x - puerta.c[0]) * puerta.u[0] + (y - puerta.c[1]) * puerta.u[1], v = -(x - puerta.c[0]) * puerta.u[1] + (y - puerta.c[1]) * puerta.u[0]; if (a < puerta.a0) puerta.a0 = a; if (a > puerta.a1) puerta.a1 = a; if (v < puerta.v0) puerta.v0 = v; if (v > puerta.v1) puerta.v1 = v; }
+      crudos.push(['l', g, L, gris, raya, q, limita]);
+    };
     if (e.type === 'LINE') linea([[e.startPoint.x, e.startPoint.y], [e.endPoint.x, e.endPoint.y]]);
     else if (e.type === 'LWPOLYLINE' && e.vertices?.length > 1) linea(polilinea(e.vertices, !!(e.flag & 1)));
     else if (/^POLYLINE/.test(e.type) && e.vertices?.length > 1) linea(polilinea(e.vertices, !!(e.flag & 1)));
@@ -172,7 +187,12 @@ for (const archivo of archivos) {
     else if (e.type === 'ELLIPSE' && e.majorAxisEndPoint) { const ax = e.majorAxisEndPoint; linea(arco(e.center, 1, e.startAngle ?? 0, e.endAngle ?? 2 * Math.PI, true, e.axisRatio || 1, [ax.x, ax.y])); }
     else if (e.type === 'SPLINE') linea(spline(e));
     else if ((e.type === 'SOLID' || e.type === 'TRACE') && e.corner1) crudos.push(['f', g, L, gris, 1, [[e.corner1, e.corner2, e.corner4 || e.corner3, e.corner3].filter(Boolean).map(t)], limita]);
-    else if (e.type === 'HATCH') { const anillos = bordesSombreado(e).map(r => r.map(tp)); if (anillos.length) crudos.push(['f', g, L, gris, e.solidFill || e.patternName === 'SOLID' ? 1 : 0, anillos, limita]); }
+    else if (e.type === 'HATCH') {
+      const anillos = bordesSombreado(e).map(r => r.map(tp)), solido = e.solidFill || e.patternName === 'SOLID' ? 1 : 0;
+      if (anillos.length) crudos.push(['f', g, L, gris, solido, anillos, limita]);
+      // Relleno de color de un recinto (esquema de color de Revit): su borde es el límite del recinto en el modelo.
+      if (anillos.length && solido && prof === 0 && L === 'A-AREA-PATT') crudos.push(['z', e.color ?? color ?? 0, anillos]);
+    }
     else if ((e.type === 'MTEXT' || e.type === 'TEXT' || e.type === 'ATTRIB') && e.insertionPoint) {
       const texto = limpiar(e.text); if (!texto) return;
       const alineado = e.type === 'TEXT' && (e.halign || e.valign) && e.alignmentPoint;
@@ -193,7 +213,18 @@ for (const archivo of archivos) {
   if (!(ventana[2] > ventana[0])) throw Error(archivo + ': no se pudo determinar la ventana de la vista en planta.');
   const dentro = ([x, y]) => x >= ventana[0] && x <= ventana[2] && y >= ventana[1] && y <= ventana[3];
   for (const c of crudos) {
-    if (c[0] === 'b') { for (const trozo of recortarLinea(c[1], ventana)) { const v = trozo.flat().map(r1); barreras.push([v[0], v[1], v[2], v[3]]); } continue; }
+    if (c[0] === 'p') {
+      // Vano de una puerta: recta de jamba a jamba sobre el eje del muro, 3 cm más larga por lado para no dejar rendijas.
+      // Una puerta repetida en el traslape de dos láminas se anota una vez.
+      const {c: o, u, a0, a1, v0, v1} = c[1], cx = o[0] + u[0] * (a0 + a1) / 2, cy = o[1] + u[1] * (a0 + a1) / 2;
+      if (!dentro([cx, cy])) continue;
+      const a = [o[0] + u[0] * (a0 - 3), o[1] + u[1] * (a0 - 3)], b = [o[0] + u[0] * (a1 + 3), o[1] + u[1] * (a1 + 3)];
+      for (const trozo of recortarLinea([a, b], ventana)) { const v = trozo.flat().map(r1); barreras.push([v[0], v[1], v[2], v[3]]); }
+      const k = Math.round(cx / 15) + ',' + Math.round(cy / 15); if (vanosVistos.has(k)) continue; vanosVistos.add(k);
+      vanos.push({lamina, c: o.map(r1), u: u.map(v => +v.toFixed(5)), a: [r1(a0), r1(a1)], v: [r1(v0), r1(v1)]});
+      continue;
+    }
+    if (c[0] === 'z') { zonas.push({lamina, color: c[1], anillos: c[2].map(r => r.flat().map(r1))}); continue; }
     if (c[0] === 'l') { const [, g, L, gris, raya, pts, limita] = c; for (const trozo of recortarLinea(pts, ventana)) { const v = trozo.flat().map(r1); agregar(g, ['l', gris, ancho(L), raya, v]); if (limita) for (let i = 0; i + 3 < v.length; i += 2) barreras.push([v[i], v[i + 1], v[i + 2], v[i + 3]]); } }
     else if (c[0] === 'f') {
       const [, g, L, gris, solido, rings, limita] = c, anillos = rings.map(r => recortarAnillo(r, ventana)).filter(r => r.length > 2);
@@ -229,6 +260,8 @@ const todas = laminas.map(l => l.ventana), bounds = [Math.min(...todas.map(v => 
 fs.writeFileSync(path.join(salidaDir, 'dibujo.json'), JSON.stringify({nivel, bounds, capas}));
 fs.writeFileSync(path.join(salidaDir, 'laminas.json'), JSON.stringify({nota: 'Láminas DWG de arquitectura del nivel. Ventana: vista en planta en cm del marco del nivel. Las huellas permiten comprobar que los originales no cambiaron.', bounds, laminas, rotulos, rombos, bloques: bloquesRombo}));
 fs.writeFileSync(path.join(salidaDir, 'barreras.json'), JSON.stringify(barreras));
+fs.writeFileSync(path.join(salidaDir, 'vanos.json'), JSON.stringify({nota: 'Vano de cada puerta de las láminas DWG, en cm del marco del nivel. c: origen del bloque; u: dirección del muro; a: extremos del vano a lo largo del muro (de jamba a jamba); v: extensión del dibujo de la puerta a través del muro.', vanos}));
+if (zonas.length) fs.writeFileSync(path.join(salidaDir, 'zonas.json'), JSON.stringify({nota: 'Rellenos de color de recinto de las láminas DWG (capa A-AREA-PATT), en cm del marco del nivel. Cada relleno trae sus anillos (exteriores y huecos); un recinto que cruza dos láminas aparece en ambas.', zonas}));
 fs.writeFileSync(path.join(salidaDir, 'marco.json'), JSON.stringify(calcularMarco(repo, nivel, bounds)));
-console.log(JSON.stringify({nivel, bounds, primitivas: Object.fromEntries(Object.entries(capas).map(([k, v]) => [k, v.length])), barreras: barreras.length, rotulos: rotulos.length, codigos: new Set(rotulos.map(r => r.codigo)).size, rombos: rombos.length, conValores: rombos.filter(r => Object.keys(r.valores).length === 6).length,
+console.log(JSON.stringify({nivel, bounds, primitivas: Object.fromEntries(Object.entries(capas).map(([k, v]) => [k, v.length])), barreras: barreras.length, vanos: vanos.length, zonas: zonas.length, rotulos: rotulos.length, codigos: new Set(rotulos.map(r => r.codigo)).size, rombos: rombos.length, conValores: rombos.filter(r => Object.keys(r.valores).length === 6).length,
   dibujoMB: +(fs.statSync(path.join(salidaDir, 'dibujo.json')).size / 1e6).toFixed(1)}));

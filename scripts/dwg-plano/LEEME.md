@@ -33,14 +33,16 @@ Fuentes, fuera del repo: carpetas «Planos N01», «Planos N02» y «Planos N03�
 2. **Extraer el dibujo.**
    `node scripts/dwg-plano/extraer.mjs <carpeta> "<Planos N0x>" n0x`
    - Genera `data/n0x/laminas.json`, con huellas, encuadres, rótulos y rombos, y `data/n0x/marco.json`.
+   - Genera `data/n0x/vanos.json`: el vano de cada puerta, de jamba a jamba, sobre el eje del muro.
+   - Genera `data/n0x/zonas.json` si las láminas traen rellenos de color de recinto (capa `A-AREA-PATT`). Hoy solo el N02.
    - También genera `dibujo.json` y `barreras.json`. Son grandes y no se publican.
+   - En el −1 reescribe `marco.json`: hay que restaurarlo (`git checkout data/s01/marco.json`) o repetir `scripts/s01-plano/ajuste.mjs`.
 3. **Calcular recintos.** Solo para N01 y N03:
    `node scripts/dwg-plano/recintos.mjs n0x` → `data/n0x/recintos.json`
-   - El contorno sale de rellenar desde el rótulo entre muros, puertas, ventanas, pilares y escaleras.
-   - En las puertas, el vano se cierra con la recta de la hoja cerrada y el arco de barrido no limita.
-   - Se acepta si el área queda entre 80 % y 120 % de la superficie del PMA.
+   - El contorno lo calcula `contorno.mjs`. Ver «Contornos» más abajo.
+   - Se acepta si el área queda entre 80 % y 120 % de la superficie del PMA, o hasta 1,5 m² de más en recintos chicos.
    - Entre 60 % y 80 % queda como contorno parcial, por tabiques interiores.
-   - Si el relleno se escapa por aberturas sin puerta o el área no calza, el recinto lleva una superficie auxiliar de selección en su rótulo.
+   - Si el relleno se une con otro recinto por una abertura sin puerta, o el área no calza, el recinto lleva una superficie auxiliar de selección.
 4. **Dibujar los mosaicos.**
    - Inicia el servidor y déjalo abierto: `node scripts/dwg-plano/servidor.mjs`
    - Abre `http://127.0.0.1:8011/tool/render.html?nivel=n0x` en Chrome sin ventana:
@@ -54,8 +56,37 @@ Fuentes, fuera del repo: carpetas «Planos N01», «Planos N02» y «Planos N03�
    - Luego `node scripts/recintos-extra.mjs`, que hace dos cosas:
      - agrega los recintos rotulados que el plano no tiene: en el N02, los que quedaron sin polilínea; en el −1, los de las láminas A-511 y A-512;
      - quita de los niveles 2 y 3 los recintos de triple altura del nivel 1.
-     El contorno sale del mismo relleno desde el rótulo (`contorno.mjs`). Lo calculado queda en `data/<nivel>/recintos-extra.json`, para volver a aplicarlo sin `barreras.json`.
-   - Después: `node scripts/prepare-offline.mjs` y `node pisos-test.mjs`.
+     El contorno sale de `contorno.mjs`. Lo calculado queda en `data/<nivel>/recintos-extra.json`, para volver a aplicarlo sin `barreras.json`. Se puede correr varias veces: lo que agregó antes lo vuelve a calcular.
+   - Después: `node scripts/prepare-offline.mjs`, `node contorno-dwg-test.mjs` y `node pisos-test.mjs`.
+
+## Contornos
+
+`contorno.mjs` saca el contorno de un recinto de dos fuentes, en este orden:
+
+1. **Relleno de color del recinto.** Si la lámina pinta el recinto (esquema de color de Revit, capa `A-AREA-PATT`), ese relleno es el límite que usa el modelo. Corta los pasillos donde corresponde aunque no haya puerta.
+   - Un recinto que cruza dos láminas trae un relleno en cada una. Se unen los que se traslapan; los que solo se tocan son recintos vecinos.
+   - El relleno de Revit rodea las hojas de las puertas abiertas. Esas ranuras se cierran.
+   - Se usa si su área queda a ±5 % de la superficie declarada.
+2. **Relleno desde el rótulo.** Se rasterizan muros, ventanales, pilares y escaleras en una grilla de 3 cm para todo el nivel y se rellena desde el rótulo.
+   - **Puertas.** Cada puerta cierra su vano con una recta de jamba a jamba sobre el eje del muro. La hoja, el barrido y el marco no limitan. Frente al vano, el borde pasa por la cara del muro: el contorno queda recto.
+   - **Línea del muro.** El borde se lleva a la línea del muro, no a 6 cm por dentro como antes. El área calza mejor con la declarada.
+   - **Sin ventana de búsqueda.** Un pasillo largo se rellena completo. El relleno se detiene si pasa de 125 % de la superficie declarada.
+
+En los dos casos:
+- Los tramos casi horizontales o verticales se ponen a escuadra y los chaflanes cortos pasan a ser esquinas.
+- Los huecos de más de 1,5 m², como un núcleo rodeado por un pasillo, se guardan aparte y no cuentan en el área.
+- **Superficie auxiliar.** Si el contorno no cierra, se guarda la parte del recinto que rodea al rótulo, recortada por los muros. Ya no es un cuadrado que invade los recintos vecinos.
+
+**Resultado (noviembre de 2026):**
+
+| Piso | Con contorno | Parciales | Auxiliares | Error medio de área |
+|---|---|---|---|---|
+| N01 | 308 de 359 (antes 286) | 10 | 41 (antes 64) | 2,5 % (antes 7,8 %) |
+| N02, recintos agregados | 48 de 48 (antes 30) | 0 | 0 (antes 17) | menos de 1 % |
+| N03 | 251 de 308 (antes 233) | 1 | 56 (antes 71) | 1,8 % (antes 8,0 %) |
+| −1, recintos agregados | 9 de 14 | 2 | 3 (antes 4) | |
+
+Los auxiliares que quedan son recintos abiertos, sin muro ni puerta que los separe: estaciones de enfermería, salas de espera, áreas de casilleros y circulaciones de N01 y N03, que no traen relleno de color. Se corrigen en el editor de contornos.
 
 **Revisar una zona sin generar todo:** `render.html?nivel=n01&x=1600&y=2000&w=700&h=500&s=2&guardar=nombre`, en coordenadas de Atlas. La imagen queda en `data/n01/revision/`, que Git ignora.
 

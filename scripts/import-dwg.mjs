@@ -37,26 +37,29 @@ const dentroDe = (p, ring) => { let c = false; for (let i = 0, j = ring.length -
 const numeroDe = s => { const v = parseFloat(String(s ?? '').replace(/\./g, '').replace(',', '.')); return Number.isFinite(v) ? v : null; };
 
 const seleccion = []; // superficies auxiliares (mismo formato que dist/selection.json)
-const METODO = {ok: 'Contorno del DWG: relleno desde el rótulo entre muros, puertas y ventanas', parcial: 'Contorno parcial del DWG: tabiques interiores o artefactos fijos dividen el recinto',
+const METODO = {ok: 'Contorno del DWG: relleno desde el rótulo entre muros, puertas y ventanas', zona: 'Contorno del DWG: relleno de color del recinto en la lámina', parcial: 'Contorno parcial del DWG: tabiques interiores o artefactos fijos dividen el recinto',
   auxiliar: 'Superficie auxiliar de selección: contorno no delimitado en los DWG'};
 const rooms = recintos.map(rec => {
   const doc = docPorLamina.get(rec.lamina), id = doc.id + ':' + rec.codigo, finishes = CAMPOS.map(k => terminacion(k, rec.valores?.[k]));
   let polygon = null;
   if (rec.poly) { polygon = []; for (let i = 0; i < rec.poly.length; i += 2) polygon.push(pt([rec.poly[i], rec.poly[i + 1]])); }
   else {
-    // Cuadrado de un cuarto de la superficie declarada centrado en el rótulo: permite tocar el recinto sin inventar un límite.
+    // Superficie auxiliar: la parte del recinto que rodea al rótulo, recortada por los muros (rec.aux). Si no la hay, un
+    // cuadrado de un cuarto de la superficie declarada centrado en el rótulo. Permite tocar el recinto sin inventar un límite.
     const m = Math.sqrt(numeroDe(rec.superficie) || 4) * 25, [x, y] = rec.p;
-    seleccion.push({id, rings: [{polygon: [[x - m, y + m], [x + m, y + m], [x + m, y - m], [x - m, y - m]].map(pt), holes: []}], score: 1});
+    const aux = rec.aux ? Array.from({length: rec.aux.length / 2}, (_, i) => pt([rec.aux[2 * i], rec.aux[2 * i + 1]])) : [[x - m, y + m], [x + m, y + m], [x + m, y - m], [x - m, y - m]].map(pt);
+    seleccion.push({id, rings: [{polygon: aux, holes: []}], score: 1});
   }
   const anillo = polygon || seleccion.at(-1).rings[0].polygon, cajaRombo = cajasRombo[rec.codigo];
   const imagen = cajaRombo && fs.existsSync(path.join(out, 'rombos', rec.codigo + '.png')) ? nivel + '/rombos/' + encodeURIComponent(rec.codigo) + '.png' : null;
   // La caja del rombo solo se declara si el rombo de la lámina cae dentro del contorno del recinto.
   const enContorno = cajaRombo && (([x0, y0, x1, y1]) => [[(x0 + x1) / 2, y0], [x1, (y0 + y1) / 2], [(x0 + x1) / 2, y1], [x0, (y0 + y1) / 2]].every(p => dentroDe(p, anillo)))(cajaRombo);
   const notas = [rec.monografia === 'rombo' ? `Monografía leída del rombo de la lámina DWG ${rec.lamina}.` : rec.monografia === 'pma' ? `La lámina ${rec.lamina} no trae rombo para este recinto: monografía del PMA RevB.` : `La lámina ${rec.lamina} no trae rombo y el recinto no está en el PMA.`,
-    ...(rec.estado === 'parcial' ? ['Contorno parcial: el relleno desde el rótulo no cubre toda la superficie declarada. Revisar.'] : rec.estado === 'auxiliar' ? [`Sin contorno cerrado en los DWG (${rec.motivo}): se muestra un cuadrado de selección en el rótulo, no su contorno real.`] : [])];
+    ...(rec.estado === 'parcial' ? ['Contorno parcial: el relleno desde el rótulo no cubre toda la superficie declarada. Revisar.'] : rec.estado === 'auxiliar' ? [`Sin contorno cerrado en los DWG (${rec.motivo}): se muestra una superficie de selección junto al rótulo, no su contorno real.`] : [])];
+  const huecos = (rec.huecos || []).map(h => Array.from({length: h.length / 2}, (_, i) => pt([h[2 * i], h[2 * i + 1]])));
   return {id, code: rec.codigo, name: rec.nombre, document_id: doc.id, position: pt(rec.p), label_bbox: null, diamond_bbox: imagen && enContorno ? cajaRombo : null, finishes,
-    declared_area: rec.superficie, polygon, geometry_status: 'Pendiente de revisión', geometry_method: METODO[rec.estado], status: 'Pendiente de revisión', notes: notas,
-    source_page: 1, level: numero, sector: doc.sector, holes: [], version: 1, asepsis: [...new Set(finishes.map(f => f.asepsis).filter(Boolean))], diamond_url: imagen, history: []};
+    declared_area: rec.superficie, polygon, geometry_status: 'Pendiente de revisión', geometry_method: METODO[rec.estado === 'ok' && rec.metodo === 'zona' ? 'zona' : rec.estado], status: 'Pendiente de revisión', notes: notas,
+    source_page: 1, level: numero, sector: doc.sector, holes: polygon ? huecos : [], version: 1, asepsis: [...new Set(finishes.map(f => f.asepsis).filter(Boolean))], diamond_url: imagen, history: []};
 });
 
 // Catálogo compacto con el mismo formato que scripts/prepare-runtime.mjs.
