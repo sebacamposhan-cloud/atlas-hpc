@@ -97,3 +97,13 @@ Tocar un recinto abre una única ficha modal accesible. Los estados de cada unid
 La numeración, quitar/limpiar selecciones, proyectos independientes, PDF/PNG y la tabla vinculada se conservan. El registro de solo lectura mantiene las opciones deshabilitadas. El plano se puede seguir ampliando y desplazando al cerrar la ficha.
 
 Pruebas: `imp-quick-entry-browser-test.mjs` (también ejecutado por el punto de entrada `impermeabilizacion-browser-test.mjs`) verifica 320/375/390/430/768/1280 px, tamaño del visor, ficha única, ausencia de desplegables visibles en artefactos, estados independientes por unidad, protección al cerrar, guardado/retorno, recuperación, fallo por versión concurrente, PDF con tabla bajo el plano y salida a Arquitectura. La prueba táctil de numeración se adapta al abrir/cerrar la ficha y sigue verificando quitar/limpiar, varios proyectos y recarga. Se revisan capturas de la ficha móvil y escritorio. No sustituye una prueba en Safari físico.
+
+## Ajuste: marcar con un toque, sin guardar ni continuar
+
+El flujo actual sustituye el envío manual de la ficha: cada botón de instalación persiste inmediatamente su unidad. No se muestran botones de guardar, continuar o descartar. La ficha permanece abierta para marcar otras unidades. La confirmación discreta distingue «Guardando…», «Guardado en este equipo» y error; la sincronización continúa mediante la cuenta existente.
+
+Las escrituras se serializan en el orden de los toques y actualizan únicamente la unidad elegida, evitando sobrescribir otras elecciones rápidas. Repetir el estado ya registrado no duplica el historial. Ante un fallo se restaura la selección confirmada y se informa que no se guardó. Si se pulsa volver durante un guardado, la ficha se cierra al terminar correctamente, sin pedir un segundo toque.
+
+«Opciones del recinto» permanece contraído e incluye estado general, fecha, observación e historial de avance. Sus botones también guardan directamente; fecha y observación se registran al cambiar el campo. El avance de artefactos y el avance general siguen separados. Los historiales se actualizan y el plano refleja la capa correspondiente al cambio confirmado.
+
+Pruebas: `imp-autosave-browser-test.mjs`, mediante los puntos de entrada de integración existentes, verifica 320/375/390/430/768/1280 px: tres unidades marcadas rápidamente sin enviar formulario, persistencia individual, repetición sin duplicados, opciones contraídas, guardado del avance opcional, reapertura/recarga, vuelta al plano durante el guardado, conservación de la tabla PDF y reversión visual ante conflicto de versión. Se conservan las pruebas de numeración, artefactos, proyectos, nube y offline. Sin migración SQL.
