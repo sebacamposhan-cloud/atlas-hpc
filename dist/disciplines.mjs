@@ -35,7 +35,7 @@ export function createDisciplines(ctx){const main=document.querySelector('main')
   panel.innerHTML='<p>Cargando documentos…</p>';
   try{
    if(!bundle){const responses=await Promise.all([fetch('disciplines.json'),fetch('cie-review-observations.json')]);if(responses.some(res=>!res.ok))throw Error('Documentos no disponibles');const [base,review]=await Promise.all(responses.map(res=>res.json()));const loaded=withReviewObservations(base,review);if(request!==modeRequest)return;bundle=loaded;}
-   if(mode==='waterproofing'){if(!imp){const {createImpermeabilizacion}=await import('./impermeabilizacion.mjs');imp=await createImpermeabilizacion({esc,toast:ctx.toast,download:ctx.download,redraw:render,detail,isActive:()=>mode==='waterproofing'});}else await imp.reload();}
+   if(mode==='waterproofing'){if(!imp){const {createImpermeabilizacion}=await import('./impermeabilizacion.mjs');imp=await createImpermeabilizacion({esc,toast:ctx.toast,download:ctx.download,redraw:render,detail,clearSelection:()=>{chosen=null;selectedCode=undefined;},isActive:()=>mode==='waterproofing'});}else await imp.reload();}
    await reloadRecords();if(request!==modeRequest)return;
    const matches=mode==='waterproofing'?observations().filter(r=>r.code===selectedCode):associateCode(ctx.rooms(),bundle.observations,selectedCode,mode).observations;
    chosen=matches.find(r=>r.id===remembered.get(mode))||(matches.length===1?matches[0]:null);

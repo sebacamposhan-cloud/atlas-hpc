@@ -77,3 +77,13 @@ El PDF muestra las marcas numeradas y **una tabla debajo del plano en la misma p
 Pruebas: `node imp-numbering-test.mjs` comprueba orden de selección diferente del catálogo, repetición sin duplicados, recuperación, unicidad y ubicación interior. El recorrido de navegador verifica números 1/2/3, marcas sin registrar avance, respaldo con orden persistido, tabla en la primera página y separación física entre plano y tabla mediante las coordenadas del PDF. Se corrigió además el selector de estados de impermeabilización al visualizar la capa de artefactos.
 
 `imp-numbering-browser-test.mjs` verifica también dos toques táctiles reales en un contexto móvil: se persisten 1 y 2 en orden de toque, sin crear marcas por búsqueda ni por tocar otra vez el mismo recinto. Las escrituras de marcas se serializan para conservar ese orden.
+
+## Corregir selecciones y trabajar con varios proyectos
+
+- **Quitar selección** en la ficha retira ese recinto del plano numerado y de la tabla principal exportada.
+- **Limpiar selección** retira todas las marcas del proyecto actual, con confirmación. No elimina el avance ni el historial y no afecta otros proyectos.
+- **Nuevo proyecto** solicita un nombre y guarda un proyecto independiente, inicialmente vacío, con numeración desde 1. El selector permite regresar a cualquiera de los proyectos guardados y recuerda el último abierto tras recargar.
+
+El retiro de marcas es lógico, con autor y fecha: los números de los otros recintos no cambian. Volver a marcar uno retirado recupera su número original; limpiar no reutiliza números de un mismo proyecto para identificar otro recinto. Para reiniciar desde 1 se crea un nuevo proyecto. La capa y la tabla principal omiten recintos retirados; el historial previo se conserva.
+
+No requiere migración. Se amplían `imp-numbering.mjs` y el controlador/estilo IMP; se incorpora la limpieza de la ficha seleccionada en `disciplines.mjs`. `imp-numbering-test.mjs` comprueba retiro, limpieza, conservación de números e historial y reselección. `imp-numbering-browser-test.mjs` comprueba quitar un recinto, limpiar todos, crear un segundo proyecto, marcar su recinto 1, alternar proyectos y recuperar el último al recargar. El recorrido responsive a seis anchos y las pruebas de modelos, proyectos, nube y offline pasan.
