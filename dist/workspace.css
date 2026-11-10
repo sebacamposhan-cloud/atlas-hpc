@@ -161,3 +161,20 @@ main[data-discipline=waterproofing] .disciplineBar{box-sizing:border-box;height:
 main[data-discipline=waterproofing] #specialtyDetail h2{margin:10px 0 6px}main[data-discipline=waterproofing] #specialtyDetail h3{margin:8px 0 12px}main[data-discipline=waterproofing] #impProgressForm{margin-top:8px}
 .impArtifacts{margin:14px 0;border-top:2px solid #1b2a56;padding-top:12px}.impArtifacts td:first-child{min-width:95px}.impArtifacts select{min-width:115px}.impArtifacts form{padding:8px!important}.impArtifacts td{font-size:12px}
 .impNewProject{width:min(440px,calc(100vw - 32px));box-sizing:border-box;padding:20px;border:1px solid #1b2a56}.impNewProject input{display:block;width:100%;box-sizing:border-box;min-height:44px;font-size:16px;margin:8px 0}.impNewProject button{min-height:44px;margin:8px 5px 0 0}.impNewProject p{font-size:14px;line-height:1.5}
+/* Dedicated plan workspace. The existing SVG is reused, with a single modal record sheet. */
+main[data-discipline=waterproofing] #disciplinePanel{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
+main[data-discipline=waterproofing] .specialtyCanvas{grid-column:1;grid-row:2;min-height:0}
+body.impFullscreen #disciplinePanel{position:fixed!important;inset:0!important;z-index:100;height:100dvh;background:#fff;padding-top:env(safe-area-inset-top);box-sizing:border-box}
+body.impFullscreen>header,body.impFullscreen .bottomNav{visibility:hidden}
+.impExtraTools{display:flex;gap:6px;flex-wrap:wrap;align-items:center;flex:1 1 100%;padding:8px 0;border-top:1px solid #dbe2e9}.impExtraTools[hidden]{display:none!important}
+main[data-discipline=waterproofing] .disciplineTools{padding:6px;gap:5px}
+main[data-discipline=waterproofing] .disciplineTools>#specialtySearch{flex:1;max-width:300px;width:120px;font-size:16px}
+.impRoomDialog{padding:0;border:1px solid #1b2a56;width:min(680px,calc(100vw - 20px));max-height:calc(100dvh - 24px);overflow:auto;box-sizing:border-box}
+.impRoomDialog::backdrop{background:#122d4966}
+main[data-discipline=waterproofing] .impRoomDialog #specialtyDetail{display:block!important;position:static!important;width:auto!important;height:auto!important;max-height:none!important;overflow:visible!important;border:0;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+.impRoomClose{position:sticky;top:0;z-index:2;background:#fff;margin-left:auto!important;display:block;border:1px solid #1b2a56}
+.impQuickChoices{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.impQuickChoices button{min-height:44px;flex:1;padding:9px;font-size:14px!important;white-space:normal}.impQuickChoices [aria-checked=true]{background:#0f5499;color:white;border-color:#0f5499}
+.impRoomDialog select[hidden]{display:none!important}
+.impRoomDialog .impArtifacts table,.impRoomDialog .impArtifacts tbody,.impRoomDialog .impArtifacts tr,.impRoomDialog .impArtifacts td{display:block;width:auto;min-width:0!important}.impRoomDialog .impArtifacts thead{display:none}.impRoomDialog .impArtifacts tr{border-bottom:1px solid #ccd6df;padding:10px 0}.impRoomDialog .impArtifacts td{border:0;padding:3px 0}.impRoomDialog .impArtifacts form{border:0!important;padding:0!important}
+@media(max-width:700px){main[data-discipline=waterproofing] #disciplinePanel{grid-template-rows:auto minmax(0,1fr)}.impRoomDialog .impQuickChoices button{font-size:13px!important}.impExtraTools select{flex:1;min-width:130px}#impFullscreenToggle,#impToolsToggle{font-size:11px!important}}
+.impProjectCaption{flex:1 1 100%;display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;color:#183858;padding:2px 4px}
