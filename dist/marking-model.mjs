@@ -3,6 +3,7 @@
 // un estado por recinto y cortes con fecha (fotografías del avance) para comparar períodos. Los documentos del esquema 1 siguen siendo válidos.
 // Esquema 3: levantamiento con columnas propias (levantamiento-model.mjs).
 import {validarLevantamiento} from './levantamiento-model.mjs';
+import {esImpermeabilizacion,validarImpermeabilizacion} from './impermeabilizacion-model.mjs';
 // Esquema 3, tipo «puertas»: una fila por puerta del plano de avance de puertas (puertas-model.mjs).
 import {esPuertas, validarPuertas} from './puertas-model.mjs';
 export {esPuertas};
@@ -29,6 +30,7 @@ function validarEstados(estados) {
 // registros y sin la marca el proyecto volvería en la siguiente sincronización. Las listas no muestran los marcados.
 export const marcarEliminado = (doc, {autor = '', at = new Date().toISOString()} = {}) => ({...doc, eliminado: {at, autor}, version: doc.version + 1, updatedAt: at});
 export function validateMarking(doc) {
+  if (esImpermeabilizacion(doc)) return validarImpermeabilizacion(doc);
   if (esLevantamiento(doc)) return validarLevantamiento(doc);
   if (esPuertas(doc)) return validarPuertas(doc);
   if (!doc || ![1, 2].includes(doc.schema) || doc.specialty !== 'architecture' || !text(doc.id, 100) || !text(doc.level, 30)) throw Error('Documento de Arquitectura inválido.');

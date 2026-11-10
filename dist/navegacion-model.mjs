@@ -30,6 +30,8 @@ export const TARJETAS = [
   // Plano de puertas: modelo, llave, vano y estado de cada puerta (puertas.mjs).
   {id: 'puertas', modulo: 'plano', titulo: 'Puertas', texto: 'Modelo, llave, vano y estado', accion: 'puertas', funciones: [],
     dibujo: '<rect x="52" y="10" width="56" height="80"/><path class="f" d="M52 90V10l40 10v80z"/><path d="M84 54v6"/>'},
+  {id: 'impermeabilizacion', modulo: 'plano', titulo: 'Impermeabilización', texto: 'Plano IMP · contornos, avance y exportación', accion: 'impermeabilizacion', niveles: ['N-1'], funciones: [],
+    dibujo: '<path d="M28 82h104M34 72V24h92v48z"/><path class="f" d="M34 58h92v14H34z"/><path d="M64 24v48M94 24v48M34 48h92"/>'},
   {id: 'tipos', modulo: 'protocolos', titulo: 'Por tipo', texto: 'Protocolos abiertos de este piso', grupo: 'protocolos', funcion: 'tipos', funciones: [], dibujo: HOJA},
   {id: 'criticos', modulo: 'protocolos', titulo: 'Críticos', texto: 'Más de un año abiertos', grupo: 'protocolos', funcion: 'criticos', funciones: [],
     dibujo: '<path d="M80 12l58 76H22z"/><path class="f" d="M80 40v24M80 74v2"/>'},
@@ -44,7 +46,10 @@ export const TARJETA_TAREAS = {id: 'tareas', modulo: 'control', titulo: 'Mis tar
 export function tarjetasPara(funciones) {
   if (!funciones) return TARJETAS;
   const todas = [TARJETA_TAREAS, ...TARJETAS];
-  return funciones.tarjetas.map(id => todas.find(t => t.id === id)).filter(Boolean)
+  const incluidas = funciones.tarjetas.map(id => todas.find(t => t.id === id)).filter(Boolean);
+  // The IMP document inherits the existing plan/layers access. Its floor is checked by navigation.
+  if(funciones.tarjetas.includes('capas')&&!incluidas.some(t=>t.id==='impermeabilizacion'))incluidas.push(TARJETAS.find(t=>t.id==='impermeabilizacion'));
+  return incluidas
     .map(t => t.id === 'tareas' ? {...t, funciones: t.funciones.filter(([f]) => funciones.tareas.includes(f))} : funciones.funciones[t.id] ? {...t, funciones: t.funciones.filter(([f]) => funciones.funciones[t.id].includes(f))} : t)
     .filter(t => t.panel || t.accion || t.grupo || t.funciones.length);
 }
