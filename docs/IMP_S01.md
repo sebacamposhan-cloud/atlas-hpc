@@ -109,3 +109,11 @@ Las escrituras se serializan en el orden de los toques y actualizan únicamente 
 Pruebas: `imp-autosave-browser-test.mjs`, mediante los puntos de entrada de integración existentes, verifica 320/375/390/430/768/1280 px: tres unidades marcadas rápidamente sin enviar formulario, persistencia individual, repetición sin duplicados, opciones contraídas, guardado del avance opcional, reapertura/recarga, vuelta al plano durante el guardado, conservación de la tabla PDF y reversión visual ante conflicto de versión. Se conservan las pruebas de numeración, artefactos, proyectos, nube y offline. Sin migración SQL.
 
 La prueba de integración verifica el cierre automático después de cada elección de artefacto y del estado general, la recuperación al reabrir y que un conflicto de versión mantenga la ficha abierta. Se comprueba a 320/375/390/430/768/1280 px.
+
+## Recuperación del generador PDF
+
+Se corrige el cargador compartido de bibliotecas de exportación: antes conservaba permanentemente una promesa rechazada después de un fallo de descarga, de modo que los siguientes intentos fallaban sin volver a solicitar el archivo. `vendor-loader.mjs` comparte las cargas en curso, verifica que la biblioteca realmente exista, limita el tiempo de espera, limpia los intentos fallidos y realiza un reintento breve. Si ambos fallan, pulsar exportar nuevamente vuelve a cargar la biblioteca. No se borran cachés ni registros de usuarios.
+
+`vendor/pdf-lib.min.js` se incorpora al núcleo del paquete offline para que el generador quede disponible junto con la aplicación. La exportación sigue utilizando el original y los registros del proyecto. No se modifica autenticación ni se publica ningún dato del proyecto.
+
+Prueba `pdf-export-recovery-browser-test.mjs`: fallan intencionalmente las dos cargas iniciales; el siguiente clic genera un PDF de 16 páginas con 80 recintos numerados, plano y tabla vinculada. El documento de marcas es idéntico antes y después de ambos intentos. Se verifica a 390 y 1280 px. También se prueba recuperación automática tras un fallo transitorio, llamadas concurrentes sin descargas duplicadas y reutilización de la biblioteca ya cargada. Offline, recursos HTTP y modelos de numeración/artefactos comprobados. Esto reproduce el mecanismo localmente; no identifica por sí solo la causa de red/sesión del primer fallo observado en Render.
