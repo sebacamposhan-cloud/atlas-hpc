@@ -47,6 +47,19 @@ export function tarjetasPara(funciones) {
 }
 // Tarjetas que se ven en la rueda de un módulo.
 export const cartasDelModulo = (lista, idModulo) => lista.filter(t => t.modulo === idModulo && !t.oculta);
+// Lo de oficina (tablas grandes y resúmenes con tablas) solo va en escritorio. En terreno el avance se ve pintado en el
+// plano y los protocolos por tipo, críticos y dentro de cada recinto, con la ficha completa de cada folio.
+export const OFICINA = {tarjetas: ['resumen', 'matriz'], funciones: {recintos: ['resumen'], protocolos: ['resumen']}};
+export function paraTerreno(lista) {
+  return lista.filter(t => !OFICINA.tarjetas.includes(t.id))
+    .map(t => OFICINA.funciones[t.id] ? {...t, funciones: t.funciones.filter(([f]) => !OFICINA.funciones[t.id].includes(f))} : t)
+    .filter(t => t.panel || t.accion || t.grupo || t.funciones.length);
+}
+// Opciones de «Más herramientas». En terreno solo la simbología: exportar, fuentes, rombos y respaldos son de oficina.
+export function opcionesMas(escritorio) {
+  const todas = [['exportPlan', 'Exportar plano', true], ['legend', 'Ver simbología', false], ['original', 'Documentos fuente', true], ['diamondCatalogOpen', 'Rombos', true], ['import', 'Respaldos', true], ['editorContornos', 'Editor de contornos', true]];
+  return todas.filter(([, , oficina]) => escritorio || !oficina).map(([id, nombre]) => [id, nombre]);
+}
 // Íconos de los botones flotantes (trazo de 24 unidades). Observaciones lleva la cámara.
 const trazo = cuerpo => `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${cuerpo}</svg>`;
 export const ICONOS = {

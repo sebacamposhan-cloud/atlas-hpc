@@ -8,6 +8,7 @@ import {nivel, datos} from './level.mjs';
 import {crearGrilla, ubicarEjes, numeroProtocolo, textoMedidas} from './protocol-ejes.mjs';
 import {decodeMatrixRows, stateLabels, stateColors, matrixDate} from './protocol-model.mjs';
 import {onProtocolFloor, protocolFloors} from './protocol-scope.mjs';
+import {fichaFolioHTML, avisoCorte} from './protocolo-folio.mjs';
 
 const RECORTE_ZONA = 0.3, CERCANIA = 0.6; // metros
 
@@ -94,14 +95,27 @@ export function createProtocolosRecinto(ctx) {
     let indice; try { indice = await cargarIndice(); } catch (e) { root.innerHTML = `<p class="obsError">${esc(e.message)}</p>`; return; }
     if (!root.isConnected) return;
     const todos = protocolosDelRecinto(indice, geo.rings).sort((a, b) => a.tipo.code.localeCompare(b.tipo.code, 'es') || String(a.fila.folio).localeCompare(String(b.fila.folio), 'es', {numeric: true}));
-    const lista = todos.filter(p => p.estado === ABIERTO);
-    if (resumen) resumen.textContent = `Protocolos abiertos · ${lista.length}`;
-    const grupos = new Map(); for (const p of lista) { if (!grupos.has(p.tipo.id)) grupos.set(p.tipo.id, []); grupos.get(p.tipo.id).push(p); }
-    const fecha = v => { const f = matrixDate(v, indice.date1904); return !f ? '—' : /^\d{4}-\d{2}-\d{2}$/.test(f) ? f.split('-').reverse().join('-') : f; };
+    // Abiertos y cerrados del recinto (los cerrados plegados, a un toque). Tocar un folio despliega su ficha completa.
+    const lista = todos.filter(p => p.estado === ABIERTO), cerrados = todos.filter(p => p.estado !== ABIERTO && p.estado !== 'NULO');
+    if (resumen) resumen.textContent = `Protocolos · ${lista.length} ${lista.length === 1 ? 'abierto' : 'abiertos'}${cerrados.length ? ' · ' + cerrados.length + (cerrados.length === 1 ? ' cerrado' : ' cerrados') : ''}`;
+    const agrupar = ps => { const g = new Map(); for (const p of ps) { if (!g.has(p.tipo.id)) g.set(p.tipo.id, []); g.get(p.tipo.id).push(p); } return [...g.values()]; };
     const chip = e => `<span class="obsChip" style="--c:${stateColors[e] || '#595959'}">${esc(stateLabels[e] || e)}</span>`;
-    root.innerHTML = `${grupos.size ? [...grupos.values()].map(ps => { const t = ps[0].tipo; return `<details class="protRecGrupo" ${grupos.size <= 3 ? 'open' : ''}><summary><b>${esc(t.code)}</b> ${esc(t.name)} <small>${ps.length}</small></summary><ul>${ps.map(p => `<li><button type="button" data-prot-ver="${esc(t.id)}|${esc(p.fila.id)}" title="Ver este folio en el plano"><span class="protRecFolio">${esc(numeroProtocolo(p.fila.folio))}</span><span><b>${esc(p.u.etiqueta)}</b> · ${esc(textoMedidas(p.u) || p.u.tipo)}<small>${esc([p.fila.element, p.fila.receiver].filter(v => v && String(v).trim() !== 'null').join(' · ') || 'Sin elemento documentado')} · elaborado ${fecha(p.fila.issued)}${cerrado(p.estado) && p.fila.closedDate ? ' · cerrado ' + fecha(p.fila.closedDate) : ''}</small></span>${chip(p.estado)}</button></li>`).join('')}</ul></details>`; }).join('')
-        : '<p class="muted">Sin protocolos abiertos en este recinto.</p>'}`;
-    root.querySelectorAll('[data-prot-ver]').forEach(b => b.onclick = () => { const [tipoId, folioId] = b.dataset.protVer.split('|'), g = indice.porTipo.get(tipoId); ctx.verProtocolos?.({tipo: g.tipo, filas: g.filas, foco: folioId}); });
+    const fecha = v => { const f = matrixDate(v, indice.date1904); return !f ? '—' : /^\d{4}-\d{2}-\d{2}$/.test(f) ? f.split('-').reverse().join('-') : f; };
+    const folio = p => `<li><button type="button" data-prot-ficha="${esc(p.fila.id)}" aria-expanded="false"><span class="protRecFolio">${esc(numeroProtocolo(p.fila.folio))}</span><span><b>${esc(p.u.etiqueta)}</b> · ${esc(textoMedidas(p.u) || p.u.tipo)}<small>${esc([p.fila.element, p.fila.receiver].filter(v => v && String(v).trim() !== 'null').join(' · ') || 'Sin elemento documentado')} · elaborado ${fecha(p.fila.issued)}${cerrado(p.estado) && p.fila.closedDate ? ' · cerrado ' + fecha(p.fila.closedDate) : ''}</small></span>${chip(p.estado)}</button><div class="protRecFicha" hidden></div></li>`;
+    const grupo = (ps, abierto) => { const t = ps[0].tipo; return `<details class="protRecGrupo" ${abierto ? 'open' : ''}><summary><b>${esc(t.code)}</b> ${esc(t.name)} <small>${ps.length}</small></summary><ul>${ps.map(folio).join('')}</ul></details>`; };
+    const abiertos = agrupar(lista), cerradosPorTipo = agrupar(cerrados);
+    root.innerHTML = avisoCorte(indice.corte, esc)
+      + (abiertos.length ? `<h4 class="protRecSeccion">Abiertos aquí · ${lista.length}</h4>${abiertos.map(ps => grupo(ps, abiertos.length <= 3)).join('')}` : '<p class="muted">Sin protocolos abiertos en este recinto.</p>')
+      + (cerradosPorTipo.length ? `<details class="protRecCerrados"><summary>Cerrados aquí · ${cerrados.length}</summary>${cerradosPorTipo.map(ps => grupo(ps, false)).join('')}</details>` : '');
+    const porId = new Map(todos.map(p => [p.fila.id, p]));
+    root.querySelectorAll('[data-prot-ficha]').forEach(b => b.onclick = () => {
+      const p = porId.get(b.dataset.protFicha), caja = b.nextElementSibling, abrir = caja.hidden;
+      caja.hidden = !abrir; b.setAttribute('aria-expanded', String(abrir));
+      if (abrir && !caja.innerHTML) {
+        caja.innerHTML = fichaFolioHTML({fila: p.fila, tipo: p.tipo, u: p.u, date1904: indice.date1904, corte: indice.corte, esc, enPlano: true});
+        caja.querySelector('[data-folio-plano]').onclick = () => { const g = indice.porTipo.get(p.tipo.id); ctx.verProtocolos?.({tipo: g.tipo, filas: g.filas, foco: p.fila.id}); };
+      }
+    });
   }
   return {ficha};
 }

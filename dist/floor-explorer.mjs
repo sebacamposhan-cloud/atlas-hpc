@@ -1,6 +1,7 @@
 // Lightweight entry point. The existing viewer and its runtime load only after a floor is chosen.
 // Orden de entrada: módulo → piso → módulo abierto. Los enlaces con piso, los QR y las tareas entran directo.
 import './offline.mjs';
+import './dispositivo.mjs';
 import {iniciarNube} from './nube.mjs';
 import {leerMemoria,guardarMemoria,MODULOS,moduloDe,conPortada,consultaPiso,leerConsulta,pisosEnOrden,pisoParaAbrir} from './navegacion-model.mjs';
 import {crearFluido,arrastrar,crearOleaje} from './fluido.mjs';

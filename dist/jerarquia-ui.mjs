@@ -3,6 +3,7 @@
 // equipo (jerarquia-store.mjs) y sube con Nube. El frente se elige con el selector de superficies de Last Planner y el
 // avance se marca tocando los recintos en el plano.
 import * as J from './jerarquia-model.mjs';
+import {agruparAgenda, cuando} from './agenda.mjs';
 import * as S from './jerarquia-store.mjs';
 import {allowed, isoToday} from './lastplanner-cycle-model.mjs';
 import {readWorkflow} from './lastplanner-cycle-store.mjs';
@@ -27,7 +28,7 @@ export function createTareas(ctx) {
     datos = await S.leerJerarquia();
     [enCola, avisos] = await Promise.all([S.tareasPendientesDeSubir(), S.avisosTareas()]);
     if (cuerpo?.isConnected && vista) pintar();
-    pintarPlano(); pintarBarra();
+    pintarAgenda(); pintarPlano(); pintarBarra();
     return datos;
   }
   const contador = () => datos.perfil && yo() ? J.pendientes(datos.metas, yo()).total : 0;
@@ -69,8 +70,9 @@ export function createTareas(ctx) {
   function vistaMias() {
     const mias = datos.metas.filter(m => m.asignadaA === yo()), abiertas = mias.filter(m => J.ABIERTAS.includes(m.estado)).sort(orden);
     const porConfirmar = mias.filter(m => m.estado === 'hecha'), listas = mias.filter(m => m.estado === 'confirmada').sort((a, b) => b.actualizada.localeCompare(a.actualizada)).slice(0, 10);
+    const g = agruparAgenda(datos.metas, yo(), isoToday()), seccion = (titulo, lista) => lista.length ? `<h3 class="jerSeccion">${titulo} (${lista.length})</h3>${lista.map(m => tarjeta(m)).join('')}` : '';
     return `<p class="jerResumen"><b>${abiertas.length}</b> ${abiertas.length === 1 ? 'tarea por hacer' : 'tareas por hacer'}</p>
-      ${abiertas.map(m => tarjeta(m)).join('') || '<p class="jerVacio">No tienes tareas pendientes.</p>'}
+      ${abiertas.length ? seccion('Hoy', g.hoy) + seccion('Esta semana', g.semana) + seccion('Más adelante o sin fecha', g.despues) : '<p class="jerVacio">No tienes tareas pendientes.</p>'}
       ${porConfirmar.length ? `<h3 class="jerSeccion">Esperando confirmación (${porConfirmar.length})</h3>${porConfirmar.map(m => tarjeta(m)).join('')}` : ''}
       ${listas.length ? `<details class="jerListas"><summary>Confirmadas (${listas.length})</summary>${listas.map(m => tarjeta(m)).join('')}</details>` : ''}`;
   }
@@ -88,6 +90,7 @@ export function createTareas(ctx) {
         <h4 class="jerSeccion">Frente: ${recintos.length} ${recintos.length === 1 ? 'recinto' : 'recintos'}</h4>
         <ul class="jerRecintos">${recintos.map(r => `<li><span><b>${esc(r.code)}</b><small>${esc(r.name || '')}</small></span>${marca ? `<button type="button" data-jer="recinto" data-id="${m.id}" data-room="${esc(r.roomId)}" aria-pressed="${hecho(r)}">${hecho(r) ? '✓ Hecho' : 'Marcar hecho'}</button>` : `<em>${hecho(r) ? '✓ Hecho' : 'Pendiente'}</em>`}</li>`).join('')}</ul>`
       : marca ? `<h4 class="jerSeccion">¿Cuánto llevas?</h4><div class="jerPasos">${[0, .25, .5, .75].map(x => `<button type="button" data-jer="manual" data-id="${m.id}" data-valor="${x}" aria-pressed="${m.avanceManual === x}">${x * 100} %</button>`).join('')}</div>` : ''}
+      ${m.actividadId && mia && (puede('execution') || puede('attendance')) ? `<button type="button" class="jerReporte" data-jer="reporte" data-id="${m.id}">Reporte diario en Last Planner</button>` : ''}
       ${marca ? `<button type="button" class="primary jerPrincipal" data-jer="hecha" data-id="${m.id}">Terminé esta tarea</button><small class="jerAyuda">Quien te la asignó la confirma o te la devuelve.</small>` : ''}`;
   }
 
@@ -193,6 +196,7 @@ export function createTareas(ctx) {
     else if (t === 'volver-equipo') { persona = null; accion = null; pintar(); }
     else if (t === 'persona-ver') { persona = id; pintar(); cuerpo.scrollTop = 0; }
     else if (t === 'ver') verEnPlano(id);
+    else if (t === 'reporte') dispatchEvent(new CustomEvent('atlas-reporte-diario', {detail: {actividadId: meta(id)?.actividadId, piso: meta(id)?.piso}}));
     else if (t === 'marcar') marcarEnPlano(id);
     else if (t === 'recinto') { const m = meta(id), propias = m.alcances.filter(s => s.roomId === b.dataset.room), hechas = propias.every(s => (m.marcas[s.id]?.avance || 0) >= 1); hacer(() => S.avanzar(id, {marcas: Object.fromEntries(propias.map(s => [s.id, hechas ? 0 : 1]))})); }
     else if (t === 'manual') hacer(() => S.avanzar(id, {avanceManual: Number(b.dataset.valor)}));
@@ -276,5 +280,19 @@ export function createTareas(ctx) {
     return `<div class="jerEnActividad"><p><b>Tareas del equipo: ${r.tareas}</b> · avance en terreno ${pct(r.avance)}</p>${propias.length ? `<ul>${propias.map(m => `<li>${esc(quien(m.asignadaA))} · ${esc(J.ETIQUETA[m.estado])} · ${pct(J.avanceMeta(m, datos.metas))}</li>`).join('')}</ul>` : ''}${asigna() && a.fase !== 'cerrada' ? `<button type="button" data-jer-asignar-actividad="${esc(a.id)}">Asignar a mi equipo</button>` : ''}</div>`;
   }
 
-  return {mostrar, recargar, contador, tocar, marcando: () => !!marcando, verEnPlano, marcarEnPlano, limpiarPlano, pintarPlano, resumenActividad, prepararAsignacion, perfil: () => datos.perfil};
+  // Agenda de la portada de Control: Hoy y Esta semana. Tocar una tarea abre su ficha en Mis tareas.
+  let agendaEl = null, agendaAbrir = null;
+  function pintarAgenda() {
+    if (!agendaEl?.isConnected) return;
+    if (!datos.perfil || !yo()) { agendaEl.hidden = true; return; }
+    const hoy = isoToday(), g = agruparAgenda(datos.metas, yo(), hoy), resto = g.despues.length;
+    const fila = m => `<li><button type="button" data-agenda="${esc(m.id)}"><span><b>${esc(m.titulo)}</b><small>${esc(cuando(m, hoy))}${m.piso ? ' · Piso ' + esc(pisoCorto(m.piso)) : ''} · de ${esc(quien(m.asignadaPor))}</small></span></button></li>`;
+    const bloque = (titulo, lista, vacio) => `<section class="agendaBloque"><h3>${titulo} <b>${lista.length}</b></h3>${lista.length ? `<ul>${lista.slice(0, 6).map(fila).join('')}</ul>${lista.length > 6 ? `<p class="agendaMas">y ${lista.length - 6} más en Mis tareas</p>` : ''}` : `<p class="agendaVacia">${vacio}</p>`}</section>`;
+    agendaEl.hidden = false;
+    agendaEl.innerHTML = bloque('Hoy', g.hoy, 'Nada para hoy.') + bloque('Esta semana', g.semana, 'Nada más esta semana.') + (resto ? `<p class="agendaMas">${resto} ${resto === 1 ? 'tarea' : 'tareas'} más adelante o sin fecha, en Mis tareas.</p>` : '');
+    agendaEl.querySelectorAll('[data-agenda]').forEach(b => b.onclick = () => agendaAbrir?.(b.dataset.agenda));
+  }
+  function agenda(el, abrir) { agendaEl = el; agendaAbrir = abrir; pintarAgenda(); }
+  function verTarea(id) { if (!meta(id)) return; vista = 'mias'; detalle = id; pintar(); if (cuerpo) cuerpo.scrollTop = 0; }
+  return {agenda, verTarea, mostrar, recargar, contador, tocar, marcando: () => !!marcando, verEnPlano, marcarEnPlano, limpiarPlano, pintarPlano, resumenActividad, prepararAsignacion, perfil: () => datos.perfil};
 }

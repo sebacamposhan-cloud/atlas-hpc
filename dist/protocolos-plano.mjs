@@ -7,6 +7,8 @@
 import {nivel, datos} from './level.mjs';
 import {crearGrilla, ubicarEjes, numeroProtocolo, textoMedidas, motivoSinUbicar} from './protocol-ejes.mjs';
 import {stateLabels, stateColors} from './protocol-model.mjs';
+import {loadProtocolCatalog} from './protocol-catalog.mjs';
+import {fichaFolioHTML, avisoCorte} from './protocolo-folio.mjs';
 
 const ORDEN_ESTADOS = ['ABIERTO', 'CERRADO POR AUTOCONTROL', 'CERRADO'];
 let grillaPendiente = null;
@@ -23,7 +25,7 @@ export function createProtocolPlan(ctx) {
   const panel = document.createElement('aside');
   panel.id = 'protocolPanel'; panel.hidden = true; panel.setAttribute('aria-label', 'Protocolos en el plano');
   document.querySelector('main').append(panel);
-  let actual = null, foco = null, ocultos = new Set();
+  let actual = null, foco = null, ocultos = new Set(), fuente = {date1904: false, corte: ''};
 
   const colorDe = estado => stateColors[estado] || '#8a929b';
   const visibles = () => actual.ubicados.filter(p => !ocultos.has(p.estado));
@@ -79,22 +81,24 @@ export function createProtocolPlan(ctx) {
   // Lo que dice la matriz, tal cual, para poder comprobarlo.
   const vacio = v => !String(v ?? '').trim() || String(v).trim() === 'null';
   const cita = texto => vacio(texto) ? '(celda vacía)' : '«' + esc(String(texto).trim()) + '»';
+  const ficha = (fila, u = null) => fila.id === foco ? fichaFolioHTML({fila, tipo: actual.tipo, u, date1904: fuente.date1904, corte: fuente.corte, esc}) : '';
   const quien = f => esc([f.element, f.receiver].filter(v => !vacio(v)).join(' · ') || 'Sin elemento documentado');
   function render() {
     const {tipo, ubicados, anulados, sinUbicar} = actual, cuenta = estado => ubicados.filter(p => p.estado === estado).length;
     panel.innerHTML = `<div class="protocolHead"><div><small>Protocolo en el plano · ${esc(nivel.nombre)}</small><h2>${esc(tipo.code)}</h2><p>${esc(tipo.name)}</p></div><button data-cerrar aria-label="Cerrar">×</button></div>
-      <p class="protocolResumen">${ubicados.length} en el plano · ${anulados.length} anulados · ${sinUbicar.length} sin ubicación</p>
+      ${avisoCorte(fuente.corte, esc)}<p class="protocolResumen">${ubicados.length} en el plano · ${anulados.length} anulados · ${sinUbicar.length} sin ubicación</p>
       <div class="protocolLeyenda">${ORDEN_ESTADOS.filter(cuenta).map(e => `<label><input type="checkbox" data-estado="${esc(e)}" ${ocultos.has(e) ? '' : 'checked'}><i style="background:${colorDe(e)}"></i>${esc(stateLabels[e] || e)} <b>${cuenta(e)}</b></label>`).join('')}</div>
       <div class="protocolScroll">
-        <section class="protocolAnulados"><h3>Anulados · fuera del plano</h3>${anulados.length ? `<ul>${anulados.map(f => `<li class="${f.id === foco ? 'activo' : ''}"><b>${esc(numeroProtocolo(f.folio))}</b><span>EJES: ${cita(f.axes)}</span><small>${quien(f)}</small></li>`).join('')}</ul>` : '<p>Este protocolo no tiene folios anulados en el piso.</p>'}</section>
-        ${sinUbicar.length ? `<details class="protocolSinUbicar" open><summary>Sin ubicación en el plano (${sinUbicar.length})</summary><ul>${sinUbicar.map(s => `<li class="${s.fila.id === foco ? 'activo' : ''}"><b>${esc(numeroProtocolo(s.fila.folio))}</b><span>EJES: ${cita(s.fila.axes)}</span><em>${esc(s.motivo)}</em><small>${quien(s.fila)}</small></li>`).join('')}</ul></details>` : ''}
-        <h3>En el plano (${ubicados.length})</h3><ul class="protocolLista">${ubicados.map(p => `<li><button data-folio="${esc(p.fila.id)}" class="${p.fila.id === foco ? 'activo' : ''}" ${ocultos.has(p.estado) ? 'disabled' : ''}><i style="background:${colorDe(p.estado)}"></i><b>${esc(p.numero)}</b><span>${esc(p.u.etiqueta)} · ${esc(textoMedidas(p.u))}</span><small>EJES: ${cita(p.fila.axes)}${p.u.ignorado ? ' · se ignoró «' + esc(p.u.ignorado) + '»' : ''}${p.u.aproximados.length ? ' · ≈ ' + esc(p.u.aproximados.map(a => a.id + ' → ' + a.base).join(', ')) : ''}</small><small>${quien(p.fila)} · ${esc(stateLabels[p.estado] || p.estado)}</small></button></li>`).join('') || '<li><p>Ningún folio con ejes ubicables.</p></li>'}</ul>
+        <section class="protocolAnulados"><h3>Anulados · fuera del plano</h3>${anulados.length ? `<ul>${anulados.map(f => `<li class="${f.id === foco ? 'activo' : ''}"><button type="button" data-ficha="${esc(f.id)}"><b>${esc(numeroProtocolo(f.folio))}</b><span>EJES: ${cita(f.axes)}</span><small>${quien(f)}</small></button>${ficha(f)}</li>`).join('')}</ul>` : '<p>Este protocolo no tiene folios anulados en el piso.</p>'}</section>
+        ${sinUbicar.length ? `<details class="protocolSinUbicar" open><summary>Sin ubicación en el plano (${sinUbicar.length})</summary><ul>${sinUbicar.map(s => `<li class="${s.fila.id === foco ? 'activo' : ''}"><button type="button" data-ficha="${esc(s.fila.id)}"><b>${esc(numeroProtocolo(s.fila.folio))}</b><span>EJES: ${cita(s.fila.axes)}</span><em>${esc(s.motivo)}</em><small>${quien(s.fila)}</small></button>${ficha(s.fila)}</li>`).join('')}</ul></details>` : ''}
+        <h3>En el plano (${ubicados.length})</h3><ul class="protocolLista">${ubicados.map(p => `<li><button data-folio="${esc(p.fila.id)}" class="${p.fila.id === foco ? 'activo' : ''}" ${ocultos.has(p.estado) ? 'disabled' : ''}><i style="background:${colorDe(p.estado)}"></i><b>${esc(p.numero)}</b><span>${esc(p.u.etiqueta)} · ${esc(textoMedidas(p.u))}</span><small>EJES: ${cita(p.fila.axes)}${p.u.ignorado ? ' · se ignoró «' + esc(p.u.ignorado) + '»' : ''}${p.u.aproximados.length ? ' · ≈ ' + esc(p.u.aproximados.map(a => a.id + ' → ' + a.base).join(', ')) : ''}</small><small>${quien(p.fila)} · ${esc(stateLabels[p.estado] || p.estado)}</small></button>${ficha(p.fila, p.u)}</li>`).join('') || '<li><p>Ningún folio con ejes ubicables.</p></li>'}</ul>
         <p class="protocolNota">Se dibuja exactamente entre los ejes que indica el protocolo: zona entre ejes, tramo sobre un eje o pilar en un cruce. Las superposiciones se muestran tal cual; todos los bordes van encima. Las medidas salen de la grilla del DWG (vano de 8,2 m). ≈ marca un eje que no está en la grilla y se aproximó a su base (A12B → A12). La matriz no se modifica.</p>
       </div>
       <div class="protocolFooter"><button data-volver>← Volver</button></div>`;
     panel.querySelector('[data-cerrar]').onclick = cerrar;
     panel.querySelector('[data-volver]').onclick = () => { cerrar(); ctx.volver(); };
     panel.querySelectorAll('[data-estado]').forEach(input => input.onchange = () => { if (input.checked) ocultos.delete(input.dataset.estado); else ocultos.add(input.dataset.estado); render(); dibujar(); });
+    panel.querySelectorAll('[data-ficha]').forEach(boton => boton.onclick = () => { foco = foco === boton.dataset.ficha ? null : boton.dataset.ficha; render(); dibujar(); panel.querySelector('li.activo')?.scrollIntoView({block: 'nearest'}); });
     panel.querySelectorAll('[data-folio]').forEach(boton => boton.onclick = () => {
       const p = actual.ubicados.find(x => x.fila.id === boton.dataset.folio);
       foco = p.fila.id; encuadrar([p.u.caja]); render(); dibujar();
@@ -105,6 +109,7 @@ export function createProtocolPlan(ctx) {
   // filas: registros del protocolo en este piso (todos los estados); foco: id de un folio para centrarlo.
   async function mostrar({tipo, filas, foco: id = null}) {
     let grilla;
+    try { const cat = await loadProtocolCatalog(); fuente = {date1904: !!cat?.source?.date1904, corte: cat?.source?.cutoff || ''}; } catch {}
     try { grilla = await cargarGrilla(); } catch { ctx.toast('No se pudo cargar la grilla de ejes del piso. Revisa la conexión o el paquete sin conexión.'); return false; }
     const ubicados = [], anulados = [], sinUbicar = [];
     for (const f of filas) {

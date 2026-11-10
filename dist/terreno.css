@@ -1,0 +1,15 @@
+/* Terreno: celular o tablet (dispositivo.mjs marca body.terreno). Solo herramientas de terreno, botones de 44 px o más
+   para usar con guantes y letra de 13 px o más. Lo de oficina lleva data-oficina y queda para el escritorio. */
+body.terreno [data-oficina] { display: none !important; }
+
+/* Encabezado de los paneles: el piso y el módulo ya están en la barra de arriba; queda «← Control» y el contenido. */
+body.terreno #workspacePanel .moduleHeading { display: none !important; }
+body.terreno #workspacePanel .panelTrail { margin-top: 0; }
+
+/* Botones de la barra de arriba y de la hoja: al menos 44 px. */
+body.terreno header button, body.terreno #hojaCerrar, body.terreno #ruedaCerrar { min-width: 44px; min-height: 44px; }
+body.terreno .bottomNav button { font-size: 13px; }
+body.terreno #workspacePanel :is(small, .muted, label, th, td) { font-size: max(13px, 1em); }
+
+/* Nota corta arriba de una lista de la hoja (por ejemplo, recintos encontrados). */
+.hojaNota { margin: 4px 0 8px; font-size: 14px; color: var(--g-texto2, #262626); }
