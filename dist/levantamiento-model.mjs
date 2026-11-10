@@ -17,7 +17,8 @@ const PALETA = ['#2f6db5', '#e07b00', '#7a4fa3', '#2a9d8f', '#b5651d', '#5f6b7a'
 // Clave para unir variantes de escritura: sin tildes, mayúsculas ni espacios dobles, y «Instalada» = «Instalado».
 export const clave = v => String(v ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase().replace(/\s+/g, ' ').replace(/ad[ao]\b/g, 'ado');
 const oracion = v => { const s = String(v).trim().replace(/\s+/g, ' '); return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase(); };
-export const pisoDe = v => { const k = clave(v); return Object.keys(PISOS).find(p => p.toLowerCase() === k || PISOS[p].includes(k)) || null; };
+// Acepta también el prefijo de especialidad de las planillas del proyecto: «A-N02», «A-S01».
+export const pisoDe = v => { const k = clave(v).replace(/^[a-z]{1,3}[-_ ](?=[ns]-?\d)/, ''); return Object.keys(PISOS).find(p => p.toLowerCase() === k || PISOS[p].includes(k)) || null; };
 const id = (prefijo, i) => prefijo + String(i + 1).padStart(2, '0');
 
 // ---------- Validación ----------
@@ -154,6 +155,16 @@ export function proponer(aoa) {
   });
   const niveles = indiceNivel < 0 ? [] : [...new Set(datos.map(f => String(f[indiceNivel] ?? '').trim()).filter(Boolean))];
   return {encabezado, indiceNivel, indiceCodigo, columnas, niveles, filas: datos.length, datos};
+}
+// Libro con varias hojas ([{nombre, aoa}]): se importa la primera que tenga encabezados con código de recinto y datos,
+// aunque antes haya hojas de apoyo (tablas de códigos, listas). Si ninguna sirve, explica por qué falló cada una.
+export function proponerLibro(hojas) {
+  const fallas = [];
+  for (const h of hojas) {
+    try { return {...proponer(h.aoa), hoja: h.nombre}; }
+    catch (failure) { fallas.push(hojas.length > 1 ? `«${h.nombre}»: ${failure.message}` : failure.message); }
+  }
+  throw Error(fallas.length > 1 ? 'Ninguna hoja se puede importar. ' + fallas.join(' ') : fallas[0] || 'La planilla no tiene datos.');
 }
 // Documentos (uno por piso) desde la propuesta ya ajustada. pisoActual: piso de destino si la planilla no trae Nivel.
 // Devuelve también lo que no se pudo ubicar (nivel desconocido, código vacío o repetido en el mismo piso).

@@ -167,18 +167,18 @@ export function createLevantamiento(ctx) {
       const texto = await file.text(), primera = texto.split(/\r?\n/)[0] || '', fs = (primera.match(/;/g) || []).length > (primera.match(/,/g) || []).length ? ';' : primera.includes('\t') ? '\t' : ',';
       libro = X.read(texto, {type: 'string', FS: fs, raw: true});
     } else libro = X.read(await file.arrayBuffer(), {type: 'array'});
-    const hoja = libro.SheetNames.map(n => libro.Sheets[n]).find(ws => X.utils.sheet_to_json(ws, {header: 1}).length > 1);
-    if (!hoja) throw Error('La planilla no tiene datos.');
-    return X.utils.sheet_to_json(hoja, {header: 1, defval: '', raw: false});
+    return libro.SheetNames.map(nombre => ({nombre, aoa: X.utils.sheet_to_json(libro.Sheets[nombre], {header: 1, defval: '', raw: false})}));
   }
   async function importar(file) {
+    // El aviso va dentro de la ventana abierta: el mensaje flotante queda tapado por ella.
+    const aviso = (texto, error = false) => { ctx.dialog.querySelector('#levAviso')?.classList.toggle('error', error); const p = ctx.dialog.open && (ctx.dialog.querySelector('#levAviso') || ctx.dialog.querySelector('#markingError')); if (p) p.textContent = texto; else if (texto) ctx.toast(texto); };
     let propuesta;
-    try { if (file.size > 15e6) throw Error('La planilla supera 15 MB.'); propuesta = L.proponer(await leerPlanilla(file)); }
-    catch (failure) { ctx.toast('No se pudo leer la planilla: ' + failure.message); return; }
+    try { if (file.size > 15e6) throw Error('La planilla supera 15 MB.'); aviso('Leyendo ' + file.name + '…'); propuesta = L.proponerLibro(await leerPlanilla(file)); }
+    catch (failure) { aviso(`No se pudo importar «${file.name}»: ${failure.message}`, true); return; }
     let cols = propuesta.columnas, leer;
     const pisos = propuesta.niveles.map(n => [n, L.pisoDe(n)]), desconocidos = pisos.filter(([, p]) => !p).map(([n]) => n);
     const pintar = v => { cols = v; const caja = ctx.dialog.querySelector('#levCols'); caja.innerHTML = columnasHTML(cols); leer = conectarColumnas(caja, cols, pintar); };
-    ctx.showDialog(`<h2>Importar levantamiento</h2><p>${esc(file.name)} · ${propuesta.filas} filas · código en «${esc(propuesta.encabezado[propuesta.indiceCodigo])}»${propuesta.indiceNivel >= 0 ? ` · nivel en «${esc(propuesta.encabezado[propuesta.indiceNivel])}»` : ''}.</p>
+    ctx.showDialog(`<h2>Importar levantamiento</h2><p>${esc(file.name)} · hoja «${esc(propuesta.hoja)}» · ${propuesta.filas} filas · código en «${esc(propuesta.encabezado[propuesta.indiceCodigo])}»${propuesta.indiceNivel >= 0 ? ` · nivel en «${esc(propuesta.encabezado[propuesta.indiceNivel])}»` : ''}.</p>
       <p>${propuesta.indiceNivel >= 0 ? 'Se crea un levantamiento por piso: ' + pisos.filter(([, p]) => p).map(([n, p]) => `${esc(n)} → ${NOMBRE_PISO[p]}`).join(' · ') + '.' : 'Sin columna Nivel: todo va a ' + esc(ctx.levelName) + '.'}${desconocidos.length ? ` <b>No se reconocen los niveles ${desconocidos.map(esc).join(', ')}: esas filas no se importan.</b>` : ''}</p>
       <form id="markingForm"><label>Nombre *<input name="name" required maxlength="160" value="${esc(file.name.replace(/\.[^.]+$/, ''))}"></label><label>Quién lo realiza *<input name="author" required maxlength="160"></label>
       <label>Para qué es *<textarea name="purpose" required maxlength="2000" rows="2">Levantamiento importado de ${esc(file.name)}</textarea></label>
@@ -190,6 +190,7 @@ export function createLevantamiento(ctx) {
       try {
         boton.disabled = true; const grupo = crypto.randomUUID();
         const {docs, avisos} = L.construir({...propuesta, columnas: leer()}, {name: v.name.trim(), author: v.author.trim(), purpose: v.purpose.trim(), pisoActual: ctx.level, grupo, ids: propuesta.niveles.map(() => crypto.randomUUID())});
+        if (!docs.length) throw Error('Ninguna fila se pudo importar. ' + (avisos[0] || 'Revisa las columnas Nivel y Código de recinto.'));
         for (const d of docs) await saveMarking(d, 0);
         const aqui = docs.find(d => d.level === ctx.level);
         ctx.toast(`Levantamiento importado: ${docs.map(d => `${NOMBRE_PISO[d.level]} ${d.filas.length}`).join(' · ')} recintos.${avisos.length ? ` ${avisos.length} avisos.` : ''}`);
