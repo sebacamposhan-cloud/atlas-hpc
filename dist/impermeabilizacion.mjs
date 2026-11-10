@@ -154,16 +154,6 @@ export async function createImpermeabilizacion({esc,toast,download,redraw,detail
       const chunk=table.slice(0,24);plan.pushOperators(PDFLib.popGraphicsState());
       const drawTable=(p,list,top)=>{p.drawText('RECINTOS MARCADOS - INSTALACIÓN DE ARTEFACTOS S01',{x:20,y:top,size:12,font:bold});const xs=[20,65,245,850,925],widths=[40,175,600,70,150],heads=['N°','Recinto','Artefacto','Unidad','Instalado'];let yy=top-24;const row=(values,b=false)=>{values.forEach((v,i)=>{let t=safe(v);while(font.widthOfTextAtSize(t,10)>widths[i])t=t.slice(0,-2);p.drawText(t,{x:xs[i],y:yy,size:10,font:b?bold:font});});p.drawLine({start:{x:20,y:yy-7},end:{x:1080,y:yy-7},thickness:.4,color:rgb(.7,.7,.7)});yy-=27;};row(heads,true);for(const r of list)row(r);};
       drawTable(plan,chunk,extra-20);for(let i=24;i<table.length;i+=27){const continuation=pdf.addPage([1100,900]);drawTable(continuation,table.slice(i,i+27),860);}
-      let page,y;
-      const newPage=()=>{page=pdf.addPage([595,842]);y=802;};newPage();
-      const line=(s,b=false)=>{const words=safe(s).split(/\s+/);let text='';for(const word of words){if(font.widthOfTextAtSize(text+' '+word,10)>515){write(text,b);text=word;}else text+=(text?' ':'')+word;}if(text)write(text,b);};
-      const write=(s,b)=>{if(y<45)newPage();page.drawText(s,{x:40,y,size:10,font:b?bold:font});y-=16;};
-      line('ATLAS HPC | Registro de avance de impermeabilización',true);line('HPC-ARQ-DET-IMP-A-908 Rev01 | Nivel -1 | Página fuente: 1');line('Exportado: '+new Date().toISOString());line('Registro: '+(snapshot?.name||'Sin registros')+' | Corte: '+(asOf||'actual'));line('Fuente SHA256: '+catalog.document.sha256);line('Contornos ARQ registrados sobre IMP mediante 41 ejes. Calibración v'+catalog.registration.version+'. Revisión técnica pendiente; sin metrado automático.');line('AVANCE AL CORTE ('+rows.length+' recintos)',true);
-      for(const e of rows)line([e.code,e.name,IMP_STATES[e.state].name,e.date,e.author,e.note].filter(Boolean).join(' | '));
-      line('INSTALACIÓN DE ARTEFACTOS PMA S01',true);line('Fuente PMA SHA256: '+artifacts.source.sha256);
-      for(const room of catalog.rooms)for(const a of items(room))for(let unit=1;unit<=a.quantity;unit++){const e=ultimoArtefacto(snapshot,room.id,a.code,unit,asOf||undefined);if(e)line([room.code,a.code,artifactName(a.code),'Unidad '+unit+'/'+a.quantity,ART_STATES[e.state],e.date,e.author].join(' | '));}
-      line('HISTORIAL DE INSTALACIÓN',true);for(const e of snapshot?.artifactHistory||[])line([e.code,e.artifact,e.unit,ART_STATES[e.state],e.date,e.author].join(' | '));
-      line('HISTORIAL DE REGISTROS',true);for(const e of snapshot?.history||[])line([e.code,e.date,IMP_STATES[e.state].name,e.author,e.at,e.note].filter(Boolean).join(' | '));
       download(new Blob([await pdf.save()],{type:'application/pdf'}),'Atlas_IMP_S01_avance.pdf');toast('Plano con avance exportado.');
     }catch(e){toast('No se pudo exportar: '+e.message);}finally{busy=false;buttons.forEach(b=>b.disabled=false);}
   }

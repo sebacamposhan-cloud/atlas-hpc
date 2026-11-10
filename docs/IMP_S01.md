@@ -117,3 +117,9 @@ Se corrige el cargador compartido de bibliotecas de exportación: antes conserva
 `vendor/pdf-lib.min.js` se incorpora al núcleo del paquete offline para que el generador quede disponible junto con la aplicación. La exportación sigue utilizando el original y los registros del proyecto. No se modifica autenticación ni se publica ningún dato del proyecto.
 
 Prueba `pdf-export-recovery-browser-test.mjs`: fallan intencionalmente las dos cargas iniciales; el siguiente clic genera un PDF de 16 páginas con 80 recintos numerados, plano y tabla vinculada. El documento de marcas es idéntico antes y después de ambos intentos. Se verifica a 390 y 1280 px. También se prueba recuperación automática tras un fallo transitorio, llamadas concurrentes sin descargas duplicadas y reutilización de la biblioteca ya cargada. Offline, recursos HTTP y modelos de numeración/artefactos comprobados. Esto reproduce el mecanismo localmente; no identifica por sí solo la causa de red/sesión del primer fallo observado en Render.
+
+## PDF sin anexos de historial
+
+La exportación conserva únicamente el plano numerado y la tabla de artefactos vinculada a sus números (con continuación de la tabla cuando sea necesaria). Se retiran las páginas finales de procedencia técnica, listado repetido de instalación e historiales con fechas, autores y observaciones. No se cambia ni elimina ningún registro del proyecto: el historial sigue disponible en Atlas y en el respaldo JSON.
+
+La prueba de exportación incluye ahora registros de avance y artefactos con notas/autores de auditoría. Comprueba que esos textos e historiales no aparezcan en el PDF, que la cantidad de páginas corresponda exactamente al plano y a las filas de su tabla y que el documento guardado sea idéntico antes y después de exportar. Probado con 80 recintos a 390 y 1280 px, incluida recuperación tras fallo de carga del generador.
