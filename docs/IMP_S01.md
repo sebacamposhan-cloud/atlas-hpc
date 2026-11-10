@@ -51,3 +51,17 @@ La importación reemplaza únicamente los derivados `imp-s01`, conserva las otra
 - Se registra el estado del recinto completo; no se infiere un porcentaje ejecutado ni se reparte una cantidad entre artefactos o muros.
 - La sincronización se verificó con adaptadores aislados; no se escribió avance ficticio en la nube de producción.
 - `runtime-test.mjs` ya falla en la base `06d566f` porque el catálogo runtime contiene identificadores que no aparecen en el antiguo `data.json` (TypeError al buscar el registro fuente). Se reprodujo el mismo fallo con los archivos originales de ese commit en un directorio aislado. Estos cambios no modifican esos catálogos ni la prueba; queda pendiente su actualización independiente.
+
+## Artefactos por recinto — ampliación del mismo PR
+
+Se importa **exclusivamente A-S01** de `HPC-5-ARQ-GEN-PMA-03-RevB.xlsx`, hoja `HPC PMA Artefactos`. No se genera catálogo de otros pisos ni se publica el libro completo. Importador reproducible: `python scripts/imp/import-artifacts.py /ruta/al/archivo.xlsx`.
+
+La matriz contiene 414 recintos S01, 213 con artefactos previstos y 991 unidades. Coinciden con los contornos de este plano 173 recintos con 840 unidades. Los registros sin coincidencia se conservan en el catálogo S01, sin asignarlos por proximidad a otro recinto.
+
+Desde **Proyectos → Avance de artefactos · plano S01**, o desde la lámina de Impermeabilización, se selecciona el recinto y aparece una tabla con **artefacto, unidad prevista y estado de instalación**. Cada unidad tiene sus opciones Instalado / No instalado / Sin verificar; por ejemplo, dos lavaderos B1 pueden tener estados distintos. No se presume instalado lo que figura en la planilla. El historial guarda usuario, fecha, código, número de unidad, celda y SHA256 de la fuente.
+
+La instalación es independiente del avance de impermeabilización. Ambos se guardan en el mismo proyecto sincronizable, sin migración y conservando los proyectos anteriores. La capa «Instalación de artefactos» pinta verde los recintos con todos sus artefactos instalados, ámbar los parciales y gris los que tienen unidades registradas como no instaladas. El PDF incluye los estados y el historial de artefactos; el respaldo JSON conserva ambas clases de registro.
+
+Archivos adicionales: `dist/artefactos-model.mjs`, `dist/impermeabilizacion/artefactos-s01.json`, `scripts/imp/import-artifacts.py` y `artefactos-test.mjs`. Integraciones en el controlador IMP, validación de proyectos, biblioteca de Proyectos y paquete offline.
+
+Pruebas adicionales: `node artefactos-test.mjs` comprueba el ámbito S01, cantidades documentadas, instalación individual, ausencia de instalación inferida, conservación histórica y prevención de duplicados. El recorrido de navegador a 390 px guarda A4 no instalado y una de dos unidades B1 instalada, recarga, recupera los estados independientes y comprueba que la instalación figura en el PDF exportado. Las pruebas a seis anchos y las de proyectos, nube, navegación y offline se vuelven a ejecutar.

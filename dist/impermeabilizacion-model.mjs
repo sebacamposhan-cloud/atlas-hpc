@@ -1,3 +1,4 @@
+import {validarArtefactos} from './artefactos-model.mjs';
 // Progress is a project in the existing marking store/cloud, separate from the source PDF and ARQ progress.
 export const esImpermeabilizacion = d => d?.schema === 3 && d.tipo === 'impermeabilizacion';
 export const IMP_STATES = {
@@ -9,6 +10,7 @@ export const IMP_STATES = {
 };
 const text = (s,n) => typeof s === 'string' && !!s.trim() && s.length <= n;
 export function validarImpermeabilizacion(d) {
+  validarArtefactos(d?.artifactHistory);
   if (!esImpermeabilizacion(d) || d.specialty !== 'waterproofing' || d.level !== 'N-1' || !text(d.id,100)) throw Error('Registro IMP inválido.');
   for (const [k,n] of [['name',160],['author',160],['purpose',2000]]) if (!text(d[k],n)) throw Error('Registro IMP incompleto: '+k);
   if (!Number.isSafeInteger(d.version) || d.version < 1 || ![d.createdAt,d.updatedAt].every(v=>Number.isFinite(Date.parse(v)))) throw Error('Versión o fecha IMP inválida.');
