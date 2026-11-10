@@ -100,10 +100,12 @@ Pruebas: `imp-quick-entry-browser-test.mjs` (también ejecutado por el punto de 
 
 ## Ajuste: marcar con un toque, sin guardar ni continuar
 
-El flujo actual sustituye el envío manual de la ficha: cada botón de instalación persiste inmediatamente su unidad. No se muestran botones de guardar, continuar o descartar. La ficha permanece abierta para marcar otras unidades. La confirmación discreta distingue «Guardando…», «Guardado en este equipo» y error; la sincronización continúa mediante la cuenta existente.
+El flujo actual sustituye el envío manual de la ficha: cada botón de instalación persiste inmediatamente su unidad. No se muestran botones de guardar, continuar o descartar. Tras confirmar el guardado de la opción, la ficha se cierra automáticamente y vuelve al plano, sin pulsar «Volver al plano». Si el guardado falla, permanece abierta con el error y la última selección confirmada. La confirmación discreta distingue «Guardando…», «Guardado en este equipo» y error; la sincronización continúa mediante la cuenta existente.
 
 Las escrituras se serializan en el orden de los toques y actualizan únicamente la unidad elegida, evitando sobrescribir otras elecciones rápidas. Repetir el estado ya registrado no duplica el historial. Ante un fallo se restaura la selección confirmada y se informa que no se guardó. Si se pulsa volver durante un guardado, la ficha se cierra al terminar correctamente, sin pedir un segundo toque.
 
 «Opciones del recinto» permanece contraído e incluye estado general, fecha, observación e historial de avance. Sus botones también guardan directamente; fecha y observación se registran al cambiar el campo. El avance de artefactos y el avance general siguen separados. Los historiales se actualizan y el plano refleja la capa correspondiente al cambio confirmado.
 
 Pruebas: `imp-autosave-browser-test.mjs`, mediante los puntos de entrada de integración existentes, verifica 320/375/390/430/768/1280 px: tres unidades marcadas rápidamente sin enviar formulario, persistencia individual, repetición sin duplicados, opciones contraídas, guardado del avance opcional, reapertura/recarga, vuelta al plano durante el guardado, conservación de la tabla PDF y reversión visual ante conflicto de versión. Se conservan las pruebas de numeración, artefactos, proyectos, nube y offline. Sin migración SQL.
+
+La prueba de integración verifica el cierre automático después de cada elección de artefacto y del estado general, la recuperación al reabrir y que un conflicto de versión mantenga la ficha abierta. Se comprueba a 320/375/390/430/768/1280 px.
