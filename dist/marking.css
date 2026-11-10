@@ -47,6 +47,9 @@ body.markingOpen .toolbar, body.markingOpen main > footer { right: 332px; }
 #markingForm input:not([type=color]), #markingForm textarea { display: block; width: 100%; font-size: 16px; }
 #markingForm button { margin-top: 14px; }
 #markingError { color: #a32626; }
+.levAviso { margin: 6px 0; font-size: 13px; font-weight: 600; }
+.levAviso:empty { display: none; }
+.levAviso.error { color: #a32626; }
 /* Proyectos: pincel de estados, resumen por estado, cortes, comparación, vista lado a lado y editor de la leyenda. */
 #markingPanel i, #markingDialog i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; flex: none; }
 .pincel { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 16px 0; }

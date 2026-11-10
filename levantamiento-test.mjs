@@ -64,4 +64,12 @@ assert.deepEqual(aoa.slice(1).map(r => r[0]).filter((v, i, a) => a.indexOf(v) ==
 const filaN01 = aoa.find(r => r[1] === '9.9.0-1');
 assert.equal(filaN01[cab.indexOf('Estatus de Pavimento')], 'Instalado', 'pavimento enlazado sale del rombo');
 assert.equal(L.pisoDe('S01'), 'N-1'); assert.equal(L.pisoDe('n02'), 'N02'); assert.equal(L.pisoDe('N09'), null);
+// Niveles con prefijo de especialidad y libros con hojas de apoyo antes de la hoja de datos.
+assert.equal(L.pisoDe('A-N02'), 'N02'); assert.equal(L.pisoDe('A-S01'), 'N-1'); assert.equal(L.pisoDe('a n03'), 'N03'); assert.equal(L.pisoDe('A-N09'), null); assert.equal(L.pisoDe('Anexo 2'), null);
+const apoyo = {nombre: 'CODIFICACIÓN MUROS', aoa: [['M1+M2+M3+M4', 'TIPOS', '', 'MURO NORTE'], ['10-10-10-10', '10.0', '', 'M1']]};
+const libro = L.proponerLibro([apoyo, {nombre: 'Datos', aoa: [['Levantamiento de artefactos'], cab, ...filas]}]);
+assert.equal(libro.hoja, 'Datos', 'salta la hoja sin código de recinto'); assert.equal(libro.filas, p.filas);
+assert.throws(() => L.proponerLibro([apoyo]), /^Error: Falta la columna «Código de recinto»\.$/);
+assert.throws(() => L.proponerLibro([apoyo, {nombre: 'Vacía', aoa: []}]), /Ninguna hoja se puede importar\. «CODIFICACIÓN MUROS»: Falta la columna.*«Vacía»: No se encontró/);
+assert.throws(() => L.proponerLibro([]), /La planilla no tiene datos/);
 console.log(JSON.stringify({checks: 'passed', scope: 'Levantamiento: propuesta de columnas desde la planilla (nivel, código, lista, estados con variantes unidas, no aplica, enlace al rombo), un documento por piso, avisos, listo para instalar, enlace con el rombo, leyenda, edición de valores y columnas, validación y exportación con los mismos encabezados.'}));
