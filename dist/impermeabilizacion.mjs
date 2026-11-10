@@ -47,7 +47,7 @@ export async function createImpermeabilizacion({esc,toast,download,redraw,detail
   function autoSave(form,select){
     if(!editable()||cut||!selected)return;
     const room=selected,projectId=active||'imp-s01-avance-'+catalog.document.sha256.slice(0,16)+'-v'+catalog.registration.version,field=select.name,value=select.value,fields=Object.fromEntries(new FormData(form));
-    autoPending++;autoFailed=false;status('Guardando…');form.dataset.dirty='true';
+    autoPending++;if(select.tagName==='SELECT')closeAfterSave=true;autoFailed=false;status('Guardando…');form.dataset.dirty='true';
     const run=async()=>{busy=true;let saved=false;
       try{if(active&&active!==projectId)throw Error('El proyecto cambió antes de guardar.');const current=doc(),author=exigirFirma(),base=current||nuevoAvanceIMP(catalog,author),numbered=markRoom(base,room,author);let next;
         if(form.id==='impArtifactsForm'){const values={};for(const a of items(room))for(let i=1;i<=a.quantity;i++)values[a.code+':'+i]=ultimoArtefacto(base,room.id,a.code,i)?.state||'sin_registro';values[field]=value;next=registrarArtefactos(numbered,room,items(room),values,artifacts.source,{author,date:new Date().toLocaleDateString('en-CA')});}
