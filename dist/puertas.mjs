@@ -6,6 +6,7 @@
 // Datos: dist/<piso>/puertas.json (scripts/puertas/importar-dwg.mjs). Modelo: puertas-model.mjs.
 import {datos} from './level.mjs';
 import * as P from './puertas-model.mjs';
+import {FUENTE, NOTAS, modeloDe, vanoDe} from './puertas-modelos.mjs';
 import {readMarkings, saveMarking} from './marking-store.mjs';
 import {firmante, pedirSesion} from './firma.mjs';
 import {loadVendor} from './web-store.mjs';
@@ -58,6 +59,19 @@ export function createPuertas(ctx) {
 
   // ---------- Panel ----------
   const chip = estado => `<span class="puertaChip" style="--c:${P.ESTADOS[estado].color}">${esc(P.ESTADOS[estado].nombre)}</span>`;
+  // Descripción del modelo según la planilla de vanos de puertas: familia, tipo y vano de obra de cada variante.
+  function descripcionModelo(p) {
+    const m = modeloDe(p.modelo), fuente = `${FUENTE.titulo}, lámina ${FUENTE.lamina} ${FUENTE.revision}`;
+    if (!p.modelo) return '';
+    if (!m) return `<p class="puertaNota">Descripción del modelo: ${esc(p.modelo)} no figura en la ${esc(fuente.charAt(0).toLowerCase() + fuente.slice(1))}.</p>`;
+    return `<section class="puertaModelo" aria-label="Descripción del modelo">
+      <h3>Descripción del modelo</h3>
+      <p><b>${esc(m.descripcion)}</b><br>${esc(m.familia)}</p>
+      <table><thead><tr><th>Ítem</th><th>Variante</th><th>Vano de obra (ancho × alto)</th></tr></thead>
+      <tbody>${m.variantes.map(v => `<tr><td>${esc(v.item)}</td><td>${esc(v.variante || '—')}</td><td>${esc(vanoDe(v))}</td></tr>`).join('')}</tbody></table>
+      <p class="puertaNota">${m.variantes.length > 1 ? 'El plano de avance no indica cuál variante lleva esta puerta. ' : ''}${esc(NOTAS[0])} Fuente: ${esc(fuente)}.</p>
+    </section>`;
+  }
   function ficha(p) {
     const estado = P.estadoDe(p, proyecto), cambio = P.cambioDe(p, proyecto), dato = (n, v) => v ? `<div><dt>${n}</dt><dd>${esc(v)}</dd></div>` : '';
     return `<section class="puertaFicha" aria-label="Puerta ${esc(p.llave || p.id)}">
@@ -67,7 +81,7 @@ export function createPuertas(ctx) {
       ${p.revisar?.length ? `<p class="puertaRevisar"><b>Revisar:</b> ${p.revisar.map(esc).join('; ')}.</p>` : ''}
       ${proyecto ? `<div class="puertaOpciones" role="group" aria-label="Estado de la puerta">${P.opcionesDe(p).map(e => `<button type="button" data-puerta-estado="${e}" aria-pressed="${estado === e}" style="--c:${P.ESTADOS[e].color}">${esc(P.ESTADOS[e].nombre)}</button>`).join('')}</div>`
         : '<p class="puertaNota">Para marcar el estado en terreno, abre o crea un proyecto de puertas.</p>'}
-      <p class="puertaNota">Descripción del modelo: pendiente de la ficha de modelos de puerta.</p>
+      ${descripcionModelo(p)}
     </section>`;
   }
   function pintar() {
