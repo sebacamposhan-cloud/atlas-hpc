@@ -65,3 +65,15 @@ La instalación es independiente del avance de impermeabilización. Ambos se gua
 Archivos adicionales: `dist/artefactos-model.mjs`, `dist/impermeabilizacion/artefactos-s01.json`, `scripts/imp/import-artifacts.py` y `artefactos-test.mjs`. Integraciones en el controlador IMP, validación de proyectos, biblioteca de Proyectos y paquete offline.
 
 Pruebas adicionales: `node artefactos-test.mjs` comprueba el ámbito S01, cantidades documentadas, instalación individual, ausencia de instalación inferida, conservación histórica y prevención de duplicados. El recorrido de navegador a 390 px guarda A4 no instalado y una de dos unidades B1 instalada, recarga, recupera los estados independientes y comprueba que la instalación figura en el PDF exportado. Las pruebas a seis anchos y las de proyectos, nube, navegación y offline se vuelven a ejecutar.
+
+## Numeración vinculada entre plano y tabla
+
+Cada toque sobre un recinto guarda su número de forma consecutiva (1, 2, 3…) en el proyecto. Desde una búsqueda también puede usarse «Marcar recinto con número». Registrar avance o instalación incluye el recinto en esa misma numeración. Volver a marcar un recinto mantiene su número; consultar o buscar sin marcar no agrega números. Las cuentas lectoras no crean marcas.
+
+Las marcas contienen ID, código, número, punto interior en coordenadas del plano, autor y fecha. Sobreviven a recarga, respaldo y sincronización. Los proyectos anteriores siguen siendo válidos; no se inventa un orden histórico para recintos que aún no fueron numerados.
+
+El PDF muestra las marcas numeradas y **una tabla debajo del plano en la misma primera página**, con columnas N°, recinto, artefacto, unidad e instalado (Sí / No / Sin verificar). La tabla repite el mismo número en cada artefacto del recinto y respeta el orden de marcado. Si supera el espacio previsto, continúa en páginas con cabecera repetida. El PNG incluye también los números y la tabla; para tablas que exceden el tamaño seguro de imagen se solicita usar PDF. El historial y la procedencia permanecen en el anexo.
+
+Pruebas: `node imp-numbering-test.mjs` comprueba orden de selección diferente del catálogo, repetición sin duplicados, recuperación, unicidad y ubicación interior. El recorrido de navegador verifica números 1/2/3, marcas sin registrar avance, respaldo con orden persistido, tabla en la primera página y separación física entre plano y tabla mediante las coordenadas del PDF. Se corrigió además el selector de estados de impermeabilización al visualizar la capa de artefactos.
+
+`imp-numbering-browser-test.mjs` verifica también dos toques táctiles reales en un contexto móvil: se persisten 1 y 2 en orden de toque, sin crear marcas por búsqueda ni por tocar otra vez el mismo recinto. Las escrituras de marcas se serializan para conservar ese orden.
