@@ -41,6 +41,12 @@ body.escritorio.puertasOpen:not(.floorHome) .toolbar { right: calc(var(--detail)
 .puertaOpciones button[aria-pressed=true] { background: var(--c); color: #fff; }
 .puertaRevisar { margin: 8px 0 0; font-size: 13px; color: #8a2d00; }
 .puertaNota { margin: 6px 0; font-size: 13px; color: #262626; }
+.puertaModelo { margin-top: 10px; padding-top: 8px; border-top: 2px solid var(--g-marca, #1b2a56); }
+.puertaModelo h3 { margin: 0 0 4px; font-size: 14px; }
+.puertaModelo p { margin: 4px 0; }
+.puertaModelo table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.puertaModelo th, .puertaModelo td { padding: 4px 6px 4px 0; border-bottom: 1px solid #d9d9d9; text-align: left; vertical-align: top; }
+.puertaModelo th { font-weight: 700; color: #000; }
 .puertaLeyenda { display: grid; gap: 2px; margin: 8px 0; }
 .puertaLeyenda label { display: flex; align-items: center; gap: 8px; min-height: 36px; font-size: 14px; }
 .puertaLeyenda i, .puertasLista i { width: 12px; height: 12px; flex: none; }

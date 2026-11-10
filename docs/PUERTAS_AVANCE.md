@@ -10,8 +10,9 @@
     - ancho;
     - código de partida;
     - contratista;
-    - estado en el plano.
-  - El panel filtra por estado y por contratista, y busca por vano, llave o modelo.
+    - estado en el plano;
+    - descripción del modelo: tipo de puerta, familia y vano de obra de cada variante.
+  - El panel filtra por estado y por contratista, y busca por vano, llave, modelo o descripción del modelo («cortafuegos», «vaivén»).
   - El botón Excel exporta todo.
 - **Consulta o terreno:**
   - Sin proyecto abierto se ven los estados tal como vienen en el plano de avance.
@@ -71,10 +72,22 @@ En la capa `A-DOOR-IDEN` cada puerta trae un rótulo con el modelo, el ancho («
 
 Faltan los DWG de avance de puertas de N01, N03 y −1. En el −1 sigue el plano de puertas en PDF de antes, en Filtros y capas.
 
-También falta la ficha con la descripción de cada modelo de puerta. Cuando llegue, la ficha de la puerta la mostrará.
+## Descripción del modelo
+Sale de la «Planilla vanos de puertas», lámina HPC-ARQ-FDI-224 Rev03 del 26 de noviembre de 2024. Llegó escaneada, así que se transcribió a mano en `dist/puertas-modelos.mjs`.
+
+- La planilla trae 72 modelos en 9 familias: vidriadas de aluminio, madera llena, madera con mirilla, madera plomadas, metálicas vidriadas, automáticas de HPL, escape y cortafuego, metálicas llenas y especiales.
+- Cada fila es una variante: ítem, descripción y vano de obra (ancho × alto, en mm). Un modelo puede tener hasta tres: sin imposta («SI»), con imposta opaca y con imposta vidriada o de policarbonato.
+- El plano de avance no dice cuál variante lleva cada puerta. La ficha las muestra todas.
+- Los ítems de la planilla (6.5.x) no son los códigos de partida del plano de avance (6.6.1.x).
+- Vano terminado = vano de obra + 30 mm.
+- En el N02, 9 modelos del plano no están en la planilla: PAS1, PAS2, PAS3, PI01ka, PI04da, PI05a, PI10b, PI13a y PI13b. Su ficha lo dice y no inventa una descripción.
+- La descripción también va en la búsqueda del panel y en el Excel.
+
+**Por confirmar con el original:** en el escaneo las letras «i» y «l» se parecen. Se leyó PI01i (corredera 140), PI01l (abatir 120), PI09i (doble RF120 90/90) y PI09l (psiquiatría RF60 90), por el orden de la planilla.
 
 ## Archivos
 - `dist/puertas-model.mjs`: estados, contratistas, proyecto, búsqueda y Excel. Sin DOM.
+- `dist/puertas-modelos.mjs`: descripción de cada modelo, de la planilla de vanos.
 - `dist/puertas.mjs`: plano, panel y ficha.
 - `dist/puertas.css`
 - `dist/n02/puertas.json`

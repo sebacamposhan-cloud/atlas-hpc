@@ -3,6 +3,7 @@
 //   llave, modelo, ancho, código de partida, número de vano, contratista y el estado que marca el plano.
 // - El proyecto guarda solo lo que se cambia en terreno, puerta por puerta, con quién y cuándo. Lo demás sigue lo que
 //   dice el plano. Se guarda y sincroniza como cualquier proyecto (tipo «proyecto» en la nube, sin cambios en Supabase).
+import {descripcionDe} from './puertas-modelos.mjs';
 export const ESTADOS = {
   no_instalada: {nombre: 'No instalada', color: '#c0392b'},
   pletinas: {nombre: 'Pletinas instaladas', color: '#a3229d'},
@@ -59,12 +60,12 @@ export function marcarPuerta(doc, puerta, estado, {autor, at = new Date().toISOS
   return validarPuertas({...doc, filas: {...doc.filas, [puerta.id]: {estado, at, autor, ...(nota ? {nota} : {})}}});
 }
 
-// Busca por llave, modelo, vano, código de partida o contratista. Varias palabras: todas deben aparecer.
+// Busca por llave, modelo, descripción del modelo, vano, código de partida o contratista. Varias palabras: todas deben aparecer.
 const normal = s => String(s || '').toLocaleLowerCase('es').normalize('NFD').replace(/[̀-ͯ]/g, '');
 export function filtrar(puertas, {texto: q = '', estados = null, contratista = '', doc = null} = {}) {
   const palabras = normal(q).split(/\s+/).filter(Boolean);
   return puertas.filter(p => (!estados || estados.has(estadoDe(p, doc))) && (!contratista || (p.contratista || '') === contratista)
-    && palabras.every(w => normal([p.llave, p.modelo, p.vano ? 'vano ' + p.vano : '', p.partida, p.contratista].join(' ')).includes(w)));
+    && palabras.every(w => normal([p.llave, p.modelo, descripcionDe(p.modelo), p.vano ? 'vano ' + p.vano : '', p.partida, p.contratista].join(' ')).includes(w)));
 }
 export function contar(puertas, doc = null) {
   const n = Object.fromEntries(ORDEN.map(e => [e, 0]));
@@ -74,10 +75,10 @@ export function contar(puertas, doc = null) {
 // Orden de la lista: vano (número) y después llave.
 export const ordenLista = (a, b) => (parseInt(a.vano) || 1e6) - (parseInt(b.vano) || 1e6) || String(a.llave || a.id).localeCompare(String(b.llave || b.id), 'es', {numeric: true});
 
-export const ENCABEZADOS = ['Vano', 'Llave', 'Modelo', 'Ancho', 'Código de partida', 'Contratista', 'Estado', 'Estado en el plano', 'Pletinas', 'Cambiado el', 'Por', 'Revisar'];
+export const ENCABEZADOS = ['Vano', 'Llave', 'Modelo', 'Descripción del modelo', 'Ancho', 'Código de partida', 'Contratista', 'Estado', 'Estado en el plano', 'Pletinas', 'Cambiado el', 'Por', 'Revisar'];
 export function filasExcel(catalogo, doc = null) {
   return [...catalogo.puertas].sort(ordenLista).map(p => {
     const c = cambioDe(p, doc);
-    return [p.vano || '', p.llave || '', p.modelo || '', p.ancho || '', p.partida || '', p.contratista || '', ESTADOS[estadoDe(p, doc)].nombre, ESTADOS[p.estado].nombre, p.pletinas ? 'Sí' : '', c ? c.at.slice(0, 10).split('-').reverse().join('-') : '', c?.autor || '', (p.revisar || []).join('; ')];
+    return [p.vano || '', p.llave || '', p.modelo || '', descripcionDe(p.modelo), p.ancho || '', p.partida || '', p.contratista || '', ESTADOS[estadoDe(p, doc)].nombre, ESTADOS[p.estado].nombre, p.pletinas ? 'Sí' : '', c ? c.at.slice(0, 10).split('-').reverse().join('-') : '', c?.autor || '', (p.revisar || []).join('; ')];
   });
 }
