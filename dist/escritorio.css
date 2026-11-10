@@ -20,7 +20,7 @@ body.escritorio:not(.floorHome) #ruedaObra .ruedaPista .ruedaTarjeta { position:
 body.escritorio:not(.floorHome) #ruedaObra .ruedaTarjeta svg.panelArt { grid-row: 1 / span 2; width: 64px; height: 40px; margin: 0; }
 body.escritorio:not(.floorHome) #ruedaObra .ruedaTarjeta strong { font-size: 16px; line-height: 1.2; }
 body.escritorio:not(.floorHome) #ruedaObra .ruedaTarjeta small { font-size: 13px; font-weight: 500; line-height: 1.25; }
-body.escritorio:not(.floorHome) #ruedaObra .ruedaTarjeta:hover { border-color: var(--g-azul); box-shadow: inset 0 0 0 1px var(--g-azul); }
+body.escritorio:not(.floorHome) #ruedaObra .ruedaTarjeta:hover { border-color: var(--g-azul); outline: 1px solid var(--g-azul); outline-offset: -2px; }
 body.escritorio:not(.floorHome) #ruedaObra .ruedaTarjeta[aria-current=true] { background: var(--g-azul) !important; border-color: var(--g-azul); color: #fff !important; }
 body.escritorio:not(.floorHome) #ruedaObra .ruedaTarjeta[aria-current=true] :is(small, strong, b) { color: #fff !important; }
 body.escritorio:not(.floorHome) #ruedaObra .ruedaTarjeta[aria-current=true] :is(svg, svg .f) { stroke: #fff; }
@@ -46,7 +46,7 @@ body.escritorio.ruedaPortada:not(.floorHome) #resumenPiso { display: block; posi
 .resumenGrilla { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .resumenDato { display: grid; align-content: start; gap: 4px; min-height: 108px; padding: 12px 14px; border: 1px solid var(--g-marca); background: #fff; color: #000; text-align: left; font: inherit; }
 button.resumenDato { cursor: pointer; }
-button.resumenDato:hover { border-color: var(--g-azul); box-shadow: inset 0 0 0 1px var(--g-azul); }
+button.resumenDato:hover { border-color: var(--g-azul); outline: 1px solid var(--g-azul); outline-offset: -2px; }
 .resumenDato span { font-size: 14px; font-weight: 700; }
 .resumenDato b { font-size: 30px; line-height: 1.1; }
 .resumenDato small { font-size: 13px; color: #262626; }

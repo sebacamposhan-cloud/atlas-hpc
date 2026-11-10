@@ -27,6 +27,9 @@ export const TARJETAS = [
   {id: 'recintos', modulo: 'plano', titulo: 'Recintos', texto: 'Avance y observaciones', funciones: [['avance', 'Avance'], ['observaciones', 'Observaciones'], ['resumen', 'Resumen']],
     dibujo: '<path d="M80 8l42 42-42 42-42-42z"/><path class="f" d="M62 34h36v32H62z"/><path d="M62 50h36"/>'},
   {id: 'capas', modulo: 'plano', titulo: 'Filtros y capas', texto: 'Qué se ve en el plano', accion: 'filtros', funciones: [], dibujo: DESLIZADORES},
+  // Plano de puertas: modelo, llave, vano y estado de cada puerta (puertas.mjs).
+  {id: 'puertas', modulo: 'plano', titulo: 'Puertas', texto: 'Modelo, llave, vano y estado', accion: 'puertas', funciones: [],
+    dibujo: '<rect x="52" y="10" width="56" height="80"/><path class="f" d="M52 90V10l40 10v80z"/><path d="M84 54v6"/>'},
   {id: 'tipos', modulo: 'protocolos', titulo: 'Por tipo', texto: 'Protocolos abiertos de este piso', grupo: 'protocolos', funcion: 'tipos', funciones: [], dibujo: HOJA},
   {id: 'criticos', modulo: 'protocolos', titulo: 'Críticos', texto: 'Más de un año abiertos', grupo: 'protocolos', funcion: 'criticos', funciones: [],
     dibujo: '<path d="M80 12l58 76H22z"/><path class="f" d="M80 40v24M80 74v2"/>'},

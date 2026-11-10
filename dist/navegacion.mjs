@@ -176,6 +176,7 @@ export function createNavegacion(ctx) {
     cerrarRueda();
     if (t.panel === 'lastplanner') ctx.lastplanner?.verPiso(pisoVisto);
     if (t.panel) { ui.abrirPanel(t.panel, t.vista); return; }
+    if (t.accion === 'puertas') { cerrarHoja(); ctx.cerrarModos(); ctx.abrirPuertas?.(); return; }
     if (t.accion) { cerrarHoja(); ctx.cerrarModos(); ui.openFilters(); return; }
     if (t.grupo) { cambiarTarjeta(t.grupo); elegirFuncion(t.funcion); return; }
     cambiarTarjeta(id);

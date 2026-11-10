@@ -125,8 +125,8 @@ export function funcionesDe(perfil) {
   // Supervisores y capataces: su libreta, avance y observaciones de su piso, protocolos y filtros. Last Planner es de jefatura.
   // Supervisor de piso o capataz (mismo nivel): su agenda, Last Planner para el reporte diario (asistencia, avance,
   // restricciones y fotos, según sus permisos), Proyectos completo y las herramientas de terreno.
-  if (perfil.area === 'linea' && perfil.nivel === 4) return {tareas, tarjetas: ['tareas', 'lastplanner', 'herramientas', 'recintos', 'capas', 'protocolos', 'tipos', 'criticos'], funciones: {recintos: ['avance', 'observaciones'], protocolos: ['tipos', 'criticos'], herramientas: ['proyectos', 'mas']}};
-  return {tareas, tarjetas: ['tareas', 'lastplanner', 'resumen', 'herramientas', 'recintos', 'capas', 'protocolos', 'tipos', 'criticos', 'matriz'], funciones: {}};
+  if (perfil.area === 'linea' && perfil.nivel === 4) return {tareas, tarjetas: ['tareas', 'lastplanner', 'herramientas', 'recintos', 'capas', 'puertas', 'protocolos', 'tipos', 'criticos'], funciones: {recintos: ['avance', 'observaciones'], protocolos: ['tipos', 'criticos'], herramientas: ['proyectos', 'mas']}};
+  return {tareas, tarjetas: ['tareas', 'lastplanner', 'resumen', 'herramientas', 'recintos', 'capas', 'puertas', 'protocolos', 'tipos', 'criticos', 'matriz'], funciones: {}};
 }
 // Elegir varios pisos a la vez en Control y Protocolos: jefaturas, Planificación y Calidad. Supervisor, capataz y las
 // cuentas sin perfil eligen uno.

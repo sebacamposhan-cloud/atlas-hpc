@@ -1,0 +1,57 @@
+/* Plano de puertas (puertas.mjs): panel a la derecha en escritorio y hoja abajo en el celular. Blanco, texto negro,
+   marino de estructura; los colores de estado son los del plano de avance (verde instalada, rojo no instalada,
+   magenta pletinas). */
+#puertasPanel { position: absolute; top: 0; right: 0; bottom: 0; width: 380px; z-index: 13; display: flex; flex-direction: column; overflow: hidden; background: #fff; border-left: 2px solid var(--g-marca, #1b2a56); color: #000; font-size: 14px; }
+#puertasPanel[hidden] { display: none; }
+body.puertasOpen #viewport { right: 380px; }
+body.puertasOpen .toolbar { right: 392px; }
+.puertasOpen .right, .puertasOpen .left, .puertasOpen #activeLegend, .puertasOpen #fichaBarra { display: none !important; }
+body.escritorio:not(.floorHome) #puertasPanel { width: var(--detail); }
+body.escritorio.puertasOpen:not(.floorHome) #viewport { right: var(--detail) !important; }
+body.escritorio.puertasOpen:not(.floorHome) .toolbar { right: calc(var(--detail) + 12px) !important; }
+@media (max-width: 700px), (pointer: coarse) and (max-width: 1023px) {
+  #puertasPanel { top: auto; left: 0; width: auto; height: min(58dvh, 520px); border-left: 0; border-top: 3px solid var(--g-marca, #1b2a56); }
+  body.puertasOpen #viewport { right: 0; bottom: min(58dvh, 520px); }
+  body.puertasOpen .toolbar { right: 10px; }
+}
+.puertasCabeza { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 14px 6px; border-bottom: 2px solid var(--g-marca, #1b2a56); }
+.puertasCabeza h2 { margin: 0; font-size: 18px; }
+.puertasCabeza button { min-width: 44px; min-height: 44px; border: 0; background: #fff; font-size: 22px; }
+.puertaFuente { margin: 6px 14px 0; font-size: 13px; color: #262626; }
+.puertaProyecto { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 14px; padding: 6px 0; border-bottom: 1px solid #d9d9d9; }
+.puertaProyecto p { flex: 1 1 180px; display: grid; gap: 2px; margin: 0; }
+.puertaProyecto small { font-size: 12px; color: #262626; }
+.puertaProyecto button { min-height: 40px; padding: 4px 12px; border: 1px solid var(--g-marca, #1b2a56); background: #fff; color: #000; font-weight: 700; }
+.puertaProyecto button.primary { background: var(--g-azul, #0f5499); border-color: var(--g-azul, #0f5499); color: #fff; }
+.scrollPuertas { flex: 1; overflow-y: auto; padding: 0 14px 16px; }
+.puertaFicha { margin: 8px 0 10px; padding: 10px 12px; border: 2px solid var(--g-azul, #0f5499); }
+.puertaTitulo { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin: 0 0 6px; }
+.puertaTitulo b { font-size: 22px; }
+.puertaVano { font-size: 16px; font-weight: 700; }
+.puertaEstado { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 8px; }
+.puertaEstado small { font-size: 12px; color: #262626; }
+.puertaChip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border: 1px solid var(--c); font-size: 13px; font-weight: 700; }
+.puertaChip::before { content: ''; width: 10px; height: 10px; background: var(--c); }
+.puertaDatos { display: grid; gap: 2px; margin: 0; }
+.puertaDatos > div { display: grid; grid-template-columns: 9em minmax(0, 1fr); gap: 8px; padding: 3px 0; border-bottom: 1px solid #d9d9d9; }
+.puertaDatos dt { font-size: 13px; color: #262626; }
+.puertaDatos dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
+.puertaOpciones { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; margin: 10px 0 4px; }
+.puertaOpciones button { min-height: 48px; padding: 4px 8px; border: 2px solid var(--c); background: #fff; color: #000; font-weight: 700; }
+.puertaOpciones button[aria-pressed=true] { background: var(--c); color: #fff; }
+.puertaRevisar { margin: 8px 0 0; font-size: 13px; color: #8a2d00; }
+.puertaNota { margin: 6px 0; font-size: 13px; color: #262626; }
+.puertaLeyenda { display: grid; gap: 2px; margin: 8px 0; }
+.puertaLeyenda label { display: flex; align-items: center; gap: 8px; min-height: 36px; font-size: 14px; }
+.puertaLeyenda i, .puertasLista i { width: 12px; height: 12px; flex: none; }
+.puertaLeyenda b { margin-left: auto; }
+.puertaContratistas { display: flex; gap: 6px; margin: 6px 0; }
+.puertaContratistas button { flex: 1; min-height: 40px; border: 1px solid var(--g-marca, #1b2a56); background: #fff; color: #000; font-weight: 700; }
+.puertaContratistas button[aria-pressed=true] { background: var(--g-azul, #0f5499); border-color: var(--g-azul, #0f5499); color: #fff; }
+.puertasBuscar { width: 100%; box-sizing: border-box; min-height: 44px; margin: 4px 0; padding: 6px 10px; border: 1px solid var(--g-marca, #1b2a56); font: inherit; font-size: 15px; }
+.puertasLista { list-style: none; margin: 0; padding: 0; }
+.puertasLista li + li { border-top: 1px solid #d9d9d9; }
+.puertasLista button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; padding: 4px 2px; border: 0; background: #fff; color: #000; text-align: left; font: inherit; cursor: pointer; }
+.puertasLista button[aria-current=true] { border-left: 4px solid var(--g-azul, #0f5499); padding-left: 6px; }
+.puertasLista span { display: grid; gap: 1px; }
+.puertasLista small { font-size: 12px; color: #262626; }

@@ -91,6 +91,6 @@ body.conFranja #barraFunciones, body.conFranja .toolbar { top: 72px; }
 .ruedaPista.conFlujo.flujoLargo .ruedaTarjeta svg.panelArt { display: none; }
 .ruedaPista.conFlujo.flujoLargo .ruedaTarjeta > span { display: grid; gap: 2px; }
 .ruedaPista.conFlujo.flujoLargo .ruedaTarjeta em { font-style: normal; font-weight: 700; white-space: nowrap; }
-.flujoBuscar { display: block; width: 100%; box-sizing: border-box; min-height: 44px; margin: 6px 0; padding: 8px 12px; border: 1px solid var(--g-marca); border-radius: 0; font: inherit; font-size: 15px; background: #fff; }
+.flujoBuscar { display: block; width: 100%; box-sizing: border-box; min-height: 44px; margin: 6px 0; padding: 8px 12px; border: 1px solid var(--g-marca); font: inherit; font-size: 15px; background: #fff; }
 .ruedaPista.conFlujo.flujoLargo .ruedaTarjeta > span { justify-items: start; text-align: left; }
 .ruedaPista.conFlujo.flujoLargo .ruedaTarjeta small { text-align: left; font-size: 13px; font-weight: 500; }

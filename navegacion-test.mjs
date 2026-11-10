@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {TARJETAS, ICONOS, MODULOS, moduloDe, conPortada, cartasDelModulo, consultaPiso, leerConsulta, pisosEnOrden, pisoParaAbrir, tarjeta, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar, paradaCercana, CLAVE_MEMORIA, tarjetasPara, TARJETA_TAREAS} from './dist/navegacion-model.mjs';
+import {TARJETAS, ICONOS, MODULOS, moduloDe, conPortada, cartasDelModulo, consultaPiso, leerConsulta, pisosEnOrden, pisoParaAbrir, tarjeta, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar, paradaCercana, CLAVE_MEMORIA, tarjetasPara, TARJETA_TAREAS, paraTerreno, opcionesMas, OFICINA} from './dist/navegacion-model.mjs';
 import {funcionesDe, puedeVariosPisos} from './dist/jerarquia-model.mjs';
 import {crearFluido, crearOleaje, arrastrar} from './dist/fluido.mjs';
 import {palancaHTML} from './dist/palanca.mjs';
@@ -17,7 +17,8 @@ for (const m of MODULOS) assert.ok(m.titulo && m.texto && m.dibujo, m.id);
 
 // Tarjetas de cada módulo: un panel, una acción sobre el plano, una función de su grupo o sus botones flotantes.
 assert.deepEqual(cartasDelModulo(TARJETAS, 'control').map(t => t.id), ['lastplanner', 'resumen', 'herramientas']);
-assert.deepEqual(cartasDelModulo(TARJETAS, 'plano').map(t => t.id), ['recintos', 'capas']);
+assert.deepEqual(cartasDelModulo(TARJETAS, 'plano').map(t => t.id), ['recintos', 'capas', 'puertas']);
+assert.equal(tarjeta('puertas').accion, 'puertas', 'Puertas abre su plano propio');
 assert.deepEqual(cartasDelModulo(TARJETAS, 'protocolos').map(t => t.id), ['tipos', 'criticos', 'matriz']);
 assert.equal(tarjeta('lastplanner').panel, 'lastplanner');
 assert.equal(tarjeta('lastplanner').funciones.length, 0);
@@ -62,8 +63,9 @@ assert.equal(pisoParaAbrir([], 'N-1'), null);
   assert.equal(tarjetasPara(funcionesDe(null)), TARJETAS);
   assert.equal(tarjetasPara(funcionesDe(perfil(3, {activo: false}))), TARJETAS, 'un perfil inactivo no cambia nada');
   const capataz = tarjetasPara(funcionesDe(perfil(4)));
-  assert.deepEqual(cartasDelModulo(capataz, 'control').map(t => t.id), ['tareas', 'herramientas'], 'sin Last Planner ni resumen de gerencia');
-  assert.deepEqual(cartasDelModulo(capataz, 'plano').map(t => t.id), ['recintos', 'capas']);
+  assert.deepEqual(cartasDelModulo(capataz, 'control').map(t => t.id), ['tareas', 'lastplanner', 'herramientas'], 'Last Planner para su reporte diario; sin el resumen de gerencia');
+  assert.deepEqual(capataz.find(t => t.id === 'herramientas').funciones.map(([id]) => id), ['proyectos', 'mas'], 'Proyectos completo para supervisor o capataz');
+  assert.deepEqual(cartasDelModulo(capataz, 'plano').map(t => t.id), ['recintos', 'capas', 'puertas']);
   assert.deepEqual(cartasDelModulo(capataz, 'protocolos').map(t => t.id), ['tipos', 'criticos']);
   assert.deepEqual(capataz[0].funciones.map(([id]) => id), ['mias']);
   assert.deepEqual(capataz.find(t => t.id === 'recintos').funciones.map(([id]) => id), ['avance', 'observaciones'], 'el resumen de gerencia no va al capataz');
@@ -267,3 +269,17 @@ assert.deepEqual([...new Set(cssTareas.match(/#[0-9a-f]{3,8}\b(?=[;, )])/gi) || 
 assert.ok(!/box-shadow|gradient\(/.test(cssTareas));
 for (const [, alto] of cssTareas.matchAll(/min-height: (\d+)px/g)) assert.ok(Number(alto) >= 44, 'botón de ' + alto + ' px');
 console.log('navegacion-test: ok');
+
+// Terreno (celular o tablet): sin tablas de oficina. Avance y la matriz quedan para el escritorio; Recintos y Protocolos
+// pierden su «Resumen»; en «Más» solo queda la simbología.
+{
+  const terreno = paraTerreno(TARJETAS);
+  assert.deepEqual(cartasDelModulo(terreno, 'control').map(t => t.id), ['lastplanner', 'herramientas']);
+  assert.deepEqual(cartasDelModulo(terreno, 'protocolos').map(t => t.id), ['tipos', 'criticos']);
+  assert.deepEqual(terreno.find(t => t.id === 'recintos').funciones.map(([id]) => id), ['avance', 'observaciones']);
+  assert.deepEqual(terreno.find(t => t.id === 'protocolos').funciones.map(([id]) => id), ['tipos', 'criticos']);
+  assert.ok(OFICINA.tarjetas.every(id => TARJETAS.some(t => t.id === id)), 'las tarjetas de oficina existen');
+  assert.deepEqual(opcionesMas(false).map(([id]) => id), ['legend']);
+  assert.deepEqual(opcionesMas(true).map(([id]) => id), ['exportPlan', 'legend', 'original', 'diamondCatalogOpen', 'import', 'editorContornos']);
+  assert.match(index, /terreno\.css/); assert.match(index, /escritorio\.css/); assert.match(index, /puertas\.css/);
+}

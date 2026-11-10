@@ -2,6 +2,7 @@ import {createSpatialSelector} from './lastplanner-spatial.mjs';
 import {createMarking} from './marking.mjs';
 import {createMarkingOverlay,markingLegend} from './marking-overlay.mjs';
 import {createProtocolPlan} from './protocolos-plano.mjs';
+import {createPuertas} from './puertas.mjs';
 import {markingItems} from './marking-model.mjs';
 import {iniciarCapaAvance} from './avance.mjs';
 import {createObservaciones,iniciarCapaObservaciones,cargarObservaciones} from './observaciones.mjs';
@@ -29,7 +30,7 @@ const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,
 let spatial,spatialSnapshot,spatialScale;
 // Libreta de la jerarquía de obra. volverAlPlano: el selector de superficies vuelve al plano y no al panel de Last Planner.
 let tareas,tareasEscucha=false,volverAlPlano=false;
-let nav,navRetomada=false,marking,markingOverlay,protocolPlan,ui,disciplines,assistant,diamondCatalog,observaciones,romboAvance,lastplanner,protocolosRecinto,protocolosAbiertos=false,avanceCapa=false,obsCapa=false,lpCapa=false,showDiamonds=false;let undoGeometry=[],redoGeometry=[];
+let nav,navRetomada=false,marking,markingOverlay,protocolPlan,puertas,ui,disciplines,assistant,diamondCatalog,observaciones,romboAvance,lastplanner,protocolosRecinto,protocolosAbiertos=false,avanceCapa=false,obsCapa=false,lpCapa=false,showDiamonds=false;let undoGeometry=[],redoGeometry=[];
 function rememberGeometry(){undoGeometry.push(structuredClone(edit));if(undoGeometry.length>100)undoGeometry.shift();redoGeometry=[];}
 
 let atlas,aliases=new Map(),data,doc,selected=null,results=[],filtered=false,view=[0,0,3971,2384],previousView=null,isolation=false,edit=null,drag=null,searchTimer,querySerial=0;
@@ -127,7 +128,7 @@ $('svg').addEventListener('pointerup',e=>{
  if(!drag)return;const d=drag;drag=null;$('svg').classList.remove('dragging');
  if(!d.moved){
   if(edit){if(d.vertex===null){const p=point(e);rememberGeometry();edit.points.push([+p.x.toFixed(2),+p.y.toFixed(2)]);renderEdit();}}
-  else{const p=point(e),id=d.diamondId||hitRoom(p);if(spatial?.active())spatial.choose(id,p);else if(id){if(marking?.active())marking.choose(roomById.get(aliases.get(id)||id));else selectRoom(id,false);}}
+  else{const p=point(e);if(!d.diamondId&&!spatial?.active()&&puertas?.tocar(p))return;const id=d.diamondId||hitRoom(p);if(spatial?.active())spatial.choose(id,p);else if(id){if(marking?.active())marking.choose(roomById.get(aliases.get(id)||id));else selectRoom(id,false);}}
  }else loadDetail();
 });
 $('svg').addEventListener('keydown',e=>{const id=e.target.dataset.diamondId;if(id&&(e.key==='Enter'||e.key===' ')){e.preventDefault();if(marking?.active())marking.choose(roomById.get(aliases.get(id)||id));else selectRoom(id,false);}});
@@ -175,7 +176,9 @@ async function initialize(){
   markingOverlay ||= createMarkingOverlay({esc,active:()=>marking.active(),focused:()=>marking.focused(),items:()=>marking.items(),room:id=>uniqueRooms(data.rooms).find(r=>r.id===id),path:footprintPath,position:r=>world(r).position});
   // Protocolos de la matriz encuadrados por sus ejes en el plano, con su número; los anulados quedan en el panel derecho.
   protocolPlan ||= createProtocolPlan({esc,toast,setView,resize:updateTiles,enter:()=>{marking?.close();ui.closeFilters();ui.show('map');selected=null;isolation=false;render();},volver:()=>nav?.volverProtocolos()});
-  nav ||= createNavegacion({esc,toast,ui,rooms:()=>uniqueRooms(data.rooms),verProtocolos:datos=>protocolPlan.mostrar(datos),cerrarModos:()=>{marking?.close();protocolPlan?.cerrar();ui?.closeFilters();},escritorio:()=>matchMedia('(min-width:1024px) and (pointer:fine)').matches,ocupado:()=>{if(!edit&&!spatial?.active())return false;toast('Termina la edición en el plano antes de abrir las tarjetas.');return true;},perfil:()=>tareas?.perfil()||perfilActual(),tareas,lastplanner});
+  // Plano de puertas (tarjeta Puertas de Plano y Proyecto tipo Puertas): vanos con su estado sobre el plano.
+  puertas ||= createPuertas({esc,toast,setView,resize:updateTiles,level:nivel.id,levelName:nivel.nombre,download:downloadBlob,enter:()=>{marking?.close();protocolPlan?.cerrar();ui.closeFilters();ui.show('map');selected=null;isolation=false;document.body.classList.add('hideRight');render();}});
+  nav ||= createNavegacion({esc,toast,ui,rooms:()=>uniqueRooms(data.rooms),verProtocolos:datos=>protocolPlan.mostrar(datos),cerrarModos:()=>{marking?.close();protocolPlan?.cerrar();puertas?.cerrar();ui?.closeFilters();},abrirPuertas:()=>puertas?.abrir(),escritorio:()=>matchMedia('(min-width:1024px) and (pointer:fine)').matches,ocupado:()=>{if(!edit&&!spatial?.active())return false;toast('Termina la edición en el plano antes de abrir las tarjetas.');return true;},perfil:()=>tareas?.perfil()||perfilActual(),tareas,lastplanner});
   if(!tareasEscucha){tareasEscucha=true;const actualizar=()=>tareas.recargar().then(()=>nav.alCambiarTareas()).catch(()=>{});window.addEventListener('atlas-jerarquia-changed',actualizar);window.addEventListener('atlas-session-changed',actualizar);actualizar();
    // «Asignar a mi equipo» en la ficha de una actividad de Last Planner abre la asignación con esa actividad y su frente.
    document.addEventListener('click',e=>{const b=e.target.closest?.('[data-jer-asignar-actividad]');if(!b)return;e.preventDefault();tareas.prepararAsignacion(b.dataset.jerAsignarActividad).then(()=>{ui.show('map');if(!nav.abrirTareas('asignar'))toast('Tu cargo no asigna tareas.');}).catch(error=>toast(error.message));});}

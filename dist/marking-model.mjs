@@ -3,6 +3,9 @@
 // un estado por recinto y cortes con fecha (fotografías del avance) para comparar períodos. Los documentos del esquema 1 siguen siendo válidos.
 // Esquema 3: levantamiento con columnas propias (levantamiento-model.mjs).
 import {validarLevantamiento} from './levantamiento-model.mjs';
+// Esquema 3, tipo «puertas»: una fila por puerta del plano de avance de puertas (puertas-model.mjs).
+import {esPuertas, validarPuertas} from './puertas-model.mjs';
+export {esPuertas};
 export const esLevantamiento = doc => doc?.schema === 3 && doc.tipo === 'levantamiento';
 const text = (value, limit) => typeof value === 'string' && value.trim().length > 0 && value.length <= limit;
 const color = value => /^#[a-f0-9]{6}$/i.test(value);
@@ -27,6 +30,7 @@ function validarEstados(estados) {
 export const marcarEliminado = (doc, {autor = '', at = new Date().toISOString()} = {}) => ({...doc, eliminado: {at, autor}, version: doc.version + 1, updatedAt: at});
 export function validateMarking(doc) {
   if (esLevantamiento(doc)) return validarLevantamiento(doc);
+  if (esPuertas(doc)) return validarPuertas(doc);
   if (!doc || ![1, 2].includes(doc.schema) || doc.specialty !== 'architecture' || !text(doc.id, 100) || !text(doc.level, 30)) throw Error('Documento de Arquitectura inválido.');
   for (const [key, label, max] of [['name', 'Nombre del documento', 160], ['author', 'Quién lo realizó', 160], ['purpose', 'Para qué es el plano', 2000]]) {
     if (!text(doc[key], max)) throw Error(label + ': completa este campo obligatorio.');
@@ -120,7 +124,7 @@ export function compareCuts(estados, antes, despues, area = () => null) {
 // Recintos a dibujar con su color: estados del proyecto o, en modo comparación, el tipo de cambio.
 // Un levantamiento ubica sus filas por código: los colores los entrega el módulo del levantamiento (marking.items()).
 export function markingItems(doc, comparacion = null) {
-  if (esLevantamiento(doc)) return [];
+  if (esLevantamiento(doc) || esPuertas(doc)) return [];
   if (comparacion) return comparacion.filas.map(f => ({id: f.id, color: CAMBIOS[f.cambio].color, number: null, opacity: f.cambio === 'igual' ? .18 : .45}));
   const colores = doc.schema === 2 ? new Map(doc.estados.map(e => [e.id, e.color])) : null;
   return doc.rooms.map(mark => ({id: mark.id, color: colores?.get(mark.estado) || doc.color, number: mark.number, opacity: .35}));
