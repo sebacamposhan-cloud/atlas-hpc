@@ -123,3 +123,13 @@ Prueba `pdf-export-recovery-browser-test.mjs`: fallan intencionalmente las dos c
 La exportación conserva únicamente el plano numerado y la tabla de artefactos vinculada a sus números (con continuación de la tabla cuando sea necesaria). Se retiran las páginas finales de procedencia técnica, listado repetido de instalación e historiales con fechas, autores y observaciones. No se cambia ni elimina ningún registro del proyecto: el historial sigue disponible en Atlas y en el respaldo JSON.
 
 La prueba de exportación incluye ahora registros de avance y artefactos con notas/autores de auditoría. Comprueba que esos textos e historiales no aparezcan en el PDF, que la cantidad de páginas corresponda exactamente al plano y a las filas de su tabla y que el documento guardado sea idéntico antes y después de exportar. Probado con 80 recintos a 390 y 1280 px, incluida recuperación tras fallo de carga del generador.
+
+## Tablas compactas por recinto y semáforo de instalación
+
+La exportación PDF/PNG agrupa los artefactos en una tabla por recinto marcado. Su número, código y nombre aparecen una sola vez en el encabezado; cada tipo de artefacto ocupa una fila con cantidades instaladas/previstas, no instaladas y sin verificar. Por ejemplo, dos unidades del mismo artefacto se resumen como 1/2, sin repetir el recinto o generar dos filas. Se mantienen el orden y la numeración del plano.
+
+Verde indica instalación completa, amarillo instalación parcial y rojo cero instalaciones registradas. «Sin verificar» se conserva separado de «No instalado»: el color rojo no acredita una ausencia física. Un recinto sin artefactos PMA queda neutro, sin cantidades inventadas. La capa de instalación usa los mismos colores; el avance general de impermeabilización conserva su leyenda original.
+
+Cada tabla tiene separación visual y se mantiene completa al cambiar de página cuando cabe; solo una tabla mayor que una página se divide con encabezado de continuación. No se reintroducen anexos de historial ni se modifican registros guardados. `imp-report-test.mjs` comprueba agrupación, cantidades, estados, conservación y paginación. `pdf-export-recovery-browser-test.mjs` genera PDFs reales a 390/1280 px y verifica 80 encabezados únicos, sin anexos ni mutación de datos.
+
+Comprobación adicional: PNG real con filas completas y parciales, sin mutación del documento; guardado con un toque/reapertura/recarga y manejo de conflicto a 320/375/390/430/768/1280 px. Se actualiza la expectativa del PDF de esa prueba para exigir cantidades agregadas y un único encabezado de recinto.
