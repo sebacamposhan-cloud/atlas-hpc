@@ -76,6 +76,8 @@ export function createMarking(ctx) {
   function choose(room) {
     if (!active || !room || !find(room.id)) return;
     if (comparando) return ctx.toast('Estás comparando cortes. Vuelve a «Estados» para pintar.');
+    // Levantamiento con un estado de la simbología elegido: el toque pinta el recinto, sin abrir su ficha.
+    if (esLevantamiento(active) && lev.pintar(room)) return;
     focused = room.id;
     // En un levantamiento, tocar un recinto abre su ficha en el panel; se marca columna por columna.
     if (esLevantamiento(active)) { render(); ctx.redraw(); return; }

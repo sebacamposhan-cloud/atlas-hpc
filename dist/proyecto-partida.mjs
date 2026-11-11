@@ -13,7 +13,8 @@ const numero = v => v.toLocaleString('es-CL', {maximumFractionDigits: 1});
 const fechaCorta = iso => iso.slice(8, 10) + '-' + iso.slice(5, 7) + '-' + iso.slice(0, 4);
 export function detalleRecinto(afam, f) {
   const etapas = afam.etapas.map((e, k) => `${e} ${Math.round(100 * (f.et[k] ?? 0))} %`).join(' · ');
-  return `${etapas}${etapas ? ' · ' : ''}pendiente ${numero(f.pendiente)} ${unidadFamilia(afam.familia)}`;
+  const falta = f.requiere && f.pctRequiere < 0.995 ? ` · falta ${(NOMBRE_FAMILIA[f.requiere] || f.requiere).toLowerCase()} (${Math.round(100 * f.pctRequiere)} %)` : '';
+  return `${etapas}${etapas ? ' · ' : ''}pendiente ${numero(f.pendiente)} ${unidadFamilia(afam.familia)}${falta}`;
 }
 
 // afam: avanceFamilia(...) de planilla-avance-model.mjs. filas: los recintos que entran (todos o los elegidos).

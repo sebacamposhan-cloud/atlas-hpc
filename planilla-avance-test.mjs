@@ -161,10 +161,14 @@ assert.deepEqual(revisada.partidas['6.3.3'].etapas.map(e => e.pct), [1, 1, 1], '
 assert.deepEqual(nodo(reporte([{...conEtapas, key: 'N02|8.2.3.3.9-2', code: '8.2.3.3.9-2', level: 'N02'}], guardada), '6.3.3').etapas.map(e => e.pct), [1, 1, 1]);
 
 // ---------- Avance de una partida por recinto (panel por partida y Proyectos) ----------
-assert.deepEqual(P.categoriasFamilia(['Estructura', 'Tapado', 'Huincha']), ['Sin iniciar', 'En estructura', 'En tapado', 'En huincha', 'Terminado']);
-assert.deepEqual([[0, [0, 0, 0]], [0.3, [1, 0, 0]], [0.63, [1, 0.5, 0]], [0.93, [1, 1, 0]], [1, [1, 1, 1]], [0.2, [0.3, 0, 0]]].map(([p, e]) => P.categoriaEtapas(p, e, ['Estructura', 'Tapado', 'Huincha'])),
-  ['Sin iniciar', 'En tapado', 'En tapado', 'En huincha', 'Terminado', 'En estructura']);
-assert.equal(P.categoriaEtapas(0.9, [1, 1, 1], ['Estructura', 'Tapado', 'Huincha']), 'En huincha', 'manda el total de la oficina');
+// Estados por la etapa ALCANZADA, como los lee producción: el recinto queda en la última etapa que empezó.
+const ETAPAS_CD = ['Estructura', 'Tapado', 'Huincha'];
+assert.deepEqual(P.categoriasFamilia(ETAPAS_CD), ['Sin iniciar', 'Estructurado', 'Tapado', 'Huincha', 'Terminado']);
+assert.deepEqual([[0, [0, 0, 0]], [0.3, [1, 0, 0]], [0.63, [1, 0.5, 0]], [0.93, [1, 1, 0]], [0.95, [1, 1, 0.3]], [1, [1, 1, 1]], [0.2, [0.3, 0, 0]], [0.3, [0, 0, 0]]].map(([p, e]) => P.categoriaEtapas(p, e, ETAPAS_CD)),
+  ['Sin iniciar', 'Estructurado', 'Tapado', 'Tapado', 'Huincha', 'Terminado', 'Estructurado', 'Estructurado']);
+assert.equal(P.categoriaEtapas(0.9, [1, 1, 1], ETAPAS_CD), 'Huincha', 'manda el total de la oficina');
+assert.equal(P.categoriaEtapas(1, [1, 1, 1], ETAPAS_CD, false), 'Huincha', 'sin lo que pide «Terminado» (la pintura) queda en su última etapa');
+assert.deepEqual([P.categoriaEtapas(0.5, [], []), P.categoriaEtapas(1, [], [])], ['Sin iniciar', 'Terminado']);
 assert.equal(Object.keys(P.coloresFamilia(['A', 'B'])).length, 4);
 assert.deepEqual(P.pesosDe(guardada, 'cieloDuro'), [0.63, 0.3, 0.07], 'pesos escritos en la hoja');
 assert.deepEqual(P.pesosDe({hojas: [{familia: 'cieloModular', etapas: ['Estructura', 'Tapado']}]}, 'cieloModular'), [0.37, 0.63], 'pesos habituales de la partida');
@@ -172,7 +176,7 @@ assert.deepEqual(P.pesosDe({hojas: [{familia: 'imper', etapas: ['A', 'B', 'C', '
 assert.equal(Math.round(P.pctDeEtapas([1, 1, 0], [0.63, 0.3, 0.07]) * 100), 93);
 const porCodigo = new Map([[con.code, con]]);
 let fam = P.avanceFamilia(guardada, 'cieloDuro', porCodigo);
-assert.deepEqual(fam.filas.map(f => [f.code, f.categoria, f.fuente]), [['8.2.3.3.5-1', 'Terminado', 'planilla'], ['8.2.3.3.9-2', 'En huincha', 'planilla'], ['CU.8.2.3-9', 'Sin iniciar', 'planilla']]);
+assert.deepEqual(fam.filas.map(f => [f.code, f.categoria, f.fuente]), [['8.2.3.3.5-1', 'Terminado', 'planilla'], ['8.2.3.3.9-2', 'Tapado', 'planilla'], ['CU.8.2.3-9', 'Sin iniciar', 'planilla']]);
 assert.deepEqual([fam.terminados, fam.pendientes, Math.round(fam.ejecutado * 10) / 10, fam.cantidad], [1, 2, 29.3, 35]);
 // Lo marcado en terreno después de la carga manda en el panel.
 const filaTerreno = reporte([{...conEtapas, key: 'N02|8.2.3.3.9-2', code: '8.2.3.3.9-2', level: 'N02', version: 1, responsable: 'Capataz', fecha: '2026-11-11', at: '2026-11-11T17:00:00.000Z'}], guardada);
@@ -189,7 +193,7 @@ const L = await import('./dist/levantamiento-model.mjs');
 fam = P.avanceFamilia(guardada, 'cieloDuro', porCodigo);
 const proyecto = proyectoPartida(fam, {nivel: 'N02', autor: 'Oficina', docId: 'p1', at: '2026-11-11T10:00:00.000Z'});
 assert.deepEqual([proyecto.name, proyecto.vista, proyecto.version, proyecto.filas.length, proyecto.columnas[0].enlace, proyecto.columnas[0].opciones.map(o => o.nombre)],
-  ['Avance · Cielo duro', 'c01', 1, 3, 'P:cieloDuro', ['Sin iniciar', 'En estructura', 'En tapado', 'En huincha', 'Terminado']]);
+  ['Avance · Cielo duro', 'c01', 1, 3, 'P:cieloDuro', ['Sin iniciar', 'Estructurado', 'Tapado', 'Huincha', 'Terminado']]);
 const ruta = proyectoPartida(fam, {nivel: 'N02', autor: 'Oficina', docId: 'p2', hojaDeRuta: true, filas: fam.filas.filter(f => f.categoria !== 'Terminado'), at: '2026-11-11T10:00:00.000Z'});
 assert.deepEqual([ruta.name, ruta.filas.length, ruta.columnas.map(c => c.nombre)], ['Hoja de ruta · Cielo duro · 11-11-2026', 2, ['Estado cielo duro', 'Hoja de ruta', 'Detalle']]);
 assert.equal(ruta.filas.find(f => f.code === '8.2.3.3.9-2').valores.c03, 'Estructura 100 % · Tapado 100 % · Huincha 0 % · pendiente 0,7 m²');
@@ -198,9 +202,54 @@ assert.deepEqual([unidadFamilia('cortafuego'), unidadFamilia('cieloDuro')], ['ml
 const col = proyecto.columnas[0], filaP = proyecto.filas.find(f => f.code === '8.2.3.3.9-2');
 assert.equal(L.opcion(col, L.valor(col, filaP, (code, enlace) => enlace === 'P:cieloDuro' ? {categoria: 'Terminado'} : null).id).nombre, 'Terminado');
 assert.equal(L.valor(col, filaP, (code, enlace) => enlace === 'P:cieloDuro' ? {categoria: 'Terminado'} : null).rombo, true);
-assert.equal(L.opcion(col, L.valor(col, filaP, null).id).nombre, 'En huincha');
+assert.equal(L.opcion(col, L.valor(col, filaP, null).id).nombre, 'Tapado');
 assert.throws(() => L.validarLevantamiento({...proyecto, columnas: [{...col, enlace: 'P:x y'}]}), /Solo una columna/);
 assert.throws(() => L.validarLevantamiento({...proyecto, columnas: [{...col, tipo: 'texto', enlace: 'P:cieloDuro'}]}), /Solo una columna/);
+// El enlace va por el orden de los estados: renombrarlos (por ejemplo, quitarles el «En») no lo corta.
+const renombrado = {...col, opciones: col.opciones.map((o, i) => ({...o, nombre: ['Sin iniciar', 'En estructura', 'En tapado', 'En huincha', 'Terminado'][i]}))};
+assert.equal(L.opcionDeCategoria(renombrado, {categoria: 'Tapado', indice: 2, total: 5}).nombre, 'En tapado');
+assert.equal(L.opcionDeCategoria({...col, opciones: col.opciones.slice(0, 4)}, {categoria: 'Tapado', indice: 2, total: 5}).nombre, 'Tapado', 'con otro número de estados, por el nombre');
+assert.equal(L.indiceDeOpcion(renombrado, 'o03', fam.categorias), 2);
+// Al abrir el proyecto, sus estados toman los nombres y colores vigentes de la partida.
+assert.deepEqual(L.alinearPartidas({...proyecto, columnas: [renombrado]}, () => fam).columnas[0].opciones.map(o => o.nombre), fam.categorias);
+assert.equal(L.alinearPartidas(proyecto, () => fam), proyecto, 'sin cambios, el mismo documento');
+
+// ---------- «Terminado» del cielo duro pide también la pintura de cielos ----------
+const r9 = guardada.recintos['8.2.3.3.9-2'];
+assert.ok(r9.pinturaCielo, 'la planilla de prueba trae pintura de cielos en el recinto');
+const conPintura = pc => ({...guardada, recintos: {...guardada.recintos, '8.2.3.3.9-2': {...r9, cieloDuro: [1, r9.cieloDuro[1], [1, 1, 1]], pinturaCielo: [pc, r9.pinturaCielo[1], (r9.pinturaCielo[2] || []).map(() => pc)]}}});
+const fila9 = p => P.avanceFamilia(p, 'cieloDuro', porCodigo).filas.find(f => f.code === '8.2.3.3.9-2');
+assert.deepEqual([fila9(conPintura(0.5)).categoria, fila9(conPintura(0.5)).requiere, fila9(conPintura(0.5)).pctRequiere], ['Huincha', 'pinturaCielo', 0.5]);
+assert.equal(fila9(conPintura(1)).categoria, 'Terminado');
+const {detalleRecinto} = await import('./dist/proyecto-partida.mjs');
+assert.match(detalleRecinto(fam, fila9(conPintura(0.5))), /falta pintura de cielos \(50 %\)$/);
+
+// ---------- Marcar un estado desde el proyecto (ficha o pincel): queda en el rombo ----------
+const opts = {level: 'N02', responsable: 'Capataz', fecha: '2026-11-11', at: '2026-11-11T19:00:00.000Z'};
+const categoriaTras = (reg, p = guardada) => { const f = reporte(reg ? [reg] : [], p); return P.avanceFamilia(p, 'cieloDuro', new Map([[f.code, f]])).filas.find(x => x.code === f.code).categoria; };
+const etapasDe = (m, id = '6.3.3') => m.registro.partidas[id].etapas.map(e => e.pct);
+let mc = M.marcarCategoria(con, guardada, 'cieloDuro', 1, opts);
+assert.deepEqual([etapasDe(mc), mc.registro.version, mc.ids.includes('6.3.3'), categoriaTras(mc.registro)], [[1, 0, 0], 1, true, 'Estructurado']);
+assert.deepEqual(M.validarRegistro(mc.registro, con.nodos), []);
+mc = M.marcarCategoria(con, guardada, 'cieloDuro', 2, opts);
+assert.deepEqual([etapasDe(mc), categoriaTras(mc.registro)], [[1, 1, 0], 'Tapado']);
+// Huincha: el cielo completo y la pintura (completa en la planilla) vuelve a sin iniciar, para no quedar terminado.
+mc = M.marcarCategoria(con, guardada, 'cieloDuro', 3, opts);
+assert.deepEqual([etapasDe(mc), mc.registro.partidas['6.4.2.1'].ejecucion, categoriaTras(mc.registro)], [[1, 1, 1], 'No iniciado', 'Huincha']);
+mc = M.marcarCategoria(con, guardada, 'cieloDuro', 4, opts);
+assert.deepEqual([mc.registro.partidas['6.3.3'].ejecucion, mc.registro.partidas['6.4.2.1'].ejecucion, categoriaTras(mc.registro)], ['Instalado', 'Instalado', 'Terminado']);
+mc = M.marcarCategoria(con, guardada, 'cieloDuro', 0, opts);
+assert.deepEqual([etapasDe(mc), mc.registro.partidas['6.3.3'].ejecucion, categoriaTras(mc.registro)], [[0, 0, 0], 'No iniciado', 'Sin iniciar']);
+// Sin pintura de cielos en la planilla, la huincha queda a medias (marcarla completa terminaría la partida).
+const sinPC = {...guardada, recintos: {...guardada.recintos, '8.2.3.3.9-2': Object.fromEntries(Object.entries(r9).filter(([k]) => k !== 'pinturaCielo'))}};
+mc = M.marcarCategoria(reporte([], sinPC), sinPC, 'cieloDuro', 3, opts);
+assert.deepEqual([etapasDe(mc), categoriaTras(mc.registro, sinPC)], [[1, 1, 0.5], 'Huincha']);
+assert.throws(() => M.marcarCategoria(con, {...guardada, recintos: {}}, 'cieloDuro', 1, opts), /no está en la hoja «Cielo duro»/);
+assert.throws(() => M.marcarCategoria(con, guardada, 'cieloDuro', 9, opts), /Estado no válido/);
+// Deshacer: la partida tocada sale del registro de terreno y vuelve a mandar la planilla.
+mc = M.marcarCategoria(con, guardada, 'cieloDuro', 1, opts);
+const deshecho = M.deshacerMarca(mc.registro, con.registro, mc.ids);
+assert.deepEqual([deshecho.version, '6.3.3' in deshecho.partidas, categoriaTras(deshecho)], [2, false, 'Tapado']);
 
 // ---------- Devolver la planilla con lo de terreno ----------
 const Dv = await import('./dist/planilla-avance-devolver.mjs');
