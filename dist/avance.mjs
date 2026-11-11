@@ -8,6 +8,10 @@ import {progressFloors} from './progress-scope.mjs';
 import * as M from './avance-model.mjs';
 import {crearFiltrosColumna} from './column-filters.mjs';
 import {leerAvance, exportarAvance, importarAvance, borrarItemizado} from './avance-store.mjs';
+import {planillaDe, guardarPlanillaNube} from './planilla-avance-nube.mjs';
+import {leerPlanilla, compararPlanillas, totalesPorFamilia} from './planilla-avance-model.mjs';
+import {firmante} from './firma.mjs';
+import {loadVendor} from './vendor-loader.mjs';
 
 export const COLORES_RECINTO = {'Sin iniciar': '#9aa3ad', 'En curso': '#d9a21b', 'Completo': '#2e9e5b', 'Observado': '#d64545', 'Sin datos': '#cfd5da'};
 const COLORES_ESTADO = {'No iniciado': '#9aa3ad', 'En ejecución': '#d9a21b', 'Instalado': '#357d9a', 'Observado': '#d64545', 'Aprobado': '#2e9e5b'};
@@ -30,8 +34,9 @@ export function cargarAvance(forzar = false) {
   if (!cargando) cargando = (async () => {
     if (!itemizadoBorrado) { itemizadoBorrado = true; borrarItemizado().catch(() => {}); }
     const [pma, avance] = await Promise.all([loadPma(), leerAvance()]);
-    const items = new Map(), reporte = M.reporteAvance(pma, items, avance.registros, nivel.id);
-    cache = {pma, items, avance, reporte, porCodigo: new Map(reporte.filas.map(f => [f.code, f]))};
+    // La planilla de avance de la oficina (si se cargó para este piso) es la base; lo marcado en terreno después manda.
+    const items = new Map(), planilla = planillaDe(nivel.id), reporte = M.reporteAvance(pma, items, avance.registros, nivel.id, planilla);
+    cache = {pma, items, avance, planilla, reporte, porCodigo: new Map(reporte.filas.map(f => [f.code, f]))};
     return cache;
   })().catch(e => { cargando = null; throw e; });
   return cargando;
@@ -44,6 +49,8 @@ export function iniciarCapaAvance(alCambiar) {
   const recargar = () => cargarAvance(true).then(alCambiar).catch(() => {});
   recargar(); window.addEventListener('atlas-avance-changed', recargar);
 }
+// Una planilla nueva (cargada aquí o bajada de la nube) invalida lo calculado.
+if (typeof window !== 'undefined') window.addEventListener('atlas-planilla-avance', () => { cargando = null; });
 // Estado de cada terminación del rombo calculado desde sus partidas registradas (null si ninguna tiene registro).
 // campo 'M': los cuatro muros juntos.
 export const derivador = c => (room, campo) => { const f = c?.porCodigo.get(String(room.code).trim()); return f ? M.estadoTerminacion(campo === 'M' ? M.partidasDeMuros(f.nodos, f.row) : M.partidasDeTerminacion(f.nodos, campo, f.row)) : null; };
@@ -62,6 +69,57 @@ function graficos(rep, esc) {
   const g3 = barras('Partidas bloqueadas por protocolo previo', 'Qué protocolo liberar primero: trabajo con avance que no puede aprobarse hasta liberar su previo.',
     rep.bloqueosPorCausa.slice(0, 10).map(b => ({etiqueta: b.causa, texto: b.n + (b.n === 1 ? ' partida' : ' partidas'), a: b.n, total: rep.bloqueosPorCausa[0].n, colorA: '#c18b3f'})), esc, 'Ninguna partida con avance bloqueada. ' + rep.esperando + ' partidas sin iniciar esperan su protocolo previo.');
   return `<div class="chartGrid">${g1}${g2}${g3}</div>`;
+}
+
+// ---------- Planilla de avance de la oficina ----------
+const fechaHora = iso => { const d = new Date(iso); return Number.isFinite(+d) ? new Intl.DateTimeFormat('es-CL', {timeZone: 'America/Santiago', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'}).format(d) : '—'; };
+export const textoPlanilla = p => !p ? 'Aún no se ha cargado la planilla de avance de este piso.'
+  : `Planilla de la oficina cargada el ${fechaHora(p.cargada)} por ${p.por}` + (p.resumen?.anterior ? ` · ${p.resumen.recintos} ${p.resumen.recintos === 1 ? 'recinto cambió' : 'recintos cambiaron'} respecto de la carga anterior` : '') + '. Lo marcado en terreno después de esa fecha manda sobre la planilla.';
+const MAX_PLANILLA = 12 * 1024 * 1024;
+// Lee el archivo elegido: solo las hojas visibles, como filas. La planilla debe ser del piso activo.
+async function leerArchivoPlanilla(archivo, conocidos) {
+  if (!/\.xls[xm]$/i.test(archivo.name)) throw Error('Elige la planilla de avance en formato Excel (.xlsx).');
+  if (archivo.size > MAX_PLANILLA) throw Error(`La planilla pesa ${(archivo.size / 1048576).toFixed(0)} MB. Suele ser por filas vacías con formato: selecciónalas desde la última fila con datos (Ctrl + Shift + ↓), elimínalas con clic derecho → Eliminar, guarda y vuelve a cargarla.`);
+  await loadVendor('xlsx'); const X = window.XLSX, libro = X.read(await archivo.arrayBuffer(), {type: 'array'});
+  const hojas = libro.SheetNames.filter((_, i) => !libro.Workbook?.Sheets?.[i]?.Hidden).map(nombre => ({nombre, aoa: X.utils.sheet_to_json(libro.Sheets[nombre], {header: 1, raw: true, defval: null})}));
+  const p = leerPlanilla(hojas, {conocidos, archivo: archivo.name});
+  if (!p.nivel) throw Error('No se reconoce el piso de la planilla: revisa la columna NIVEL o el nombre del archivo (S01, N01, N02 o N03).');
+  if (p.nivel !== nivel.id) throw Error(`Esta planilla es de ${p.nivel === 'N-1' ? 'el piso −1' : 'el piso ' + Number(p.nivel.slice(1))}. Cambia a ese piso para cargarla.`);
+  if (!Object.keys(p.recintos).length) throw Error('La planilla no trae avance con código de recinto de este piso.');
+  return p;
+}
+// Resumen de la planilla leída, antes de guardarla: qué hojas entraron, cuáles no y por qué, y qué cambió.
+function resumenPlanillaHTML(p, anterior, esc) {
+  const cambios = compararPlanillas(anterior, p), recintosCambio = new Set(cambios.map(c => c.code)).size, totales = totalesPorFamilia(p);
+  const leidas = p.hojas.filter(h => h.recintos), omitidas = p.hojas.filter(h => !h.recintos && h.familia);
+  const porc = v => (100 * v).toLocaleString('es-CL', {maximumFractionDigits: 1}) + ' %';
+  return `<div class="chartHeading"><h3>Planilla leída · ${esc(p.archivo)}</h3></div>
+    <p class="chartSubtitle">${Object.keys(p.recintos).length} recintos con avance en ${leidas.length} hojas. ${anterior ? `${recintosCambio} ${recintosCambio === 1 ? 'recinto cambia' : 'recintos cambian'} respecto de la carga del ${esc(fechaHora(anterior.cargada))}.` : 'Es la primera carga de este piso.'} Revisa y guarda para que llegue a todos los equipos.</p>
+    <div class="tableScroll"><table class="avanceTabla"><thead><tr><th>Partida</th><th>Recintos</th><th>Terminados</th><th>Avance ponderado</th><th>Etapas</th></tr></thead><tbody>${totales.map(t => `<tr><td>${esc(t.nombre)}</td><td>${t.recintos}</td><td>${t.terminados}</td><td>${porc(t.pct)}</td><td>${esc((p.hojas.find(h => h.familia === t.familia && h.etapas)?.etapas || []).join(' · '))}</td></tr>`).join('')}</tbody></table></div>
+    ${omitidas.length ? `<p class="dataNote"><b>Hojas que quedan fuera:</b> ${omitidas.map(h => `${esc(h.hoja.trim())} (${esc((h.motivo || '').toLowerCase())})`).join('; ')}.</p>` : ''}
+    ${p.fuera.length ? `<p class="dataNote"><b>${p.fuera.length} ${p.fuera.length === 1 ? 'código no existe' : 'códigos no existen'} en el plano de este piso</b> y no se cargan: ${p.fuera.slice(0, 40).map(f => esc(f.codigo)).join(', ')}${p.fuera.length > 40 ? '…' : ''}.</p>` : ''}
+    <div class="actions"><button type="button" class="primary" id="planillaGuardar">Guardar en la nube</button><button type="button" id="planillaCancelar">Cancelar</button></div><p id="planillaMensaje" role="status"></p>`;
+}
+// Conecta el botón «Cargar planilla de avance» de un panel. alGuardar: redibuja el panel con la planilla nueva.
+export function conectarPlanilla(root, {esc, conocidos, alGuardar, toast}) {
+  const entrada = root.querySelector('#avancePlanilla'), panel = root.querySelector('#avancePlanillaResumen'), mensaje = root.querySelector('#avanceMensaje');
+  if (!entrada || !panel) return;
+  entrada.onchange = async () => {
+    const archivo = entrada.files[0]; entrada.value = ''; if (!archivo) return;
+    mensaje.textContent = 'Leyendo ' + archivo.name + '…'; panel.hidden = true;
+    try {
+      const p = await leerArchivoPlanilla(archivo, conocidos()), anterior = planillaDe(nivel.id);
+      mensaje.textContent = ''; panel.hidden = false; panel.innerHTML = resumenPlanillaHTML(p, anterior, esc); panel.scrollIntoView({block: 'nearest'});
+      panel.querySelector('#planillaCancelar').onclick = () => { panel.hidden = true; panel.replaceChildren(); };
+      panel.querySelector('#planillaGuardar').onclick = async e => {
+        const por = firmante(), aviso = panel.querySelector('#planillaMensaje');
+        if (!por) { aviso.textContent = 'Inicia sesión en Atlas para guardar la planilla.'; return; }
+        e.target.disabled = true; aviso.textContent = 'Guardando…';
+        try { const r = await guardarPlanillaNube(p, {por}); toast?.(`Planilla guardada: ${Object.keys(p.recintos).length} recintos${r.cambios.length ? ', ' + new Set(r.cambios.map(c => c.code)).size + ' con cambios' : ''}.`); await alGuardar(); }
+        catch (error) { e.target.disabled = false; aviso.textContent = error.message; }
+      };
+    } catch (error) { mensaje.textContent = error.message; }
+  };
 }
 
 // ---------- Panel de Control de obra ----------
@@ -87,8 +145,8 @@ export async function renderAvanceControl(root, ctx) {
       // m² del piso por terminación (pavimentos y cielos), sumando la partida de cada recinto.
       const sup = campo => filas.flatMap(f => superficiesRecinto(f).filter(s => s.campo === campo && s.nodo).map(s => s.nodo)), suma = (l, k) => l.reduce((a, n) => a + (n[k] || 0), 0);
       const pav = sup('PAV'), cie = sup('CIE');
-      root.innerHTML = `<div class="documentaryIntro"><h2>Avance por partida · ${esc(nivel.nombre)}</h2><p>${rep.filas.length} recintos activos del PMA RevB (${esc(PISO_PMA())}) con sus partidas. Avance físico en m²: superficie PMA × % de avance. Sin valorización: los precios no se manejan en la plataforma. Registros de este dispositivo: exporta el respaldo para conservarlos o trasladarlos.</p></div>
-        <div class="actions"><button id="avancePlano">Ver avance en el plano</button><button id="avanceExportar">Exportar respaldo</button><label class="progressImportLabel">Importar respaldo<input id="avanceImportar" type="file" accept="application/json,.json"></label></div><p id="avanceMensaje" role="status"></p>
+      root.innerHTML = `<div class="documentaryIntro"><h2>Avance por partida · ${esc(nivel.nombre)}</h2><p>${rep.filas.length} recintos activos del PMA RevB (${esc(PISO_PMA())}) con sus partidas. Avance físico en m²: superficie PMA × % de avance. Sin valorización: los precios no se manejan en la plataforma. Registros de este dispositivo: exporta el respaldo para conservarlos o trasladarlos.</p><p class="dataNote planillaEstado">${esc(textoPlanilla(c.planilla))}</p></div>
+        <div class="actions"><label class="progressImportLabel" data-oficina>Cargar planilla de avance<input id="avancePlanilla" type="file" accept=".xlsx,.xlsm"></label><button id="avancePlano">Ver avance en el plano</button><button id="avanceExportar">Exportar respaldo</button><label class="progressImportLabel">Importar respaldo<input id="avanceImportar" type="file" accept="application/json,.json"></label></div><p id="avanceMensaje" role="status"></p><section id="avancePlanillaResumen" class="chartCard" hidden></section>
         <div class="kpiGrid">${[[m2(suma(pav, 'm2Ejecutado')) + ' m²', 'Pavimentos ejecutados', 'de ' + m2(suma(pav, 'cantidad')) + ' m² · pendientes ' + m2(suma(pav, 'm2Pendiente'))], [m2(suma(cie, 'm2Ejecutado')) + ' m²', 'Cielos ejecutados', 'de ' + m2(suma(cie, 'cantidad')) + ' m² · pendientes ' + m2(suma(cie, 'm2Pendiente'))], [piso.avanceFisico.toLocaleString('es-CL', {maximumFractionDigits: 1}) + ' %', 'Avance físico promedio', 'Cada partida pesa igual'], [rep.bloqueadas.length + '', 'Con avance bloqueado', rep.esperando + ' esperan su protocolo previo']].map(([n, t, s]) => `<article class="kpi"><span>${t}</span><b>${n}</b><small>${s}</small></article>`).join('')}</div>
         ${graficos(rep, esc)}
         <section class="chartCard progressTabla"><div class="chartHeading"><h3>Recintos · ${filas.length} de ${rep.filas.length}</h3>${cf.limpiar()}</div><p class="chartSubtitle">Toca un encabezado para ordenar o filtrar, como en Excel. Toca un recinto para registrar su avance por partida.</p><div class="tableScroll"><table class="masterTable"><thead><tr>${cf.cabecera()}</tr></thead><tbody>${filas.slice(pagina * 30, pagina * 30 + 30).map(f => `<tr class="${elegido === f.code ? 'selectedRow' : ''}"><td data-label="Recinto"><button type="button" class="codeLink" data-avance-room="${esc(f.code)}">${esc(f.code)}</button><br><small>${esc(f.name)}</small></td><td data-label="Estado"><span class="partidaEstado clara" style="--c:#fff;border-left:8px solid ${COLORES_RECINTO[f.estado]}">${esc(f.estado)}</span></td><td data-label="Asepsia">${esc(f.asepsia || '—')}</td><td data-label="Unidad PMA">${esc(f.unit || '—')}</td><td data-label="Aprobadas">${aprobadas(f)} / ${f.nodos.filter(n => n.tipo === 'partida').length}</td><td data-label="Avance físico">${m2(M.avanceFisico(f.nodos))} %</td></tr>`).join('') || `<tr><td colspan="6">Sin recintos con estos filtros.</td></tr>`}</tbody></table></div><div class="pagination"><button type="button" id="avancePrev" ${pagina === 0 ? 'disabled' : ''}>Anterior</button><span>Página ${pagina + 1} de ${paginas}</span><button type="button" id="avanceNext" ${pagina + 1 === paginas ? 'disabled' : ''}>Siguiente</button></div></section>
@@ -101,6 +159,7 @@ export async function renderAvanceControl(root, ctx) {
           <p class="dataNote">Capítulos 7 (artefactos) y 9 (instalaciones) quedan fuera de las partidas por recinto. Curva S planificada y ritmo semanal requieren el programa de obra y semanas de registros.</p></details>`;
       const $ = s => root.querySelector(s), mensaje = $('#avanceMensaje');
       cf.conectar(root, rep.filas);
+      conectarPlanilla(root, {esc, toast: ctx.toast, conocidos: () => new Set([...rep.filas.map(f => f.code), ...ctx.rooms().map(r => String(r.code).trim())]), alGuardar: async () => { c = await cargarAvance(true); dibujar(); }});
       $('#avancePrev').onclick = () => { pagina--; dibujar(); }; $('#avanceNext').onclick = () => { pagina++; dibujar(); };
       // Tocar un recinto abre su rombo, el mismo de la ficha del plano, para marcar sus partidas.
       root.querySelectorAll('[data-avance-room]').forEach(b => b.onclick = async () => {

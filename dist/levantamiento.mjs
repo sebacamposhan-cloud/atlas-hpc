@@ -7,6 +7,7 @@ import {crearFiltrosColumna} from './column-filters.mjs';
 import {loadVendor} from './web-store.mjs';
 import {loadPma} from './pma.mjs';
 import {leerAvance} from './avance-store.mjs';
+import {planillaDe} from './planilla-avance-nube.mjs';
 import {reporteAvance, partidasDeTerminacion, partidasDeMuros, estadoTerminacion} from './avance-model.mjs';
 import {readMarkings, saveMarking} from './marking-store.mjs';
 
@@ -25,7 +26,7 @@ if (typeof window !== 'undefined') window.addEventListener('atlas-avance-changed
 export function enlacePiso(level) {
   if (!enlaces.has(level)) enlaces.set(level, (async () => {
     const [pma, av] = await Promise.all([loadPma(), leerAvance()]);
-    const por = new Map(reporteAvance(pma, new Map(), av.registros, level).filas.map(f => [f.code, f]));
+    const por = new Map(reporteAvance(pma, new Map(), av.registros, level, planillaDe(level)).filas.map(f => [f.code, f]));
     return (code, enlace) => { const f = por.get(String(code).trim()); return f ? estadoTerminacion(enlace === 'MUROS' ? partidasDeMuros(f.nodos, f.row) : partidasDeTerminacion(f.nodos, enlace, f.row)) : null; };
   })().catch(() => () => null));
   return enlaces.get(level);
