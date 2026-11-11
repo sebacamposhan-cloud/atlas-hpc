@@ -7,6 +7,8 @@ const texto = (v, max) => typeof v === 'string' && v.trim().length > 0 && v.leng
 const color = v => /^#[a-f0-9]{6}$/i.test(v);
 export const TIPOS_COLUMNA = {estado: 'Estado', lista: 'Lista', texto: 'Texto'};
 export const ENLACES = {PAV: 'Pavimento del rombo', CIE: 'Cielo del rombo', MUROS: 'Muros del rombo'};
+// Una columna de lista puede tomar el estado de una partida de la planilla de avance: enlace «P:<familia>».
+export const esEnlacePlanilla = e => typeof e === 'string' && /^P:[A-Za-z]{2,30}$/.test(e);
 export const MAX_COLUMNAS = 30, MAX_OPCIONES = 24, MAX_FILAS = 5000;
 export const VISTA_LISTO = 'listo';
 export const LISTO = {listo: {nombre: 'Listo para instalar', color: '#2e9e5b'}, pendiente: {nombre: 'Pendiente', color: '#c26a00'}};
@@ -34,7 +36,7 @@ export function validarLevantamiento(doc) {
   for (const c of doc.columnas) {
     if (!texto(c.id, 40) || !texto(c.nombre, 80) || !TIPOS_COLUMNA[c.tipo] || ids.has(c.id) || nombres.has(clave(c.nombre))) throw Error('Columna incompleta o repetida: ' + (c?.nombre || '?') + '.');
     ids.add(c.id); nombres.add(clave(c.nombre));
-    if (c.enlace != null && (c.tipo !== 'estado' || !ENLACES[c.enlace])) throw Error('Solo una columna de estado se enlaza al rombo.');
+    if (c.enlace != null && !(c.tipo === 'estado' && ENLACES[c.enlace]) && !(c.tipo === 'lista' && esEnlacePlanilla(c.enlace))) throw Error('Solo una columna de estado se enlaza al rombo.');
     if (c.tipo === 'texto') continue;
     if (!Array.isArray(c.opciones) || !c.opciones.length || c.opciones.length > MAX_OPCIONES) throw Error(`La columna «${c.nombre}» necesita entre 1 y ${MAX_OPCIONES} opciones.`);
     const op = new Set(), opNombres = new Set();
@@ -61,6 +63,12 @@ export function validarLevantamiento(doc) {
 // ---------- Valores, «Listo» y enlace con el rombo ----------
 // enlazado(code, enlace): estado de la terminación en el rombo ({installation}) o null si no tiene registro.
 export function valor(columna, fila, enlazado = null) {
+  // Lista enlazada a una partida de la planilla de avance: la categoría vigente del recinto (Sin iniciar, En tapado…).
+  if (esEnlacePlanilla(columna.enlace) && enlazado) {
+    const e = enlazado(fila.code, columna.enlace), o = e && columna.opciones.find(o => o.nombre === e.categoria);
+    if (o) return {id: o.id, rombo: true};
+    return {id: fila.valores[columna.id] ?? null, rombo: false};
+  }
   if (columna.enlace && enlazado) {
     const e = enlazado(fila.code, columna.enlace);
     if (e) {

@@ -8,6 +8,7 @@ import {loadVendor} from './web-store.mjs';
 import {loadPma} from './pma.mjs';
 import {leerAvance} from './avance-store.mjs';
 import {planillaDe} from './planilla-avance-nube.mjs';
+import {avanceFamilia} from './planilla-avance-model.mjs';
 import {reporteAvance, partidasDeTerminacion, partidasDeMuros, estadoTerminacion} from './avance-model.mjs';
 import {readMarkings, saveMarking} from './marking-store.mjs';
 
@@ -38,8 +39,13 @@ if (typeof window !== 'undefined') window.addEventListener('atlas-avance-changed
 export function enlacePiso(level) {
   if (!enlaces.has(level)) enlaces.set(level, (async () => {
     const [pma, av] = await Promise.all([loadPma(), leerAvance()]);
-    const por = new Map(reporteAvance(pma, new Map(), av.registros, level, planillaDe(level)).filas.map(f => [f.code, f]));
-    return (code, enlace) => { const f = por.get(String(code).trim()); return f ? estadoTerminacion(enlace === 'MUROS' ? partidasDeMuros(f.nodos, f.row) : partidasDeTerminacion(f.nodos, enlace, f.row)) : null; };
+    const planilla = planillaDe(level), por = new Map(reporteAvance(pma, new Map(), av.registros, level, planilla).filas.map(f => [f.code, f]));
+    // Columnas enlazadas a una partida de la planilla («P:cieloDuro»): categoría vigente de cada recinto.
+    const familias = new Map(), deFamilia = fam => { if (!familias.has(fam)) familias.set(fam, new Map(avanceFamilia(planilla, fam, por).filas.map(x => [x.code, x]))); return familias.get(fam); };
+    return (code, enlace) => {
+      if (L.esEnlacePlanilla(enlace)) return deFamilia(enlace.slice(2)).get(String(code).trim()) || null;
+      const f = por.get(String(code).trim()); return f ? estadoTerminacion(enlace === 'MUROS' ? partidasDeMuros(f.nodos, f.row) : partidasDeTerminacion(f.nodos, enlace, f.row)) : null;
+    };
   })().catch(() => () => null));
   return enlaces.get(level);
 }
@@ -131,7 +137,7 @@ export function createLevantamiento(ctx) {
   // Lee el formulario sobre las columnas de partida (conserva ids, orígenes y claves de importación).
   function leerColumnas(root, cols) {
     return [...root.querySelectorAll('.levColumnas > li')].map((li, i) => {
-      const c = cols[i], tipo = li.querySelector('[name=tipo]').value, out = {...c, nombre: li.querySelector('[name=nombre]').value.trim(), tipo, enlace: tipo === 'estado' ? li.querySelector('[name=enlace]').value || null : null};
+      const c = cols[i], tipo = li.querySelector('[name=tipo]').value, out = {...c, nombre: li.querySelector('[name=nombre]').value.trim(), tipo, enlace: tipo === 'estado' ? li.querySelector('[name=enlace]').value || null : tipo === 'lista' && L.esEnlacePlanilla(c?.enlace) ? c.enlace : null};
       if (tipo === 'texto') { delete out.opciones; return out; }
       const ops = [...li.querySelectorAll('.levOps > li[data-op]')];
       out.opciones = ops.length ? ops.map((o, j) => ({...(c.opciones?.[j] || {}), id: c.opciones?.[j]?.id || 'o' + crypto.randomUUID().slice(0, 6), nombre: o.querySelector('[name=op]').value.trim(), color: o.querySelector('[name=color]').value,

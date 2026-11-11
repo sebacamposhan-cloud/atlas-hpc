@@ -209,8 +209,11 @@ export function actualizarNodo({code, level}, nodos, registro, id, cambio, {resp
     const errores = validarPartida(nodo, sig, sig.revision === 'Conforme' ? bloqueos(nodo, nodos, {partidas, protocolos}) : []);
     if (errores.length) throw Error(errores[0]);
     // Lo marcado en terreno lleva su hora: manda sobre la planilla de la oficina hasta la siguiente carga.
+    // Etapas de la partida (las de la planilla: estructura, tapado…). Marcadas en terreno se guardan tal cual; al cambiar
+    // solo la ejecución, «Instalado» las completa, «No iniciado» las deja en cero y «En ejecución» conserva las anteriores.
     const {fuente, etapas, ...anterior} = partidas[id] || {};
-    partidas[id] = {...anterior, ejecucion: sig.ejecucion, revision: sig.revision, pct: sig.pct, estado: estadoLegado(sig), conformidad: conformidadLegada(sig.revision), at};
+    const et = Array.isArray(cambio.etapas) ? limpiarEtapas(cambio.etapas) : etapas?.length ? (sig.ejecucion === 'Instalado' ? etapas.map(e => ({...e, pct: 1})) : sig.ejecucion === 'No iniciado' ? etapas.map(e => ({...e, pct: 0})) : etapas) : null;
+    partidas[id] = {...anterior, ejecucion: sig.ejecucion, revision: sig.revision, pct: sig.pct, estado: estadoLegado(sig), conformidad: conformidadLegada(sig.revision), ...(et ? {etapas: et} : {}), at};
   }
   // «atSinHora»: hora que vale para las partidas marcadas antes de que cada una llevara la suya (las demás partidas
   // quedan como estaban, y este toque no las hace parecer más nuevas que la planilla).
@@ -241,6 +244,8 @@ export function aplicarPlanilla(registro, nodos, fams, planilla) {
   }
   return cambio ? {...(registro || {}), partidas, protocolos: registro?.protocolos || {}} : registro || null;
 }
+
+const limpiarEtapas = lista => lista.slice(0, 10).map(e => ({nombre: String(e?.nombre ?? '').slice(0, 60), pct: Math.min(1, Math.max(0, Number(e?.pct) || 0))}));
 
 // Estado de una terminación del rombo a partir de sus partidas (null si ninguna tiene registro propio).
 export function estadoTerminacion(partidas) {

@@ -37,7 +37,9 @@ export async function refrescarPlanillasNube() {
 export async function guardarPlanillaNube(planilla, {por, cargada = new Date().toISOString()} = {}) {
   const cache = leerCache(), actual = cache[planilla.nivel];
   const cambios = compararPlanillas(actual?.data, planilla);
-  const data = validarPlanilla({...planilla, cargada, por: String(por || '').trim(), resumen: {anterior: actual?.data?.cargada || null, cambios: cambios.length, recintos: new Set(cambios.map(c => c.code)).size}});
+  const data = validarPlanilla({...planilla, cargada, por: String(por || '').trim(), resumen: {anterior: actual?.data?.cargada || null, cambios: cambios.length, recintos: new Set(cambios.map(c => c.code)).size,
+    // Detalle compacto de lo que cambió (código, partida, antes, después) para mostrar el avance desde la carga anterior.
+    detalle: cambios.slice(0, 4000).map(c => [c.code, c.familia, c.antes, c.despues])}});
   let r;
   try { r = await pedir('POST', '/api/campo', {tipo: 'planilla', id: idPlanilla(planilla.nivel), version: actual?.version || 0, data}); }
   catch (e) {

@@ -243,3 +243,12 @@ body.floorHome header .project b, body.floorHome header .project span { display:
 @media (max-width: 1023px), (pointer: coarse) {
   body.fichaMinima #fichaBarra { bottom: calc(var(--barra-obra) + env(safe-area-inset-bottom)); padding-bottom: 8px; }
 }
+
+/* Etapas de una partida de la planilla en el rombo (estructura, tapado, huincha…) */
+.romboEtapas { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.romboEtapas > span { flex-basis: 100%; font-size: 12px; font-weight: 700; }
+.romboEtapas button { display: grid; gap: 1px; min-width: 92px; min-height: 44px; padding: 6px 10px; border: 1px solid var(--g-marca); background: #fff; color: var(--g-texto); text-align: left; font-size: 13px; }
+.romboEtapas button small { font-size: 11px; color: var(--g-texto2); }
+.romboEtapas button[aria-pressed="true"] { background: var(--g-listo); border-color: var(--g-listo); color: #fff; }
+.romboEtapas button[aria-pressed="true"] small { color: #fff; }
+.romboPlanilla { color: var(--g-marca); }
