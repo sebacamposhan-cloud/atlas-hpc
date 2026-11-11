@@ -102,6 +102,14 @@ body.markingOpen .toolbar, body.markingOpen main > footer { right: 332px; }
 .levFiltro button { justify-self: start; font-size: 12px; }
 .levVista { display: grid; gap: 4px; font-size: 11px; font-weight: 700; margin: 10px 0 4px; }
 .levVista select { font-size: 14px; width: 100%; }
+/* Pincel del levantamiento: cada fila de la simbología toma un estado; la elegida se marca con borde, sin tinte. */
+.levPincelBoton { width: 100%; border: 0; background: transparent; text-align: left; font-size: 11px; padding: 3px 2px; min-height: 30px; display: flex; align-items: center; cursor: pointer; white-space: normal; }
+.levPincelBoton i { flex: 0 0 auto; }
+.levPincelActivo td { border-top: 2px solid #000; border-bottom: 2px solid #000; }
+.levPincelActivo td:first-child { border-left: 2px solid #000; font-weight: 700; } .levPincelActivo td:last-child { border-right: 2px solid #000; font-weight: 700; }
+.levPincel { display: grid; gap: 6px; margin: 10px 0 0; padding: 8px 10px; border: 2px solid #000; font-size: 12px; line-height: 1.35; background: #fff; color: #000; }
+.levPincel b { border-left: 8px solid var(--c); padding-left: 4px; }
+.levPincel div { display: flex; gap: 6px; } .levPincel button { font-size: 12px; min-height: 34px; }
 .levFicha { border: 1px solid var(--g-marca, #1b2a56); border-top: 4px solid var(--g-marca, #1b2a56); padding: 8px; margin: 10px 0; display: grid; gap: 8px; }
 .levFicha h3 { margin: 0; font-size: 13px; color: #000; }
 .levCampo { display: grid; gap: 4px; font-size: 11px; font-weight: 700; color: #000; }

@@ -64,8 +64,9 @@ export function validarLevantamiento(doc) {
 // enlazado(code, enlace): estado de la terminación en el rombo ({installation}) o null si no tiene registro.
 export function valor(columna, fila, enlazado = null) {
   // Lista enlazada a una partida de la planilla de avance: la categoría vigente del recinto (Sin iniciar, En tapado…).
+  // Se une por el orden de los estados (renombrarlos no corta el enlace) y, si no calzan en número, por el nombre.
   if (esEnlacePlanilla(columna.enlace) && enlazado) {
-    const e = enlazado(fila.code, columna.enlace), o = e && columna.opciones.find(o => o.nombre === e.categoria);
+    const e = enlazado(fila.code, columna.enlace), o = e && opcionDeCategoria(columna, e);
     if (o) return {id: o.id, rombo: true};
     return {id: fila.valores[columna.id] ?? null, rombo: false};
   }
@@ -79,6 +80,28 @@ export function valor(columna, fila, enlazado = null) {
   return {id: fila.valores[columna.id] ?? null, rombo: false};
 }
 export const opcion = (columna, idOpcion) => columna.opciones?.find(o => o.id === idOpcion) || null;
+// Estados de una columna enlazada a una partida ↔ estados de la partida ({categoria, indice, total}).
+export function opcionDeCategoria(columna, e) {
+  if (Number.isInteger(e.indice) && e.indice >= 0 && e.total === columna.opciones.length) return columna.opciones[e.indice];
+  return columna.opciones.find(o => o.nombre === e.categoria) || null;
+}
+export function indiceDeOpcion(columna, idOpcion, categorias) {
+  const i = columna.opciones.findIndex(o => o.id === idOpcion); if (i < 0) return -1;
+  return categorias.length === columna.opciones.length ? i : categorias.indexOf(columna.opciones[i].nombre);
+}
+// Columnas enlazadas a una partida con los nombres y colores vigentes de sus estados (por orden). partidaDe(enlace):
+// {categorias, colores} o null. Devuelve el mismo documento si no hay nada que cambiar.
+export function alinearPartidas(doc, partidaDe) {
+  let cambio = false;
+  const columnas = doc.columnas.map(c => {
+    const a = esEnlacePlanilla(c.enlace) && partidaDe(c.enlace);
+    if (!a || a.categorias.length !== c.opciones.length) return c;
+    const opciones = c.opciones.map((o, i) => ({...o, nombre: a.categorias[i], color: a.colores[a.categorias[i]] || o.color}));
+    if (opciones.every((o, i) => o.nombre === c.opciones[i].nombre && o.color === c.opciones[i].color)) return c;
+    cambio = true; return {...c, opciones};
+  });
+  return cambio ? validarLevantamiento({...doc, columnas}) : doc;
+}
 // Listo para instalar: todas las columnas de estado en su estado final (o «no aplica»). Sin ningún dato, no se pinta.
 export function listo(doc, fila, enlazado = null) {
   const estados = doc.columnas.filter(c => c.tipo === 'estado');

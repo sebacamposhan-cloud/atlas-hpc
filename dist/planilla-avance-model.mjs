@@ -293,33 +293,51 @@ export function pesosDe(planilla, familia) {
   const etapas = etapasDe(planilla, familia), h = planilla?.hojas?.find(x => x.familia === familia && x.pesos?.length === etapas.length);
   return h?.pesos || (PESOS_FAMILIA[familia]?.length === etapas.length ? PESOS_FAMILIA[familia] : etapas.map(() => 1 / Math.max(1, etapas.length)));
 }
-// Categorías del plano para una partida: «Sin iniciar», «En <etapa>» (la primera etapa que falta) y «Terminado».
-export const categoriasFamilia = etapas => [SIN_INICIAR, ...etapas.map(e => 'En ' + e.toLowerCase()), TERMINADO];
+// Categorías del plano para una partida, por la etapa ALCANZADA (como las lee producción): «Sin iniciar», una por etapa
+// («Estructurado», «Tapado», «Huincha»…) y «Terminado». Un recinto queda en la última etapa que empezó.
+const ALCANZADA = {estructura: 'Estructurado'};
+export const nombreAlcanzado = etapa => ALCANZADA[String(etapa).trim().toLowerCase()] || etapa;
+export const categoriasFamilia = etapas => [SIN_INICIAR, ...etapas.map(nombreAlcanzado), TERMINADO];
 export function coloresFamilia(etapas) {
   return Object.fromEntries(categoriasFamilia(etapas).map((c, i, todas) => [c, i === 0 ? '#8c8c8c' : i === todas.length - 1 ? '#2e9e5b' : COLORES_ETAPA[(i - 1) % COLORES_ETAPA.length]]));
 }
-export function categoriaEtapas(pct, et = [], etapas = []) {
-  // Manda el % total (el ponderado de la oficina): con todas las etapas listas pero el total incompleto, queda en la última.
-  if (pct >= 0.995) return TERMINADO;
-  if (pct <= 0.004 && et.every(v => v <= 0.004)) return SIN_INICIAR;
-  const k = et.findIndex(v => v < 0.995);
-  return etapas[k] ? 'En ' + etapas[k].toLowerCase() : k < 0 && etapas.length ? 'En ' + etapas[etapas.length - 1].toLowerCase() : SIN_INICIAR;
+// completo: lo que además pide «Terminado» (el cielo duro, su pintura) está listo. Sin eso, el recinto queda en su última etapa.
+export function categoriaEtapas(pct, et = [], etapas = [], completo = true) {
+  if (pct >= 0.995 && completo) return TERMINADO;
+  let k = -1; et.forEach((v, i) => { if (i < etapas.length && v > 0.004) k = i; });
+  if (k >= 0) return nombreAlcanzado(etapas[k]);
+  // Sin etapas marcadas: con avance total, la primera (o la última si está completa y falta lo que pide «Terminado»).
+  if (!etapas.length) return pct >= 0.995 ? TERMINADO : SIN_INICIAR;
+  return pct >= 0.995 ? nombreAlcanzado(etapas.at(-1)) : pct > 0.004 ? nombreAlcanzado(etapas[0]) : SIN_INICIAR;
 }
+// «Terminado» de una partida que pide otra completa: el cielo duro, con su pintura de cielos.
+export const REQUIERE_PARA_TERMINAR = {cieloDuro: 'pinturaCielo'};
 // % ponderado a partir de las etapas marcadas.
 export const pctDeEtapas = (et, pesos) => Math.min(1, Math.max(0, et.reduce((a, v, k) => a + v * (pesos[k] ?? 0), 0)));
 // Recintos de una partida con su avance vigente: lo de la planilla o, si terreno marcó después de la carga, lo de
 // terreno. filas: código → fila del reporte de avance (avance-model.mjs), con sus partidas ya combinadas.
+// Partidas del recinto que alimenta una familia de la planilla (el empaste 6.2.2 va aparte).
+export const nodosDeFamilia = (fila, fams, familia) => (fila?.nodos || []).filter(n => n.tipo === 'partida' && n.id !== '6.2.2' && familiaDePartida(n.id, fams) === familia);
+// Avance vigente de una familia en un recinto: el de la planilla o, si terreno marcó después de la carga, el de terreno.
+export function avanceVigente(planilla, code, familia, fila = null) {
+  const fams = planilla?.recintos?.[code], v = fams?.[familia]; if (!v) return null;
+  const etapas = etapasDe(planilla, familia), nodo = nodosDeFamilia(fila, fams, familia)[0];
+  let [pct, cant, et] = v, fuente = 'planilla';
+  if (nodo?.registrada && nodo.fuente !== 'planilla') {
+    fuente = 'terreno'; pct = (nodo.pct || 0) / 100;
+    et = nodo.etapas?.length === etapas.length ? nodo.etapas.map(e => e.pct) : nodo.ejecucion === 'Instalado' ? etapas.map(() => 1) : nodo.ejecucion === 'No iniciado' ? etapas.map(() => 0) : et;
+  }
+  return {pct, cant, et: et || [], fuente, etapas, nodo};
+}
 export function avanceFamilia(planilla, familia, filas = new Map()) {
-  const etapas = etapasDe(planilla, familia), out = [];
-  for (const [code, fams] of Object.entries(planilla?.recintos || {})) {
-    const v = fams[familia]; if (!v) continue;
-    let [pct, cant, et] = v, fuente = 'planilla';
-    const fila = filas.get(code), nodo = fila?.nodos?.find(n => n.tipo === 'partida' && n.id !== '6.2.2' && familiaDePartida(n.id, fams) === familia);
-    if (nodo?.registrada && nodo.fuente !== 'planilla') {
-      fuente = 'terreno'; pct = (nodo.pct || 0) / 100;
-      et = nodo.etapas?.length === etapas.length ? nodo.etapas.map(e => e.pct) : nodo.ejecucion === 'Instalado' ? etapas.map(() => 1) : nodo.ejecucion === 'No iniciado' ? etapas.map(() => 0) : et;
-    }
-    out.push({code, name: fila?.name || '', cant, pct, et, fuente, categoria: categoriaEtapas(pct, et, etapas), ejecutado: cant * pct, pendiente: cant * (1 - pct), partida: nodo?.id || null});
+  const etapas = etapasDe(planilla, familia), requiere = REQUIERE_PARA_TERMINAR[familia], out = [];
+  for (const code of Object.keys(planilla?.recintos || {})) {
+    const fila = filas.get(code), a = avanceVigente(planilla, code, familia, fila); if (!a) continue;
+    const {pct, cant, et, fuente, nodo} = a;
+    // Lo que además pide «Terminado» (pintura de cielos), si la planilla lo mide en este recinto.
+    const extra = requiere ? avanceVigente(planilla, code, requiere, fila) : null, completo = !extra || extra.pct >= 0.995;
+    out.push({code, name: fila?.name || '', cant, pct, et, fuente, categoria: categoriaEtapas(pct, et, etapas, completo), ejecutado: cant * pct, pendiente: cant * (1 - pct), partida: nodo?.id || null,
+      ...(extra ? {requiere, pctRequiere: extra.pct} : {})});
   }
   out.sort((a, b) => a.code.localeCompare(b.code, 'es', {numeric: true}));
   const cantidad = out.reduce((a, f) => a + f.cant, 0), ejecutado = out.reduce((a, f) => a + f.ejecutado, 0);

@@ -5,7 +5,7 @@
 // que aceptan un itemizado siguen calculando montos solo si se les entrega uno (pruebas y análisis fuera de la app).
 // Las partidas se identifican siempre por su código ITEM, nunca por número de fila.
 import {progressFloors} from './progress-scope.mjs';
-import {avanceDePartida} from './planilla-avance-model.mjs';
+import {avanceDePartida, etapasDe, pesosDe, pctDeEtapas, categoriasFamilia, nodosDeFamilia, avanceVigente, REQUIERE_PARA_TERMINAR, NOMBRE_FAMILIA} from './planilla-avance-model.mjs';
 
 export const CAPITULOS_PILOTO = ['2.6', '4.3', '5.1', '5.3', '6.1', '6.2', '6.3', '6.4', '6.5', '6.6', '6.8', '6.10'];
 export const CAPITULOS_POSTERIORES = ['7', '9']; // artefactos e instalaciones: preparados, fuera del piloto
@@ -221,6 +221,46 @@ export function actualizarNodo({code, level}, nodos, registro, id, cambio, {resp
   const nuevo = {key: keyFor(code, level), code: String(code).trim(), level, version: (registro?.version || 0) + 1, at, ...(sinHora ? {atSinHora: sinHora} : {}), responsable: String(responsable || '').trim(), fecha, protocolos, partidas};
   const errores = validarRegistro(nuevo); if (errores.length) throw Error(errores[0]);
   return nuevo;
+}
+
+// Marca un recinto en un estado de una partida de la planilla (ficha y pincel de los proyectos de partida), como lo lee
+// producción: el estado es la última etapa que empezó. Etapa k: las etapas hasta k completas y las siguientes en cero.
+// La última etapa queda completa solo si «Terminado» pide algo más (pintura de cielos); si no, a medias, para no
+// terminar la partida. «Terminado» completa la partida y lo que pide; un estado anterior deja esa pintura sin iniciar si
+// estaba completa. fila: fila del reporte de avance (nodos, registro guardado y vigente). Devuelve el registro nuevo
+// (una sola versión más) y las partidas tocadas, para deshacer.
+export function marcarCategoria(fila, planilla, familia, indice, {level, responsable, fecha, at = new Date().toISOString()}) {
+  const fams = planilla?.recintos?.[fila.code], nombre = NOMBRE_FAMILIA[familia] || familia;
+  if (!fams?.[familia]) throw Error(`${fila.code} no está en la hoja «${nombre}» de la planilla.`);
+  const etapas = etapasDe(planilla, familia), cats = categoriasFamilia(etapas);
+  if (!Number.isInteger(indice) || indice < 0 || indice >= cats.length) throw Error('Estado no válido.');
+  const propios = nodosDeFamilia(fila, fams, familia);
+  if (!propios.length) throw Error(`${fila.code} no tiene la partida de ${nombre.toLowerCase()} en el PMA.`);
+  const requiere = REQUIERE_PARA_TERMINAR[familia], extra = requiere ? avanceVigente(planilla, fila.code, requiere, fila) : null;
+  const ajenos = extra ? nodosDeFamilia(fila, fams, requiere) : [], terminado = indice === cats.length - 1, k = indice - 1;
+  const et = etapas.map((_, i) => terminado ? 1 : indice === 0 || i > k ? 0 : i < k || ajenos.length ? 1 : 0.5);
+  const conEtapas = (lista, pcts, pesos) => {
+    const total = lista.length ? pctDeEtapas(pcts, pesos) : terminado ? 1 : 0;
+    const ejecucion = total >= 0.995 ? 'Instalado' : total <= 0.004 ? 'No iniciado' : 'En ejecución';
+    return {ejecucion, ...(ejecucion === 'En ejecución' ? {pct: Math.min(99, Math.max(1, Math.round(total * 100)))} : {}), ...(lista.length ? {etapas: lista.map((nombre, i) => ({nombre, pct: pcts[i]}))} : {})};
+  };
+  const cambios = propios.map(n => [n.id, conEtapas(etapas, et, pesosDe(planilla, familia))]);
+  if (ajenos.length && (terminado || extra.pct >= 0.995)) {
+    const otras = etapasDe(planilla, requiere), v = terminado ? 1 : 0;
+    cambios.push(...ajenos.map(n => [n.id, {ejecucion: terminado ? 'Instalado' : 'No iniciado', ...(otras.length ? {etapas: otras.map(nombre => ({nombre, pct: v}))} : {})}]));
+  }
+  // Las partidas que venían de la planilla parten de lo que mostraban; solo las tocadas pasan al registro de terreno.
+  let reg = fila.registro ? {...fila.registro, partidas: {...(fila.registro.partidas || {})}} : null;
+  for (const [id] of cambios) { const v = fila.vigente?.partidas?.[id]; if (v?.fuente === 'planilla') reg = {...(reg || {}), partidas: {...(reg?.partidas || {}), [id]: v}, protocolos: reg?.protocolos || {}}; }
+  for (const [id, cambio] of cambios) reg = actualizarNodo({code: fila.code, level}, fila.nodos, reg, id, cambio, {responsable, fecha, at});
+  return {registro: {...reg, version: (fila.registro?.version || 0) + 1}, ids: cambios.map(([id]) => id)};
+}
+// Deshace una marca: las partidas tocadas vuelven a como estaban en el registro previo (o salen, y manda la planilla).
+export function deshacerMarca(actual, previo, ids, {at = new Date().toISOString()} = {}) {
+  if (!actual) throw Error('No hay nada que deshacer.');
+  const partidas = {...(actual.partidas || {})};
+  for (const id of ids) { if (previo?.partidas?.[id]) partidas[id] = previo.partidas[id]; else delete partidas[id]; }
+  return {...actual, partidas, version: actual.version + 1, at};
 }
 
 // La planilla de avance de la oficina es la base: cada partida que la planilla mide toma su % de ahí. Lo marcado en

@@ -11,6 +11,7 @@ import {planillaDe} from './planilla-avance-nube.mjs';
 import {avanceFamilia} from './planilla-avance-model.mjs';
 import {reporteAvance, partidasDeTerminacion, partidasDeMuros, estadoTerminacion} from './avance-model.mjs';
 import {readMarkings, saveMarking} from './marking-store.mjs';
+import {marcarRecinto, deshacerRecinto} from './avance-marcar.mjs';
 
 const NOMBRE_PISO = {'N-1': 'Nivel −1', N01: 'Nivel 1', N02: 'Nivel 2', N03: 'Nivel 3'};
 // Filtro de la tabla de cada levantamiento (por documento): se recuerda en el equipo y acota tabla, plano y exportación.
@@ -40,12 +41,19 @@ export function enlacePiso(level) {
   if (!enlaces.has(level)) enlaces.set(level, (async () => {
     const [pma, av] = await Promise.all([loadPma(), leerAvance()]);
     const planilla = planillaDe(level), por = new Map(reporteAvance(pma, new Map(), av.registros, level, planilla).filas.map(f => [f.code, f]));
-    // Columnas enlazadas a una partida de la planilla («P:cieloDuro»): categoría vigente de cada recinto.
-    const familias = new Map(), deFamilia = fam => { if (!familias.has(fam)) familias.set(fam, new Map(avanceFamilia(planilla, fam, por).filas.map(x => [x.code, x]))); return familias.get(fam); };
-    return (code, enlace) => {
-      if (L.esEnlacePlanilla(enlace)) return deFamilia(enlace.slice(2)).get(String(code).trim()) || null;
+    // Columnas enlazadas a una partida de la planilla («P:cieloDuro»): estado vigente de cada recinto y su lugar en la
+    // lista de estados de la partida (el enlace va por ese orden).
+    const familias = new Map(), deFamilia = fam => {
+      if (!familias.has(fam)) { const a = avanceFamilia(planilla, fam, por); familias.set(fam, {a, filas: new Map(a.filas.map(x => [x.code, {...x, indice: a.categorias.indexOf(x.categoria), total: a.categorias.length}]))}); }
+      return familias.get(fam);
+    };
+    const enlazado = (code, enlace) => {
+      if (L.esEnlacePlanilla(enlace)) return deFamilia(enlace.slice(2)).filas.get(String(code).trim()) || null;
       const f = por.get(String(code).trim()); return f ? estadoTerminacion(enlace === 'MUROS' ? partidasDeMuros(f.nodos, f.row) : partidasDeTerminacion(f.nodos, enlace, f.row)) : null;
     };
+    // Estados de la partida enlazada ({familia, categorias, colores}), o null sin planilla de esa partida en el piso.
+    enlazado.partida = enlace => L.esEnlacePlanilla(enlace) && planilla ? deFamilia(enlace.slice(2)).a : null;
+    return enlazado;
   })().catch(() => () => null));
   return enlaces.get(level);
 }
@@ -55,10 +63,55 @@ export function enlacePiso(level) {
 export function createLevantamiento(ctx) {
   const esc = ctx.esc;
   let enlazado = null;
+  // Pincel: un estado de la simbología con que se pintan los recintos tocados ({docId, col, op, n}). «marcas» guarda lo
+  // necesario para deshacer cada toque; «cola» ordena los guardados de toques seguidos.
+  let pincel = null, marcas = [], cola = Promise.resolve(), docVigente = null;
   const roomDe = code => ctx.rooms().find(r => r.code === code);
   const chip = c => c ? `<span class="levChip" style="--c:${c.color}">${esc(c.nombre)}</span>` : '<span class="levChip vacio">Sin dato</span>';
-  async function abrir(doc) { enlazado = await enlacePiso(doc.level); ctx.alCambiarEnlace(); }
+  // Al abrir, los estados de las columnas enlazadas a una partida toman los nombres y colores vigentes (por su orden).
+  async function abrir(doc) {
+    enlazado = await enlacePiso(doc.level); pincel = null; marcas = [];
+    if (enlazado.partida && L.alinearPartidas(doc, enlazado.partida) !== doc) await ctx.change(d => L.alinearPartidas(d, enlazado.partida));
+    ctx.alCambiarEnlace();
+  }
   if (typeof window !== 'undefined') window.addEventListener('atlas-avance-changed', async () => { if (!enlazado) return; enlazado = await enlacePiso(ctx.level); ctx.alCambiarEnlace(); });
+  // Partida de la planilla que alimenta una columna (null si es manual o el piso no tiene esa planilla).
+  const partidaDe = c => (c && L.esEnlacePlanilla(c.enlace) && enlazado?.partida?.(c.enlace)) || null;
+  const enRombo = (c, code) => { const a = partidaDe(c); return a && enlazado(code, c.enlace) ? a : null; };
+  // Fija un estado: en el rombo si la columna sigue a una partida y el recinto está en su planilla; si no, en el proyecto.
+  // Devuelve lo necesario para deshacer, o null si ya estaba en ese estado.
+  async function asignar(doc, room, c, op) {
+    const a = enRombo(c, room.code);
+    if (a) {
+      const i = L.indiceDeOpcion(c, op, a.categorias); if (i < 0) throw Error('Ese estado no corresponde a la partida.');
+      if (enlazado(room.code, c.enlace).indice === i) return null;
+      return {rombo: await marcarRecinto(room.code, a.familia, i)};
+    }
+    const fila = doc.filas.find(f => f.code === room.code), previo = fila?.valores[c.id] ?? null;
+    if (previo === op) return null;
+    await ctx.change(d => L.fijarValor(d, room, c.id, op));
+    return {room, col: c.id, previo, existia: !!fila};
+  }
+  async function deshacer(m) {
+    if (m.rombo) await deshacerRecinto(m.rombo);
+    else await ctx.change(d => m.existia ? L.fijarValor(d, m.room, m.col, m.previo) : L.quitarFila(d, m.room.code));
+  }
+  // Columna que se puede pintar: la que colorea el plano, si no es texto ni sigue al pavimento, cielo o muros del rombo.
+  const pintable = doc => { const c = doc.columnas.find(x => x.id === doc.vista); return c && c.tipo !== 'texto' && (!c.enlace || L.esEnlacePlanilla(c.enlace)) ? c : null; };
+  // Toque en el plano con el pincel activo: pinta y devuelve true (la ficha no se abre).
+  function pintar(room) {
+    const doc = docVigente, c = doc && pintable(doc);
+    if (!pincel || !c || pincel.docId !== doc.id || pincel.col !== c.id) return false;
+    const op = pincel.op, docId = doc.id;
+    cola = cola.then(async () => {
+      try {
+        const m = await asignar(docVigente, room, c, op);
+        if (m && pincel?.docId === docId) { marcas.push(m); pincel.n++; }
+      } catch (e) { ctx.toast(room.code + ': ' + e.message); }
+      ctx.alCambiarEnlace();
+    });
+    return true;
+  }
   const nombrePlano = code => roomDe(code)?.name || '';
   const filtradas = doc => L.filasFiltradas(doc, filtroLevantamiento(doc.id), enlazado, nombrePlano);
   // Con filtro, el plano pinta solo los recintos que pasan el filtro.
@@ -75,17 +128,30 @@ export function createLevantamiento(ctx) {
     const campo = c => {
       const v = fila ? L.valor(c, fila, enlazado) : {id: null, rombo: false};
       if (c.tipo === 'texto') return `<label class="levCampo"><span>${esc(c.nombre)}</span><input data-lev-texto="${esc(c.id)}" maxlength="2000" value="${esc(fila?.valores[c.id] || '')}"></label>`;
-      return `<div class="levCampo"><span>${esc(c.nombre)}${v.rombo ? ' <small>· del rombo</small>' : ''}</span><div class="levOpciones">${c.opciones.map(o => `<button type="button" data-lev-col="${esc(c.id)}" data-lev-op="${esc(o.id)}" aria-pressed="${v.id === o.id}" style="--c:${o.color}" ${v.rombo ? 'disabled title="Se toma del avance del rombo"' : ''}>${esc(o.nombre)}</button>`).join('')}</div></div>`;
+      // Una partida de la planilla se marca aquí y queda en el rombo; pavimento, cielo y muros del rombo solo se muestran.
+      const bloqueo = v.rombo && !L.esEnlacePlanilla(c.enlace) ? 'disabled title="Se toma del avance del rombo"' : v.rombo ? 'title="Se guarda en el rombo del recinto"' : '';
+      return `<div class="levCampo"><span>${esc(c.nombre)}${v.rombo ? ' <small>· del rombo</small>' : ''}</span><div class="levOpciones">${c.opciones.map(o => `<button type="button" data-lev-col="${esc(c.id)}" data-lev-op="${esc(o.id)}" aria-pressed="${v.id === o.id}" style="--c:${o.color}" ${bloqueo}>${esc(o.nombre)}</button>`).join('')}</div></div>`;
     };
+    // Simbología: con una columna pintable, cada estado es un pincel.
+    const colPincel = pintable(doc);
+    if (pincel && (pincel.docId !== doc.id || pincel.col !== colPincel?.id || !colPincel.opciones.some(o => o.id === pincel.op))) pincel = null;
+    if (!pincel) marcas = [];
+    docVigente = doc;
+    const estadoPincel = colPincel && pincel ? colPincel.opciones.find(o => o.id === pincel.op) : null;
+    const filaLeyenda = e => { const activo = pincel && e.id === pincel.op, nombre = `<i style="background:${e.color};${e.id ? '' : 'border:1px solid #8c8c8c'}"></i>${esc(e.nombre)}`;
+      return `<tr class="${activo ? 'levPincelActivo' : ''}"><td>${colPincel && e.id ? `<button type="button" class="levPincelBoton" data-lev-pincel="${esc(e.id)}" aria-pressed="${!!activo}">${nombre}</button>` : nombre}</td><td>${e.n}</td></tr>`; };
     panel.innerHTML = `<div class="markingHead"><div><small>LEVANTAMIENTO · ${esc(ctx.levelName)}</small><h2>${esc(doc.name)}</h2></div><button id="closeMarking" data-wait-save aria-label="Cerrar proyecto">×</button></div>
       <div class="markingActions"><button id="markingDocuments" data-wait-save>Proyectos</button><button id="levColumnas" data-wait-save>Columnas</button><button id="levTabla">Tabla</button><button id="levExcel" data-wait-save>Excel</button></div>
       <div class="markingScroll">
         ${conFiltro ? `<p class="levFiltro"><span><b>Filtro de la tabla:</b> ${esc(L.textoFiltro(doc, filtroLevantamiento(doc.id)))}. El plano y la exportación muestran ${visibles.length} de ${doc.filas.length} recintos.</span><button type="button" id="levQuitarFiltro">Quitar filtro</button></p>` : ''}
         <label class="levVista">Colorear plano por<select id="levVista">${vistas.map(([k, t]) => `<option value="${esc(k)}" ${doc.vista === k ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
-        <table class="estadosTabla"><tbody>${ley.filter(e => e.n || e.id).map(e => `<tr><td><i style="background:${e.color};${e.id ? '' : 'border:1px solid #8c8c8c'}"></i>${esc(e.nombre)}</td><td>${e.n}</td></tr>`).join('')}</tbody></table>
-        ${room ? `<section class="levFicha"><h3>${esc(room.code)} · ${esc(room.name)}</h3>${fila ? '' : '<p class="markingInstruction">Aún no está en el levantamiento: se agrega al marcar una columna.</p>'}
+        ${estadoPincel ? `<div class="levPincel" role="status"><span>Pintando con <b style="--c:${estadoPincel.color}">${esc(estadoPincel.nombre)}</b> · ${pincel.n} ${pincel.n === 1 ? 'recinto' : 'recintos'}. Toca los recintos en el plano.</span>
+          <div><button type="button" id="levDeshacer" ${marcas.length ? '' : 'disabled'}>Deshacer</button><button type="button" id="levPincelListo">Listo</button></div></div>`
+          : colPincel ? `<p class="markingInstruction">Para marcar varios recintos, toca un estado y luego los recintos en el plano.${partidaDe(colPincel) ? ' Se guarda en el rombo de cada recinto.' : ''}</p>` : ''}
+        <table class="estadosTabla"><tbody>${ley.filter(e => e.n || e.id).map(filaLeyenda).join('')}</tbody></table>
+        ${room && !estadoPincel ?`<section class="levFicha"><h3>${esc(room.code)} · ${esc(room.name)}</h3>${fila ? '' : '<p class="markingInstruction">Aún no está en el levantamiento: se agrega al marcar una columna.</p>'}
           ${doc.columnas.map(campo).join('')}${fila ? '<button type="button" data-lev-quitar class="levQuitar">Quitar del levantamiento</button>' : ''}</section>`
-          : '<p class="markingInstruction">Toca un recinto en el plano para ver y marcar sus columnas.</p>'}
+          : estadoPincel ? '' : '<p class="markingInstruction">Toca un recinto en el plano para ver y marcar sus columnas.</p>'}
         <h3>${conFiltro ? `${visibles.length} de ${doc.filas.length} recintos (filtro)` : `${doc.filas.length} recintos en este piso`}${fuera ? ` · ${fuera} no están en el plano` : ''}</h3>
         <ol class="levFilas">${visibles.map(f => { const r = roomDe(f.code); return `<li class="${room && r?.id === room.id ? 'focused' : ''}"><button type="button" data-lev-fila="${esc(f.code)}" ${r ? '' : 'disabled'}><b>${esc(f.code)}</b><span>${esc(f.name || r?.name || '')}${r ? '' : ' · no está en el plano de este piso'}</span>${chip(L.categoria(doc, f, enlazado))}</button></li>`; }).join('')}</ol></div>
       <div class="markingFooter"><span id="markingSaveStatus" role="status"></span><div><button id="markingBackup" data-wait-save>Respaldo JSON</button><button id="markingExport" data-wait-save>Exportar plano</button></div><small>Las columnas enlazadas toman el estado del rombo cuando tiene registro.</small></div>`;
@@ -99,8 +165,23 @@ export function createLevantamiento(ctx) {
     panel.querySelector('#levExcel').onclick = () => exportarExcel(doc);
     panel.querySelector('#levVista').onchange = e => ctx.change(d => L.validarLevantamiento({...d, vista: e.target.value}));
     panel.querySelectorAll('[data-lev-fila]').forEach(b => b.onclick = () => { const r = roomDe(b.dataset.levFila); if (r) ctx.enfocar(r.id); });
+    // Pincel: tocar un estado lo toma (o lo suelta si ya estaba); «Listo» lo suelta y «Deshacer» revierte el último toque.
+    panel.querySelectorAll('[data-lev-pincel]').forEach(b => b.onclick = () => {
+      pincel = pincel?.op === b.dataset.levPincel ? null : {docId: doc.id, col: colPincel.id, op: b.dataset.levPincel, n: pincel?.n || 0};
+      ctx.alCambiarEnlace();
+    });
+    panel.querySelector('#levPincelListo')?.addEventListener('click', () => { pincel = null; ctx.alCambiarEnlace(); });
+    panel.querySelector('#levDeshacer')?.addEventListener('click', () => {
+      const m = marcas.pop(); if (!m) return;
+      cola = cola.then(async () => { try { await deshacer(m); if (pincel) pincel.n = Math.max(0, pincel.n - 1); } catch (e) { ctx.toast('No se pudo deshacer: ' + e.message); } ctx.alCambiarEnlace(); });
+    });
     if (!room) return;
-    panel.querySelectorAll('[data-lev-op]').forEach(b => b.onclick = () => ctx.change(d => L.fijarValor(d, room, b.dataset.levCol, b.getAttribute('aria-pressed') === 'true' ? null : b.dataset.levOp)));
+    // Un estado de partida se guarda en el rombo (tocar el marcado no lo borra); los demás se marcan y desmarcan aquí.
+    panel.querySelectorAll('[data-lev-op]').forEach(b => b.onclick = () => {
+      const c = doc.columnas.find(x => x.id === b.dataset.levCol);
+      if (c && enRombo(c, room.code)) { cola = cola.then(async () => { try { await asignar(doc, room, c, b.dataset.levOp); } catch (e) { ctx.toast(e.message); } ctx.alCambiarEnlace(); }); return; }
+      ctx.change(d => L.fijarValor(d, room, b.dataset.levCol, b.getAttribute('aria-pressed') === 'true' ? null : b.dataset.levOp));
+    });
     panel.querySelectorAll('[data-lev-texto]').forEach(i => i.onchange = () => ctx.change(d => L.fijarValor(d, room, i.dataset.levTexto, i.value.trim())));
     panel.querySelector('[data-lev-quitar]')?.addEventListener('click', () => ctx.change(d => L.quitarFila(d, room.code)));
   }
@@ -229,7 +310,8 @@ export function createLevantamiento(ctx) {
     try {
       const docs = doc.grupo ? (await readMarkings()).filter(d => d.grupo === doc.grupo && d.tipo === 'levantamiento' && !d.eliminado) : [doc];
       const enlazados = Object.fromEntries(await Promise.all(docs.map(async d => [d.level, await enlacePiso(d.level)])));
-      const aoa = L.exportar(docs.map(d => d.id === doc.id ? doc : d), enlazados);
+      const alineado = d => enlazados[d.level]?.partida ? L.alinearPartidas(d, enlazados[d.level].partida) : d;
+      const aoa = L.exportar(docs.map(d => alineado(d.id === doc.id ? doc : d)), enlazados);
       await loadVendor('xlsx'); const X = window.XLSX, ws = X.utils.aoa_to_sheet(aoa), wb = X.utils.book_new();
       ws['!cols'] = aoa[0].map((h, i) => ({wch: Math.min(40, Math.max(String(h).length, ...aoa.slice(1, 200).map(r => String(r[i] ?? '').length)) + 2)}));
       ws['!autofilter'] = {ref: X.utils.encode_range({s: {r: 0, c: 0}, e: {r: aoa.length - 1, c: aoa[0].length - 1}})};
@@ -238,5 +320,5 @@ export function createLevantamiento(ctx) {
     } catch (failure) { ctx.toast('No se pudo exportar: ' + failure.message); }
   }
 
-  return {abrir, items, render, editor, importar, exportarExcel};
+  return {abrir, items, render, editor, importar, exportarExcel, pintar};
 }
