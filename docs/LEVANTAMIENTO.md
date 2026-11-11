@@ -14,7 +14,8 @@ Un **levantamiento** es un proyecto con una tabla de columnas propias por recint
 ## Usar
 - **Colorear plano por**: una columna de lista o estado, o **Listo para instalar**. Esta vista pinta verde cuando todas las columnas de estado están en su estado final o en «no aplica».
 - Tocar un recinto abre su ficha en el panel, con una botonera por columna. Un recinto nuevo entra al marcar su primera columna.
-- **Tabla**: todas las filas del piso con filtros como Excel.
+- **Tabla**: todas las filas del piso con filtros como Excel. **El filtro acota también el plano y la exportación (PDF y PNG)**: así se cruzan columnas, por ejemplo «Tipo de pavimento = 103» coloreado por «Estatus», o se dejan fuera los «Sin dato». El filtro se recuerda por proyecto en el equipo y el panel lo muestra con «Quitar filtro».
+- **Enlace con la planilla de avance**: una columna de lista puede tomar el estado de una partida de la planilla (Proyectos → Nuevo → Avance de una partida). Ver [PLANILLAS_AVANCE.md](PLANILLAS_AVANCE.md).
 - **Columnas**: editar nombres, tipos, opciones y enlace. Los cambios se aplican a todos los pisos del levantamiento.
 - **Enlace con el rombo**: una columna de estado puede tomar el avance del rombo (pavimento, cielo o muros, estos últimos juntos). Mientras el rombo tenga registro manda sobre el valor guardado, y la ficha lo muestra como «del rombo».
 

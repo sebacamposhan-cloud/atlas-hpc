@@ -14,6 +14,13 @@ import {fileURLToPath, pathToFileURL} from 'node:url';
 import {calcularMarco} from './marco.mjs';
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const [herramienta, carpeta, nivel] = process.argv.slice(2);
+// Planta general (opcional): completa una zona que ninguna lámina 1:50 cubre, como la A-501 del N03 con la planta
+// HPC-5-ARQ-PLA-N03-A-201. Comparte las coordenadas del modelo; aporta solo la ventana indicada (en cm, sin traslape
+// con las láminas) y sus textos, anotados a 1:200, se reducen a la escala de las láminas.
+// Uso: PLANTA_GENERAL="<archivo>|x0,y0,x1,y1|0.25" node scripts/dwg-plano/extraer.mjs …
+const [generalArchivo, generalVentana, generalTexto] = String(process.env.PLANTA_GENERAL || '').split('|');
+const ventanaGeneral = generalVentana ? generalVentana.split(',').map(Number) : null, escalaTextoGeneral = Number(generalTexto) || 1;
+if (generalArchivo && !(ventanaGeneral?.length === 4 && ventanaGeneral.every(Number.isFinite) && ventanaGeneral[2] > ventanaGeneral[0] && ventanaGeneral[3] > ventanaGeneral[1])) throw Error('PLANTA_GENERAL: indica archivo|x0,y0,x1,y1|escala de texto.');
 if (!/^(n0\d|s01)$/.test(nivel || '')) throw Error('Indica el nivel: n01, n02, n03 o s01.');
 const {Dwg_File_Type, LibreDwg} = await import(pathToFileURL(path.join(herramienta, 'node_modules/@mlightcad/libredwg-web/dist/libredwg-web.js')).href);
 const libredwg = await LibreDwg.create(path.join(herramienta, 'node_modules/@mlightcad/libredwg-web/wasm/') + path.sep);
@@ -115,7 +122,7 @@ function bordesSombreado(e) {
   return anillos;
 }
 
-const archivos = fs.readdirSync(carpeta).filter(f => new RegExp('^HPC-ARQ-PLA-' + nivel.toUpperCase() + '-A-5\\d\\d.*\\.dwg$', 'i').test(f)).sort();
+const archivos = [...fs.readdirSync(carpeta).filter(f => new RegExp('^HPC-ARQ-PLA-' + nivel.toUpperCase() + '-A-5\\d\\d.*\\.dwg$', 'i').test(f)).sort(), ...(generalArchivo ? [generalArchivo] : [])];
 if (!archivos.length) throw Error('No hay láminas HPC-ARQ-PLA-' + nivel.toUpperCase() + '-A-5xx en ' + carpeta);
 const capas = {base: [], mobiliario: [], ejes: [], relleno: []}, vistos = new Set(), barreras = [], rotulos = [], rombos = [], bloquesRombo = {}, laminas = [];
 // vanos: una puerta por vano, con el eje del muro. zonas: rellenos sólidos de color de recinto (A-AREA-PATT), sin recortar.
@@ -136,7 +143,7 @@ for (const archivo of archivos) {
   const T = marcoN02?.get(archivo) || {c: 100, s: 0, tx: 0, ty: 0};
   const aplicar = (x, y) => [T.c * x - T.s * y + T.tx, T.s * x + T.c * y + T.ty];
   const esc = Math.hypot(T.c, T.s), giroT = Math.atan2(T.s, T.c);
-  const lamina = archivo.match(/-A-5\d\d/)[0].slice(1);
+  const general = archivo === generalArchivo, lamina = archivo.match(/-A-[25]\d\d/)[0].slice(1);
   // Primero se recorre todo sin recortar; la ventana se decide después (algunas láminas guardan una vista con otro zoom).
   const crudos = [];
   let n = 0;
@@ -161,7 +168,8 @@ for (const archivo of archivos) {
         const N = [c * sx, s * sx, -s * sy, c * sy, ix - (c * sx * bp.x - s * sy * bp.y), iy - (s * sx * bp.x + c * sy * bp.y)];
         const MN = mul(M, N);
         let esta = puerta;
-        if (!puerta && e.layer === 'A-DOOR') {
+        // En la planta general las puertas van en la capa 0: se reconocen por el nombre del bloque.
+        if (!puerta && (e.layer === 'A-DOOR' || (general && /puerta/i.test(e.name)))) {
           const c = aplicar(MN[4], MN[5]), q = aplicar(MN[4] + MN[0], MN[5] + MN[1]), largo = Math.hypot(q[0] - c[0], q[1] - c[1]) || 1;
           esta = {c, u: [(q[0] - c[0]) / largo, (q[1] - c[1]) / largo], a0: Infinity, a1: -Infinity, v0: Infinity, v1: -Infinity, nombre: e.name};
         }
@@ -172,7 +180,7 @@ for (const archivo of archivos) {
     }
     const g = grupo(L), gris = tinta(color), lt = e.lineType && !/^(bylayer|byblock)$/i.test(e.lineType) ? e.lineType : tipoCapa(L), raya = !/^(continuous|bylayer|byblock|)$/i.test(lt) ? 1 : 0;
     const limita = !puerta && BARRERA.test(L);
-    const medir = puerta && GEOMETRIA_PUERTA.test(L) && e.type !== 'HATCH';
+    const medir = puerta && (GEOMETRIA_PUERTA.test(L) || (general && L === 'A-DETL-MBND')) && e.type !== 'HATCH';
     const linea = pts => {
       if (pts.length < 2) return;
       const q = pts.map(tp);
@@ -199,7 +207,7 @@ for (const archivo of archivos) {
       const p = t(alineado ? e.alignmentPoint : e.insertionPoint);
       const fe = Math.hypot(M[0], M[1]) * esc, giro = (e.type === 'MTEXT' && e.direction ? Math.atan2(e.direction.y, e.direction.x) : e.rotation || 0) + Math.atan2(M[1], M[0]) + giroT;
       const anclaje = e.type === 'MTEXT' ? e.attachmentPoint || 1 : (e.valign === 3 ? 0 : e.valign === 2 ? 3 : 6) + (e.halign === 1 || e.halign === 4 ? 2 : e.halign === 2 ? 3 : 1);
-      crudos.push(['t', g, L, gris, p, +(e.textHeight * fe).toFixed(2), +giro.toFixed(4), anclaje, texto]);
+      crudos.push(['t', g, L, gris, p, +(e.textHeight * fe * (general ? escalaTextoGeneral : 1)).toFixed(2), +giro.toFixed(4), anclaje, texto]);
     }
   }
   const propios = db.entities.filter(enModelo);
@@ -209,7 +217,7 @@ for (const archivo of archivos) {
   // tener otro zoom o ser más ancho que lo dibujado). Margen de 30 cm para no cortar las líneas del borde.
   let mx0 = Infinity, my0 = Infinity, mx1 = -Infinity, my1 = -Infinity;
   for (const c of crudos) if (c[0] !== 't' && /^(A-WALL|I-WALL|A-DOOR|S-COLS)$/.test(c[2])) for (const p of c[0] === 'l' ? c[5] : c[5].flat()) { if (p[0] < mx0) mx0 = p[0]; if (p[1] < my0) my0 = p[1]; if (p[0] > mx1) mx1 = p[0]; if (p[1] > my1) my1 = p[1]; }
-  const ventana = [mx0 - 30, my0 - 30, mx1 + 30, my1 + 30], fuenteVentana = vistas.length ? 'contorno de muros (vista 1:50 guardada: ' + vistas[0].r.map(v => Math.round(v * 100)).join(',') + ')' : 'contorno de muros';
+  const ventana = general ? ventanaGeneral : [mx0 - 30, my0 - 30, mx1 + 30, my1 + 30], fuenteVentana = general ? 'zona sin lámina 1:50, desde la planta general' : vistas.length ? 'contorno de muros (vista 1:50 guardada: ' + vistas[0].r.map(v => Math.round(v * 100)).join(',') + ')' : 'contorno de muros';
   if (!(ventana[2] > ventana[0])) throw Error(archivo + ': no se pudo determinar la ventana de la vista en planta.');
   const dentro = ([x, y]) => x >= ventana[0] && x <= ventana[2] && y >= ventana[1] && y <= ventana[3];
   for (const c of crudos) {
@@ -236,9 +244,9 @@ for (const archivo of archivos) {
   // Rótulos de recinto (código, nombre y superficie en la capa A-AREA-IDEN) y rombos, como en scripts/n02-plano/dwg-rombos.mjs.
   const textos = propios.filter(e => (e.type === 'MTEXT' || e.type === 'TEXT') && e.layer === 'A-AREA-IDEN' && e.insertionPoint).map(e => ({e, s: limpiar(e.text), p: aplicar(e.insertionPoint.x, e.insertionPoint.y), h: e.textHeight * esc}));
   for (const c of textos.filter(x => CODIGO.test(x.s) && dentro(x.p))) {
-    const cerca = textos.filter(o => o !== c && Math.abs(o.p[0] - c.p[0]) < 250);
-    const arriba = cerca.filter(o => o.p[1] > c.p[1] && o.p[1] - c.p[1] < 120 && !CODIGO.test(o.s) && !/m²|m2/.test(o.s) && !/^\d+$|^[A-Z]?\/?[A-Z]\/?[A-Z]?$/.test(o.s)).sort((a, b) => a.p[1] - b.p[1]);
-    const abajo = cerca.filter(o => o.p[1] < c.p[1] && c.p[1] - o.p[1] < 120 && /m²|m2/.test(o.s)).sort((a, b) => b.p[1] - a.p[1]);
+    const k = general ? 1 / escalaTextoGeneral : 1, cerca = textos.filter(o => o !== c && Math.abs(o.p[0] - c.p[0]) < 250 * k);
+    const arriba = cerca.filter(o => o.p[1] > c.p[1] && o.p[1] - c.p[1] < 120 * k && !CODIGO.test(o.s) && !/m²|m2/.test(o.s) && !/^\d+$|^[A-Z]?\/?[A-Z]\/?[A-Z]?$/.test(o.s)).sort((a, b) => a.p[1] - b.p[1]);
+    const abajo = cerca.filter(o => o.p[1] < c.p[1] && c.p[1] - o.p[1] < 120 * k && /m²|m2/.test(o.s)).sort((a, b) => b.p[1] - a.p[1]);
     rotulos.push({codigo: c.s, lamina, p: c.p.map(r1), h: +c.h.toFixed(1), nombre: arriba[0]?.s.replace(/\n/g, ' ') || null, superficie: abajo[0]?.s.replace(/\s*m(²|2)/, '').trim() || null});
   }
   const campo = ([x, y]) => { const cerca = v => Math.abs(y - v) < .45; if (cerca(7.45)) return 'M1'; if (cerca(5.71)) return 'CIE'; if (cerca(3.58)) return 'PAV'; if (cerca(1.77)) return 'M3'; if (cerca(4.75)) return x > 0 ? 'M2' : 'M4'; return null; };
