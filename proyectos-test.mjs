@@ -72,6 +72,25 @@ const exLev = datosExportacion(lev, null, (code, enlace) => code === '5.1-1' && 
 assert.equal(exLev.piso, 'S01'); assert.deepEqual(exLev.columnas, ['Código', 'Recinto', 'Listo para instalar']);
 assert.deepEqual(exLev.filas, [['5.1-1', 'Plano 5.1-1', {texto: 'Listo para instalar', color: '#2e9e5b'}], ['5.2-1', 'Bodega', {texto: 'Listo para instalar', color: '#2e9e5b'}]], 'usa el estado del rombo y el nombre del plano');
 assert.deepEqual(datosExportacion(lev).leyenda.map(e => [e.nombre, e.n]), [['Listo para instalar', 1], ['Pendiente', 1]]);
+// Filtro de la tabla: cruza dos columnas (tipo de pavimento y estatus) y acota la tabla, el plano y la exportación.
+let pav = L.nuevoLevantamiento({name: 'Pavimentos', author: 'QA', purpose: 'Producción', columnas: [
+  {id: 'c01', nombre: 'Tipo Pavimento', tipo: 'lista', enlace: null, opciones: [{id: 'o01', nombre: '103 - Vinílico Acústico', color: '#e070e0'}, {id: 'o02', nombre: '105 - Vinílico Homogéneo', color: '#4060b0'}]},
+  {id: 'c02', nombre: 'Estatus', tipo: 'estado', enlace: null, opciones: [{id: 'o01', nombre: 'Instalado 100%', color: '#2e9e5b', final: true}, {id: 'o02', nombre: 'No instalado', color: '#c21f1f'}]}]}, 'N02', 'pav1');
+for (const [code, tipo, est] of [['1.1-1', 'o01', 'o01'], ['1.2-1', 'o01', 'o02'], ['1.3-1', 'o02', 'o01'], ['1.4-1', null, 'o02']]) { pav = L.fijarValor(pav, {code, name: 'R ' + code}, 'c02', est); if (tipo) pav = L.fijarValor(pav, {code, name: 'R ' + code}, 'c01', tipo); }
+pav = L.validarLevantamiento({...pav, vista: 'c02'});
+const filtro = {filtros: {c01: ['103 - Vinílico Acústico']}, orden: null};
+assert.equal(L.filtroActivo(filtro), true); assert.equal(L.filtroActivo({filtros: {}}), false); assert.equal(L.filtroActivo(null), false);
+assert.deepEqual(L.filasFiltradas(pav, filtro).map(f => f.code), ['1.1-1', '1.2-1']);
+assert.deepEqual(L.filasFiltradas(pav, {filtros: {c01: ['Sin dato']}}).map(f => f.code), ['1.4-1'], '«Sin dato» también se filtra');
+assert.deepEqual(L.filasFiltradas(pav, {filtros: {c01: ['103 - Vinílico Acústico'], c02: ['No instalado']}}).map(f => f.code), ['1.2-1']);
+assert.deepEqual(L.filasFiltradas(pav, {filtros: {c02: []}}), [], 'columna filtrada sin valores: ninguna fila');
+assert.equal(L.filasFiltradas(pav, null).length, 4);
+assert.equal(L.textoFiltro(pav, {filtros: {c01: ['103 - Vinílico Acústico'], c02: ['No instalado', 'Sin dato']}}), 'Tipo Pavimento: 103 - Vinílico Acústico · Estatus: No instalado, Sin dato');
+const exPav = datosExportacion(pav, null, null, () => '', filtro);
+assert.deepEqual(exPav.filas.map(f => [f[0], f[2].texto]), [['1.1-1', 'Instalado 100%'], ['1.2-1', 'No instalado']], 'la exportación lleva solo los recintos filtrados, coloreados por la vista');
+assert.deepEqual(exPav.leyenda.map(e => [e.nombre, e.n]), [['Instalado 100%', 1], ['No instalado', 1]]);
+assert.equal(exPav.detalle, 'Plano coloreado por: Estatus · Filtro: Tipo Pavimento: 103 - Vinílico Acústico · 2 de 4 recintos');
+assert.equal(datosExportacion(pav).filas.length, 4); assert.equal(datosExportacion(pav).detalle, 'Plano coloreado por: Estatus');
 assert(altoRotulo(ex.leyenda, 10) > 9 * 10 * .78 && altoRotulo(new Array(20).fill(0), 10) === altoRotulo(new Array(6).fill(0), 10), 'la franja crece hasta seis filas de simbología');
 const PDFLib = (await import('node:module')).createRequire(import.meta.url)('./dist/vendor/pdf-lib.min.js');
 const pdf = await PDFLib.PDFDocument.create();

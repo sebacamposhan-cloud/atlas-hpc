@@ -84,6 +84,27 @@ export function categoria(doc, fila, enlazado = null) {
   const c = doc.columnas.find(c => c.id === doc.vista), o = c && opcion(c, valor(c, fila, enlazado).id);
   return o ? {id: o.id, nombre: o.nombre, color: o.color} : null;
 }
+// ---------- Filtro de la tabla (como Excel) ----------
+// Columnas de la tabla: código, recinto, cada columna del levantamiento y «Listo para instalar». El mismo filtro acota la
+// tabla, el plano y la exportación (PDF y PNG): así se cruza, por ejemplo, «Tipo de pavimento = 103» con el estatus.
+export function columnasTabla(doc, enlazado = null, nombreRecinto = () => '') {
+  const nombreValor = (c, f) => c.tipo === 'texto' ? f.valores[c.id] || '' : opcion(c, valor(c, f, enlazado).id)?.nombre || 'Sin dato';
+  return [{key: 'code', titulo: 'Código', valor: f => f.code}, {key: 'name', titulo: 'Recinto', valor: f => f.name || nombreRecinto(f.code) || ''},
+    ...doc.columnas.map(c => ({key: c.id, titulo: c.nombre, valor: f => nombreValor(c, f), ...(c.tipo === 'texto' ? {} : {opciones: [...c.opciones.map(o => o.nombre), 'Sin dato']})})),
+    {key: 'listo', titulo: 'Listo para instalar', valor: f => ({listo: 'Listo', pendiente: 'Pendiente'}[listo(doc, f, enlazado)] || 'Sin dato'), opciones: ['Listo', 'Pendiente', 'Sin dato']}];
+}
+export const filtroActivo = estado => Object.values(estado?.filtros || {}).some(Array.isArray);
+// Filas que pasan el filtro (todas si no hay filtro). Una columna filtrada sin valores elegidos no deja ninguna.
+export function filasFiltradas(doc, estado, enlazado = null, nombreRecinto = () => '') {
+  if (!filtroActivo(estado)) return doc.filas;
+  const cols = columnasTabla(doc, enlazado, nombreRecinto), activas = cols.filter(c => Array.isArray(estado.filtros[c.key])).map(c => [c, new Set(estado.filtros[c.key])]);
+  return doc.filas.filter(f => activas.every(([c, elegidos]) => { const v = c.valor(f); return elegidos.has(v == null || v === '' ? '(Vacías)' : String(v)); }));
+}
+// Texto del filtro para el panel y la exportación: «Tipo Pavimento: 103 - Vinílico Acústico · Estatus: No instalado».
+export function textoFiltro(doc, estado) {
+  return columnasTabla(doc).filter(c => Array.isArray(estado?.filtros?.[c.key])).map(c => `${c.titulo}: ${estado.filtros[c.key].length ? estado.filtros[c.key].join(', ') : 'ninguno'}`).join(' · ');
+}
+
 export function leyenda(doc, filas, enlazado = null) {
   const base = doc.vista === VISTA_LISTO ? Object.entries(LISTO).map(([k, v]) => ({id: k, ...v})) : doc.columnas.find(c => c.id === doc.vista).opciones.map(o => ({id: o.id, nombre: o.nombre, color: o.color}));
   const cuenta = new Map(); for (const f of filas) { const k = categoria(doc, f, enlazado)?.id ?? null; cuenta.set(k, (cuenta.get(k) || 0) + 1); }

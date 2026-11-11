@@ -12,6 +12,18 @@ import {reporteAvance, partidasDeTerminacion, partidasDeMuros, estadoTerminacion
 import {readMarkings, saveMarking} from './marking-store.mjs';
 
 const NOMBRE_PISO = {'N-1': 'Nivel −1', N01: 'Nivel 1', N02: 'Nivel 2', N03: 'Nivel 3'};
+// Filtro de la tabla de cada levantamiento (por documento): se recuerda en el equipo y acota tabla, plano y exportación.
+const CLAVE_FILTROS = 'atlas-levantamiento-filtros', filtros = new Map();
+const leerFiltros = () => { try { return JSON.parse(localStorage.getItem(CLAVE_FILTROS) || '{}') || {}; } catch { return {}; } };
+export function filtroLevantamiento(docId) {
+  if (!filtros.has(docId)) { const g = leerFiltros()[docId]; filtros.set(docId, {filtros: g?.filtros || {}, orden: g?.orden || null}); }
+  return filtros.get(docId);
+}
+function guardarFiltro(docId) {
+  const todos = leerFiltros(), e = filtroLevantamiento(docId);
+  if (L.filtroActivo(e) || e.orden) todos[docId] = {filtros: e.filtros, orden: e.orden}; else delete todos[docId];
+  try { localStorage.setItem(CLAVE_FILTROS, JSON.stringify(todos)); } catch {}
+}
 // Plantilla como la planilla de artefactos: tipo de cielo y los estatus de cada terminación.
 const ESTADO = () => [{id: 'o01', nombre: 'Instalado', color: '#2e9e5b', final: true}, {id: 'o02', nombre: 'No instalado', color: '#c26a00'}, {id: 'o03', nombre: 'No aplica', color: '#9aa3ad', noAplica: true}];
 export const PLANTILLA_ARTEFACTOS = () => [
@@ -35,20 +47,24 @@ export function enlacePiso(level) {
 // ctx: {esc, toast, level, levelName, rooms, find, enfocar(roomId), change(update), showDialog(html), dialog, abrir(doc),
 //       cerrar(), biblioteca(), respaldo(), exportarPlano(), download(blob, nombre), alCambiarEnlace()}
 export function createLevantamiento(ctx) {
-  const esc = ctx.esc, tabla = {filtros: {}, orden: null};
+  const esc = ctx.esc;
   let enlazado = null;
   const roomDe = code => ctx.rooms().find(r => r.code === code);
   const chip = c => c ? `<span class="levChip" style="--c:${c.color}">${esc(c.nombre)}</span>` : '<span class="levChip vacio">Sin dato</span>';
   async function abrir(doc) { enlazado = await enlacePiso(doc.level); ctx.alCambiarEnlace(); }
   if (typeof window !== 'undefined') window.addEventListener('atlas-avance-changed', async () => { if (!enlazado) return; enlazado = await enlacePiso(ctx.level); ctx.alCambiarEnlace(); });
+  const nombrePlano = code => roomDe(code)?.name || '';
+  const filtradas = doc => L.filasFiltradas(doc, filtroLevantamiento(doc.id), enlazado, nombrePlano);
+  // Con filtro, el plano pinta solo los recintos que pasan el filtro.
   function items(doc) {
-    return doc.filas.map(f => { const r = roomDe(f.code), c = r && L.categoria(doc, f, enlazado); return c ? {id: r.id, color: c.color, number: null, opacity: .45} : null; }).filter(Boolean);
+    return filtradas(doc).map(f => { const r = roomDe(f.code), c = r && L.categoria(doc, f, enlazado); return c ? {id: r.id, color: c.color, number: null, opacity: .45} : null; }).filter(Boolean);
   }
 
   // ---------- Panel lateral ----------
   function render(panel, doc, focusedId) {
     const room = focusedId && ctx.find(focusedId), fila = room && doc.filas.find(f => f.code === room.code);
-    const ley = L.leyenda(doc, doc.filas, enlazado), fuera = doc.filas.filter(f => !roomDe(f.code)).length;
+    const conFiltro = L.filtroActivo(filtroLevantamiento(doc.id)), visibles = filtradas(doc);
+    const ley = L.leyenda(doc, visibles, enlazado), fuera = doc.filas.filter(f => !roomDe(f.code)).length;
     const vistas = [[L.VISTA_LISTO, 'Listo para instalar'], ...doc.columnas.filter(c => c.tipo !== 'texto').map(c => [c.id, c.nombre])];
     const campo = c => {
       const v = fila ? L.valor(c, fila, enlazado) : {id: null, rombo: false};
@@ -58,13 +74,14 @@ export function createLevantamiento(ctx) {
     panel.innerHTML = `<div class="markingHead"><div><small>LEVANTAMIENTO · ${esc(ctx.levelName)}</small><h2>${esc(doc.name)}</h2></div><button id="closeMarking" data-wait-save aria-label="Cerrar proyecto">×</button></div>
       <div class="markingActions"><button id="markingDocuments" data-wait-save>Proyectos</button><button id="levColumnas" data-wait-save>Columnas</button><button id="levTabla">Tabla</button><button id="levExcel" data-wait-save>Excel</button></div>
       <div class="markingScroll">
+        ${conFiltro ? `<p class="levFiltro"><span><b>Filtro de la tabla:</b> ${esc(L.textoFiltro(doc, filtroLevantamiento(doc.id)))}. El plano y la exportación muestran ${visibles.length} de ${doc.filas.length} recintos.</span><button type="button" id="levQuitarFiltro">Quitar filtro</button></p>` : ''}
         <label class="levVista">Colorear plano por<select id="levVista">${vistas.map(([k, t]) => `<option value="${esc(k)}" ${doc.vista === k ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
         <table class="estadosTabla"><tbody>${ley.filter(e => e.n || e.id).map(e => `<tr><td><i style="background:${e.color};${e.id ? '' : 'border:1px solid #8c8c8c'}"></i>${esc(e.nombre)}</td><td>${e.n}</td></tr>`).join('')}</tbody></table>
         ${room ? `<section class="levFicha"><h3>${esc(room.code)} · ${esc(room.name)}</h3>${fila ? '' : '<p class="markingInstruction">Aún no está en el levantamiento: se agrega al marcar una columna.</p>'}
           ${doc.columnas.map(campo).join('')}${fila ? '<button type="button" data-lev-quitar class="levQuitar">Quitar del levantamiento</button>' : ''}</section>`
           : '<p class="markingInstruction">Toca un recinto en el plano para ver y marcar sus columnas.</p>'}
-        <h3>${doc.filas.length} recintos en este piso${fuera ? ` · ${fuera} no están en el plano` : ''}</h3>
-        <ol class="levFilas">${doc.filas.map(f => { const r = roomDe(f.code); return `<li class="${room && r?.id === room.id ? 'focused' : ''}"><button type="button" data-lev-fila="${esc(f.code)}" ${r ? '' : 'disabled'}><b>${esc(f.code)}</b><span>${esc(f.name || r?.name || '')}${r ? '' : ' · no está en el plano de este piso'}</span>${chip(L.categoria(doc, f, enlazado))}</button></li>`; }).join('')}</ol></div>
+        <h3>${conFiltro ? `${visibles.length} de ${doc.filas.length} recintos (filtro)` : `${doc.filas.length} recintos en este piso`}${fuera ? ` · ${fuera} no están en el plano` : ''}</h3>
+        <ol class="levFilas">${visibles.map(f => { const r = roomDe(f.code); return `<li class="${room && r?.id === room.id ? 'focused' : ''}"><button type="button" data-lev-fila="${esc(f.code)}" ${r ? '' : 'disabled'}><b>${esc(f.code)}</b><span>${esc(f.name || r?.name || '')}${r ? '' : ' · no está en el plano de este piso'}</span>${chip(L.categoria(doc, f, enlazado))}</button></li>`; }).join('')}</ol></div>
       <div class="markingFooter"><span id="markingSaveStatus" role="status"></span><div><button id="markingBackup" data-wait-save>Respaldo JSON</button><button id="markingExport" data-wait-save>Exportar plano</button></div><small>Las columnas enlazadas toman el estado del rombo cuando tiene registro.</small></div>`;
     panel.querySelector('#closeMarking').onclick = ctx.cerrar;
     panel.querySelector('#markingDocuments').onclick = ctx.biblioteca;
@@ -72,6 +89,7 @@ export function createLevantamiento(ctx) {
     panel.querySelector('#markingExport').onclick = ctx.exportarPlano;
     panel.querySelector('#levColumnas').onclick = () => editor(doc);
     panel.querySelector('#levTabla').onclick = () => verTabla(doc);
+    panel.querySelector('#levQuitarFiltro')?.addEventListener('click', () => { const e = filtroLevantamiento(doc.id); e.filtros = {}; guardarFiltro(doc.id); ctx.alCambiarEnlace(); });
     panel.querySelector('#levExcel').onclick = () => exportarExcel(doc);
     panel.querySelector('#levVista').onchange = e => ctx.change(d => L.validarLevantamiento({...d, vista: e.target.value}));
     panel.querySelectorAll('[data-lev-fila]').forEach(b => b.onclick = () => { const r = roomDe(b.dataset.levFila); if (r) ctx.enfocar(r.id); });
@@ -83,20 +101,19 @@ export function createLevantamiento(ctx) {
 
   // ---------- Tabla completa con filtros como Excel ----------
   function verTabla(doc) {
-    const nombreValor = (c, f) => c.tipo === 'texto' ? f.valores[c.id] || '' : L.opcion(c, L.valor(c, f, enlazado).id)?.nombre || 'Sin dato';
-    const columnas = [{key: 'code', titulo: 'Código', valor: f => f.code}, {key: 'name', titulo: 'Recinto', valor: f => f.name || roomDe(f.code)?.name || ''},
-      ...doc.columnas.map(c => ({key: c.id, titulo: c.nombre, valor: f => nombreValor(c, f), ...(c.tipo === 'texto' ? {} : {opciones: [...c.opciones.map(o => o.nombre), 'Sin dato']})})),
-      {key: 'listo', titulo: 'Listo para instalar', valor: f => ({listo: 'Listo', pendiente: 'Pendiente'}[L.listo(doc, f, enlazado)] || 'Sin dato'), opciones: ['Listo', 'Pendiente', 'Sin dato']}];
+    const columnas = L.columnasTabla(doc, enlazado, nombrePlano), tabla = filtroLevantamiento(doc.id);
     const celda = (c, f) => { if (c.tipo === 'texto') return esc(f.valores[c.id] || ''); const v = L.valor(c, f, enlazado); return chip(L.opcion(c, v.id)) + (v.rombo ? '<small> rombo</small>' : ''); };
     const dibujar = () => {
       const filas = cf.aplicar(doc.filas);
-      ctx.showDialog(`<h2>${esc(doc.name)} · ${esc(ctx.levelName)}</h2><p>${filas.length} de ${doc.filas.length} recintos. Toca un encabezado para filtrar u ordenar; toca un código para verlo en el plano.</p>${cf.limpiar()}
+      ctx.showDialog(`<h2>${esc(doc.name)} · ${esc(ctx.levelName)}</h2><p>${filas.length} de ${doc.filas.length} recintos. Toca un encabezado para filtrar u ordenar; toca un código para verlo en el plano. ${cf.activos() ? '<b>El plano y la exportación (PDF o PNG) muestran solo los recintos filtrados.</b> <button type="button" id="levVerPlano">Ver en el plano</button>' : 'Al filtrar, el plano y la exportación muestran solo los recintos filtrados.'}</p>${cf.limpiar()}
         <div class="tableScroll levTablaScroll"><table class="masterTable levTabla"><thead><tr>${cf.cabecera()}</tr></thead><tbody>${filas.map(f => `<tr><td><button type="button" class="codeLink" data-lev-ver="${esc(f.code)}" ${roomDe(f.code) ? '' : 'disabled'}>${esc(f.code)}</button></td><td>${esc(f.name || roomDe(f.code)?.name || '')}</td>${doc.columnas.map(c => `<td>${celda(c, f)}</td>`).join('')}<td>${chip(L.categoria({...doc, vista: L.VISTA_LISTO}, f, enlazado))}</td></tr>`).join('') || `<tr><td colspan="${columnas.length}">Sin recintos con estos filtros.</td></tr>`}</tbody></table></div>`);
       ctx.dialog.classList.add('ancho'); ctx.dialog.addEventListener('close', () => ctx.dialog.classList.remove('ancho'), {once: true});
       cf.conectar(ctx.dialog, doc.filas);
       ctx.dialog.querySelectorAll('[data-lev-ver]').forEach(b => b.onclick = () => { const r = roomDe(b.dataset.levVer); ctx.dialog.close(); if (r) ctx.enfocar(r.id); });
+      ctx.dialog.querySelector('#levVerPlano')?.addEventListener('click', () => ctx.dialog.close());
     };
-    const cf = crearFiltrosColumna({id: 'levantamiento', columnas, estado: tabla, esc, alCambiar: dibujar});
+    // Cada cambio de filtro se recuerda y repinta el plano y el panel (que quedan detrás de la tabla).
+    const cf = crearFiltrosColumna({id: 'levantamiento', columnas, estado: tabla, esc, alCambiar: () => { guardarFiltro(doc.id); ctx.alCambiarEnlace(); dibujar(); }});
     dibujar();
   }
 

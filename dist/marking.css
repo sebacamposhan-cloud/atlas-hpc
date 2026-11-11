@@ -98,6 +98,8 @@ body.markingOpen .toolbar, body.markingOpen main > footer { right: 332px; }
 .markingTipos { display: grid; gap: 10px; margin-top: 12px; }
 .markingTipos button { text-align: left; white-space: normal; padding: 12px; display: grid; gap: 4px; }
 .markingTipos span { font-size: 12px; font-weight: 400; }
+.levFiltro { display: grid; gap: 6px; margin: 10px 0 0; padding: 8px 10px; border: 1px solid #1b2a56; border-left-width: 4px; font-size: 12px; line-height: 1.35; background: #fff; }
+.levFiltro button { justify-self: start; font-size: 12px; }
 .levVista { display: grid; gap: 4px; font-size: 11px; font-weight: 700; margin: 10px 0 4px; }
 .levVista select { font-size: 14px; width: 100%; }
 .levFicha { border: 1px solid var(--g-marca, #1b2a56); border-top: 4px solid var(--g-marca, #1b2a56); padding: 8px; margin: 10px 0; display: grid; gap: 8px; }

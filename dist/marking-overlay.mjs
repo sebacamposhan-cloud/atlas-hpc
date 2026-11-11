@@ -1,7 +1,7 @@
 // All coordinates come from the existing viewer; annotations add no new geometry.
 // Cada recinto se pinta con el color de su estado (proyectos) o, al comparar cortes, con el tipo de cambio (ver markingItems).
 import {markingItems, CAMBIOS, esLevantamiento} from './marking-model.mjs';
-import {leyenda as leyendaLevantamiento, categoria} from './levantamiento-model.mjs';
+import {leyenda as leyendaLevantamiento, categoria, filasFiltradas, filtroActivo, textoFiltro} from './levantamiento-model.mjs';
 export function createMarkingOverlay(ctx) {
   const svg = document.getElementById('svg'), overlay = document.getElementById('markingOverlay');
   const elementos = doc => ctx.items ? ctx.items() : markingItems(doc);
@@ -43,14 +43,16 @@ export function createMarkingOverlay(ctx) {
 export const codigoPiso = level => level === 'N-1' ? 'S01' : String(level ?? '');
 // Datos de la exportación: simbología ({nombre, color, n}) y tabla (columnas, anchos relativos y filas). Una celda puede
 // ser texto o {texto, color}. enlazado: estado del rombo para columnas enlazadas; nombreRecinto(code): nombre del plano.
-export function datosExportacion(doc, comparacion = null, enlazado = null, nombreRecinto = () => '') {
+// filtro: estado del filtro de la tabla del levantamiento ({filtros}); la exportación lleva solo los recintos filtrados.
+export function datosExportacion(doc, comparacion = null, enlazado = null, nombreRecinto = () => '', filtro = null) {
   const base = {piso: codigoPiso(doc.level), titulo: doc.name, autor: doc.author, proposito: doc.purpose, actualizado: doc.updatedAt};
   if (esLevantamiento(doc)) {
     const vista = doc.columnas.find(c => c.id === doc.vista)?.nombre || 'Listo para instalar';
-    return {...base, tipo: 'Levantamiento', detalle: 'Plano coloreado por: ' + vista,
-      leyenda: leyendaLevantamiento(doc, doc.filas, enlazado).filter(e => e.n).map(e => ({nombre: e.nombre, color: e.color, n: e.n})),
+    const filas = filasFiltradas(doc, filtro, enlazado, nombreRecinto), texto = filtroActivo(filtro) ? textoFiltro(doc, filtro) : '';
+    return {...base, tipo: 'Levantamiento', detalle: 'Plano coloreado por: ' + vista + (texto ? ` · Filtro: ${texto} · ${filas.length} de ${doc.filas.length} recintos` : ''),
+      leyenda: leyendaLevantamiento(doc, filas, enlazado).filter(e => e.n).map(e => ({nombre: e.nombre, color: e.color, n: e.n})),
       columnas: ['Código', 'Recinto', vista], anchos: [2, 5, 3],
-      filas: doc.filas.map(f => { const c = categoria(doc, f, enlazado); return [f.code, f.name || nombreRecinto(f.code) || '', {texto: c?.nombre || 'Sin dato', color: c?.color || '#ffffff'}]; })};
+      filas: filas.map(f => { const c = categoria(doc, f, enlazado); return [f.code, f.name || nombreRecinto(f.code) || '', {texto: c?.nombre || 'Sin dato', color: c?.color || '#ffffff'}]; })};
   }
   const estados = doc.estados || [], estado = id => { const e = estados.find(e => e.id === id); return e ? {texto: e.nombre, color: e.color} : {texto: 'Sin marcar', color: '#ffffff'}; };
   if (comparacion) {
