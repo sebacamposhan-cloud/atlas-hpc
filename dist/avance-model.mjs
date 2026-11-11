@@ -5,6 +5,7 @@
 // que aceptan un itemizado siguen calculando montos solo si se les entrega uno (pruebas y análisis fuera de la app).
 // Las partidas se identifican siempre por su código ITEM, nunca por número de fila.
 import {progressFloors} from './progress-scope.mjs';
+import {avanceDePartida} from './planilla-avance-model.mjs';
 
 export const CAPITULOS_PILOTO = ['2.6', '4.3', '5.1', '5.3', '6.1', '6.2', '6.3', '6.4', '6.5', '6.6', '6.8', '6.10'];
 export const CAPITULOS_POSTERIORES = ['7', '9']; // artefactos e instalaciones: preparados, fuera del piloto
@@ -156,7 +157,7 @@ const conformidadLegada = revision => revision === 'Con observaciones' ? 'No con
 export function estadoNodo(nodo, registro) {
   if (nodo.tipo === 'protocolo') return {estado: registro?.protocolos?.[nodo.id]?.estado || 'Pendiente'};
   const v = registro?.partidas?.[nodo.id], d = dosFilas(v);
-  return {...d, pct: d.pct ?? 0, pctIndicado: d.pct, estado: estadoLegado(d), conformidad: conformidadLegada(d.revision), falta: v?.falta || '', obs: v?.obs || [], registrada: !!v};
+  return {...d, pct: d.pct ?? 0, pctIndicado: d.pct, estado: estadoLegado(d), conformidad: conformidadLegada(d.revision), falta: v?.falta || '', obs: v?.obs || [], registrada: !!v, fuente: v?.fuente || null, etapas: v?.etapas || null};
 }
 export const liberado = (nodo, estado) => nodo.tipo === 'protocolo' ? estado.estado === 'Liberado' : estado.estado === 'Aprobado';
 export function bloqueos(nodo, nodos, registro) {
@@ -207,11 +208,38 @@ export function actualizarNodo({code, level}, nodos, registro, id, cambio, {resp
     }
     const errores = validarPartida(nodo, sig, sig.revision === 'Conforme' ? bloqueos(nodo, nodos, {partidas, protocolos}) : []);
     if (errores.length) throw Error(errores[0]);
-    partidas[id] = {...partidas[id], ejecucion: sig.ejecucion, revision: sig.revision, pct: sig.pct, estado: estadoLegado(sig), conformidad: conformidadLegada(sig.revision)};
+    // Lo marcado en terreno lleva su hora: manda sobre la planilla de la oficina hasta la siguiente carga.
+    const {fuente, etapas, ...anterior} = partidas[id] || {};
+    partidas[id] = {...anterior, ejecucion: sig.ejecucion, revision: sig.revision, pct: sig.pct, estado: estadoLegado(sig), conformidad: conformidadLegada(sig.revision), at};
   }
-  const nuevo = {key: keyFor(code, level), code: String(code).trim(), level, version: (registro?.version || 0) + 1, at, responsable: String(responsable || '').trim(), fecha, protocolos, partidas};
+  // «atSinHora»: hora que vale para las partidas marcadas antes de que cada una llevara la suya (las demás partidas
+  // quedan como estaban, y este toque no las hace parecer más nuevas que la planilla).
+  const sinHora = registro?.atSinHora || registro?.at;
+  const nuevo = {key: keyFor(code, level), code: String(code).trim(), level, version: (registro?.version || 0) + 1, at, ...(sinHora ? {atSinHora: sinHora} : {}), responsable: String(responsable || '').trim(), fecha, protocolos, partidas};
   const errores = validarRegistro(nuevo); if (errores.length) throw Error(errores[0]);
   return nuevo;
+}
+
+// La planilla de avance de la oficina es la base: cada partida que la planilla mide toma su % de ahí. Lo marcado en
+// terreno después de la carga manda sobre la planilla (y vuelve a la oficina en la siguiente planilla). La revisión
+// (conforme, con observaciones) siempre es de terreno: la planilla no la trae. Devuelve el registro vigente del recinto;
+// el registro guardado en el equipo no cambia.
+export function aplicarPlanilla(registro, nodos, fams, planilla) {
+  if (!fams || !planilla?.cargada) return registro || null;
+  const partidas = {...(registro?.partidas || {})}; let cambio = false;
+  for (const n of nodos) {
+    if (n.tipo !== 'partida') continue;
+    const a = avanceDePartida(n.id, fams, planilla.hojas); if (!a) continue;
+    const campo = partidas[n.id], cuando = campo?.at || (campo ? registro?.atSinHora || registro?.at : null);
+    if (campo && cuando && cuando > planilla.cargada) continue;
+    const ejecucion = a.pct >= 0.995 ? 'Instalado' : a.pct <= 0.004 ? 'No iniciado' : 'En ejecución';
+    const pct = ejecucion === 'Instalado' ? 100 : ejecucion === 'No iniciado' ? 0 : Math.min(99, Math.max(1, Math.round(a.pct * 100)));
+    const previa = dosFilas(campo).revision, revision = previa === 'Conforme' && ejecucion !== 'Instalado' ? 'Sin revisar' : previa;
+    const d = {ejecucion, revision, pct};
+    partidas[n.id] = {...campo, ...d, estado: estadoLegado(d), conformidad: conformidadLegada(revision), fuente: 'planilla', etapas: a.etapas, at: planilla.cargada};
+    cambio = true;
+  }
+  return cambio ? {...(registro || {}), partidas, protocolos: registro?.protocolos || {}} : registro || null;
 }
 
 // Estado de una terminación del rombo a partir de sus partidas (null si ninguna tiene registro propio).
@@ -262,18 +290,21 @@ export function estadoRecinto(nodos, registro) {
 }
 
 // Reporte completo: filas por recinto, totales por partida, recinto, asepsia y piso; bloqueos; control de cubicación.
-export function reporteAvance(pma, items, registros, level = 'N-1') {
+// planilla: avance del piso leído de la planilla de la oficina (planilla-avance-model.mjs), o null.
+export function reporteAvance(pma, items, registros, level = 'N-1', planilla = null) {
   const porClave = new Map(registros.map(r => [r.key, r])), filas = [];
   for (const row of pma.main.filter(r => r.level === progressFloors[level])) {
-    const {nodos, sinPartida, asepsia, superficie} = nodosRecinto(row, items, pma.materials), registro = porClave.get(keyFor(row.code, level));
+    const {nodos, sinPartida, asepsia, superficie} = nodosRecinto(row, items, pma.materials), guardado = porClave.get(keyFor(row.code, level));
+    // «registro» es lo guardado en terreno (base de lo que se vuelva a guardar); «vigente» suma la planilla.
+    const vigente = planilla?.nivel === level ? aplicarPlanilla(guardado, nodos, planilla.recintos?.[limpio(row.code)], planilla) : guardado;
     const detalle = nodos.map(n => {
-      const s = estadoNodo(n, registro), bloq = bloqueos(n, nodos, registro);
+      const s = estadoNodo(n, vigente), bloq = bloqueos(n, nodos, vigente);
       const total = n.tipo === 'partida' && n.cantidad != null && n.pu != null ? n.cantidad * n.pu : null;
       const ejecutado = total != null ? total * (s.pct || 0) / 100 : null;
       const m2Ejecutado = n.tipo === 'partida' && n.cantidad != null ? n.cantidad * (s.pct || 0) / 100 : null;
       return {...n, ...s, bloqueadoPor: bloq, total, ejecutado, pendiente: total != null ? total - ejecutado : null, m2Ejecutado, m2Pendiente: m2Ejecutado != null ? n.cantidad - m2Ejecutado : null};
     });
-    filas.push({code: limpio(row.code), name: row.name, unit: row.unit, asepsia: asepsia || 'Sin dato', superficie, row, registro, nodos: detalle, sinPartida, estado: estadoRecinto(nodos, registro),
+    filas.push({code: limpio(row.code), name: row.name, unit: row.unit, asepsia: asepsia || 'Sin dato', superficie, row, registro: guardado, vigente, nodos: detalle, sinPartida, estado: estadoRecinto(nodos, vigente),
       total: suma(detalle, 'total'), ejecutado: suma(detalle, 'ejecutado')});
   }
   const partidas = filas.flatMap(f => f.nodos.filter(n => n.tipo === 'partida').map(n => ({...n, recinto: f})));

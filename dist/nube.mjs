@@ -6,6 +6,7 @@ import {crearSincronizador} from './nube-sync.mjs';
 import {readMarkings, saveMarking, replaceMarking} from './marking-store.mjs';
 import {leerParaNube, idsFotos, leerFoto, guardarDesdeNube, guardarFotoDesdeNube} from './observaciones-store.mjs';
 import {refrescarContornosNube} from './contornos-nube.mjs';
+import {refrescarPlanillasNube} from './planilla-avance-nube.mjs';
 
 const SESION = 'atlas-nube-sesion';
 const leerSesion = () => { try { return JSON.parse(localStorage.getItem(SESION)); } catch { return null; } };
@@ -103,6 +104,7 @@ export function iniciarNube({toast = aviso} = {}) {
       });
       ultimoAviso = '';
       refrescarContornosNube().catch(() => {}); // contornos corregidos desde el editor en otros equipos
+      refrescarPlanillasNube().catch(() => {}); // planillas de avance cargadas desde el escritorio
     } catch (e) {
       if (e.status === 401) return sesionTerminada();
       // Sin botón de estado, el error se avisa una vez (no cada 3 minutos) hasta que una vuelta salga bien.

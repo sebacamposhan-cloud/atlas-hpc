@@ -120,6 +120,10 @@ Con la fuente actual y evaluación al **27-10-2026**: **2.045 registros crítico
 
 Detalles y capturas: [CRITICAL_PROTOCOLS.md](docs/CRITICAL_PROTOCOLS.md). Tests: `node critical-protocol-test.mjs` y `PLAYWRIGHT_MODULE=<ruta-a-playwright-core> node critical-protocol-browser-test.mjs`.
 
+## Planillas de avance de la oficina
+
+Control → Avance → Avance por partida → «Cargar planilla de avance» (escritorio). Atlas lee la planilla de avance del piso, la guarda en Nube y la usa como base del avance de cada recinto; lo marcado en terreno después de la carga manda. Requiere ejecutar `supabase/planillas-avance.sql`. Detalle: [PLANILLAS_AVANCE.md](docs/PLANILLAS_AVANCE.md). Prueba: `node planilla-avance-test.mjs`.
+
 ## Editor de contornos
 
 Sirve para corregir a mano los contornos de los recintos sobre las líneas del DWG, con pinzamientos como en AutoCAD, OSNAP, orto, dibujar, partir y simplificar. Se usa en computador.

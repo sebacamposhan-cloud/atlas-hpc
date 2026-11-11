@@ -87,6 +87,8 @@ export function createRombo(ctx) {
     const lista = obs.filter(o => elegido === 'M' ? esMuro(o.terminacion) : o.terminacion === elegido).sort((a, b) => b.actualizada.localeCompare(a.actualizada));
     const cantidad = n => n.cantidad != null ? `${m2(n.m2Ejecutado)} de ${m2(n.cantidad)} ${esc(unidad(n.unidad))} ejecutados · <b>${m2(n.m2Pendiente)} ${esc(unidad(n.unidad))} pendientes</b>` : 'Sin superficie por recinto en el PMA: avance en %';
     const resumen = n => (n.ejecucion === 'En ejecución' && n.pctIndicado != null ? 'En ejecución · ' + n.pctIndicado + ' %' : n.ejecucion) + (n.revision === 'Sin revisar' ? '' : ' · ' + n.revision);
+    // Partida medida en la planilla de la oficina: sus etapas (estructura, tapado, huincha…) con el % de cada una.
+    const dePlanilla = n => n.fuente === 'planilla' ? `<small class="romboPlanilla">Según la planilla de la oficina${n.etapas?.length ? ': ' + n.etapas.map(e => `${esc(e.nombre)} ${Math.round(100 * e.pct)} %`).join(' · ') : ''}. Si marcas aquí, lo de terreno manda hasta la próxima planilla.</small>` : '';
     const nombre = b => b.tipo === 'protocolo' ? b.nombre : b.item + ' ' + b.nombre;
     const protocoloDe = id => avance?.nodos.find(n => n.id === id && n.tipo === 'protocolo');
     const previo = n => n.prereq.map(id => avance.nodos.find(x => x.id === id)).filter(Boolean).map(p => `${esc(nombre(p))}: <b>${esc(p.tipo === 'protocolo' ? p.estado : resumen(p))}</b>`).join(' · ');
@@ -96,11 +98,11 @@ export function createRombo(ctx) {
       const desplegada = ps.length === 1 || abierta === n.id, suyos = n.prereq.map(protocoloDe).filter(Boolean);
       const revision = v => v !== 'Conforme' ? '' : n.ejecucion !== 'Instalado' ? 'Primero márcala instalada.' : n.bloqueadoPor.length ? 'Falta liberar su previo: ' + n.bloqueadoPor.map(nombre).join(', ') + '.' : '';
       return `<li data-partida="${esc(n.id)}"><button type="button" class="romboPartidaCab" data-partida-abrir aria-expanded="${desplegada}"><span><b>${esc(n.item)}</b> ${esc(n.nombre)}</span><span class="romboPct">${esc(resumen(n))}</span></button>
-      ${desplegada ? `<div class="romboMando"><small>${cantidad(n)}</small>${n.bloqueadoPor.length ? `<small class="romboBloqueo">Para quedar conforme falta liberar: ${esc(n.bloqueadoPor.map(nombre).join(', '))}</small>` : ''}${suyos.map(p => `<small>Protocolo previo: <b>${esc(p.nombre)}</b> · REV1 ${esc(p.ref)}${p.prereq.length ? ' · Previo: ' + previo(p) : ''}</small>`).join('')}
+      ${desplegada ? `<div class="romboMando"><small>${cantidad(n)}</small>${dePlanilla(n)}${n.bloqueadoPor.length ? `<small class="romboBloqueo">Para quedar conforme falta liberar: ${esc(n.bloqueadoPor.map(nombre).join(', '))}</small>` : ''}${suyos.map(p => `<small>Protocolo previo: <b>${esc(p.nombre)}</b> · REV1 ${esc(p.ref)}${p.prereq.length ? ' · Previo: ' + previo(p) : ''}</small>`).join('')}
         <div class="palancas">${suyos.map(palancaProtocolo).join('')}${palancaHTML({titulo: 'Ejecución', esc, valor: n.ejecucion, opciones: EJECUCION.map(v => ({valor: v, atributo: 'data-p-ejec'}))})}${palancaHTML({titulo: 'Revisión', esc, valor: n.revision, opciones: REVISION.map(v => ({valor: v, atributo: 'data-p-rev', bloqueo: revision(v)}))})}</div>
         ${n.ejecucion === 'En ejecución' ? `<label class="romboPctCampo">% ejecutado<input type="number" inputmode="numeric" min="1" max="99" step="1" data-p-pct value="${n.pctIndicado ?? ''}" placeholder="1 a 99"></label>` : ''}</div>` : ''}</li>`;
     };
-    const ultimo = conPartidas ? (avance.registro ? `Último cambio: ${fecha(avance.registro.fecha)} · ${avance.registro.responsable}` : 'Sin registros todavía.')
+    const ultimo = conPartidas ? (avance.registro ? `Último cambio en terreno: ${fecha(avance.registro.fecha)} · ${avance.registro.responsable}` : ps.some(p => p.fuente === 'planilla') ? 'Avance según la planilla de la oficina; sin registros de terreno.' : 'Sin registros todavía.')
       : directo ? (t.stale ? 'La fuente cambió desde el último registro: vuelve a marcar.' : actual ? `Último cambio: ${fecha(actual.date)} · ${actual.responsible}` : 'Sin registros todavía.') : '';
     root.closest('#detail')?.classList.toggle('fichaEnMenu', menu);
     root.innerHTML = !menu ? `<div class="romboCaja"><p class="romboPista">Toca una parte del rombo para marcar su avance</p>${romboSVG(partes, null, esc, true)}
@@ -158,7 +160,10 @@ export function createRombo(ctx) {
     }
     const guardarNodo = (id, cambio, mensaje) => registrar(async firma => {
       const nodo = avance.nodos.find(n => n.id === id);
-      const base = traspasar && nodo?.tipo === 'partida' ? sembrarTerminacion(avance.registro, avance.nodos, ps, previa) : avance.registro;
+      const guardado = traspasar && nodo?.tipo === 'partida' ? sembrarTerminacion(avance.registro, avance.nodos, ps, previa) : avance.registro;
+      // Una partida que venía de la planilla parte de lo que mostraba (no de «sin iniciar»); solo ella pasa al registro de terreno.
+      const vigente = avance.vigente?.partidas?.[id];
+      const base = vigente?.fuente === 'planilla' ? {...(guardado || {}), partidas: {...(guardado?.partidas || {}), [id]: vigente}, protocolos: guardado?.protocolos || {}} : guardado;
       const nuevo = actualizarNodo({code: avance.code, level: nivel.id}, avance.nodos, base, id, cambio, {responsable: firma, fecha: hoy()});
       await guardarAvance(nuevo, avance.registro?.version || 0); await cargarAvance(true);
       return nodo.tipo === 'protocolo' ? `${nodo.nombre}: ${cambio.estado}.` : `${nodo.item} ${nodo.nombre}: ${Object.values(cambio).join(' ')}${'pct' in cambio ? ' %' : ''}.`;
