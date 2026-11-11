@@ -262,10 +262,10 @@ try {
       await p.waitForSelector('body.ruedaPortada #ruedaObra:not([hidden])');
       await p.click('#ruedaObra [data-tarjeta=resumen]');
       await p.waitForFunction(() => new URLSearchParams(location.search).get('nivel') === 'N03' && document.querySelector('.subVistas.conFlujo'), null, {timeout: 60000});
-      await p.click('.subVistas [data-vista=valorizado]');
-      await p.waitForFunction(() => document.querySelector('.subVistas [data-vista=valorizado]')?.getAttribute('aria-selected') === 'true');
+      await p.click('.subVistas [data-vista=recinto]');
+      await p.waitForFunction(() => document.querySelector('.subVistas [data-vista=recinto]')?.getAttribute('aria-selected') === 'true');
       await p.click('#franjaPisos [data-piso=N01]');
-      await p.waitForFunction(() => new URLSearchParams(location.search).get('nivel') === 'N01' && document.querySelector('.subVistas [data-vista=valorizado]')?.getAttribute('aria-selected') === 'true', null, {timeout: 60000});
+      await p.waitForFunction(() => new URLSearchParams(location.search).get('nivel') === 'N01' && document.querySelector('.subVistas [data-vista=recinto]')?.getAttribute('aria-selected') === 'true', null, {timeout: 60000});
       assert.equal(await p.textContent('#navPiso'), 'Piso 1');
       assert.deepEqual(await p.$$eval('#franjaPisos [data-piso]', b => b.map(x => x.dataset.piso)), ['N01', 'N03']);
     });

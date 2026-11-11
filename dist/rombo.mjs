@@ -13,6 +13,7 @@ import {progressFloors, progressFloor} from './progress-scope.mjs';
 import {cargarAvance, m2, unidad} from './avance.mjs';
 import {partidasDeTerminacion, partidasDeMuros, estadoTerminacion, actualizarNodo, sembrarTerminacion, resumenRecinto, EJECUCION, REVISION} from './avance-model.mjs';
 import {guardarAvance} from './avance-store.mjs';
+import {familiaDePartida, etapasDe, pesosDe, pctDeEtapas} from './planilla-avance-model.mjs';
 import {firmante, exigirFirma, pedirSesion} from './firma.mjs';
 import {palancaHTML, activarPalancas} from './palanca.mjs';
 
@@ -58,10 +59,10 @@ export function createRombo(ctx) {
     if (recinto !== room.code) { recinto = room.code; menu = false; abierta = null; }
     const vigente = () => root.isConnected && Number(root.dataset.romboSerial) === serial;
     const enPiso = progressFloors[nivel.id] && progressFloor(room.level) === nivel.id;
-    let model = null, snapshot = {records: []}, obs = [], avance = null;
+    let model = null, snapshot = {records: []}, obs = [], avance = null, planilla = null;
     try { [model, snapshot] = enPiso ? await Promise.all([loadPma(), readProgress()]) : [null, {records: []}]; } catch (e) { model = null; }
     try { obs = ((await ctx.observaciones?.())?.porCodigo.get(String(room.code).trim()) || []); } catch {}
-    try { avance = enPiso ? (await cargarAvance()).porCodigo.get(String(room.code).trim()) || null : null; } catch {}
+    try { const c = enPiso ? await cargarAvance() : null; avance = c?.porCodigo.get(String(room.code).trim()) || null; planilla = c?.planilla || null; } catch {}
     if (!vigente()) return;
     const actual = snapshot.records.find(r => r.key === keyFor(room.code, nivel.id));
     const todas = model ? tasksFor(model, room, nivel.id) : [], fila = model ? reportProgress(model, [room], snapshot.records, nivel.id).rows[0] : null;
@@ -88,6 +89,10 @@ export function createRombo(ctx) {
     const cantidad = n => n.cantidad != null ? `${m2(n.m2Ejecutado)} de ${m2(n.cantidad)} ${esc(unidad(n.unidad))} ejecutados · <b>${m2(n.m2Pendiente)} ${esc(unidad(n.unidad))} pendientes</b>` : 'Sin superficie por recinto en el PMA: avance en %';
     const resumen = n => (n.ejecucion === 'En ejecución' && n.pctIndicado != null ? 'En ejecución · ' + n.pctIndicado + ' %' : n.ejecucion) + (n.revision === 'Sin revisar' ? '' : ' · ' + n.revision);
     // Partida medida en la planilla de la oficina: sus etapas (estructura, tapado, huincha…) con el % de cada una.
+    // Etapas de la partida según su hoja de la planilla (dos o más: estructura, tapado, huincha…), con su % vigente.
+    const etapasNodo = n => { const fam = planilla && familiaDePartida(n.id, planilla.recintos?.[avance?.code]); if (!fam || n.id === '6.2.2') return null; const nombres = etapasDe(planilla, fam); if (nombres.length < 2) return null;
+      const marcadas = n.etapas?.length === nombres.length ? n.etapas.map(e => e.pct) : nombres.map(() => n.ejecucion === 'Instalado' ? 1 : 0); return {nombres, pct: marcadas, pesos: pesosDe(planilla, fam)}; };
+    const botonesEtapa = n => { const e = etapasNodo(n); return e ? `<div class="romboEtapas" role="group" aria-label="Etapas"><span>Etapas · toca la que quedó lista</span>${e.nombres.map((nombre, k) => `<button type="button" data-etapa="${k}" aria-pressed="${e.pct[k] >= 0.995}">${esc(nombre)}<small>${Math.round(100 * e.pct[k])} %</small></button>`).join('')}</div>` : ''; };
     const dePlanilla = n => n.fuente === 'planilla' ? `<small class="romboPlanilla">Según la planilla de la oficina${n.etapas?.length ? ': ' + n.etapas.map(e => `${esc(e.nombre)} ${Math.round(100 * e.pct)} %`).join(' · ') : ''}. Si marcas aquí, lo de terreno manda hasta la próxima planilla.</small>` : '';
     const nombre = b => b.tipo === 'protocolo' ? b.nombre : b.item + ' ' + b.nombre;
     const protocoloDe = id => avance?.nodos.find(n => n.id === id && n.tipo === 'protocolo');
@@ -98,7 +103,7 @@ export function createRombo(ctx) {
       const desplegada = ps.length === 1 || abierta === n.id, suyos = n.prereq.map(protocoloDe).filter(Boolean);
       const revision = v => v !== 'Conforme' ? '' : n.ejecucion !== 'Instalado' ? 'Primero márcala instalada.' : n.bloqueadoPor.length ? 'Falta liberar su previo: ' + n.bloqueadoPor.map(nombre).join(', ') + '.' : '';
       return `<li data-partida="${esc(n.id)}"><button type="button" class="romboPartidaCab" data-partida-abrir aria-expanded="${desplegada}"><span><b>${esc(n.item)}</b> ${esc(n.nombre)}</span><span class="romboPct">${esc(resumen(n))}</span></button>
-      ${desplegada ? `<div class="romboMando"><small>${cantidad(n)}</small>${dePlanilla(n)}${n.bloqueadoPor.length ? `<small class="romboBloqueo">Para quedar conforme falta liberar: ${esc(n.bloqueadoPor.map(nombre).join(', '))}</small>` : ''}${suyos.map(p => `<small>Protocolo previo: <b>${esc(p.nombre)}</b> · REV1 ${esc(p.ref)}${p.prereq.length ? ' · Previo: ' + previo(p) : ''}</small>`).join('')}
+      ${desplegada ? `<div class="romboMando"><small>${cantidad(n)}</small>${dePlanilla(n)}${botonesEtapa(n)}${n.bloqueadoPor.length ? `<small class="romboBloqueo">Para quedar conforme falta liberar: ${esc(n.bloqueadoPor.map(nombre).join(', '))}</small>` : ''}${suyos.map(p => `<small>Protocolo previo: <b>${esc(p.nombre)}</b> · REV1 ${esc(p.ref)}${p.prereq.length ? ' · Previo: ' + previo(p) : ''}</small>`).join('')}
         <div class="palancas">${suyos.map(palancaProtocolo).join('')}${palancaHTML({titulo: 'Ejecución', esc, valor: n.ejecucion, opciones: EJECUCION.map(v => ({valor: v, atributo: 'data-p-ejec'}))})}${palancaHTML({titulo: 'Revisión', esc, valor: n.revision, opciones: REVISION.map(v => ({valor: v, atributo: 'data-p-rev', bloqueo: revision(v)}))})}</div>
         ${n.ejecucion === 'En ejecución' ? `<label class="romboPctCampo">% ejecutado<input type="number" inputmode="numeric" min="1" max="99" step="1" data-p-pct value="${n.pctIndicado ?? ''}" placeholder="1 a 99"></label>` : ''}</div>` : ''}</li>`;
     };
@@ -182,6 +187,13 @@ export function createRombo(ctx) {
     const idDe = el => el.closest('[data-partida]').dataset.partida;
     root.querySelectorAll('[data-p-ejec]').forEach(b => b.onclick = () => { if (!sinCambio(b)) guardarNodo(idDe(b), {ejecucion: b.dataset.pEjec}); });
     root.querySelectorAll('[data-p-rev]').forEach(b => b.onclick = () => { if (!sinCambio(b)) guardarNodo(idDe(b), {revision: b.dataset.pRev}); });
+    // Una etapa lista (o de vuelta a pendiente): el % de la partida se calcula con los pesos de su hoja.
+    root.querySelectorAll('[data-etapa]').forEach(b => b.onclick = () => {
+      const id = idDe(b), n = avance.nodos.find(x => x.id === id), e = n && etapasNodo(n); if (!e) return;
+      const pct = e.pct.map((v, k) => k === +b.dataset.etapa ? (v >= 0.995 ? 0 : 1) : v), total = pctDeEtapas(pct, e.pesos);
+      const ejecucion = total >= 0.995 ? 'Instalado' : total <= 0.004 ? 'No iniciado' : 'En ejecución';
+      guardarNodo(id, {ejecucion, pct: ejecucion === 'Instalado' ? 100 : ejecucion === 'No iniciado' ? 0 : Math.min(99, Math.max(1, Math.round(total * 100))), etapas: e.nombres.map((nombre, k) => ({nombre, pct: pct[k]}))});
+    });
     root.querySelectorAll('[data-p-pct]').forEach(i => i.onchange = () => {
       const v = Math.round(Number(i.value));
       if (!i.value || !(v >= 1 && v <= 99)) { root.querySelector('.romboMensaje').textContent = 'El % en ejecución va de 1 a 99.'; return; }

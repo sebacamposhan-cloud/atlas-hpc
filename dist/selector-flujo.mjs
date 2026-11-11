@@ -94,7 +94,7 @@ export const GRUPOS = [
     checklist: {dibujo: D.lista, texto: 'Lista para ejecutar'}, attendance: {dibujo: D.personas, texto: 'Personal del día'}, execution: {dibujo: D.avance, texto: 'Cantidad ejecutada'},
     restrictions: {dibujo: D.alerta, texto: 'Lo que impide avanzar'}, evidence: {dibujo: D.foto, texto: 'Fotos y respaldos'}, review: {dibujo: D.sello, texto: 'Revisar y cerrar'}}},
   {selector: '.subVistas', boton: '[role=tab]', tamano: 'grande', cartas: {
-    recinto: {dibujo: D.rombo, texto: 'Estado de cada recinto'}, observaciones: {dibujo: D.foto, texto: 'Registradas en obra'}, valorizado: {dibujo: D.barras, texto: 'Metros por partida'},
+    recinto: {dibujo: D.rombo, texto: 'Estado de cada recinto'}, observaciones: {dibujo: D.foto, texto: 'Registradas en obra'}, partida: {dibujo: D.barras, texto: 'Etapas y m² por partida'}, valorizado: {dibujo: D.barras, texto: 'Metros por partida'},
     matriz: {dibujo: D.matriz, texto: 'Todos los protocolos'}, criticos: {dibujo: D.alerta, texto: 'Abiertos hace mucho'}}},
   {selector: '.lpPlanChooser [role=radiogroup]', boton: '[role=radio]', tamano: 'grande'},
   {selector: '.obsStateTabs', boton: 'button', tamano: 'media'},

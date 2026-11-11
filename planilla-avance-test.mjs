@@ -124,7 +124,7 @@ const firma = {responsable: 'Capataz', fecha: '2026-11-11'};
 // Terreno marca «Instalado» el cielo después de la carga: parte de lo que mostraba la planilla y manda sobre ella.
 const base = {partidas: {'6.3.3': con.vigente.partidas['6.3.3']}, protocolos: {}};
 const marcado = M.actualizarNodo({code: '8.2.3.3.9-2', level: 'N02'}, con.nodos, base, '6.3.3', {ejecucion: 'Instalado'}, {...firma, at: '2026-11-11T15:00:00.000Z'});
-assert.deepEqual([marcado.partidas['6.3.3'].ejecucion, marcado.partidas['6.3.3'].at, marcado.partidas['6.3.3'].fuente, marcado.partidas['6.3.3'].etapas], ['Instalado', '2026-11-11T15:00:00.000Z', undefined, undefined]);
+assert.deepEqual([marcado.partidas['6.3.3'].ejecucion, marcado.partidas['6.3.3'].at, marcado.partidas['6.3.3'].fuente, marcado.partidas['6.3.3'].etapas.map(e => e.pct)], ['Instalado', '2026-11-11T15:00:00.000Z', undefined, [1, 1, 1]]); // instalada: sus etapas quedan completas
 const tras = reporte([marcado], guardada);
 assert.deepEqual([nodo(tras, '6.3.3').ejecucion, nodo(tras, '6.3.3').fuente], ['Instalado', null]);
 assert.equal(nodo(tras, '6.1.4.3').fuente, 'planilla'); // las demás partidas siguen con la planilla
@@ -148,6 +148,86 @@ assert.equal(tercero.atSinHora, '2026-11-01T10:00:00.000Z');
 assert.equal(nodo(reporte([otro], guardada), '6.3.3').fuente, 'planilla');
 assert.deepEqual([nodo(reporte([otro], guardada), '6.1.4.3').pct, nodo(reporte([otro], guardada), '6.1.4.3').fuente], [20, null]);
 assert.deepEqual(M.validarRegistro(otro, con.nodos), []);
+
+// ---------- Etapas marcadas en terreno ----------
+// Marcar etapas guarda el % de cada una; cambiar solo la ejecución completa o vacía las etapas que traía.
+const conEtapas = M.actualizarNodo({code: '8.2.3.3.9-2', level: 'N02'}, con.nodos, {partidas: {}, protocolos: {}}, '6.3.3',
+  {ejecucion: 'Instalado', pct: 100, etapas: [{nombre: 'Estructura', pct: 1}, {nombre: 'Tapado', pct: 1}, {nombre: 'Huincha', pct: 7}]}, {...firma, at: '2026-11-11T17:00:00.000Z'});
+assert.deepEqual(conEtapas.partidas['6.3.3'].etapas.map(e => e.pct), [1, 1, 1], 'el % de una etapa queda entre 0 y 1');
+const sinMarcar = M.actualizarNodo({code: '8.2.3.3.9-2', level: 'N02'}, con.nodos, conEtapas, '6.3.3', {ejecucion: 'No iniciado'}, {...firma, at: '2026-11-11T18:00:00.000Z'});
+assert.deepEqual(sinMarcar.partidas['6.3.3'].etapas.map(e => e.pct), [0, 0, 0]);
+const revisada = M.actualizarNodo({code: '8.2.3.3.9-2', level: 'N02'}, con.nodos, conEtapas, '6.3.3', {revision: 'Con observaciones'}, {...firma, at: '2026-11-11T18:00:00.000Z'});
+assert.deepEqual(revisada.partidas['6.3.3'].etapas.map(e => e.pct), [1, 1, 1], 'la revisión no toca las etapas');
+assert.deepEqual(nodo(reporte([{...conEtapas, key: 'N02|8.2.3.3.9-2', code: '8.2.3.3.9-2', level: 'N02'}], guardada), '6.3.3').etapas.map(e => e.pct), [1, 1, 1]);
+
+// ---------- Avance de una partida por recinto (panel por partida y Proyectos) ----------
+assert.deepEqual(P.categoriasFamilia(['Estructura', 'Tapado', 'Huincha']), ['Sin iniciar', 'En estructura', 'En tapado', 'En huincha', 'Terminado']);
+assert.deepEqual([[0, [0, 0, 0]], [0.3, [1, 0, 0]], [0.63, [1, 0.5, 0]], [0.93, [1, 1, 0]], [1, [1, 1, 1]], [0.2, [0.3, 0, 0]]].map(([p, e]) => P.categoriaEtapas(p, e, ['Estructura', 'Tapado', 'Huincha'])),
+  ['Sin iniciar', 'En tapado', 'En tapado', 'En huincha', 'Terminado', 'En estructura']);
+assert.equal(P.categoriaEtapas(0.9, [1, 1, 1], ['Estructura', 'Tapado', 'Huincha']), 'En huincha', 'manda el total de la oficina');
+assert.equal(Object.keys(P.coloresFamilia(['A', 'B'])).length, 4);
+assert.deepEqual(P.pesosDe(guardada, 'cieloDuro'), [0.63, 0.3, 0.07], 'pesos escritos en la hoja');
+assert.deepEqual(P.pesosDe({hojas: [{familia: 'cieloModular', etapas: ['Estructura', 'Tapado']}]}, 'cieloModular'), [0.37, 0.63], 'pesos habituales de la partida');
+assert.deepEqual(P.pesosDe({hojas: [{familia: 'imper', etapas: ['A', 'B', 'C', 'D']}]}, 'imper'), [0.25, 0.25, 0.25, 0.25]);
+assert.equal(Math.round(P.pctDeEtapas([1, 1, 0], [0.63, 0.3, 0.07]) * 100), 93);
+const porCodigo = new Map([[con.code, con]]);
+let fam = P.avanceFamilia(guardada, 'cieloDuro', porCodigo);
+assert.deepEqual(fam.filas.map(f => [f.code, f.categoria, f.fuente]), [['8.2.3.3.5-1', 'Terminado', 'planilla'], ['8.2.3.3.9-2', 'En huincha', 'planilla'], ['CU.8.2.3-9', 'Sin iniciar', 'planilla']]);
+assert.deepEqual([fam.terminados, fam.pendientes, Math.round(fam.ejecutado * 10) / 10, fam.cantidad], [1, 2, 29.3, 35]);
+// Lo marcado en terreno después de la carga manda en el panel.
+const filaTerreno = reporte([{...conEtapas, key: 'N02|8.2.3.3.9-2', code: '8.2.3.3.9-2', level: 'N02', version: 1, responsable: 'Capataz', fecha: '2026-11-11', at: '2026-11-11T17:00:00.000Z'}], guardada);
+fam = P.avanceFamilia(guardada, 'cieloDuro', new Map([[filaTerreno.code, filaTerreno]]));
+assert.deepEqual(fam.filas.find(f => f.code === '8.2.3.3.9-2'), {...fam.filas.find(f => f.code === '8.2.3.3.9-2'), fuente: 'terreno', categoria: 'Terminado', pct: 1, et: [1, 1, 1]});
+// Cambios desde la carga anterior (detalle guardado con la carga).
+const conDetalle = {...guardada, resumen: {anterior: '2026-11-03T12:00:00.000Z', detalle: [['8.2.3.3.5-1', 'cieloDuro', 0.5, 1], ['8.2.3.3.9-2', 'pavimento', 0, 0.75]]}};
+assert.deepEqual([P.cambiosFamilia(conDetalle, 'cieloDuro').recintos, P.cambiosFamilia(conDetalle, 'cieloDuro').avance], [1, 10]);
+assert.equal(P.cambiosFamilia(guardada, 'cieloDuro').anterior, null);
+
+// Proyecto de la partida (enlazado a la planilla) y hoja de ruta de pendientes.
+const {proyectoPartida, unidadFamilia} = await import('./dist/proyecto-partida.mjs');
+const L = await import('./dist/levantamiento-model.mjs');
+fam = P.avanceFamilia(guardada, 'cieloDuro', porCodigo);
+const proyecto = proyectoPartida(fam, {nivel: 'N02', autor: 'Oficina', docId: 'p1', at: '2026-11-11T10:00:00.000Z'});
+assert.deepEqual([proyecto.name, proyecto.vista, proyecto.version, proyecto.filas.length, proyecto.columnas[0].enlace, proyecto.columnas[0].opciones.map(o => o.nombre)],
+  ['Avance · Cielo duro', 'c01', 1, 3, 'P:cieloDuro', ['Sin iniciar', 'En estructura', 'En tapado', 'En huincha', 'Terminado']]);
+const ruta = proyectoPartida(fam, {nivel: 'N02', autor: 'Oficina', docId: 'p2', hojaDeRuta: true, filas: fam.filas.filter(f => f.categoria !== 'Terminado'), at: '2026-11-11T10:00:00.000Z'});
+assert.deepEqual([ruta.name, ruta.filas.length, ruta.columnas.map(c => c.nombre)], ['Hoja de ruta · Cielo duro · 11-11-2026', 2, ['Estado cielo duro', 'Hoja de ruta', 'Detalle']]);
+assert.equal(ruta.filas.find(f => f.code === '8.2.3.3.9-2').valores.c03, 'Estructura 100 % · Tapado 100 % · Huincha 0 % · pendiente 0,7 m²');
+assert.deepEqual([unidadFamilia('cortafuego'), unidadFamilia('cieloDuro')], ['ml', 'm²']);
+// La columna enlazada toma la categoría vigente; sin enlace usa el valor guardado. El editor no acepta enlaces raros.
+const col = proyecto.columnas[0], filaP = proyecto.filas.find(f => f.code === '8.2.3.3.9-2');
+assert.equal(L.opcion(col, L.valor(col, filaP, (code, enlace) => enlace === 'P:cieloDuro' ? {categoria: 'Terminado'} : null).id).nombre, 'Terminado');
+assert.equal(L.valor(col, filaP, (code, enlace) => enlace === 'P:cieloDuro' ? {categoria: 'Terminado'} : null).rombo, true);
+assert.equal(L.opcion(col, L.valor(col, filaP, null).id).nombre, 'En huincha');
+assert.throws(() => L.validarLevantamiento({...proyecto, columnas: [{...col, enlace: 'P:x y'}]}), /Solo una columna/);
+assert.throws(() => L.validarLevantamiento({...proyecto, columnas: [{...col, tipo: 'texto', enlace: 'P:cieloDuro'}]}), /Solo una columna/);
+
+// ---------- Devolver la planilla con lo de terreno ----------
+const Dv = await import('./dist/planilla-avance-devolver.mjs');
+// Celdas: se reemplaza el valor (sin tocar estilo), se inserta en orden la que no existía y no se toca una fórmula.
+const xml = '<worksheet><sheetData><row r="5" spans="1:5"><c r="B5" s="3"/><c r="D5" s="4" t="s"><v>7</v></c><c r="E5"><f>B5*2</f><v>0</v></c></row><row r="6" s="2" customFormat="1"/></sheetData></worksheet>';
+assert.equal(Dv.escribirCelda(xml, 'B5', 1), '<worksheet><sheetData><row r="5" spans="1:5"><c r="B5" s="3"><v>1</v></c><c r="D5" s="4" t="s"><v>7</v></c><c r="E5"><f>B5*2</f><v>0</v></c></row><row r="6" s="2" customFormat="1"/></sheetData></worksheet>');
+assert.equal(Dv.escribirCelda(xml, 'D5', 0.5).includes('<c r="D5" s="4"><v>0.5</v></c>'), true, 'quita el tipo texto');
+assert.equal(Dv.escribirCelda(xml, 'C5', 1).includes('<c r="B5" s="3"/><c r="C5"><v>1</v></c><c r="D5"'), true, 'inserta en orden de columna');
+assert.equal(Dv.escribirCelda(xml, 'E5', 1), null, 'no toca fórmulas');
+assert.equal(Dv.escribirCelda(xml, 'A6', 1).includes('<row r="6" s="2" customFormat="1"><c r="A6"><v>1</v></c></row>'), true);
+assert.equal(Dv.escribirCelda(xml, 'A9', 1), null, 'fila inexistente');
+// Avance de terreno posterior a la carga y celdas a escribir en la hoja del cielo duro.
+const terreno = Dv.avanceDeTerreno(guardada, {filas: [filaTerreno]});
+assert.deepEqual([...terreno.porFamilia.keys()], ['cieloDuro']);
+assert.deepEqual(terreno.porFamilia.get('cieloDuro').get('8.2.3.3.9-2'), [1, 1, 1]);
+const plan = Dv.celdasDevolver([{nombre: 'CIELO DURO', aoa: cieloDuro, origen: {r: 0, c: 0}}], terreno.porFamilia, conocidos);
+assert.deepEqual(plan.celdas.map(c => [c.ref, c.valor]), [['V6', 1]], 'solo cambia la huincha de ese recinto');
+// Escritura en un libro de Excel real (SheetJS): se conserva lo demás y queda para recalcular al abrir.
+const {createRequire: requerir} = await import('node:module'), XL = requerir(import.meta.url)('./dist/vendor/xlsx.full.min.js');
+const libro = XL.utils.book_new(), hojaX = XL.utils.aoa_to_sheet(cieloDuro);
+hojaX.AB6 = {t: 'n', f: 'SUM(Y6:AA6)', v: 9.3}; XL.utils.book_append_sheet(libro, hojaX, 'CIELO DURO'); XL.utils.book_append_sheet(libro, XL.utils.aoa_to_sheet([['x']]), 'DATOS');
+const original = new Uint8Array(XL.write(libro, {type: 'array', bookType: 'xlsx'})), escrito = Dv.escribirPlanilla(XL, original, plan.celdas);
+assert.deepEqual([escrito.escritas, escrito.conFormula, escrito.sinFila], [1, 0, 0]);
+const releido = XL.read(escrito.bytes, {type: 'array', cellFormula: true});
+assert.deepEqual([releido.Sheets['CIELO DURO'].V6.v, releido.Sheets['CIELO DURO'].AB6.f, releido.Sheets['CIELO DURO'].E6.v, releido.Sheets.DATOS.A1.v], [1, 'SUM(Y6:AA6)', '8.2.3.3.9-2', 'x']);
+assert.match(new TextDecoder().decode(XL.CFB.find(XL.CFB.read(escrito.bytes, {type: 'array'}), '/xl/workbook.xml').content), /fullCalcOnLoad="1"/);
+assert.equal(Dv.escribirPlanilla(XL, original, [{hoja: 'CIELO DURO', ref: 'AB6', valor: 1}]).conFormula, 1);
 
 // ---------- Nube: el servidor acepta el tipo «planilla» y el SQL lo valida ----------
 const llamadas = [];

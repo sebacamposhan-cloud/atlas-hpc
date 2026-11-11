@@ -32,6 +32,8 @@ Fuentes, fuera del repo: carpetas «Planos N01», «Planos N02» y «Planos N03�
    `npm install --prefix <carpeta> @mlightcad/libredwg-web@0.7.17`
 2. **Extraer el dibujo.**
    `node scripts/dwg-plano/extraer.mjs <carpeta> "<Planos N0x>" n0x`
+   - **Zona sin lámina 1:50:** con `PLANTA_GENERAL="<archivo>|x0,y0,x1,y1|0.25"` se agrega una planta general (copiada en la misma carpeta) solo en esa ventana, en cm del modelo. Sus textos (1:200) se reducen a la escala de las láminas y sus puertas se reconocen por el nombre del bloque. En el N03 la zona de la A-501, que no está entre las láminas, sale de la planta general:
+     `PLANTA_GENERAL="HPC-5-ARQ-PLA-N03-A-201-RevC.dwg|-8300.2,8700,-4436.5,11560.3|0.25"` (unidad 3.2.2: 38 recintos).
    - Genera `data/n0x/laminas.json`, con huellas, encuadres, rótulos y rombos, y `data/n0x/marco.json`.
    - Genera `data/n0x/vanos.json`: el vano de cada puerta, de jamba a jamba, sobre el eje del muro.
    - Genera `data/n0x/zonas.json` si las láminas traen rellenos de color de recinto (capa `A-AREA-PATT`). Hoy solo el N02.

@@ -7,6 +7,8 @@ const texto = (v, max) => typeof v === 'string' && v.trim().length > 0 && v.leng
 const color = v => /^#[a-f0-9]{6}$/i.test(v);
 export const TIPOS_COLUMNA = {estado: 'Estado', lista: 'Lista', texto: 'Texto'};
 export const ENLACES = {PAV: 'Pavimento del rombo', CIE: 'Cielo del rombo', MUROS: 'Muros del rombo'};
+// Una columna de lista puede tomar el estado de una partida de la planilla de avance: enlace «P:<familia>».
+export const esEnlacePlanilla = e => typeof e === 'string' && /^P:[A-Za-z]{2,30}$/.test(e);
 export const MAX_COLUMNAS = 30, MAX_OPCIONES = 24, MAX_FILAS = 5000;
 export const VISTA_LISTO = 'listo';
 export const LISTO = {listo: {nombre: 'Listo para instalar', color: '#2e9e5b'}, pendiente: {nombre: 'Pendiente', color: '#c26a00'}};
@@ -34,7 +36,7 @@ export function validarLevantamiento(doc) {
   for (const c of doc.columnas) {
     if (!texto(c.id, 40) || !texto(c.nombre, 80) || !TIPOS_COLUMNA[c.tipo] || ids.has(c.id) || nombres.has(clave(c.nombre))) throw Error('Columna incompleta o repetida: ' + (c?.nombre || '?') + '.');
     ids.add(c.id); nombres.add(clave(c.nombre));
-    if (c.enlace != null && (c.tipo !== 'estado' || !ENLACES[c.enlace])) throw Error('Solo una columna de estado se enlaza al rombo.');
+    if (c.enlace != null && !(c.tipo === 'estado' && ENLACES[c.enlace]) && !(c.tipo === 'lista' && esEnlacePlanilla(c.enlace))) throw Error('Solo una columna de estado se enlaza al rombo.');
     if (c.tipo === 'texto') continue;
     if (!Array.isArray(c.opciones) || !c.opciones.length || c.opciones.length > MAX_OPCIONES) throw Error(`La columna «${c.nombre}» necesita entre 1 y ${MAX_OPCIONES} opciones.`);
     const op = new Set(), opNombres = new Set();
@@ -61,6 +63,12 @@ export function validarLevantamiento(doc) {
 // ---------- Valores, «Listo» y enlace con el rombo ----------
 // enlazado(code, enlace): estado de la terminación en el rombo ({installation}) o null si no tiene registro.
 export function valor(columna, fila, enlazado = null) {
+  // Lista enlazada a una partida de la planilla de avance: la categoría vigente del recinto (Sin iniciar, En tapado…).
+  if (esEnlacePlanilla(columna.enlace) && enlazado) {
+    const e = enlazado(fila.code, columna.enlace), o = e && columna.opciones.find(o => o.nombre === e.categoria);
+    if (o) return {id: o.id, rombo: true};
+    return {id: fila.valores[columna.id] ?? null, rombo: false};
+  }
   if (columna.enlace && enlazado) {
     const e = enlazado(fila.code, columna.enlace);
     if (e) {
@@ -84,6 +92,27 @@ export function categoria(doc, fila, enlazado = null) {
   const c = doc.columnas.find(c => c.id === doc.vista), o = c && opcion(c, valor(c, fila, enlazado).id);
   return o ? {id: o.id, nombre: o.nombre, color: o.color} : null;
 }
+// ---------- Filtro de la tabla (como Excel) ----------
+// Columnas de la tabla: código, recinto, cada columna del levantamiento y «Listo para instalar». El mismo filtro acota la
+// tabla, el plano y la exportación (PDF y PNG): así se cruza, por ejemplo, «Tipo de pavimento = 103» con el estatus.
+export function columnasTabla(doc, enlazado = null, nombreRecinto = () => '') {
+  const nombreValor = (c, f) => c.tipo === 'texto' ? f.valores[c.id] || '' : opcion(c, valor(c, f, enlazado).id)?.nombre || 'Sin dato';
+  return [{key: 'code', titulo: 'Código', valor: f => f.code}, {key: 'name', titulo: 'Recinto', valor: f => f.name || nombreRecinto(f.code) || ''},
+    ...doc.columnas.map(c => ({key: c.id, titulo: c.nombre, valor: f => nombreValor(c, f), ...(c.tipo === 'texto' ? {} : {opciones: [...c.opciones.map(o => o.nombre), 'Sin dato']})})),
+    {key: 'listo', titulo: 'Listo para instalar', valor: f => ({listo: 'Listo', pendiente: 'Pendiente'}[listo(doc, f, enlazado)] || 'Sin dato'), opciones: ['Listo', 'Pendiente', 'Sin dato']}];
+}
+export const filtroActivo = estado => Object.values(estado?.filtros || {}).some(Array.isArray);
+// Filas que pasan el filtro (todas si no hay filtro). Una columna filtrada sin valores elegidos no deja ninguna.
+export function filasFiltradas(doc, estado, enlazado = null, nombreRecinto = () => '') {
+  if (!filtroActivo(estado)) return doc.filas;
+  const cols = columnasTabla(doc, enlazado, nombreRecinto), activas = cols.filter(c => Array.isArray(estado.filtros[c.key])).map(c => [c, new Set(estado.filtros[c.key])]);
+  return doc.filas.filter(f => activas.every(([c, elegidos]) => { const v = c.valor(f); return elegidos.has(v == null || v === '' ? '(Vacías)' : String(v)); }));
+}
+// Texto del filtro para el panel y la exportación: «Tipo Pavimento: 103 - Vinílico Acústico · Estatus: No instalado».
+export function textoFiltro(doc, estado) {
+  return columnasTabla(doc).filter(c => Array.isArray(estado?.filtros?.[c.key])).map(c => `${c.titulo}: ${estado.filtros[c.key].length ? estado.filtros[c.key].join(', ') : 'ninguno'}`).join(' · ');
+}
+
 export function leyenda(doc, filas, enlazado = null) {
   const base = doc.vista === VISTA_LISTO ? Object.entries(LISTO).map(([k, v]) => ({id: k, ...v})) : doc.columnas.find(c => c.id === doc.vista).opciones.map(o => ({id: o.id, nombre: o.nombre, color: o.color}));
   const cuenta = new Map(); for (const f of filas) { const k = categoria(doc, f, enlazado)?.id ?? null; cuenta.set(k, (cuenta.get(k) || 0) + 1); }

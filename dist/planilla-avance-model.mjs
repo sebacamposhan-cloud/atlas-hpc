@@ -151,7 +151,8 @@ export function leerHoja(nombre, aoa) {
   for (const b of bs) {
     const enc = (aoa[h.fila] || []).map(norm);
     const etapas = b.cols.map((c, i) => etiqueta(nombreEtapa(aoa, h.fila, c, i, enc[c] || '')));
-    const pesos = b.totalPct >= 0 || b.totalM2 >= 0 ? null : pesosEscritos(aoa, h.fila, b.cols[0] - 2, b.cols.length) || (PESOS_FAMILIA[b.familia]?.length === b.cols.length ? PESOS_FAMILIA[b.familia] : null);
+    const pesos = pesosEscritos(aoa, h.fila, b.cols[0] - 2, b.cols.length) || (PESOS_FAMILIA[b.familia]?.length === b.cols.length ? PESOS_FAMILIA[b.familia] : null);
+    const conTotal = b.totalPct >= 0 || b.totalM2 >= 0;
     const filas = [];
     for (let i = h.fila + 1; i < aoa.length; i++) {
       const r = aoa[i] || [];
@@ -164,12 +165,12 @@ export function leerHoja(nombre, aoa) {
       let pct;
       if (b.totalPct >= 0 && num(r[b.totalPct]) != null) pct = fraccion(r[b.totalPct]);
       else if (b.totalM2 >= 0 && cant > 0 && num(r[b.totalM2]) != null) pct = Math.min(1, Math.max(0, num(r[b.totalM2]) / cant));
-      else if (pesos) pct = et.reduce((a, v, k) => a + v * pesos[k], 0);
+      else if (pesos && !conTotal) pct = et.reduce((a, v, k) => a + v * pesos[k], 0);
       else pct = et.reduce((a, v) => a + v, 0) / et.length;
       conCodigo++;
-      filas.push({codigo, cant, pct, et});
+      filas.push({codigo, cant, pct, et, fila: i});
     }
-    salida.push({familia: b.familia, etapas, pesos, filas});
+    salida.push({familia: b.familia, etapas, pesos, filas, cols: b.cols});
   }
   return {hoja: nombre, familia, bloques: salida, conCodigo, sinCodigo, ...(conCodigo ? {} : {motivo: sinCodigo ? 'La columna de código de recinto está vacía' : 'Sin filas con avance'})};
 }
@@ -281,4 +282,53 @@ export function avanceDePartida(id, fams, hojas = []) {
   const [pct, cant, et] = fams[fam], etapas = hojas.find(h => h.familia === fam && h.etapas)?.etapas || [];
   if (id === '6.2.2') { const k = etapas.findIndex(e => /pasta/i.test(e)); if (k < 0) return null; return {familia: fam, pct: et[k] ?? 0, etapas: [{nombre: etapas[k], pct: et[k] ?? 0}]}; }
   return {familia: fam, pct, cant, etapas: etapas.map((nombre, k) => ({nombre, pct: et[k] ?? 0}))};
+}
+
+// ---------- Avance de una partida de la planilla por recinto ----------
+export const SIN_INICIAR = 'Sin iniciar', TERMINADO = 'Terminado';
+const COLORES_ETAPA = ['#c26a00', '#d9a21b', '#357d9a', '#1b5e9c', '#6b4fa3', '#8a6d00'];
+export const etapasDe = (planilla, familia) => planilla?.hojas?.find(h => h.familia === familia && h.etapas)?.etapas || [];
+// Pesos de las etapas: los escritos en la hoja, los habituales de la partida o iguales.
+export function pesosDe(planilla, familia) {
+  const etapas = etapasDe(planilla, familia), h = planilla?.hojas?.find(x => x.familia === familia && x.pesos?.length === etapas.length);
+  return h?.pesos || (PESOS_FAMILIA[familia]?.length === etapas.length ? PESOS_FAMILIA[familia] : etapas.map(() => 1 / Math.max(1, etapas.length)));
+}
+// Categorías del plano para una partida: «Sin iniciar», «En <etapa>» (la primera etapa que falta) y «Terminado».
+export const categoriasFamilia = etapas => [SIN_INICIAR, ...etapas.map(e => 'En ' + e.toLowerCase()), TERMINADO];
+export function coloresFamilia(etapas) {
+  return Object.fromEntries(categoriasFamilia(etapas).map((c, i, todas) => [c, i === 0 ? '#8c8c8c' : i === todas.length - 1 ? '#2e9e5b' : COLORES_ETAPA[(i - 1) % COLORES_ETAPA.length]]));
+}
+export function categoriaEtapas(pct, et = [], etapas = []) {
+  // Manda el % total (el ponderado de la oficina): con todas las etapas listas pero el total incompleto, queda en la última.
+  if (pct >= 0.995) return TERMINADO;
+  if (pct <= 0.004 && et.every(v => v <= 0.004)) return SIN_INICIAR;
+  const k = et.findIndex(v => v < 0.995);
+  return etapas[k] ? 'En ' + etapas[k].toLowerCase() : k < 0 && etapas.length ? 'En ' + etapas[etapas.length - 1].toLowerCase() : SIN_INICIAR;
+}
+// % ponderado a partir de las etapas marcadas.
+export const pctDeEtapas = (et, pesos) => Math.min(1, Math.max(0, et.reduce((a, v, k) => a + v * (pesos[k] ?? 0), 0)));
+// Recintos de una partida con su avance vigente: lo de la planilla o, si terreno marcó después de la carga, lo de
+// terreno. filas: código → fila del reporte de avance (avance-model.mjs), con sus partidas ya combinadas.
+export function avanceFamilia(planilla, familia, filas = new Map()) {
+  const etapas = etapasDe(planilla, familia), out = [];
+  for (const [code, fams] of Object.entries(planilla?.recintos || {})) {
+    const v = fams[familia]; if (!v) continue;
+    let [pct, cant, et] = v, fuente = 'planilla';
+    const fila = filas.get(code), nodo = fila?.nodos?.find(n => n.tipo === 'partida' && n.id !== '6.2.2' && familiaDePartida(n.id, fams) === familia);
+    if (nodo?.registrada && nodo.fuente !== 'planilla') {
+      fuente = 'terreno'; pct = (nodo.pct || 0) / 100;
+      et = nodo.etapas?.length === etapas.length ? nodo.etapas.map(e => e.pct) : nodo.ejecucion === 'Instalado' ? etapas.map(() => 1) : nodo.ejecucion === 'No iniciado' ? etapas.map(() => 0) : et;
+    }
+    out.push({code, name: fila?.name || '', cant, pct, et, fuente, categoria: categoriaEtapas(pct, et, etapas), ejecutado: cant * pct, pendiente: cant * (1 - pct), partida: nodo?.id || null});
+  }
+  out.sort((a, b) => a.code.localeCompare(b.code, 'es', {numeric: true}));
+  const cantidad = out.reduce((a, f) => a + f.cant, 0), ejecutado = out.reduce((a, f) => a + f.ejecutado, 0);
+  return {familia, nombre: NOMBRE_FAMILIA[familia] || familia, etapas, categorias: categoriasFamilia(etapas), colores: coloresFamilia(etapas), filas: out,
+    cantidad, ejecutado, pct: cantidad > 0 ? ejecutado / cantidad : out.length ? out.reduce((a, f) => a + f.pct, 0) / out.length : 0,
+    terminados: out.filter(f => f.categoria === TERMINADO).length, pendientes: out.filter(f => f.categoria !== TERMINADO).length};
+}
+// Cambios desde la carga anterior para una partida (guardados con cada carga): recintos y cantidad que avanzó.
+export function cambiosFamilia(planilla, familia) {
+  const lista = (planilla?.resumen?.detalle || []).filter(c => c[1] === familia), cant = code => planilla.recintos?.[code]?.[familia]?.[1] || 0;
+  return {anterior: planilla?.resumen?.anterior || null, recintos: lista.length, avance: lista.reduce((a, [code, , antes, despues]) => a + cant(code) * ((despues ?? 0) - (antes ?? 0)), 0), lista};
 }

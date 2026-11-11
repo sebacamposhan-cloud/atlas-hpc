@@ -2,7 +2,7 @@ import {newMarking, validateMarking, addMarkedRoom, removeMarkedRoom, markingBac
 import {readMarkings, saveMarking, importMarkings} from './marking-store.mjs';
 import {createLevantamiento} from './levantamiento.mjs';
 import {marcarEliminado, esPuertas} from './marking-model.mjs';
-import {firmante} from './firma.mjs';
+import {firmante, exigirFirma} from './firma.mjs';
 
 // Proyectos de marcado: se parte de un piso, se definen estados con leyenda (por ejemplo Pendiente / En ejecución / Terminado),
 // se pintan recintos tocándolos y se guardan cortes con fecha para comparar el avance (plano de cambios y vista lado a lado).
@@ -190,10 +190,31 @@ export function createMarking(ctx) {
     showDialog(`<h2>Nuevo proyecto</h2><p>Arquitectura · ${esc(ctx.levelName)}</p><div class="markingTipos">
       <button data-tipo="marcado"><b>Marcado</b><span>Un estado por recinto, con leyenda y cortes para comparar el avance.</span></button>
       <button data-tipo="levantamiento"><b>Levantamiento</b><span>Una tabla con tus columnas (estado, lista o texto), vista «Listo para instalar», enlace con el rombo y Excel.</span></button>
+      <button data-tipo="partida"><b>Avance de una partida</b><span>Elige una partida de la planilla de avance (cielo duro, pavimento…): el plano se colorea por etapa con lo de la planilla y lo marcado en terreno, y la tabla filtra y exporta.</span></button>
       <button data-tipo="puertas"><b>Puertas</b><span>Una fila por puerta del plano de avance: modelo, llave, vano y estado (Teisa y Protego). Se marca en el plano de puertas y se exporta a Excel.</span></button></div>`);
     dialog.querySelector('[data-tipo=puertas]').onclick = () => { dialog.close(); dispatchEvent(new CustomEvent('atlas-puertas-nuevo')); };
     dialog.querySelector('[data-tipo=marcado]').onclick = () => editor();
     dialog.querySelector('[data-tipo=levantamiento]').onclick = () => lev.editor();
+    dialog.querySelector('[data-tipo=partida]').onclick = () => elegirPartida();
+  }
+  // Proyecto de una partida de la planilla de avance del piso (levantamiento enlazado a la planilla).
+  async function elegirPartida() {
+    try {
+      const [{cargarAvance}, P, {proyectoPartida, FAMILIAS_AVANCE}] = await Promise.all([import('./avance.mjs'), import('./planilla-avance-model.mjs'), import('./proyecto-partida.mjs')]);
+      const c = await cargarAvance(), familias = c.planilla ? P.totalesPorFamilia(c.planilla).filter(t => FAMILIAS_AVANCE.includes(t.familia)) : [];
+      if (!familias.length) { showDialog(`<h2>Avance de una partida</h2><p>Aún no hay planilla de avance de ${esc(ctx.levelName)}. Cárgala en Control → Avance → Avance por partida → Datos, desde el computador.</p>`); return; }
+      showDialog(`<h2>Avance de una partida</h2><p>${esc(ctx.levelName)} · planilla cargada el ${esc(new Date(c.planilla.cargada).toLocaleDateString('es-CL'))}. Elige la partida:</p>
+        <div class="markingTipos">${familias.map(t => `<button data-familia="${esc(t.familia)}"><b>${esc(t.nombre)}</b><span>${t.recintos} recintos · ${t.terminados} terminados · ${(100 * t.pct).toLocaleString('es-CL', {maximumFractionDigits: 1})} %</span></button>`).join('')}</div>`);
+      dialog.querySelectorAll('[data-familia]').forEach(b => b.onclick = async () => {
+        let autor; try { autor = exigirFirma('Inicia sesión en Atlas para crear el proyecto.'); } catch { return; }
+        try {
+          const nombres = new Map(ctx.rooms().map(r => [String(r.code).trim(), r.name])), afam = P.avanceFamilia(c.planilla, b.dataset.familia, c.porCodigo);
+          for (const f of afam.filas) f.name ||= nombres.get(f.code) || '';
+          const doc = proyectoPartida(afam, {nivel: ctx.level, autor, docId: crypto.randomUUID()});
+          await saveMarking(doc, 0); pedirPersistencia(); open(doc);
+        } catch (e) { ctx.toast('No se pudo crear el proyecto: ' + e.message); }
+      });
+    } catch (e) { ctx.toast('No se pudo leer el avance: ' + e.message); }
   }
   // Datos del proyecto y leyenda de estados (de menor a mayor avance). Con un solo estado funciona como el marcado de un color.
   function editor(doc) {

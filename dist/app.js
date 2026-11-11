@@ -1,7 +1,7 @@
 import {createSpatialSelector} from './lastplanner-spatial.mjs';
 import {createMarking} from './marking.mjs';
 import {createMarkingOverlay,datosExportacion,altoRotulo,dibujarRotulo,paginasProyecto} from './marking-overlay.mjs';
-import {enlacePiso} from './levantamiento.mjs';
+import {enlacePiso,filtroLevantamiento} from './levantamiento.mjs';
 import {createProtocolPlan} from './protocolos-plano.mjs';
 import {createPuertas} from './puertas.mjs';
 import {markingItems} from './marking-model.mjs';
@@ -231,7 +231,7 @@ $('detailResize').addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight'].i
 function bindExport(){$('exportPDF').onclick=()=>{ $('modal').close();exportAtlas();};$('exportPNG').onclick=()=>{$('modal').close();exportAtlas('png');};}
 
 // Proyecto exportable con rótulo y tabla: marcado, comparación de cortes o levantamiento (con el estado del rombo de su piso).
-async function datosProyecto(doc,comparacion){if(!doc||!(doc.tipo==='levantamiento'||Array.isArray(doc.rooms)))return null;const nombres=new Map(uniqueRooms(data.rooms).map(r=>[r.code,r.name]));return datosExportacion(doc,comparacion,doc.tipo==='levantamiento'?await enlacePiso(doc.level):null,code=>nombres.get(code)||'');}
+async function datosProyecto(doc,comparacion){if(!doc||!(doc.tipo==='levantamiento'||Array.isArray(doc.rooms)))return null;const nombres=new Map(uniqueRooms(data.rooms).map(r=>[r.code,r.name]));return datosExportacion(doc,comparacion,doc.tipo==='levantamiento'?await enlacePiso(doc.level):null,code=>nombres.get(code)||'',doc.tipo==='levantamiento'?filtroLevantamiento(doc.id):null);}
 async function addExportLegend(pdf,info=null){
  const nota='Superficies auxiliares de consulta. No certifican límites técnicos.',fuentes=data.documents.map(d=>d.code+' ('+d.revision+')').join('; ');
  if(info){await paginasProyecto(pdf,PDFLib,info,{alcance:nivel.nombre+' / '+atlas.scope.name,nota,fuentes});return;}
