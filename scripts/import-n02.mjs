@@ -136,7 +136,7 @@ const bundle = {
 
 // Bordes de los tres sectores de obra (capa opcional sobre el plano monocromático, dist/sectores-model.mjs).
 const ejesN02 = path.join(out, 'ejes.json');
-const sectores = svgSectores({ancho: W, alto: H, laminas: documents.map((d, i) => ({id: d.id, clip: caja(plano.sectores[i].r)})), ejes: fs.existsSync(ejesN02) ? JSON.parse(fs.readFileSync(ejesN02, 'utf8')) : null});
+const sectores = svgSectores({ancho: W, alto: H, limites: ambito, ejes: fs.existsSync(ejesN02) ? JSON.parse(fs.readFileSync(ejesN02, 'utf8')) : null});
 
 fs.mkdirSync(path.join(out, 'geometry'), {recursive: true});
 fs.writeFileSync(path.join(out, 'runtime.json'), JSON.stringify(bundle));

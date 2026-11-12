@@ -43,20 +43,34 @@ export function asignarSectores(rooms, alPlano, ejes) {
 }
 
 // Capa «Bordes de sectores» del plano: tres franjas con su nombre, cortadas en las mismas líneas de la regla.
-// laminas: [{id, clip: [x, y, ancho, alto]}] del atlas, solo para el ancho y el alto dibujados.
-export function svgSectores({ancho, alto, laminas, ejes}) {
-  const vacio = `<svg xmlns="http://www.w3.org/2000/svg" width="${ancho}" height="${alto}" viewBox="0 0 ${ancho} ${alto}"></svg>`;
-  const cajas = (laminas || []).filter(l => l.clip), cortes = cortesSectores(ejes);
-  if (!cajas.length || !cortes) return vacio;
-  const x0 = Math.min(...cajas.map(c => c.clip[0])), x1 = Math.max(...cajas.map(c => c.clip[0] + c.clip[2]));
-  const y0 = Math.min(...cajas.map(c => c.clip[1])), y1 = Math.max(...cajas.map(c => c.clip[1] + c.clip[3]));
+// origen, ancho y alto: el marco del plano de fondo (runtime.map); limites: [x, y, ancho, alto] del edificio (atlas.scope.bounds).
+export function svgSectores({origen = [0, 0], ancho, alto, limites, ejes}) {
+  const r = n => Math.round(n * 10) / 10, cortes = cortesSectores(ejes);
+  const marco = `<svg xmlns="http://www.w3.org/2000/svg" width="${r(ancho)}" height="${r(alto)}" viewBox="${r(origen[0])} ${r(origen[1])} ${r(ancho)} ${r(alto)}">`;
+  if (!limites || !cortes) return marco + '</svg>';
+  const [x0, y0] = limites, x1 = limites[0] + limites[2], y1 = limites[1] + limites[3];
   // Los ejes con letra son horizontales en todos los pisos: la línea de cada corte es una altura del plano.
   const altura = s => cortes.origen[1] + s * cortes.normal[1];
-  const c1 = altura(cortes.sector1), c3 = altura(cortes.sector3), r = n => Math.round(n * 10) / 10;
-  const franjas = [['1', y0, c1, 'franja de las láminas A-501 y A-505 del piso 2'], ['2', c1, c3, 'entre el sector 1 y el eje AJ'], ['3', c3, y1, 'desde el eje AJ hacia el AW']]
+  // Tamaños proporcionales al ancho del edificio, para que se lean con el piso completo en pantalla. El texto lleva un
+  // borde blanco (paint-order) para leerse sobre el dibujo, sin rellenos de color.
+  const c1 = altura(cortes.sector1), c3 = altura(cortes.sector3), letra = (x1 - x0) / 26, linea = (x1 - x0) / 220;
+  const franjas = [['1', y0, c1, 'hasta la línea de las láminas A-501 y A-505 del piso 2 (entre AD y AE)'], ['2', c1, c3, 'entre el sector 1 y el eje AJ'], ['3', c3, y1, 'desde el eje AJ hacia el AW']]
     .map(([s, a, b, nota]) => [s, Math.max(a, y0), Math.min(b, y1), nota]).filter(([, a, b]) => b - a > 1);
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${ancho}" height="${alto}" viewBox="0 0 ${ancho} ${alto}">${franjas.map(([s, a, b, nota]) =>
-    `<rect x="${r(x0)}" y="${r(a)}" width="${r(x1 - x0)}" height="${r(b - a)}" fill="none" stroke="#1f3b73" stroke-width="4" stroke-dasharray="24 12"/>` +
-    `<text x="${r(x0 + 24)}" y="${r(a + 64)}" font-family="Arial,Helvetica,sans-serif" font-size="56" font-weight="700" fill="#1f3b73">Sector ${s}</text>` +
-    `<text x="${r(x0 + 24)}" y="${r(a + 104)}" font-family="Arial,Helvetica,sans-serif" font-size="28" fill="#1f3b73">${nota}</text>`).join('')}</svg>`;
+  return marco + franjas.map(([s, a, b, nota]) =>
+    `<rect x="${r(x0)}" y="${r(a)}" width="${r(x1 - x0)}" height="${r(b - a)}" fill="none" stroke="#1f3b73" stroke-width="${r(linea)}" stroke-dasharray="${r(linea * 6)} ${r(linea * 3)}"/>` +
+    `<text x="${r(x0 + letra * 0.4)}" y="${r(a + letra * 1.1)}" font-family="Arial,Helvetica,sans-serif" font-size="${r(letra)}" font-weight="700" fill="#1f3b73" stroke="#fff" stroke-width="${r(letra / 8)}" paint-order="stroke">Sector ${s}</text>` +
+    `<text x="${r(x0 + letra * 0.4)}" y="${r(a + letra * 1.75)}" font-family="Arial,Helvetica,sans-serif" font-size="${r(letra * 0.42)}" fill="#1f3b73" stroke="#fff" stroke-width="${r(letra / 14)}" paint-order="stroke">${nota}</text>`).join('') + '</svg>';
+}
+// La capa como entrada de runtime.map.overlays, para cualquier piso: se arma con los ejes del piso al cargarlo.
+export function capaSectores({map, scope, ejes}) {
+  if (!map || !scope?.bounds || !cortesSectores(ejes)) return null;
+  const svg = svgSectores({origen: map.origin || [0, 0], ancho: map.width, alto: map.height, limites: scope.bounds, ejes});
+  return {id: 'sectores', nombre: 'Bordes de sectores', href: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg), visible: false};
+}
+// Agrega (o reemplaza) la capa de sectores en el mapa del piso. Devuelve el mapa.
+export function conCapaSectores(map, scope, ejes) {
+  const capa = capaSectores({map, scope, ejes});
+  if (!capa) return map;
+  map.overlays = [...(map.overlays || []).filter(o => o.id !== 'sectores'), capa];
+  return map;
 }

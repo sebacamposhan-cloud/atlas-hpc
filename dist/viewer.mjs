@@ -21,8 +21,11 @@ export async function prepareViewer(a,rooms,aliases,runtime){
  hit=buildHitIndex(geometry.values());
  const bg=document.getElementById('background');bg.replaceChildren();overview=document.createElementNS(ns,'image');overview.setAttribute('href',m.overview);overview.setAttribute('x',m.origin[0]);overview.setAttribute('y',m.origin[1]);overview.setAttribute('width',m.width);overview.setAttribute('height',m.height);bg.append(overview);
  for(const c of m.capas||[]){const el=document.createElementNS(ns,'image');el.dataset.capa=c.id;el.setAttribute('href',c.overview);el.setAttribute('x',m.origin[0]);el.setAttribute('y',m.origin[1]);el.setAttribute('width',m.width);el.setAttribute('height',m.height);el.style.mixBlendMode='multiply';if(!capaVisible(c.id))el.style.display='none';bg.append(el);}
- // Capas de dibujo opcionales del nivel (ejes, sectores), sobre el plano de fondo.
- for(const o of m.overlays||[]){const el=document.createElementNS(ns,'image');el.dataset.overlay=o.id;el.setAttribute('href',o.href);el.setAttribute('x',m.origin[0]);el.setAttribute('y',m.origin[1]);el.setAttribute('width',m.width);el.setAttribute('height',m.height);if(o.visible===false)el.style.display='none';bg.append(el);}
+ // Capas de dibujo opcionales del nivel (bordes de láminas y de sectores): van en su propio grupo, encima de las teselas de
+ // detalle (que son opacas y las tapaban) y debajo de los contornos de los recintos.
+ let sobre=document.getElementById('capasSobre');if(!sobre){sobre=document.createElementNS(ns,'g');sobre.id='capasSobre';sobre.setAttribute('pointer-events','none');document.getElementById('detailImage').after(sobre);}
+ sobre.setAttribute('clip-path','url(#scopeClip)');sobre.replaceChildren();
+ for(const o of m.overlays||[]){const el=document.createElementNS(ns,'image');el.dataset.overlay=o.id;el.setAttribute('href',o.href);el.setAttribute('x',m.origin[0]);el.setAttribute('y',m.origin[1]);el.setAttribute('width',m.width);el.setAttribute('height',m.height);if(o.visible===false)el.style.display='none';sobre.append(el);}
  tiles=document.getElementById('detailImage');tiles.replaceChildren();grupos=new Map();teselasCapa=new Map();
  const baseTiles=document.createElementNS(ns,'g');tiles.append(baseTiles);grupos.set('',baseTiles);
  for(const c of m.capas||[]){const g=document.createElementNS(ns,'g');g.dataset.capa=c.id;g.style.mixBlendMode='multiply';tiles.append(g);grupos.set(c.id,g);teselasCapa.set(c.id,new Set(Object.entries(c.teselas||{}).flatMap(([z,keys])=>keys.map(k=>z+'_'+k))));}
@@ -40,7 +43,7 @@ export function mostrarCapa(id,visible){capasVisibles[id]=visible;try{localStora
  document.querySelectorAll('#background [data-capa="'+CSS.escape(id)+'"]').forEach(el=>el.style.display=visible?'':'none');
  if(!visible)for(const [key,el] of activeTiles)if(key.startsWith(id+':')){el.remove();activeTiles.delete(key);}
  updateTiles();}
-export function showOverlay(id,visible){const el=document.querySelector('#background [data-overlay="'+CSS.escape(id)+'"]');if(el)el.style.display=visible?'':'none';}
+export function showOverlay(id,visible){const el=document.querySelector('#capasSobre [data-overlay="'+CSS.escape(id)+'"]');if(el)el.style.display=visible?'':'none';}
 export function updateTiles(){clearTimeout(tileTimer);tileTimer=0;if(!map||!svg||!map.levels.length)return;flushView();const rect=svg.getBoundingClientRect(),matrix=svg.getScreenCTM();if(!matrix)return;const inv=matrix.inverse(),a=new DOMPoint(rect.left,rect.top).matrixTransform(inv),b=new DOMPoint(rect.right,rect.bottom).matrixTransform(inv),density=matrix.a*Math.min(2,devicePixelRatio||1);if(density<.32){for(const g of grupos.values())g.replaceChildren();activeTiles.clear();return;}
  const level=map.levels.find(l=>l.scale>=density)||map.levels.at(-1),span=map.tileSize/level.scale,[ox,oy]=map.origin;
  const left=Math.max(0,Math.floor((a.x-ox)/span)),top=Math.max(0,Math.floor((a.y-oy)/span)),right=Math.min(level.columns-1,Math.floor((b.x-ox)/span)),bottom=Math.min(level.rows-1,Math.floor((b.y-oy)/span));const desired=new Set();
