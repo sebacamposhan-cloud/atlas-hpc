@@ -5,7 +5,7 @@ import * as P from './dist/puertas-model.mjs';
 import {MODELOS, FUENTE, modeloDe, descripcionDe, vanoDe} from './dist/puertas-modelos.mjs';
 import {validateMarking, esPuertas, markingItems} from './dist/marking-model.mjs';
 
-const catalogo = P.validarCatalogo(JSON.parse(fs.readFileSync('dist/n02/puertas.json', 'utf8')));
+const crudo = JSON.parse(fs.readFileSync('dist/n02/puertas.json', 'utf8')), catalogo = P.validarCatalogo(crudo);
 const {puertas, resumen, fuente, calce} = catalogo;
 
 // Fuente y calce con el plano: los ejes del DWG caen sobre los del plano con menos de 10 unidades de diferencia (~18 cm).
@@ -25,7 +25,23 @@ assert.equal(resumen.circulos, 280);
 const conEstado = puertas.filter(p => p.estado !== 'sin_registro');
 assert.ok(conEstado.length >= 250, 'puertas con estado');
 assert.ok(puertas.filter(p => p.vano).length >= 100, 'números de vano conservados');
-assert.equal(puertas.filter(p => p.pletinas).length, 17, 'las 17 pletinas de Protego');
+// El DWG trae 17 pletinas de Protego (10 como estado). «Pletinas instaladas» ya no es un estado: esas puertas quedan
+// «No instaladas» y las capas originales se conservan en p.capas.
+assert.equal(crudo.puertas.filter(p => p.pletinas).length, 17);
+const conPletinas = crudo.puertas.filter(p => p.estado === 'pletinas').map(p => p.id);
+assert.equal(conPletinas.length, 10);
+assert.ok(conPletinas.every(id => puertas.find(p => p.id === id).estado === 'no_instalada'));
+assert.ok(!('pletinas' in P.ESTADOS) && !P.ORDEN.includes('pletinas') && puertas.every(p => !('pletinas' in p) && p.estado !== 'pletinas'));
+assert.ok(puertas.filter(p => conPletinas.includes(p.id)).every(p => p.capas.includes('PROTEGO - PLETINAS')));
+assert.equal(crudo.puertas.find(p => p.estado === 'pletinas').estado, 'pletinas', 'no cambia el catálogo recibido');
+// Contratista: solo el nombre. Grupsa = PI05a y Retec = PAS3 (el plano no los marca); los demás modelos sin asignar quedan sin contratista.
+const de = c => puertas.filter(p => p.contratista === c);
+assert.deepEqual([de('Teisa').length, de('Protego').length, de('Grupsa').length, de('Retec').length, puertas.filter(p => !p.contratista).length], [142, 118, 52, 9, 73]);
+assert.ok(de('Grupsa').every(p => p.modelo === 'PI05a') && de('Retec').every(p => p.modelo === 'PAS3'));
+assert.ok(!puertas.some(p => !p.contratista && ['PI05a', 'PAS3'].includes(p.modelo)));
+assert.deepEqual(Object.values(P.CONTRATISTAS), ['Teisa', 'Protego', 'Grupsa', 'Retec']);
+assert.equal(P.filtrar(puertas, {contratista: P.SIN_CONTRATISTA}).length, 73);
+assert.ok(P.filtrar(puertas, {texto: 'grupsa'}).length === 52);
 for (const p of puertas) {
   assert.ok(Number.isFinite(p.x) && Number.isFinite(p.y), p.id);
   if (p.contratista) assert.ok(P.CONTRATISTAS[p.contratista], p.id);
@@ -48,13 +64,25 @@ assert.ok(esPuertas(doc));
 assert.equal(validateMarking(doc), doc, 'Proyectos valida el tipo puertas');
 assert.deepEqual(markingItems(doc), [], 'no pinta recintos');
 const protego = puertas.find(p => p.contratista === 'Protego'), teisa = puertas.find(p => p.contratista === 'Teisa');
-assert.deepEqual(P.opcionesDe(protego), ['no_instalada', 'pletinas', 'instalada']);
+assert.deepEqual(P.opcionesDe(protego), ['no_instalada', 'instalada']);
+assert.deepEqual(P.opcionesDe(de('Grupsa')[0]), ['no_instalada', 'instalada']);
 assert.deepEqual(P.opcionesDe(teisa), ['no_instalada', 'instalada', 'revisar']);
 assert.equal(P.estadoDe(protego, doc), protego.estado, 'sin cambios manda el plano');
 const marcado = P.marcarPuerta(doc, protego, 'instalada', {autor: 'Persona de ejemplo', at: '2026-11-09T13:00:00.000Z'});
 assert.equal(P.estadoDe(protego, marcado), 'instalada');
 assert.equal(P.cambioDe(protego, marcado).autor, 'Persona de ejemplo');
 assert.throws(() => P.marcarPuerta(doc, teisa, 'pletinas', {autor: 'Persona de ejemplo'}), /no aplica/);
+assert.throws(() => P.marcarPuerta(doc, protego, 'revisar', {autor: 'Persona de ejemplo'}), /no aplica/, '«Revisar» es solo de Teisa');
+// Lo marcado como pletinas antes en terreno se lee «No instalada» y el proyecto sigue siendo válido.
+const antiguo = {...doc, filas: {[protego.id]: {estado: 'pletinas', at: doc.createdAt, autor: 'a'}}};
+assert.equal(validateMarking(antiguo), antiguo);
+assert.equal(P.estadoDe(protego, antiguo), 'no_instalada');
+// Pincel: deshacer deja la puerta como estaba (con su marca anterior o siguiendo al plano).
+const pintado = P.marcarPuerta(antiguo, protego, 'instalada', {autor: 'b', at: '2026-11-11T10:00:00.000Z'});
+assert.deepEqual(P.restaurarPuerta(pintado, protego.id, antiguo.filas[protego.id]).filas, antiguo.filas);
+assert.deepEqual(P.restaurarPuerta(pintado, protego.id, null).filas, {});
+const panel = fs.readFileSync('dist/puertas.mjs', 'utf8');
+assert.ok(panel.includes('data-puertas-pincel') && panel.includes('data-puertas-deshacer') && panel.includes('data-puertas-listo') && panel.includes('if (pincel) pintarPuerta(cerca.p)'));
 assert.throws(() => P.marcarPuerta(doc, teisa, 'instalada', {autor: ''}), /Inicia sesión/);
 assert.throws(() => validateMarking({...doc, filas: {x: {estado: 'sin_registro', at: doc.createdAt, autor: 'a'}}}), /no se puede marcar/);
 assert.throws(() => validateMarking({...doc, fuente: {archivo: 'x', sha256: 'no'}}), /Fuente/);
@@ -69,7 +97,9 @@ assert.ok(P.filtrar(puertas, {estados: new Set(['instalada'])}).every(p => p.est
 const filas = P.filasExcel(catalogo, marcado);
 assert.equal(filas.length, puertas.length);
 assert.ok(filas.every(f => f.length === P.ENCABEZADOS.length));
-assert.ok(filas.some(f => f[1] === protego.llave && f[7] === 'Instalada' && f[11] === 'Persona de ejemplo'));
+assert.ok(filas.some(f => f[1] === protego.llave && f[7] === 'Instalada' && f[10] === 'Persona de ejemplo'));
+assert.ok(!P.ENCABEZADOS.includes('Pletinas'));
+assert.ok(filas.some(f => f[2] === 'PI05a' && f[6] === 'Grupsa'));
 
 // Descripción del modelo, de la planilla de vanos de puertas (HPC-ARQ-FDI-224 Rev03): 72 modelos con sus variantes.
 assert.equal(FUENTE.lamina, 'HPC-ARQ-FDI-224'); assert.equal(MODELOS.size, 72);

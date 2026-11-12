@@ -61,3 +61,17 @@ body.escritorio.puertasOpen:not(.floorHome) .toolbar { right: calc(var(--detail)
 .puertasLista button[aria-current=true] { border-left: 4px solid var(--g-azul, #0f5499); padding-left: 6px; }
 .puertasLista span { display: grid; gap: 1px; }
 .puertasLista small { font-size: 12px; color: #262626; }
+
+/* Pincel: estado elegido y aviso con Deshacer y Listo (puertas.mjs). Bordes, sin rellenos de color salvo el elegido. */
+.puertaPincel { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 0; }
+.puertaPincel span { font-weight: 700; margin-right: 4px; }
+.puertaPincel button { flex: 1 1 96px; min-height: 44px; padding: 4px 8px; border: 2px solid var(--c); background: #fff; color: #000; font-weight: 700; }
+.puertaPincel button[aria-pressed=true] { background: var(--c); color: #fff; }
+.puertaPincelActivo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0 10px; padding: 8px 10px; border: 2px solid #000; }
+.puertaPincelActivo p { flex: 1 1 180px; display: grid; gap: 2px; margin: 0; }
+.puertaPincelActivo small { font-size: 12px; color: #262626; }
+.puertaPincelActivo button { min-height: 40px; padding: 4px 12px; border: 1px solid var(--g-marca, #1b2a56); background: #fff; color: #000; font-weight: 700; }
+.puertaPincelActivo button.primary { background: var(--g-azul, #0f5499); border-color: var(--g-azul, #0f5499); color: #fff; }
+.puertaPincelActivo button:disabled { opacity: .45; }
+.puertaContratistas { flex-wrap: wrap; }
+.puertaContratistas button { flex: 1 1 auto; padding: 4px 10px; }

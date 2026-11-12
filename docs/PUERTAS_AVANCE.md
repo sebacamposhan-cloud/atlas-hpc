@@ -18,9 +18,12 @@
   - Sin proyecto abierto se ven los estados tal como vienen en el plano de avance.
   - «Marcar en terreno» abre el Proyecto tipo Puertas del piso, o lo crea si no existe. Pide sesión iniciada.
   - Con el proyecto abierto, cada puerta se marca con los estados de su contratista:
-    - **Teisa** (puertas de madera): No instalada, Instalada, Revisar.
-    - **Protego** (cortafuego y metálicas): No instalada, Pletinas instaladas, Instalada.
+    - **Teisa:** No instalada, Instalada, Revisar.
+    - **Protego, Grupsa, Retec y sin contratista:** No instalada, Instalada.
+  - **Pincel:** se elige un estado en la fila «Pincel» y se tocan puertas en el plano o en la lista, sin límite. «Deshacer» revierte la última y «Listo» suelta el pincel. Una puerta que no admite ese estado se salta con un aviso («Revisar» es solo de Teisa).
   - Se guarda quién y cuándo. Lo no tocado sigue al plano.
+- **Sin «Pletinas instaladas» (11-11-2026):** las pletinas no son la puerta. Lo que el plano marca con la capa `PROTEGO - PLETINAS` y lo marcado así antes en terreno se lee «No instalada». El catálogo conserva la capa original en `capas`.
+- **Contratista:** solo el nombre. Teisa y Protego vienen de las capas del plano; Grupsa (modelo PI05a) y Retec (PAS3) se asignan por modelo (`CONTRATISTA_POR_MODELO` en `dist/puertas-model.mjs`). Los demás modelos quedan «Sin contratista» hasta tener la información. En el N02: Teisa 142, Protego 118, Grupsa 52, Retec 9, sin contratista 73.
 - **Proyectos:**
   - «+ Nuevo proyecto → Puertas» crea el proyecto del piso.
   - En «Mis proyectos», abrir un proyecto de puertas lleva al plano de puertas.
@@ -37,7 +40,7 @@
 | `REVISAR TEISA` (rojo) | Teisa | Revisar | círculo alrededor del rótulo |
 | `PROTEGO - INSTALADA` (verde) | Protego | Instalada | círculo con número de vano |
 | `PROTEGO PUERTAS` (rojo) | Protego | No instalada | círculo con número de vano |
-| `PROTEGO - PLETINAS` (magenta) | Protego | Pletinas instaladas | círculo con número de vano |
+| `PROTEGO - PLETINAS` (magenta) | Protego | No instalada (antes «Pletinas instaladas») | círculo con número de vano |
 
 En la capa `A-DOOR-IDEN` cada puerta trae un rótulo con el modelo, el ancho («0,90 m») y el código de partida («6.6.1.3.4»), y su llave a unos 50 cm.
 
