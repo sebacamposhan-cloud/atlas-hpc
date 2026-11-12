@@ -65,6 +65,10 @@ Los edificios complementarios no entran en Atlas (`dist/obra-complementaria.mjs`
 
 «Avance real vs programado» muestra el % acumulado de partidas instaladas por semana. La línea real sale de la fecha del registro de cada recinto. Atlas todavía no tiene un programa de obra cargado, así que por ahora solo se dibuja la línea real.
 
+## Exportar el plano filtrado
+
+El cuadro de la leyenda del plano (Filtros y capas) tiene «Exportar»: un PDF del piso con los recintos que cumplen el filtro iluminados con su color y el resto atenuado, el rótulo con el piso y la simbología, y hojas con el filtro aplicado y el listado de recintos (`dist/filtro-exportar.mjs`). El plano se recorta al ámbito del piso, igual que la exportación de proyectos.
+
 ## Proyectos
 
 Crear un proyecto pide solo el nombre y para qué es (lista desplegable con «Personalizado»). El autor es quien inició sesión, también al guardar un corte. El nombre y el propósito se editan después en «Datos y leyenda» (marcado) o «Datos y columnas» (levantamiento y avance de partida); en un levantamiento cambian en todos sus pisos.
