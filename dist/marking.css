@@ -174,3 +174,7 @@ body.markingOpen .toolbar, body.markingOpen main > footer { right: 332px; }
   .pincel button { min-height: 30px; font-size: 10px; padding: 3px 7px; }
   .ladoALado { grid-template-columns: 1fr; }
 }
+
+/* Datos del proyecto: autor automático y propósito personalizado (proyecto-datos.mjs). */
+.propositoAutor { margin: 4px 0 14px; font-size: 13px; color: #4a4a4a; }
+.propositoOtro[hidden] { display: none; }

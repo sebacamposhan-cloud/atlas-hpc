@@ -3,6 +3,7 @@ import {readMarkings, saveMarking, importMarkings} from './marking-store.mjs';
 import {createLevantamiento} from './levantamiento.mjs';
 import {marcarEliminado, esPuertas} from './marking-model.mjs';
 import {firmante, exigirFirma} from './firma.mjs';
+import {propositoHTML, conectarProposito, leerProposito} from './proyecto-datos.mjs';
 
 // Proyectos de marcado: se parte de un piso, se definen estados con leyenda (por ejemplo Pendiente / En ejecución / Terminado),
 // se pintan recintos tocándolos y se guardan cortes con fecha para comparar el avance (plano de cambios y vista lado a lado).
@@ -106,7 +107,7 @@ export function createMarking(ctx) {
     } else {
       cuerpo = `${varios ? `<div class="pincel" role="radiogroup" aria-label="Pintar con">${active.estados.map(e => `<button role="radio" data-pincel="${esc(e.id)}" aria-checked="${pincel === e.id}"><i style="background:${e.color}"></i>${esc(e.nombre)}</button>`).join('')}</div>` : ''}
         <p class="markingInstruction">${varios ? 'Elige un estado y toca los recintos para pintarlos.' : 'Toca un recinto para pintarlo y numerarlo.'}</p>
-        <div class="markingScroll"><details class="markingMetadata"><summary>${esc(active.author)} · Propósito</summary><p>${esc(active.purpose)}</p><small>Creado: ${esc(new Date(active.createdAt).toLocaleDateString('es-CL'))}</small></details>
+        <div class="markingScroll"><details class="markingMetadata"><summary>Datos del proyecto</summary><p>Para qué es: ${esc(active.purpose)}</p><small>Creado por ${esc(active.author)} el ${esc(new Date(active.createdAt).toLocaleDateString('es-CL'))}</small></details>
         ${varios ? `<table class="estadosTabla"><tbody>${active.estados.map(e => `<tr><td><i style="background:${e.color}"></i>${esc(e.nombre)}</td><td>${cuenta(e.id).length}</td><td><small>${formatoM2(suma(cuenta(e.id)))}</small></td></tr>`).join('')}</tbody></table>` : ''}
         <section class="cortes"><div><h3>Cortes de avance</h3><button id="nuevoCorte" data-wait-save>Guardar corte</button></div><p>Guarda un corte al cierre de cada período (por ejemplo, cada mes) para compararlo después.</p>
           ${active.cortes.length ? `<ul>${[...active.cortes].reverse().map(c => `<li><span><b>${esc(fecha(c.fecha))} · ${esc(c.nombre)}</b><small>${c.rooms.length} recintos · ${esc(c.autor)}</small></span><button data-comparar-corte="${esc(c.id)}">Comparar</button><button data-borrar-corte="${esc(c.id)}" data-wait-save aria-label="Eliminar corte ${esc(c.nombre)}">${borrar === c.id ? '¿Eliminar?' : '×'}</button></li>`).join('')}</ul>` : ''}</section>
@@ -224,14 +225,15 @@ export function createMarking(ctx) {
     let estados = structuredClone(doc ? upgradeMarking(doc).estados : [{...PLANTILLAS.marcado[0]}]);
     showDialog(`<h2>${doc ? 'Datos y leyenda del proyecto' : 'Nuevo proyecto'}</h2><p>Arquitectura · ${esc(ctx.levelName)}</p><form id="markingForm">
       <label>Nombre del proyecto *<input name="name" required maxlength="160" value="${esc(doc?.name || '')}" placeholder="Ej.: Pisos vinílicos instalados"></label>
-      <label>Quién lo realizó *<input name="author" required maxlength="160" value="${esc(doc?.author || '')}"></label>
-      <label>Para qué es el plano *<textarea name="purpose" required maxlength="2000" rows="3">${esc(doc?.purpose || '')}</textarea></label>
+      ${propositoHTML(doc?.purpose, esc, 'Avance de obra')}
+      <p class="propositoAutor">${doc ? 'Creado por ' + esc(doc.author) : 'Queda registrado a nombre de quien inició sesión' + (firmante() ? ': ' + esc(firmante()) : '')}.</p>
       <fieldset class="estadosEditor"><legend>Estados del proyecto <small>(de menor a mayor avance)</small></legend>
         <div class="plantillas"><span>Plantilla:</span><button type="button" data-plantilla="marcado">Un color</button><button type="button" data-plantilla="avance">Pendiente · En ejecución · Terminado</button></div>
         <ol class="estadosLista"></ol><button type="button" id="agregarEstado">+ Agregar estado</button></fieldset>
       <label class="colorUnico">Color del marcado<input name="color" type="color" value="${esc(doc?.color || '#2874c7')}"></label>
       <button type="submit" class="primary">${doc ? 'Guardar datos' : 'Crear y comenzar a pintar'}</button></form>`);
     const form = dialog.querySelector('form'), lista = form.querySelector('.estadosLista');
+    conectarProposito(form);
     const leer = () => { lista.querySelectorAll('li').forEach((li, i) => { estados[i].nombre = li.querySelector('[name=estadoNombre]').value; estados[i].color = li.querySelector('[name=estadoColor]').value; }); };
     function pintar() {
       lista.innerHTML = estados.map((e, i) => `<li><input type="color" name="estadoColor" value="${esc(e.color)}" aria-label="Color de ${esc(e.nombre)}"><input name="estadoNombre" maxlength="40" required value="${esc(e.nombre)}" aria-label="Nombre del estado ${i + 1}">
@@ -247,9 +249,11 @@ export function createMarking(ctx) {
     form.onsubmit = async event => {
       event.preventDefault(); leer(); const button = form.querySelector('[type=submit]');
       const values = Object.fromEntries(new FormData(form));
-      for (const field of ['name', 'author', 'purpose']) values[field] = values[field].trim();
+      let author, purpose;
+      try { purpose = leerProposito(values); author = doc ? doc.author : exigirFirma('Inicia sesión en Atlas para crear el proyecto.'); }
+      catch (failure) { dialog.querySelector('#markingError').textContent = failure.message; return; }
       const leyenda = estados.map(e => ({...e, nombre: e.nombre.trim(), ...(estados.length === 1 ? {color: values.color} : {})}));
-      const datos = {name: values.name, author: values.author, purpose: values.purpose, color: estados.length === 1 ? values.color : leyenda[0].color};
+      const datos = {name: values.name.trim(), author, purpose, color: estados.length === 1 ? values.color : leyenda[0].color};
       pending++; button.disabled = true;
       try {
         const next = doc ? {...setEstados(doc, leyenda), ...datos, version: doc.version + 1, updatedAt: new Date().toISOString()} : newMarking({...datos, estados: leyenda}, ctx.level, crypto.randomUUID());
@@ -263,11 +267,10 @@ export function createMarking(ctx) {
     showDialog(`<h2>Guardar corte de avance</h2><p>Guarda los estados de hoy de los ${active.rooms.length} recintos marcados de «${esc(active.name)}». Después podrás compararlo con otro corte o con el estado actual.</p><form id="corteForm">
       <label>Nombre del corte *<input name="nombre" required maxlength="120" value="Cierre ${esc(mes)}"></label>
       <label>Fecha del corte *<input name="fecha" type="date" required value="${hoy()}"></label>
-      <label>Quién lo registra *<input name="autor" required maxlength="160" value="${esc(active.author)}"></label>
       <button type="submit" class="primary">Guardar corte</button></form>`);
     dialog.querySelector('form').onsubmit = async event => {
       event.preventDefault(); const v = Object.fromEntries(new FormData(event.target));
-      try { addCut(active, {id: 'validacion', nombre: v.nombre, fecha: v.fecha, autor: v.autor}); } catch (failure) { dialog.querySelector('#markingError').textContent = failure.message; return; }
+      try { v.autor = exigirFirma('Inicia sesión en Atlas para guardar el corte.'); addCut(active, {id: 'validacion', nombre: v.nombre, fecha: v.fecha, autor: v.autor}); } catch (failure) { dialog.querySelector('#markingError').textContent = failure.message; return; }
       dialog.close(); await change(doc => addCut(doc, {id: crypto.randomUUID(), nombre: v.nombre, fecha: v.fecha, autor: v.autor})); ctx.toast('Corte guardado.');
     };
   }

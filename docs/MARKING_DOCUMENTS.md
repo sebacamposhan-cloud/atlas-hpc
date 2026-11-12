@@ -9,7 +9,7 @@
 ## Uso
 
 1. Abrir el piso y Arquitectura; pulsar **Proyectos → Nuevo proyecto**.
-2. Completar nombre del documento, quién lo realizó y para qué es el plano. Los tres campos son obligatorios, incluso después de quitar espacios. Elegir color.
+2. Escribir el nombre del proyecto y elegir para qué es en la lista (Avance de obra, Levantamiento, Producción, Calidad y observaciones, Comparación entre cortes, Entrega y recepción o Personalizado, que abre una línea para escribirlo). El autor no se escribe: queda la cuenta con que se inició sesión en Atlas (`dist/proyecto-datos.mjs`). Elegir color.
 3. Tocar el interior de un recinto. Se pinta sobre el contorno existente y aparece en la lista como «1. código», con su nombre original. Otro toque sobre el mismo recinto no lo duplica ni lo borra.
 4. La lista queda a la derecha en escritorio y en una franja debajo del plano en móvil. Pulsar una fila acerca ese recinto; × quita su marcado. Los números de los demás no cambian y los números retirados no se reutilizan.
 5. **Datos y color** edita los datos del documento; **Documentos** permite abrir otro o crear uno nuevo. Cerrar el documento retira los colores de esa vista, pero conserva el documento guardado.

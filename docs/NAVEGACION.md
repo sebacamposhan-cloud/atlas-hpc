@@ -57,11 +57,17 @@ Cada partida se despliega en palancas, en el orden en que se avanza: protocolo p
 
 ## Avance por recinto
 
-«Ver datos de ejemplo» muestra el panel completo con una muestra para gerencia. Se calcula al vuelo: no se guarda, no se sincroniza y no toca los registros reales. Mientras está activa, el panel lo avisa y no se puede marcar avance.
+Avance muestra solo registros reales: los datos de ejemplo se quitaron de esta sección (11-11-2026). Last Planner conserva los suyos por ahora.
 
-«Avance real vs programado» muestra el % acumulado de partidas instaladas por semana. La línea real sale de la fecha del registro de cada recinto. Atlas todavía no tiene un programa de obra cargado, así que la línea programada solo aparece en los datos de ejemplo.
+El gráfico «Trabajo pendiente por sector» usa los tres sectores de obra: 1 (láminas A-501 y A-505), 2 (el medio) y 3 (ejes AJ a AW). Ver `dist/sectores-model.mjs`.
+
+«Avance real vs programado» muestra el % acumulado de partidas instaladas por semana. La línea real sale de la fecha del registro de cada recinto. Atlas todavía no tiene un programa de obra cargado, así que por ahora solo se dibuja la línea real.
 
 ## Proyectos
+
+Crear un proyecto pide solo el nombre y para qué es (lista desplegable con «Personalizado»). El autor es quien inició sesión, también al guardar un corte. El nombre y el propósito se editan después en «Datos y leyenda» (marcado) o «Datos y columnas» (levantamiento y avance de partida); en un levantamiento cambian en todos sus pisos.
+
+Herramientas en Control cierra el panel abierto (por ejemplo, Avance) y deja el plano con Proyectos y Más.
 
 Eliminar un proyecto pide confirmar con un segundo toque. La nube no borra registros: el proyecto queda marcado como eliminado y desaparece de las listas de todos los equipos.
 
