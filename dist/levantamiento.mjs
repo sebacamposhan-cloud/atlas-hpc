@@ -12,6 +12,8 @@ import {avanceFamilia} from './planilla-avance-model.mjs';
 import {reporteAvance, partidasDeTerminacion, partidasDeMuros, estadoTerminacion} from './avance-model.mjs';
 import {readMarkings, saveMarking} from './marking-store.mjs';
 import {marcarRecinto, deshacerRecinto} from './avance-marcar.mjs';
+import {exigirFirma, firmante} from './firma.mjs';
+import {propositoHTML, conectarProposito, leerProposito} from './proyecto-datos.mjs';
 
 const NOMBRE_PISO = {'N-1': 'Nivel −1', N01: 'Nivel 1', N02: 'Nivel 2', N03: 'Nivel 3'};
 // Filtro de la tabla de cada levantamiento (por documento): se recuerda en el equipo y acota tabla, plano y exportación.
@@ -141,7 +143,7 @@ export function createLevantamiento(ctx) {
     const filaLeyenda = e => { const activo = pincel && e.id === pincel.op, nombre = `<i style="background:${e.color};${e.id ? '' : 'border:1px solid #8c8c8c'}"></i>${esc(e.nombre)}`;
       return `<tr class="${activo ? 'levPincelActivo' : ''}"><td>${colPincel && e.id ? `<button type="button" class="levPincelBoton" data-lev-pincel="${esc(e.id)}" aria-pressed="${!!activo}">${nombre}</button>` : nombre}</td><td>${e.n}</td></tr>`; };
     panel.innerHTML = `<div class="markingHead"><div><small>LEVANTAMIENTO · ${esc(ctx.levelName)}</small><h2>${esc(doc.name)}</h2></div><button id="closeMarking" data-wait-save aria-label="Cerrar proyecto">×</button></div>
-      <div class="markingActions"><button id="markingDocuments" data-wait-save>Proyectos</button><button id="levColumnas" data-wait-save>Columnas</button><button id="levTabla">Tabla</button><button id="levExcel" data-wait-save>Excel</button></div>
+      <div class="markingActions"><button id="markingDocuments" data-wait-save>Proyectos</button><button id="levColumnas" data-wait-save>Datos y columnas</button><button id="levTabla">Tabla</button><button id="levExcel" data-wait-save>Excel</button></div>
       <div class="markingScroll">
         ${conFiltro ? `<p class="levFiltro"><span><b>Filtro de la tabla:</b> ${esc(L.textoFiltro(doc, filtroLevantamiento(doc.id)))}. El plano y la exportación muestran ${visibles.length} de ${doc.filas.length} recintos.</span><button type="button" id="levQuitarFiltro">Quitar filtro</button></p>` : ''}
         <label class="levVista">Colorear plano por<select id="levVista">${vistas.map(([k, t]) => `<option value="${esc(k)}" ${doc.vista === k ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
@@ -239,25 +241,26 @@ export function createLevantamiento(ctx) {
     return leer;
   }
 
-  // Nuevo levantamiento (con la plantilla de artefactos) o columnas de uno existente. Las columnas cambian en todos los
-  // pisos del mismo levantamiento.
+  // Nuevo levantamiento (con la plantilla de artefactos) o datos y columnas de uno existente. Las columnas cambian en todos los
+  // pisos del mismo levantamiento, igual que el nombre y el propósito. El autor es quien inició sesión.
   function editor(doc = null) {
     let cols = structuredClone(doc ? doc.columnas : PLANTILLA_ARTEFACTOS()), leer;
     const pintar = v => { cols = v; const caja = ctx.dialog.querySelector('#levCols'); caja.innerHTML = columnasHTML(cols); leer = conectarColumnas(caja, cols, pintar); };
-    ctx.showDialog(`<h2>${doc ? 'Columnas del levantamiento' : 'Nuevo levantamiento'}</h2><p>${doc ? 'Los cambios se aplican en todos los pisos de este levantamiento. Quitar una columna u opción borra sus valores.' : 'Arquitectura · ' + esc(ctx.levelName) + '. Parte con las columnas de un levantamiento de artefactos; cámbialas a gusto.'}</p>
-      <form id="markingForm">${doc ? '' : `<label>Nombre *<input name="name" required maxlength="160" placeholder="Ej.: Recintos listos para artefactos"></label><label>Quién lo realiza *<input name="author" required maxlength="160"></label><label>Para qué es *<textarea name="purpose" required maxlength="2000" rows="2"></textarea></label>`}
+    ctx.showDialog(`<h2>${doc ? 'Datos y columnas del proyecto' : 'Nuevo levantamiento'}</h2><p>${doc ? 'Los cambios se aplican en todos los pisos de este proyecto. Quitar una columna u opción borra sus valores.' : 'Arquitectura · ' + esc(ctx.levelName) + '. Parte con las columnas de un levantamiento de artefactos; cámbialas a gusto.'}</p>
+      <form id="markingForm"><label>Nombre del proyecto *<input name="name" required maxlength="160" value="${esc(doc?.name || '')}" placeholder="Ej.: Recintos listos para artefactos"></label>${propositoHTML(doc?.purpose, esc, 'Levantamiento')}<p class="propositoAutor">${doc ? 'Creado por ' + esc(doc.author) : 'Queda registrado a nombre de quien inició sesión' + (firmante() ? ': ' + esc(firmante()) : '')}.</p>
       <fieldset class="estadosEditor"><legend>Columnas <small>(el código y el nombre del recinto van siempre)</small></legend><div id="levCols"></div></fieldset>
       <button type="submit" class="primary">${doc ? 'Guardar columnas' : 'Crear y comenzar'}</button></form>`);
-    pintar(cols);
+    pintar(cols); conectarProposito(ctx.dialog.querySelector('form'));
     ctx.dialog.querySelector('form').onsubmit = async e => {
       e.preventDefault(); const v = Object.fromEntries(new FormData(e.target)), columnas = leer(), error = ctx.dialog.querySelector('#markingError');
       try {
+        const name = String(v.name || '').trim(), purpose = leerProposito(v), datos = d => ({...L.fijarColumnas(d, columnas), name, purpose});
         if (doc) {
-          await ctx.change(d => L.fijarColumnas(d, columnas));
-          for (const otro of (await readMarkings()).filter(o => doc.grupo && o.grupo === doc.grupo && o.id !== doc.id && !o.eliminado)) await saveMarking({...L.fijarColumnas(otro, columnas), version: otro.version + 1, updatedAt: new Date().toISOString()}, otro.version);
+          await ctx.change(datos);
+          for (const otro of (await readMarkings()).filter(o => doc.grupo && o.grupo === doc.grupo && o.id !== doc.id && !o.eliminado)) await saveMarking({...datos(otro), version: otro.version + 1, updatedAt: new Date().toISOString()}, otro.version);
           ctx.dialog.close();
         } else {
-          const nuevo = L.nuevoLevantamiento({name: v.name, author: v.author, purpose: v.purpose, columnas, grupo: crypto.randomUUID()}, ctx.level, crypto.randomUUID());
+          const nuevo = L.nuevoLevantamiento({name, author: exigirFirma('Inicia sesión en Atlas para crear el proyecto.'), purpose, columnas, grupo: crypto.randomUUID()}, ctx.level, crypto.randomUUID());
           await saveMarking(nuevo, 0); ctx.abrir(nuevo);
         }
       } catch (failure) { error.textContent = failure.message; }
@@ -285,16 +288,16 @@ export function createLevantamiento(ctx) {
     const pintar = v => { cols = v; const caja = ctx.dialog.querySelector('#levCols'); caja.innerHTML = columnasHTML(cols); leer = conectarColumnas(caja, cols, pintar); };
     ctx.showDialog(`<h2>Importar levantamiento</h2><p>${esc(file.name)} · hoja «${esc(propuesta.hoja)}» · ${propuesta.filas} filas · código en «${esc(propuesta.encabezado[propuesta.indiceCodigo])}»${propuesta.indiceNivel >= 0 ? ` · nivel en «${esc(propuesta.encabezado[propuesta.indiceNivel])}»` : ''}.</p>
       <p>${propuesta.indiceNivel >= 0 ? 'Se crea un levantamiento por piso: ' + pisos.filter(([, p]) => p).map(([n, p]) => `${esc(n)} → ${NOMBRE_PISO[p]}`).join(' · ') + '.' : 'Sin columna Nivel: todo va a ' + esc(ctx.levelName) + '.'}${desconocidos.length ? ` <b>No se reconocen los niveles ${desconocidos.map(esc).join(', ')}: esas filas no se importan.</b>` : ''}</p>
-      <form id="markingForm"><label>Nombre *<input name="name" required maxlength="160" value="${esc(file.name.replace(/\.[^.]+$/, ''))}"></label><label>Quién lo realiza *<input name="author" required maxlength="160"></label>
-      <label>Para qué es *<textarea name="purpose" required maxlength="2000" rows="2">Levantamiento importado de ${esc(file.name)}</textarea></label>
+      <form id="markingForm"><label>Nombre del proyecto *<input name="name" required maxlength="160" value="${esc(file.name.replace(/\.[^.]+$/, ''))}"></label>
+      ${propositoHTML('Levantamiento', esc)}
       <fieldset class="estadosEditor"><legend>Columnas propuestas <small>(revisa nombres, tipos, colores y el estado final)</small></legend><div id="levCols"></div></fieldset>
       <button type="submit" class="primary">Importar</button></form>`);
-    pintar(cols);
+    pintar(cols); conectarProposito(ctx.dialog.querySelector('form'));
     ctx.dialog.querySelector('form').onsubmit = async e => {
       e.preventDefault(); const v = Object.fromEntries(new FormData(e.target)), error = ctx.dialog.querySelector('#markingError'), boton = e.target.querySelector('[type=submit]');
       try {
-        boton.disabled = true; const grupo = crypto.randomUUID();
-        const {docs, avisos} = L.construir({...propuesta, columnas: leer()}, {name: v.name.trim(), author: v.author.trim(), purpose: v.purpose.trim(), pisoActual: ctx.level, grupo, ids: propuesta.niveles.map(() => crypto.randomUUID())});
+        boton.disabled = true; const grupo = crypto.randomUUID(), purpose = leerProposito(v), author = exigirFirma('Inicia sesión en Atlas para importar el levantamiento.');
+        const {docs, avisos} = L.construir({...propuesta, columnas: leer()}, {name: v.name.trim(), author, purpose, pisoActual: ctx.level, grupo, ids: propuesta.niveles.map(() => crypto.randomUUID())});
         if (!docs.length) throw Error('Ninguna fila se pudo importar. ' + (avisos[0] || 'Revisa las columnas Nivel y Código de recinto.'));
         for (const d of docs) await saveMarking(d, 0);
         const aqui = docs.find(d => d.level === ctx.level);

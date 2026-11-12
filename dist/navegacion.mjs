@@ -177,6 +177,8 @@ export function createNavegacion(ctx) {
     cerrarRueda();
     if (t.panel === 'lastplanner') ctx.lastplanner?.verPiso(pisoVisto);
     if (t.panel) { ui.abrirPanel(t.panel, t.vista); return; }
+    // Una tarjeta sin panel (Herramientas, Filtros, Puertas…) trabaja sobre el plano: si había un panel abierto, se cierra.
+    if (ui.panelAbierto()) ui.show('map');
     if (t.accion === 'puertas') { cerrarHoja(); ctx.cerrarModos(); ctx.abrirPuertas?.(); return; }
     if (t.accion === 'impermeabilizacion') { cerrarHoja(); ctx.cerrarModos(); ctx.abrirImpermeabilizacion?.(); return; }
     if (t.accion) { cerrarHoja(); ctx.cerrarModos(); ui.openFilters(); return; }

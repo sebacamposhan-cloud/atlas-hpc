@@ -1,38 +1,8 @@
-// Curva de avance: % acumulado de partidas instaladas por semana, real contra programado. También genera la muestra para
-// gerencia de Avance por recinto: se calcula al vuelo, nunca se guarda ni se sincroniza, y no se mezcla con los registros reales.
-const SEMANA = 7 * 864e5, ATRAS = 13, ADELANTE = 7;
+// Curva de avance: % acumulado de partidas instaladas por semana, real contra programado. Solo con registros reales.
+const SEMANA = 7 * 864e5;
 const fecha = d => Date.parse(d + 'T12:00:00Z'), dia = t => new Date(t).toISOString().slice(0, 10);
-const suave = t => t * t * (3 - 2 * t), uno = v => Math.round(v * 10) / 10;
+const uno = v => Math.round(v * 10) / 10;
 const corta = d => d.slice(8, 10) + '/' + d.slice(5, 7);
-// Azar fijo por texto: la muestra sale igual cada vez.
-function azar(texto) { let h = 2166136261; for (const c of texto) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967296; }
-
-// Registros de muestra: los primeros sectores van más avanzados, y muros antes que cielo y pavimento.
-export function registrosEjemplo({rooms, tareas, level, sha, hoy}) {
-  const sectores = [...new Set(rooms.map(r => r.sector || ''))].sort(), lugar = new Map(sectores.map((s, i) => [s, sectores.length > 1 ? i / (sectores.length - 1) : .5]));
-  return rooms.flatMap(room => {
-    const tasks = tareas(room).filter(t => t.applicable && t.documented);
-    if (!tasks.length) return [];
-    const base = .95 - .6 * lugar.get(room.sector || ''), code = String(room.code).trim();
-    const estado = t => {
-      const familia = /^M/.test(t.field) ? 'M' : t.field, r = azar(code + familia), q = azar(code + familia + 'revision'), p = base * (familia === 'M' ? 1 : familia === 'CIE' ? .85 : .7);
-      const installation = r < p * .7 ? 'Instalado' : r < p * .9 ? 'En proceso' : 'No iniciado';
-      return {code: t.code, installation, quality: installation !== 'Instalado' ? 'Sin revisar' : q < .72 ? 'Conforme' : q < .9 ? 'Sin revisar' : 'Con observaciones', missing: '', notes: ''};
-    };
-    return [{key: level + '|' + code, code, level, sourceSha: sha, version: 1, responsible: 'Datos de ejemplo', date: hoy, sourceReviewed: false, notes: '', fields: Object.fromEntries(tasks.map(t => [t.field, estado(t)])), at: hoy + 'T12:00:00.000Z'}];
-  });
-}
-
-// Curva de muestra: el real termina hoy en el % de la muestra y va algo por debajo del programado, que sigue hasta 100 %.
-export function curvaEjemplo(pctReal, hoy) {
-  const h = fecha(hoy), n = ATRAS + ADELANTE, enHoy = ATRAS / n, meta = Math.min(100, pctReal + 7), base = suave(enHoy);
-  const programado = t => t <= enHoy ? meta * suave(t) / base : meta + (100 - meta) * (suave(t) - base) / (1 - base);
-  return Array.from({length: n + 1}, (_, i) => {
-    const t = i / n, pasado = i <= ATRAS;
-    return {fecha: dia(h + (i - ATRAS) * SEMANA), programado: uno(programado(t)), real: pasado ? uno(pctReal * Math.pow(suave(t) / base, 1.25)) : null};
-  });
-}
-
 // Curva real: partidas instaladas acumuladas según la fecha del registro de su recinto. Sin programa cargado, no hay línea programada.
 export function curvaReal(fechas, total, hoy) {
   if (!total || !fechas.length) return [];
@@ -58,9 +28,9 @@ function textoResumen(r) {
 }
 
 // Tarjeta del gráfico. Se dibuja al ancho real, para que los textos no se achiquen en el celular.
-export function montarCurva(root, {puntos, ejemplo = false}, esc) {
+export function montarCurva(root, {puntos}, esc) {
   const r = resumenCurva(puntos), hayPrograma = puntos.some(p => p.programado !== null);
-  root.innerHTML = `<div class="chartHeading"><h3>Avance real vs programado</h3><span>% de partidas instaladas</span></div>${!r ? '<p class="chartEmpty">El gráfico aparecerá cuando se instalen partidas registradas.</p>' : `<div class="curvaResumen">${textoResumen(r)}</div>${hayPrograma ? '<div class="curvaLeyenda"><span><i class="real"></i>Real</span><span><i class="programado"></i>Programado</span></div>' : '<p class="chartSubtitle">Falta cargar el programa de obra para compararlo.</p>'}<div class="curvaGrafico"><div class="curvaDato" hidden></div></div><details class="obsCerradas curvaTabla"><summary>Ver tabla</summary><div class="tableScroll"><table><thead><tr><th>Semana</th><th>Programado</th><th>Real</th></tr></thead><tbody>${puntos.map(p => `<tr><td>${esc(corta(p.fecha))}</td><td>${pct(p.programado)}</td><td>${pct(p.real)}</td></tr>`).join('')}</tbody></table></div></details>`}${ejemplo ? '<p class="chartSubtitle">Curva de ejemplo: no corresponde a la obra.</p>' : ''}`;
+  root.innerHTML = `<div class="chartHeading"><h3>Avance real vs programado</h3><span>% de partidas instaladas</span></div>${!r ? '<p class="chartEmpty">El gráfico aparecerá cuando se instalen partidas registradas.</p>' : `<div class="curvaResumen">${textoResumen(r)}</div>${hayPrograma ? '<div class="curvaLeyenda"><span><i class="real"></i>Real</span><span><i class="programado"></i>Programado</span></div>' : '<p class="chartSubtitle">Falta cargar el programa de obra para compararlo.</p>'}<div class="curvaGrafico"><div class="curvaDato" hidden></div></div><details class="obsCerradas curvaTabla"><summary>Ver tabla</summary><div class="tableScroll"><table><thead><tr><th>Semana</th><th>Programado</th><th>Real</th></tr></thead><tbody>${puntos.map(p => `<tr><td>${esc(corta(p.fecha))}</td><td>${pct(p.programado)}</td><td>${pct(p.real)}</td></tr>`).join('')}</tbody></table></div></details>`}`;
   if (!r) return;
   const zona = root.querySelector('.curvaGrafico'), dato = zona.querySelector('.curvaDato');
   const pintar = () => {

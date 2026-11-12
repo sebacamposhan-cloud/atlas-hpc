@@ -57,11 +57,19 @@ Cada partida se despliega en palancas, en el orden en que se avanza: protocolo p
 
 ## Avance por recinto
 
-«Ver datos de ejemplo» muestra el panel completo con una muestra para gerencia. Se calcula al vuelo: no se guarda, no se sincroniza y no toca los registros reales. Mientras está activa, el panel lo avisa y no se puede marcar avance.
+Avance muestra solo registros reales: los datos de ejemplo se quitaron de esta sección (11-11-2026). Last Planner conserva los suyos por ahora.
 
-«Avance real vs programado» muestra el % acumulado de partidas instaladas por semana. La línea real sale de la fecha del registro de cada recinto. Atlas todavía no tiene un programa de obra cargado, así que la línea programada solo aparece en los datos de ejemplo.
+El gráfico «Trabajo pendiente por sector» usa los tres sectores de obra, definidos sobre el piso 2: 1 (láminas A-501 y A-505), 2 (el medio) y 3 (desde el eje AJ hacia el AW). Como las láminas no se numeran igual en los demás pisos, la regla se mide con los ejes de cada piso: el sector 1 termina entre AD y AE, a 0,7376 del tramo (el borde de las láminas 501 y 505 del piso 2), y el sector 3 empieza en AJ. Cada recinto se ubica por su rótulo. En el piso 2 el resultado coincide recinto por recinto con las láminas. La capa «Bordes de sectores» (Filtros y capas) se arma al cargar cada piso con esas mismas líneas, sobre el plano y debajo de los recintos. Ver `dist/sectores-model.mjs`.
+
+Los edificios complementarios no entran en Atlas (`dist/obra-complementaria.mjs`): en el −1, el anexo al oriente del eje A12 (lámina A-509, ampliaciones A-511/A-512 y el borde oriente de las láminas 505 a 507, 66 recintos); en el piso 1, la lámina A-510 (casetas de guardia y central de gases clínicos, 5 recintos), y el plano del piso 1 se acota a las láminas A-501 a A-508. Se quitan al cargar el piso y al leer las planillas de avance.
+
+«Avance real vs programado» muestra el % acumulado de partidas instaladas por semana. La línea real sale de la fecha del registro de cada recinto. Atlas todavía no tiene un programa de obra cargado, así que por ahora solo se dibuja la línea real.
 
 ## Proyectos
+
+Crear un proyecto pide solo el nombre y para qué es (lista desplegable con «Personalizado»). El autor es quien inició sesión, también al guardar un corte. El nombre y el propósito se editan después en «Datos y leyenda» (marcado) o «Datos y columnas» (levantamiento y avance de partida); en un levantamiento cambian en todos sus pisos.
+
+Herramientas en Control cierra el panel abierto (por ejemplo, Avance) y deja el plano con Proyectos y Más.
 
 Eliminar un proyecto pide confirmar con un segundo toque. La nube no borra registros: el proyecto queda marcado como eliminado y desaparece de las listas de todos los equipos.
 

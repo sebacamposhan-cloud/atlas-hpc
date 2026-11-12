@@ -3,6 +3,7 @@
 // Las hojas no comparten columnas entre pisos: el lector busca por nombre la columna del código de recinto, las de %
 // por etapa, la cantidad y el total. Solo guarda código, cantidad, % total y % por etapa; la planilla no se guarda.
 // Las hojas sin código de recinto (tabiquería por tabique, luminarias…) quedan fuera, con su motivo.
+import {esObraComplementaria} from './obra-complementaria.mjs';
 
 export const SCHEMA = 1;
 // Familias de partidas de la planilla. «hoja»: nombre de hoja (sin tildes, en mayúsculas). «nombre»: lo que se muestra.
@@ -203,6 +204,8 @@ export function leerPlanilla(hojas, {conocidos, archivo = '', nivel = null} = {}
       for (const f of b.filas) {
         const code = normalizarCodigo(f.codigo, conocidos);
         if (!code) { fuera.set(f.codigo, (fuera.get(f.codigo) || new Set()).add(b.familia)); continue; }
+        // El anexo oriente del −1 es obra complementaria: no entra en Atlas (obra-complementaria.mjs).
+        if (esObraComplementaria(code)) continue;
         const g = grupo.get(code) || {cant: 0, pond: 0, pesoEt: b.etapas.map(() => 0), n: 0, suma: 0, sumaEt: b.etapas.map(() => 0)};
         g.n++; g.suma += f.pct; f.et.forEach((v, k) => { g.sumaEt[k] += v; g.pesoEt[k] += v * f.cant; });
         g.cant += f.cant; g.pond += f.pct * f.cant; grupo.set(code, g);
@@ -247,7 +250,7 @@ export function compararPlanillas(anterior, nueva) {
 // Resumen por familia: recintos, cantidad total y ejecutada, % ponderado.
 export function totalesPorFamilia(planilla) {
   const t = {};
-  for (const fams of Object.values(planilla?.recintos || {})) for (const [fam, [pct, cant]] of Object.entries(fams)) {
+  for (const [code, fams] of Object.entries(planilla?.recintos || {})) if (!esObraComplementaria(code)) for (const [fam, [pct, cant]] of Object.entries(fams)) {
     const x = t[fam] ||= {familia: fam, nombre: NOMBRE_FAMILIA[fam] || fam, recintos: 0, terminados: 0, cantidad: 0, ejecutado: 0, suma: 0};
     x.recintos++; if (pct >= 0.995) x.terminados++; x.cantidad += cant; x.ejecutado += cant * pct; x.suma += pct;
   }
@@ -332,6 +335,7 @@ export function avanceVigente(planilla, code, familia, fila = null) {
 export function avanceFamilia(planilla, familia, filas = new Map()) {
   const etapas = etapasDe(planilla, familia), requiere = REQUIERE_PARA_TERMINAR[familia], out = [];
   for (const code of Object.keys(planilla?.recintos || {})) {
+    if (esObraComplementaria(code)) continue;
     const fila = filas.get(code), a = avanceVigente(planilla, code, familia, fila); if (!a) continue;
     const {pct, cant, et, fuente, nodo} = a;
     // Lo que además pide «Terminado» (pintura de cielos), si la planilla lo mide en este recinto.

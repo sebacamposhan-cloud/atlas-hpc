@@ -6,6 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {svgSectores} from '../dist/sectores-model.mjs';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dist = path.join(root, 'dist'), out = path.join(dist, 'n02');
 const plano = JSON.parse(fs.readFileSync(path.join(root, 'data/n02/plano.json'), 'utf8'));
@@ -133,9 +134,9 @@ const bundle = {
   selection: {schema: 1, rooms: seleccion}
 };
 
-// Bordes de sectores (capa opcional sobre el plano monocromático).
-const esc = s => String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
-const sectores = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">${plano.sectores.map(s => { const [x, y, w, h] = caja(s.r); return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="#386c84" stroke-width="2" stroke-dasharray="10 6"/><text x="${x + 8}" y="${y + 20}" font-family="Arial,Helvetica,sans-serif" font-size="16" font-weight="700" fill="#386c84">${esc(s.nombre)} · ${esc(s.id)}</text>`; }).join('')}</svg>`;
+// Bordes de los tres sectores de obra (capa opcional sobre el plano monocromático, dist/sectores-model.mjs).
+const ejesN02 = path.join(out, 'ejes.json');
+const sectores = svgSectores({ancho: W, alto: H, limites: ambito, ejes: fs.existsSync(ejesN02) ? JSON.parse(fs.readFileSync(ejesN02, 'utf8')) : null});
 
 fs.mkdirSync(path.join(out, 'geometry'), {recursive: true});
 fs.writeFileSync(path.join(out, 'runtime.json'), JSON.stringify(bundle));
