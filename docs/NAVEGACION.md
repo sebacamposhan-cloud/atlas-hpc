@@ -59,7 +59,7 @@ Cada partida se despliega en palancas, en el orden en que se avanza: protocolo p
 
 Avance muestra solo registros reales: los datos de ejemplo se quitaron de esta sección (11-11-2026). Last Planner conserva los suyos por ahora.
 
-El gráfico «Trabajo pendiente por sector» usa los tres sectores de obra: 1 (láminas A-501 y A-505), 2 (el medio) y 3 (ejes AJ a AW). Ver `dist/sectores-model.mjs`.
+El gráfico «Trabajo pendiente por sector» usa los tres sectores de obra, definidos sobre el piso 2: 1 (láminas A-501 y A-505), 2 (el medio) y 3 (desde el eje AJ hacia el AW). Como las láminas no se numeran igual en los demás pisos, la regla se mide con los ejes de cada piso: el sector 1 termina entre AD y AE, a 0,7376 del tramo (el borde de las láminas 501 y 505 del piso 2), y el sector 3 empieza en AJ. Cada recinto se ubica por su rótulo. En el piso 2 el resultado coincide recinto por recinto con las láminas. En el −1, el anexo al oriente del eje A12 (lámina 509 y ampliaciones A-511/A-512) se corta con las mismas franjas. Ver `dist/sectores-model.mjs`.
 
 «Avance real vs programado» muestra el % acumulado de partidas instaladas por semana. La línea real sale de la fecha del registro de cada recinto. Atlas todavía no tiene un programa de obra cargado, así que por ahora solo se dibuja la línea real.
 

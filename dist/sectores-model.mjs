@@ -1,60 +1,60 @@
 // Sectores de obra que usa jefatura de producción (11-11-2026): tres por piso, en vez de una letra por lámina.
+// La regla se definió sobre el piso 2:
 // - Sector 1: lo dibujado en las láminas A-501 y A-505 (la franja superior de la planta).
-// - Sector 3: desde el eje AJ en adelante (AJ a AW, incluido lo que sobresale después del AW).
+// - Sector 3: desde el eje AJ hacia el AW, incluido lo que sobresale después del AW.
 // - Sector 2: lo que queda entre ambos.
-// El recinto se ubica por el centro de su contorno (o por su rótulo si no tiene contorno), en coordenadas del plano,
-// las mismas de dist/<piso>/ejes.json. Sin DOM: lo prueba sectores-test.mjs.
+// Las láminas no se numeran igual en los demás pisos, así que la regla se lleva a los ejes, que son los mismos en todo el
+// edificio: el borde inferior de las láminas 501 y 505 del piso 2 cae entre los ejes AD y AE, a 0,7376 del tramo
+// (342,9 de 464,9 unidades, unos 6,05 m bajo el AD). En el piso 2 esta línea reproduce exactamente las láminas.
+// Cada recinto se ubica por su rótulo, en coordenadas del plano (las de dist/<piso>/ejes.json): un recinto partido por
+// la línea de corte queda en la lámina donde se rotuló, igual que en el plano.
+// Sin DOM: lo prueba sectores-test.mjs.
 export const SECTORES = ['1', '2', '3'];
 export const nombreSector = s => s ? 'Sector ' + s : 'Sin sector';
-const LAMINA_SECTOR_1 = /(?:^|-a?)50[15](?:-|$)/i;
-export const enLaminaSector1 = documento => LAMINA_SECTOR_1.test(String(documento || ''));
+export const TRAMO_SECTOR_1 = 342.9 / 464.9;
 
-// Línea del eje AJ y su normal orientada hacia el AW (o hacia el siguiente eje con letra si el AW no está).
-export function lineaSector3(ejes) {
+// Posición sobre la grilla con letras (AA → AW): distancia a lo largo de la normal de los ejes con letra.
+export function cortesSectores(ejes) {
   const lista = ejes?.ejes || [], buscar = id => lista.find(e => e.id === id);
-  const aj = buscar('AJ'), hacia = buscar('AW') || buscar('AK');
-  if (!aj || !hacia) return null;
+  const aa = buscar('AA'), ad = buscar('AD'), ae = buscar('AE'), aj = buscar('AJ'), aw = buscar('AW') || buscar('AK');
+  if (!aa || !ad || !ae || !aj || !aw) return null;
   const dx = aj.b[0] - aj.a[0], dy = aj.b[1] - aj.a[1], L = Math.hypot(dx, dy);
   if (!L) return null;
-  let n = [-dy / L, dx / L];
-  if ((hacia.a[0] - aj.a[0]) * n[0] + (hacia.a[1] - aj.a[1]) * n[1] < 0) n = [-n[0], -n[1]];
-  return {origen: aj.a, normal: n};
+  let normal = [-dy / L, dx / L];
+  const sobre = p => (p[0] - aa.a[0]) * normal[0] + (p[1] - aa.a[1]) * normal[1];
+  if (sobre(aw.a) < sobre(aa.a)) normal = [-normal[0], -normal[1]];
+  const medir = p => (p[0] - aa.a[0]) * normal[0] + (p[1] - aa.a[1]) * normal[1];
+  const enAD = medir(ad.a), enAE = medir(ae.a);
+  return {medir, normal, origen: aa.a, sector1: enAD + TRAMO_SECTOR_1 * (enAE - enAD), sector3: medir(aj.a)};
 }
 
-// Punto representativo del recinto ya llevado al plano (world de app.js): centro del contorno o rótulo.
-export function puntoRecinto(r) {
-  const pts = r?.polygon?.length > 2 ? r.polygon : null;
-  if (!pts) return r?.position || null;
-  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
-  return [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2];
+export function sectorObra(punto, cortes) {
+  if (!cortes || !punto) return '';
+  const s = cortes.medir(punto);
+  return s < cortes.sector1 ? '1' : s >= cortes.sector3 ? '3' : '2';
 }
 
-export function sectorObra(documento, punto, linea) {
-  if (enLaminaSector1(documento)) return '1';
-  if (linea && punto) {
-    const d = (punto[0] - linea.origen[0]) * linea.normal[0] + (punto[1] - linea.origen[1]) * linea.normal[1];
-    if (d >= 0) return '3';
-  }
-  return '2';
-}
-
-// Reescribe r.sector de cada recinto. alPlano(r) devuelve el recinto en coordenadas del plano.
-// Sin grilla de ejes solo se distingue el sector 1; lo demás queda en el 2.
+// Reescribe r.sector de cada recinto. alPlano(r) devuelve el recinto en coordenadas del plano (world de app.js).
+// Sin grilla de ejes el recinto queda sin sector: no se inventa uno.
 export function asignarSectores(rooms, alPlano, ejes) {
-  const linea = lineaSector3(ejes);
-  for (const r of rooms || []) r.sector = sectorObra(r.document_id, puntoRecinto(alPlano(r)), linea);
+  const cortes = cortesSectores(ejes);
+  for (const r of rooms || []) r.sector = sectorObra(alPlano(r)?.position, cortes);
   return rooms;
 }
 
-// Capa «Bordes de sectores» del plano: tres franjas con su nombre. laminas: [{id, clip: [x, y, ancho, alto]}] del atlas.
+// Capa «Bordes de sectores» del plano: tres franjas con su nombre, cortadas en las mismas líneas de la regla.
+// laminas: [{id, clip: [x, y, ancho, alto]}] del atlas, solo para el ancho y el alto dibujados.
 export function svgSectores({ancho, alto, laminas, ejes}) {
-  const cajas = (laminas || []).filter(l => l.clip).map(l => ({id: l.id, x0: l.clip[0], y0: l.clip[1], x1: l.clip[0] + l.clip[2], y1: l.clip[1] + l.clip[3]}));
-  if (!cajas.length) return `<svg xmlns="http://www.w3.org/2000/svg" width="${ancho}" height="${alto}" viewBox="0 0 ${ancho} ${alto}"></svg>`;
-  const x0 = Math.min(...cajas.map(c => c.x0)), x1 = Math.max(...cajas.map(c => c.x1)), y0 = Math.min(...cajas.map(c => c.y0)), y1 = Math.max(...cajas.map(c => c.y1));
-  const uno = cajas.filter(c => enLaminaSector1(c.id)), corte1 = uno.length ? Math.max(...uno.map(c => c.y1)) : y0;
-  const aj = (ejes?.ejes || []).find(e => e.id === 'AJ'), corte3 = aj ? (aj.a[1] + aj.b[1]) / 2 : y1;
-  const r = n => Math.round(n * 10) / 10;
-  const franjas = [['1', y0, corte1, 'láminas A-501 y A-505'], ['2', corte1, corte3, 'entre el sector 1 y el eje AJ'], ['3', corte3, y1, 'ejes AJ a AW']].filter(([, a, b]) => b - a > 1);
+  const vacio = `<svg xmlns="http://www.w3.org/2000/svg" width="${ancho}" height="${alto}" viewBox="0 0 ${ancho} ${alto}"></svg>`;
+  const cajas = (laminas || []).filter(l => l.clip), cortes = cortesSectores(ejes);
+  if (!cajas.length || !cortes) return vacio;
+  const x0 = Math.min(...cajas.map(c => c.clip[0])), x1 = Math.max(...cajas.map(c => c.clip[0] + c.clip[2]));
+  const y0 = Math.min(...cajas.map(c => c.clip[1])), y1 = Math.max(...cajas.map(c => c.clip[1] + c.clip[3]));
+  // Los ejes con letra son horizontales en todos los pisos: la línea de cada corte es una altura del plano.
+  const altura = s => cortes.origen[1] + s * cortes.normal[1];
+  const c1 = altura(cortes.sector1), c3 = altura(cortes.sector3), r = n => Math.round(n * 10) / 10;
+  const franjas = [['1', y0, c1, 'franja de las láminas A-501 y A-505 del piso 2'], ['2', c1, c3, 'entre el sector 1 y el eje AJ'], ['3', c3, y1, 'desde el eje AJ hacia el AW']]
+    .map(([s, a, b, nota]) => [s, Math.max(a, y0), Math.min(b, y1), nota]).filter(([, a, b]) => b - a > 1);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${ancho}" height="${alto}" viewBox="0 0 ${ancho} ${alto}">${franjas.map(([s, a, b, nota]) =>
     `<rect x="${r(x0)}" y="${r(a)}" width="${r(x1 - x0)}" height="${r(b - a)}" fill="none" stroke="#1f3b73" stroke-width="4" stroke-dasharray="24 12"/>` +
     `<text x="${r(x0 + 24)}" y="${r(a + 64)}" font-family="Arial,Helvetica,sans-serif" font-size="56" font-weight="700" fill="#1f3b73">Sector ${s}</text>` +
