@@ -5,13 +5,13 @@ let registration, registrationPromise, status, failure = '', progress, poll, upd
 // abierto (los módulos cancelan «atlas-before-update»); lo guardado en el equipo no se pierde al recargar.
 const AUTO = 'atlas-auto-update', AVISO = 'atlas-actualizada', AUSENCIA = 30 * 60000;
 let interactuo = false, ocultaDesde = 0;
-for (const tipo of ['pointerdown', 'keydown']) addEventListener(tipo, () => { interactuo = true; }, {capture: true, once: true, passive: true});
+for (const tipo of ['pointerdown', 'keydown']) window.addEventListener(tipo, () => { interactuo = true; }, {capture: true, once: true, passive: true});
 function aplicarSola() {
   // Solo actualizaciones: en la primera visita no hay versión activa que reemplazar.
   if (!registration?.waiting || !registration.active || updating) return;
   // Una sola vez por minuto: evita recargas en cadena si algo falla.
   try { if (Date.now() - Number(sessionStorage.getItem(AUTO) || 0) < 60000) return; } catch {}
-  if (window.dispatchEvent(new Event('atlas-before-update', {cancelable: true})) === false) return;
+  if (window.dispatchEvent?.(new Event('atlas-before-update', {cancelable: true})) === false) return;
   updating = true;
   try { sessionStorage.setItem(AUTO, String(Date.now())); sessionStorage.setItem(AVISO, '1'); } catch {}
   registration.waiting.postMessage({atlasOffline: true, type: 'ACTIVATE'});
@@ -60,7 +60,7 @@ async function setup() {
     // Reopening a downloaded plan must not wait for a script request.
     const existing = await navigator.serviceWorker.getRegistration('./');
     registration = existing?.active ? existing : await navigator.serviceWorker.register('./sw.js', {scope: './', updateViaCache: 'none'});
-    const watch=worker=>{if(!worker)return;worker.addEventListener('statechange',()=>{if(worker.state==='redundant')updateFailure='La actualización no se completó. Tu copia anterior sigue disponible; puedes reintentar.';if(worker.state==='installed'&&!interactuo)aplicarSola();setTimeout(paint,0);});};
+    const watch=worker=>{if(!worker)return;worker.addEventListener('statechange',()=>{if(worker.state==='redundant')updateFailure='La actualización no se completó. Tu copia anterior sigue disponible; puedes reintentar.';if(worker.state==='installed')setTimeout(()=>{if(!interactuo)aplicarSola();},0);setTimeout(paint,0);});};
     registration.addEventListener('updatefound', () => {updateFailure='';updateProgress=null;watch(registration.installing);paint();});watch(registration.installing);
     if (!registration.active) await new Promise((resolve, reject) => {
       const worker = registration.installing || registration.waiting;
