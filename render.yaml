@@ -19,6 +19,8 @@ services:
         sync: false
       - key: SUPABASE_ANON_KEY
         sync: false
+      - key: ATLAS_CLAVE_TEMPORAL
+        sync: false
       - key: GROQ_API_KEY
         sync: false
       - key: GROQ_MODEL

@@ -8,12 +8,24 @@ const TIPOS = ['proyecto', 'observacion', 'contorno', 'planilla'];
 const fallo = (status, message) => Object.assign(Error(message), {status});
 
 const INCORRECTOS = 'Usuario o contraseña incorrectos.';
+// Contraseña personal: 8 a 72 caracteres (bcrypt usa hasta 72 bytes).
+export function motivoClaveNueva(nueva, actual, temporal = '') {
+  if (typeof nueva !== 'string' || nueva.length < 8) return 'La nueva contraseña debe tener al menos 8 caracteres.';
+  if (Buffer.byteLength(nueva) > 72) return 'La nueva contraseña es demasiado larga (máximo 72 caracteres).';
+  if (nueva === actual) return 'La nueva contraseña debe ser distinta de la actual.';
+  if (temporal && nueva === temporal) return 'No uses la contraseña temporal: elige una personal.';
+  if (!nueva.trim()) return 'La nueva contraseña no puede ser solo espacios.';
+  return '';
+}
 
 // sesiones (server/sesion.mjs) emite la cookie de Atlas al entrar y al renovar, y la borra al salir.
 export function createCampo(env, fetchImpl = fetch, sesiones = null) {
   const base = String(env.SUPABASE_URL || '').replace(/\/$/, ''), key = env.SUPABASE_ANON_KEY;
   const configurada = /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(base) && !!key;
   const intentos = new Map();
+  // Contraseña temporal de las cuentas nuevas (variable de Render, nunca en el repositorio). Quien entra con ella
+  // no recibe sesión hasta reemplazarla por una personal.
+  const temporal = String(env.ATLAS_CLAVE_TEMPORAL || '');
   return async (req, res, url) => {
     const send = (status, body) => { res.writeHead(status, {'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store'}); res.end(JSON.stringify(body)); };
     if (!configurada) return send(503, {error: 'La nube de Atlas no está configurada en el servidor (SUPABASE_URL y SUPABASE_ANON_KEY).'});
@@ -47,27 +59,63 @@ export function createCampo(env, fetchImpl = fetch, sesiones = null) {
 
       // Entrada a Atlas con usuario o correo. El usuario (app_metadata.usuario, solo lo cambia un administrador) se
       // traduce al correo de la cuenta con supabase/login-usuario.sql. Usuario inexistente y clave errónea responden igual.
-      if (url.pathname === '/api/campo/login' && req.method === 'POST') {
-        const b = await json();
-        if (typeof b.username !== 'string' || typeof b.password !== 'string' || !b.username.trim() || b.username.length > 254 || !b.password || b.password.length > 1024) return send(400, {error: 'Escribe tu usuario o correo y tu contraseña.'});
-        const nombre = b.username.trim().toLowerCase();
+      // Comprueba usuario o correo y contraseña. Devuelve {r, clave} (r = respuesta de Supabase) o {respuesta} lista para enviar.
+      const ingresar = async (username, password) => {
+        const nombre = username.trim().toLowerCase();
         // Detrás del proxy de Render todos llegan con la misma IP: el límite se cuenta por IP y usuario.
         const now = Date.now(); for (const [k, v] of intentos) if (v.until < now) intentos.delete(k);
         const clave = req.socket.remoteAddress + '|' + nombre, limite = intentos.get(clave) || {n: 0, until: now + 900000};
-        if (limite.n >= 10) return send(429, {error: 'Demasiados intentos. Reintenta en 15 minutos.'});
+        if (limite.n >= 10) return {respuesta: [429, {error: 'Demasiados intentos. Reintenta en 15 minutos.'}]};
         limite.n++; intentos.set(clave, limite);
         let email = nombre;
         if (!nombre.includes('@')) {
           const u = await call('/rest/v1/rpc/atlas_correo_de_usuario', null, {body: {p_usuario: nombre}});
-          if (!u.ok) return send(503, {error: 'El ingreso con usuario aún no está habilitado (falta ejecutar supabase/login-usuario.sql). Entra con tu correo.'});
+          if (!u.ok) return {respuesta: [503, {error: 'El ingreso con usuario aún no está habilitado (falta ejecutar supabase/login-usuario.sql). Entra con tu correo.'}]};
           email = typeof u.data === 'string' ? u.data : '';
         }
-        if (!email) return send(401, {error: INCORRECTOS});
-        const r = await call('/auth/v1/token?grant_type=password', null, {body: {email, password: b.password}});
-        if (r.status >= 500) return send(503, {error: 'No se pudo conectar con el servicio de cuentas. Reintenta en un momento.'});
-        if (!r.ok) return send(401, {error: INCORRECTOS});
+        if (!email) return {respuesta: [401, {error: INCORRECTOS}]};
+        const r = await call('/auth/v1/token?grant_type=password', null, {body: {email, password}});
+        if (r.status >= 500) return {respuesta: [503, {error: 'No se pudo conectar con el servicio de cuentas. Reintenta en un momento.'}]};
+        if (!r.ok) return {respuesta: [401, {error: INCORRECTOS}]};
+        return {r, clave, email};
+      };
+      const datosValidos = b => typeof b.username === 'string' && typeof b.password === 'string' && !!b.username.trim() && b.username.length <= 254 && !!b.password && b.password.length <= 1024;
+
+      // Entrada a Atlas con usuario o correo. El usuario (app_metadata.usuario, solo lo cambia un administrador) se
+      // traduce al correo de la cuenta con supabase/login-usuario.sql. Usuario inexistente y clave errónea responden igual.
+      if (url.pathname === '/api/campo/login' && req.method === 'POST') {
+        const b = await json();
+        if (!datosValidos(b)) return send(400, {error: 'Escribe tu usuario o correo y tu contraseña.'});
+        const {r, clave, respuesta} = await ingresar(b.username, b.password);
+        if (respuesta) return send(...respuesta);
         const s = sesion(r.data); if (!s) return send(403, {error: sinPermiso});
         intentos.delete(clave);
+        // Primer ingreso con la contraseña temporal: sin sesión ni cookie hasta que elija una personal.
+        if (temporal && b.password === temporal) return send(200, {cambiarClave: true});
+        sesiones?.emitir(req, res, {usuario: s.user.username, rol: s.user.role, recordar: recordar(b)});
+        return send(200, {...s, recordar: recordar(b)});
+      }
+      // Cambiar la contraseña (primer ingreso o cuando la persona quiera): pide la actual, así no depende de una sesión
+      // vigente y nadie la cambia desde un equipo ajeno con la sesión abierta. Devuelve una sesión nueva.
+      if (url.pathname === '/api/campo/clave' && req.method === 'POST') {
+        const b = await json();
+        if (!datosValidos(b)) return send(400, {error: 'Escribe tu usuario o correo y tu contraseña actual.'});
+        const motivo = motivoClaveNueva(b.nueva, b.password, temporal);
+        if (motivo) return send(400, {error: motivo});
+        const {r, clave, email, respuesta} = await ingresar(b.username, b.password);
+        if (respuesta) return send(respuesta[0], respuesta[0] === 401 ? {error: 'La contraseña actual no es correcta.'} : respuesta[1]);
+        if (!sesion(r.data)) return send(403, {error: sinPermiso});
+        intentos.delete(clave);
+        const cambio = await call('/auth/v1/user', r.data.access_token, {method: 'PUT', body: {password: b.nueva}});
+        if (!cambio.ok) {
+          const codigoError = String(cambio.data?.error_code || cambio.data?.code || '');
+          if (codigoError === 'same_password') return send(400, {error: 'La nueva contraseña debe ser distinta de la actual.'});
+          if (codigoError === 'weak_password' || cambio.status === 422) return send(400, {error: 'La nueva contraseña es muy débil. Usa más caracteres o mezcla letras y números.'});
+          return send(503, {error: 'No se pudo cambiar la contraseña. Reintenta en un momento.'});
+        }
+        const nueva = await call('/auth/v1/token?grant_type=password', null, {body: {email, password: b.nueva}});
+        const s = nueva.ok && sesion(nueva.data);
+        if (!s) return send(503, {error: 'La contraseña se cambió, pero no se pudo abrir la sesión. Entra con la nueva contraseña.'});
         sesiones?.emitir(req, res, {usuario: s.user.username, rol: s.user.role, recordar: recordar(b)});
         return send(200, {...s, recordar: recordar(b)});
       }
