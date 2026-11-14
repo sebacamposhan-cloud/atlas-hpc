@@ -48,6 +48,39 @@
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M3 12h11"/><path d="m10 8 4 4-4 4"/></svg>
     Iniciar sesión
    </button>
+   <button type="button" class="volver" id="irCambio">Cambiar mi contraseña</button>
+  </form>
+  <form id="cambio" novalidate hidden>
+   <label class="campo" id="campoUsuario">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
+    <span class="oculto">Usuario o correo electrónico</span>
+    <input name="usuario" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="254" placeholder="Usuario o correo electrónico">
+   </label>
+   <label class="campo" id="campoActual">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.2"/></svg>
+    <span class="oculto">Contraseña actual</span>
+    <input name="actual" type="password" autocomplete="current-password" maxlength="1024" placeholder="Contraseña actual">
+   </label>
+   <label class="campo">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="m11 12 8-8"/><path d="m16 7 3 3"/><path d="m14 9 2 2"/></svg>
+    <span class="oculto">Nueva contraseña</span>
+    <input name="nueva" type="password" autocomplete="new-password" minlength="8" maxlength="72" placeholder="Nueva contraseña">
+   </label>
+   <label class="campo">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="m11 12 8-8"/><path d="m16 7 3 3"/><path d="m14 9 2 2"/></svg>
+    <span class="oculto">Repite la nueva contraseña</span>
+    <input name="repetir" type="password" autocomplete="new-password" minlength="8" maxlength="72" placeholder="Repite la nueva contraseña">
+   </label>
+   <div class="fila">
+    <label class="recordar"><input name="mostrar" type="checkbox"> Mostrar contraseñas</label>
+   </div>
+   <p class="ayuda">Al menos 8 caracteres. Es personal: no la compartas ni uses la temporal.</p>
+   <p id="estadoCambio" class="estado" role="alert"></p>
+   <button class="entrar" type="submit">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+    Guardar contraseña
+   </button>
+   <button type="button" class="volver" id="volver" hidden>Volver a iniciar sesión</button>
   </form>
  </div>
 </main>

@@ -1,13 +1,15 @@
 import assert from 'node:assert/strict';
 import {createAtlasServer} from './server/groq-server.mjs';
+import {motivoClaveNueva} from './server/campo.mjs';
 
 // Inicio de sesión de Atlas contra un Supabase simulado: usuario o correo, cookie firmada (recordada o de navegador),
 // renovación, cierre, errores sin pistas, límite de intentos y modo de desarrollo sin sesión obligatoria.
 const SECRETO = 'isolated-session-secret-0123456789abcdef';
-const cuentas = {'mauro@hpc.test': {clave: 'clave-mauro', rol: 'editor', usuario: 'mauro'}, 'seba@hpc.test': {clave: 'clave-seba', rol: 'editor', usuario: 'seba'}, 'sinrol@hpc.test': {clave: 'clave-sinrol', usuario: 'sinrol'}};
+const cuentas = {'mauro@hpc.test': {clave: 'clave-mauro', rol: 'editor', usuario: 'mauro'}, 'seba@hpc.test': {clave: 'clave-seba', rol: 'editor', usuario: 'seba'}, 'sinrol@hpc.test': {clave: 'clave-sinrol', usuario: 'sinrol'}, 'nuevo@hpc.test': {clave: 'temporal-hpc', rol: 'editor', usuario: 'nuevo'}};
+const TEMPORAL = 'temporal-hpc', tokens = new Map();
 const refrescos = new Map();
 let emitidos = 0, rpcInstalada = true, consultasUsuario = 0;
-const emitir = email => { const refresh = 'ref-' + ++emitidos; refrescos.set(refresh, email); return Response.json({access_token: 'tok-' + emitidos, refresh_token: refresh, expires_in: 3600, user: {email, app_metadata: cuentas[email].rol ? {campo_role: cuentas[email].rol} : {}, user_metadata: {}}}); };
+const emitir = email => { const refresh = 'ref-' + ++emitidos; refrescos.set(refresh, email); tokens.set('tok-' + emitidos, email); return Response.json({access_token: 'tok-' + emitidos, refresh_token: refresh, expires_in: 3600, user: {email, app_metadata: cuentas[email].rol ? {campo_role: cuentas[email].rol} : {}, user_metadata: {}}}); };
 const supabase = async (url, opts) => {
   const u = new URL(url), b = opts.body ? JSON.parse(opts.body) : {};
   if (u.pathname === '/rest/v1/rpc/atlas_correo_de_usuario') {
@@ -19,11 +21,18 @@ const supabase = async (url, opts) => {
   if (u.pathname === '/auth/v1/token' && u.searchParams.get('grant_type') === 'password') return cuentas[b.email]?.clave === b.password ? emitir(b.email) : Response.json({error: 'invalid_grant'}, {status: 400});
   if (u.pathname === '/auth/v1/token') { const email = refrescos.get(b.refresh_token); refrescos.delete(b.refresh_token); return email ? emitir(email) : Response.json({error: 'invalid_grant'}, {status: 400}); }
   if (u.pathname === '/auth/v1/logout') return new Response(null, {status: 204});
+  if (u.pathname === '/auth/v1/user' && opts.method === 'PUT') {
+    const email = tokens.get(String(opts.headers.Authorization).replace('Bearer ', ''));
+    if (!email) return Response.json({error_code: 'bad_jwt'}, {status: 401});
+    if (b.password === 'debil12345') return Response.json({error_code: 'weak_password', msg: 'Password is known to be weak'}, {status: 422});
+    if (b.password === cuentas[email].clave) return Response.json({error_code: 'same_password'}, {status: 422});
+    cuentas[email].clave = b.password; return Response.json({email});
+  }
   return Response.json({message: 'ruta simulada inexistente'}, {status: 404});
 };
 
 const levantar = async env => { const s = await createAtlasServer({env, fetchImpl: supabase}); await new Promise(r => s.listen(0, '127.0.0.1', r)); return s; };
-const server = await levantar({ATLAS_SESSION_SECRET: SECRETO, SUPABASE_URL: 'https://demo-atlas.supabase.co', SUPABASE_ANON_KEY: 'anon-servidor'});
+const server = await levantar({ATLAS_SESSION_SECRET: SECRETO, SUPABASE_URL: 'https://demo-atlas.supabase.co', SUPABASE_ANON_KEY: 'anon-servidor', ATLAS_CLAVE_TEMPORAL: TEMPORAL});
 const base = 'http://127.0.0.1:' + server.address().port;
 const post = (ruta, body, headers = {}) => fetch(base + ruta, {method: 'POST', headers: {'Content-Type': 'application/json', ...headers}, body: JSON.stringify(body)});
 const entrar = (username, password, extra = {}, headers) => post('/api/campo/login', {username, password, ...extra}, headers);
@@ -102,6 +111,37 @@ try {
   const indice = await (await fetch(base + '/', {headers: {Cookie: galleta}})).text();
   assert(indice.indexOf('<script') > 0 && indice.indexOf('<script') === indice.indexOf('<script src="sesion-guardia.js"></script>'), 'la guardia es el primer script de la portada');
   assert(!indice.includes('nubeOpen'));
+  assert(html.includes('id="cambio"') && html.includes('autocomplete="new-password"') && html.includes('Guardar contraseña') && html.includes('Cambiar mi contraseña'));
+
+  // 9. Primer ingreso con la contraseña temporal: sin sesión ni cookie ni tokens hasta elegir una personal.
+  r = await entrar('nuevo', TEMPORAL);
+  assert.equal(r.status, 200);
+  assert.deepEqual(await r.json(), {cambiarClave: true});
+  assert(!sesionDe(r), 'con la temporal no hay cookie');
+  const cambiar = (username, password, nueva, extra = {}) => post('/api/campo/clave', {username, password, nueva, ...extra});
+  assert.match((await (await cambiar('nuevo', TEMPORAL, 'corta')).json()).error, /al menos 8/);
+  assert.match((await (await cambiar('nuevo', TEMPORAL, TEMPORAL)).json()).error, /distinta/);
+  assert.equal((await cambiar('nuevo', 'otra-cosa-x', 'personal-2026')).status, 401);
+  assert.match((await (await cambiar('nuevo', 'otra-cosa-x', 'personal-2026')).json()).error, /actual no es correcta/);
+  r = await cambiar('nuevo', TEMPORAL, 'debil12345');
+  assert.equal(r.status, 400); assert.match((await r.json()).error, /débil/);
+  r = await cambiar('nuevo', TEMPORAL, 'personal-2026', {recordar: false});
+  assert.equal(r.status, 200, 'la ruta es pública: no pide la cookie');
+  const cambiada = await r.json();
+  assert.equal(cambiada.user.username, 'nuevo@hpc.test'); assert.equal(cambiada.recordar, false); assert(cambiada.token);
+  assert(sesionDe(r) && !/Max-Age/.test(sesionDe(r)), 'abre la sesión con la duración elegida');
+  assert.equal((await entrar('nuevo', TEMPORAL)).status, 401, 'la temporal ya no sirve');
+  r = await entrar('nuevo@hpc.test', 'personal-2026');
+  assert.equal(r.status, 200); assert(!(await r.json()).cambiarClave); assert(sesionDe(r));
+
+  // 10. Cambio voluntario desde la cabecera: pide la actual y devuelve una sesión nueva.
+  r = await cambiar('seba', 'clave-seba', 'seba-nueva-2026');
+  assert.equal(r.status, 200); assert.equal((await r.json()).recordar, true); assert.match(sesionDe(r), /Max-Age=2592000/);
+  assert.equal((await entrar('seba', 'clave-seba')).status, 401);
+  assert.equal((await entrar('seba', 'seba-nueva-2026')).status, 200);
+  assert.equal((await cambiar('sinrol@hpc.test', 'clave-sinrol', 'otra-clave-123')).status, 403, 'sin rol no cambia nada');
+  assert.equal(cuentas['sinrol@hpc.test'].clave, 'clave-sinrol');
+  assert.equal((await post('/api/campo/clave', {username: 'seba', password: 'x'})).status, 400);
 } finally {
   server.closeAllConnections(); await new Promise(r => server.close(r));
 }
@@ -115,4 +155,12 @@ try {
 } finally {
   local.closeAllConnections(); await new Promise(r => local.close(r));
 }
-console.log('Login: usuario o correo, errores sin pistas, límite por usuario, cookie firmada recordada o de navegador, renovación, cierre, redirección y modo local validados (Supabase simulado; SQL real no ejercitado).');
+// 11. Reglas de la contraseña nueva.
+assert.equal(motivoClaveNueva('buena-clave', 'otra'), '');
+assert.match(motivoClaveNueva('1234567', 'x'), /al menos 8/);
+assert.match(motivoClaveNueva('x'.repeat(73), 'y'), /larga/);
+assert.match(motivoClaveNueva('ñ'.repeat(40), 'y'), /larga/, 'el límite es en bytes');
+assert.match(motivoClaveNueva('igual-igual', 'igual-igual'), /distinta/);
+assert.match(motivoClaveNueva('temporal-1', 'x', 'temporal-1'), /temporal/);
+assert.match(motivoClaveNueva('         ', 'x'), /espacios/);
+console.log('Login: usuario o correo, errores sin pistas, límite por usuario, cookie firmada recordada o de navegador, renovación, cierre, redirección, primer ingreso con contraseña temporal, cambio de contraseña y modo local validados (Supabase simulado; SQL real no ejercitado).');

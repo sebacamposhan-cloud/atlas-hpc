@@ -7,6 +7,8 @@ Atlas se abre con una cuenta personal de Supabase (las mismas cuentas que usaba 
 - **Sin señal** sigue funcionando quien ya entró en ese equipo. Entrar por primera vez necesita conexión.
 - **Cerrar sesión** (cabecera) intenta subir lo pendiente y deja lo guardado en el equipo.
 - **¿Olvidaste tu contraseña?** solo indica que la restablece la administración (ver abajo).
+- **Primer ingreso:** las cuentas nuevas se crean con una contraseña temporal común. Quien entra con ella ve «Crea tu contraseña» y Atlas no se abre (ni hay cookie de sesión) hasta que elige una personal de al menos 8 caracteres.
+- **Cambiar contraseña:** en la misma pantalla de inicio de sesión, **Cambiar mi contraseña** (bajo «Iniciar sesión»). Pide usuario o correo, la contraseña actual y la nueva dos veces, y entra a Atlas con la nueva. Todo lo de cuentas y contraseñas está en esa pantalla; para cambiarla con la sesión abierta, primero «Cerrar sesión». Necesita señal.
 
 ## Configuración (una vez)
 
@@ -25,7 +27,8 @@ select email, raw_app_meta_data->>'usuario' as usuario, raw_app_meta_data->>'cam
 from auth.users order by email;
 ```
 
-- **Cuenta nueva:** Authentication → Users → **Add user → Create new user**, correo y contraseña, marcar *Auto Confirm User*.
+- **Cuentas nuevas (recomendado):** correr una vez [`supabase/cuentas.sql`](../supabase/cuentas.sql) y luego, por persona, `select public.atlas_crear_cuenta('correo@empresa.cl', 'Nombre y apellido', 'editor', 'contraseña-temporal');`. Crea la cuenta con el correo confirmado, el rol y el nombre que firma en terreno; si la cuenta ya existe, solo actualiza rol y nombre. La contraseña temporal es la misma que `ATLAS_CLAVE_TEMPORAL` (paso 3) y no se escribe en el repositorio.
+- **Cuenta nueva a mano:** Authentication → Users → **Add user → Create new user**, correo y contraseña, marcar *Auto Confirm User*.
 - **Rol y usuario** (por cada persona; `editor` edita, `lector` solo mira; usuario corto, sin espacios ni @):
 
   ```sql
@@ -46,6 +49,7 @@ from auth.users order by email;
 ### 3. Render (Environment del servicio atlas-hpc)
 
 1. **Antes de desplegar:** agregar `ATLAS_SESSION_SECRET` con **Generate** (valor aleatorio largo; firma la cookie de sesión). Comprobar que existan `SUPABASE_URL` y `SUPABASE_ANON_KEY` (ya los usa la nube). Guardar con *Save only*.
+   - **Contraseña temporal:** agregar `ATLAS_CLAVE_TEMPORAL` con la contraseña con que se crean las cuentas nuevas. Sin esta variable no se exige el cambio en el primer ingreso (**Cambiar mi contraseña** funciona igual). Se puede borrar cuando todos hayan elegido la suya.
 2. Fusionar el PR y **Manual Deploy → Deploy latest commit**. Sin `ATLAS_SESSION_SECRET` el servidor nuevo no arranca y Render mantiene la versión anterior.
 3. Con la versión nueva funcionando, borrar `ATLAS_ACCESS_USER` y `ATLAS_ACCESS_PASSWORD` (ya no se usan).
 
@@ -63,4 +67,6 @@ La copia guardada en el equipo sigue abriendo la versión anterior hasta actuali
 - `dist/login.html`, `login.css`, `login.mjs`, `dist/login/`: pantalla de inicio de sesión.
 - `dist/sesion-guardia.js`: sin sesión en el equipo, la app abre el inicio de sesión (también sin conexión).
 - `supabase/login-usuario.sql`: traduce el usuario al correo de la cuenta.
+- `supabase/cuentas.sql`: `atlas_crear_cuenta`, cuentas nuevas con contraseña temporal (solo desde el SQL Editor).
+- `/api/campo/clave` (en `server/campo.mjs`): cambia la contraseña con la actual y devuelve una sesión nueva; `/api/campo/login` con la contraseña temporal responde `cambiarClave` sin sesión.
 - Desarrollo local: sin `ATLAS_SESSION_SECRET` no se pide inicio de sesión (como antes sin contraseña).

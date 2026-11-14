@@ -7,3 +7,6 @@ data/*/dibujo.json
 data/*/barreras.json
 data/*/revision/
 dist/*/map/estado.txt
+
+# Datos reales de personas (correos, nombres): nunca al repositorio, que es público
+privado/

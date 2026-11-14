@@ -71,6 +71,10 @@ form { display: grid; gap: 14px; }
 .aviso { margin: -4px 0 0; padding: 10px 12px; border-left: 3px solid var(--azul-claro); border-radius: 6px; background: #fff; font-size: 14px; color: var(--texto2); }
 .estado { min-height: 20px; margin: -2px 0; font-size: 14px; color: var(--texto2); }
 .estado[data-tipo=error] { color: var(--error); }
+.ayuda { margin: -4px 0 0; font-size: 13.5px; line-height: 1.4; color: var(--texto2); }
+.volver { justify-self: center; padding: 4px 0; border: 0; background: none; font: inherit; font-size: 14.5px; color: #1565c0; text-decoration: none; cursor: pointer; }
+.volver:hover { text-decoration: underline; }
+[hidden] { display: none !important; }
 
 .entrar {
   display: flex; align-items: center; justify-content: center; gap: 10px; height: 52px; margin-top: 4px;

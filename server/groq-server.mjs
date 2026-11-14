@@ -13,7 +13,7 @@ import {decodeRuntime} from '../dist/runtime-loader.mjs';
 const otherLevels=['n01/runtime.json','n02/runtime.json','n03/runtime.json'];
 const root=fileURLToPath(new URL('../dist/',import.meta.url));
 // Sin sesión solo se entrega el inicio de sesión y lo que necesita para mostrarse y entrar.
-const PUBLICAS=new Set(['/healthz','/login','/login.html','/login.css','/login.mjs','/manifest.webmanifest','/api/campo/login','/api/campo/refresh','/api/campo/logout']);
+const PUBLICAS=new Set(['/healthz','/login','/login.html','/login.css','/login.mjs','/manifest.webmanifest','/api/campo/login','/api/campo/refresh','/api/campo/logout','/api/campo/clave']);
 const publica=ruta=>PUBLICAS.has(ruta)||/^\/(login|icons|fonts)\//.test(ruta);
 const mime={'.xlsx':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','.html':'text/html; charset=utf-8','.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.json':'application/json','.webmanifest':'application/manifest+json','.svg':'image/svg+xml','.jpg':'image/jpeg','.jpeg':'image/jpeg','.png':'image/png','.webp':'image/webp','.pdf':'application/pdf','.woff2':'font/woff2'};
 export async function createAtlasServer({env=process.env,fetchImpl=fetch}={}){
