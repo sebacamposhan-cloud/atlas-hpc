@@ -76,7 +76,6 @@ function aviso(texto) {
   const t = document.getElementById('toast'); if (!t) return;
   t.textContent = texto; t.style.display = 'block'; clearTimeout(aviso.timer); aviso.timer = setTimeout(() => { t.style.display = 'none'; }, 5500);
 }
-const ICONO_CLAVE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="m11 12 8-8"/><path d="m16 7 3 3"/><path d="m14 9 2 2"/></svg>';
 const ICONO_SALIR = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4"/><path d="M21 12H10"/><path d="m17 8 4 4-4 4"/></svg>';
 
 // Se inicia en la portada de pisos (floor-explorer.mjs) para que la sesión y la sincronización funcionen en toda la app.
@@ -90,17 +89,6 @@ export function iniciarNube({toast = aviso} = {}) {
   boton.setAttribute('aria-label', boton.title);
   const ancla = document.getElementById('offlineOpen');
   if (ancla) ancla.after(boton); else document.querySelector('header')?.append(boton);
-  // Cambiar la contraseña: abre la pantalla de cambio (login.html?cambiar=1) y vuelve aquí. Necesita señal.
-  if (s0?.user) {
-    const clave = document.createElement('button');
-    clave.id = 'passwordButton'; clave.type = 'button'; clave.className = 'logoutButton passwordButton';
-    clave.innerHTML = ICONO_CLAVE + '<span>Contraseña</span>';
-    clave.title = 'Cambiar mi contraseña'; clave.setAttribute('aria-label', clave.title);
-    clave.onclick = () => navigator.onLine
-      ? location.assign('/login.html?cambiar=1&next=' + encodeURIComponent(location.pathname + location.search + location.hash))
-      : toast('Sin conexión: necesitas señal para cambiar la contraseña.');
-    boton.before(clave);
-  }
 
   let enCurso = null, otraVez = false, temporizador = 0, ultimoAviso = '';
   const bloquear = fn => navigator.locks?.request ? navigator.locks.request('atlas-nube', fn) : fn();

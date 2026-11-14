@@ -111,7 +111,7 @@ try {
   const indice = await (await fetch(base + '/', {headers: {Cookie: galleta}})).text();
   assert(indice.indexOf('<script') > 0 && indice.indexOf('<script') === indice.indexOf('<script src="sesion-guardia.js"></script>'), 'la guardia es el primer script de la portada');
   assert(!indice.includes('nubeOpen'));
-  assert(html.includes('id="cambio"') && html.includes('autocomplete="new-password"') && html.includes('Guardar contraseña'));
+  assert(html.includes('id="cambio"') && html.includes('autocomplete="new-password"') && html.includes('Guardar contraseña') && html.includes('Cambiar mi contraseña'));
 
   // 9. Primer ingreso con la contraseña temporal: sin sesión ni cookie ni tokens hasta elegir una personal.
   r = await entrar('nuevo', TEMPORAL);

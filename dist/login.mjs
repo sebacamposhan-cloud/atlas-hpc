@@ -1,8 +1,8 @@
 // Inicio de sesión de Atlas: entra con la cuenta de Supabase (usuario o correo) y vuelve a la dirección pedida.
 // La sesión queda en el equipo con la misma clave que usa la nube (atlas-nube-sesion), así la sincronización arranca
 // sola; el servidor deja además la cookie de Atlas que abre la app y su API.
-// Con ?cambiar=1 (botón «Contraseña» de la cabecera) o al entrar con la contraseña temporal, muestra el cambio de
-// contraseña; el primer ingreso no abre Atlas hasta elegir una personal.
+// Todo lo de cuentas está en esta pantalla: «Cambiar mi contraseña» (sin sesión: pide usuario, actual y nueva) y,
+// al entrar con la contraseña temporal, «Crea tu contraseña»; el primer ingreso no abre Atlas hasta elegir una personal.
 const SESION = 'atlas-nube-sesion';
 const form = document.getElementById('acceso'), estado = document.getElementById('estado'), boton = form.querySelector('.entrar');
 const params = new URLSearchParams(location.search);
@@ -42,24 +42,34 @@ function abrirAtlas(data, recordar) {
 const SIN_GUARDAR = 'Este navegador no permite guardar la sesión (¿modo privado?). Ábrelo en una ventana normal.';
 
 const cambio = document.getElementById('cambio'), estadoCambio = document.getElementById('estadoCambio'), botonCambio = cambio.querySelector('.entrar');
-const campoActual = document.getElementById('campoActual'), volver = document.getElementById('volver');
+const campoActual = document.getElementById('campoActual'), campoUsuario = document.getElementById('campoUsuario'), volver = document.getElementById('volver');
+const TEXTOS = {titulo: document.querySelector('h1').textContent, bajada: document.querySelector('.bajada').textContent, pagina: document.title};
 let pendiente = null;
 function abrirCambio({usuario, actual = '', recordar = true, primerIngreso = false}) {
-  pendiente = {usuario, recordar, primerIngreso};
+  pendiente = {recordar, primerIngreso};
+  mostrar('', '', estadoCambio);
   form.hidden = true; cambio.hidden = false;
   document.querySelector('h1').textContent = primerIngreso ? 'Crea tu contraseña' : 'Cambiar contraseña';
   document.querySelector('.bajada').textContent = primerIngreso
     ? 'Es tu primer ingreso. Reemplaza la contraseña temporal por una personal: solo tú la conocerás.'
     : 'Escribe tu contraseña actual y la nueva.';
   document.title = 'Atlas HPC · ' + (primerIngreso ? 'Crea tu contraseña' : 'Cambiar contraseña');
-  cambio.usuario.value = usuario; cambio.actual.value = actual;
-  campoActual.hidden = primerIngreso; volver.hidden = primerIngreso; volver.href = destino;
-  (primerIngreso ? cambio.nueva : cambio.actual).focus();
+  cambio.usuario.value = usuario; cambio.actual.value = actual; cambio.nueva.value = cambio.repetir.value = '';
+  campoUsuario.hidden = campoActual.hidden = volver.hidden = primerIngreso;
+  (primerIngreso ? cambio.nueva : usuario ? cambio.actual : cambio.usuario).focus();
 }
+document.getElementById('irCambio').addEventListener('click', () => { mostrar(''); abrirCambio({usuario: form.usuario.value.trim(), recordar: form.recordar.checked}); });
+volver.addEventListener('click', () => {
+  cambio.hidden = true; form.hidden = false;
+  document.querySelector('h1').textContent = TEXTOS.titulo; document.querySelector('.bajada').textContent = TEXTOS.bajada; document.title = TEXTOS.pagina;
+  if (cambio.usuario.value.trim()) form.usuario.value = cambio.usuario.value.trim();
+  (form.usuario.value ? form.clave : form.usuario).focus();
+});
 cambio.mostrar.addEventListener('change', () => { for (const c of [cambio.actual, cambio.nueva, cambio.repetir]) c.type = cambio.mostrar.checked ? 'text' : 'password'; });
 cambio.addEventListener('submit', async event => {
   event.preventDefault();
-  const actual = cambio.actual.value, nueva = cambio.nueva.value, error = texto => mostrar(texto, 'error', estadoCambio);
+  const usuario = cambio.usuario.value.trim(), actual = cambio.actual.value, nueva = cambio.nueva.value, error = texto => mostrar(texto, 'error', estadoCambio);
+  if (!usuario) { cambio.usuario.focus(); return error('Escribe tu usuario o correo.'); }
   if (!actual) { cambio.actual.focus(); return error('Escribe tu contraseña actual.'); }
   if (nueva.length < 8) { cambio.nueva.focus(); return error('La nueva contraseña debe tener al menos 8 caracteres.'); }
   if (nueva !== cambio.repetir.value) { cambio.repetir.select(); return error('Las dos contraseñas nuevas no coinciden.'); }
@@ -68,7 +78,7 @@ cambio.addEventListener('submit', async event => {
   botonCambio.disabled = true; mostrar('Guardando…', '', estadoCambio);
   let r, data;
   try {
-    r = await fetch('/api/campo/clave', {method: 'POST', cache: 'no-store', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username: pendiente.usuario, password: actual, nueva, recordar: pendiente.recordar})});
+    r = await fetch('/api/campo/clave', {method: 'POST', cache: 'no-store', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({username: usuario, password: actual, nueva, recordar: pendiente.recordar})});
     data = await r.json().catch(() => null);
   } catch {
     botonCambio.disabled = false; return error('Sin conexión con Atlas. Revisa la señal y reintenta.');

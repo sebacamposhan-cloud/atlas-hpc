@@ -48,9 +48,14 @@
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M3 12h11"/><path d="m10 8 4 4-4 4"/></svg>
     Iniciar sesión
    </button>
+   <button type="button" class="volver" id="irCambio">Cambiar mi contraseña</button>
   </form>
   <form id="cambio" novalidate hidden>
-   <input name="usuario" type="text" autocomplete="username" hidden>
+   <label class="campo" id="campoUsuario">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
+    <span class="oculto">Usuario o correo electrónico</span>
+    <input name="usuario" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="254" placeholder="Usuario o correo electrónico">
+   </label>
    <label class="campo" id="campoActual">
     <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.2"/></svg>
     <span class="oculto">Contraseña actual</span>
@@ -75,7 +80,7 @@
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
     Guardar contraseña
    </button>
-   <a class="volver" id="volver" href="/" hidden>Volver a Atlas sin cambiarla</a>
+   <button type="button" class="volver" id="volver" hidden>Volver a iniciar sesión</button>
   </form>
  </div>
 </main>
