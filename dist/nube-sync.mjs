@@ -1,8 +1,8 @@
 // Sincronización de proyectos, observaciones y avance por recinto con la nube compartida (/api/campo → supabase/campo.sql
 // y supabase/avance-terreno.sql). Cada equipo guarda primero en su IndexedDB; aquí se baja lo de otros equipos, se sube
 // lo cambiado y se mueven las fotos. Un cambio se detecta comparando la huella del contenido (sin la versión local) con
-// la de la última sincronización. Si el mismo registro cambió en dos equipos: el proyecto de este equipo queda como
-// copia, la observación se fusiona (historial y fotos de ambos; los datos de la versión actualizada más tarde) y el
+// la de la última sincronización. Si el mismo registro cambió en dos equipos: el proyecto se junta con la base
+// guardada (fusionarProyecto; copia solo si no se puede), la observación se fusiona (historial y fotos de ambos; los datos de la versión actualizada más tarde) y el
 // avance del recinto también (en cada partida queda la marca más reciente).
 // El avance es lo que se marca en el rombo, en la ficha o con el pincel de un proyecto de partida: el proyecto no
 // guarda esos estados, los lee del avance del recinto, así que sin este tipo lo pintado no salía del equipo.
@@ -47,7 +47,60 @@ export function fusionarAvance(local, remoto) {
   for (const [id, p] of Object.entries(base.partidas || {})) if (!partidas[id] || hora(base, p) >= hora(otro, partidas[id])) partidas[id] = p;
   return {...base, partidas, protocolos: {...(otro.protocolos || {}), ...(base.protocolos || {})}};
 }
-// Copia del proyecto de este equipo cuando otro equipo cambió el mismo proyecto.
+// Un proyecto cambiado en dos equipos se junta en uno solo, comparando con lo último sincronizado (la base):
+// - lo que cambió solo en un lado se toma de ese lado; lo borrado en un lado y no tocado en el otro se borra;
+// - las listas con «id» (recintos, estados, cortes) o «code» (filas de un levantamiento) se juntan elemento a elemento;
+// - si los dos cambiaron el mismo dato, queda el del equipo que guardó más tarde (updatedAt) y se cuenta como choque.
+// Sin base (proyectos sincronizados antes de guardarla) las listas se suman: algo borrado en un solo equipo puede volver.
+// En los proyectos de recintos numerados, dos recintos nuevos con el mismo número reciben números nuevos.
+const esObjeto = v => v && typeof v === 'object' && !Array.isArray(v);
+const igual = (a, b) => canonico(a) === canonico(b);
+function claveLista(...listas) {
+  for (const k of ['id', 'code']) if (listas.every(l => l.every(x => esObjeto(x) && typeof x[k] === 'string') && new Set(l.map(x => x[k])).size === l.length)) return k;
+  return null;
+}
+function fusionar3(base, loc, rem, ctx) {
+  if (igual(loc, rem)) return rem;
+  if (base !== undefined && igual(base, loc)) return rem;
+  if (base !== undefined && igual(base, rem)) return loc;
+  if (Array.isArray(loc) && Array.isArray(rem)) {
+    const b = Array.isArray(base) ? base : [], k = claveLista(loc, rem, b);
+    if (k) {
+      const mb = new Map(b.map(x => [x[k], x])), ml = new Map(loc.map(x => [x[k], x])), mr = new Map(rem.map(x => [x[k], x])), out = [];
+      for (const key of [...mr.keys(), ...[...ml.keys()].filter(x => !mr.has(x))]) {
+        const enB = mb.get(key), enL = ml.get(key), enR = mr.get(key);
+        if (enL && enR) out.push(fusionar3(enB, enL, enR, ctx));
+        else if (enR) { if (!(enB && igual(enB, enR))) out.push(enR); }
+        else if (!(enB && igual(enB, enL))) out.push(enL);
+      }
+      return out;
+    }
+  } else if (esObjeto(loc) && esObjeto(rem)) {
+    const out = {};
+    for (const key of new Set([...Object.keys(rem), ...Object.keys(loc)])) {
+      const v = fusionar3(esObjeto(base) ? base[key] : undefined, loc[key], rem[key], ctx);
+      if (v !== undefined) out[key] = v;
+    }
+    return out;
+  }
+  ctx.choques++;
+  return ctx.ganaLocal ? loc : rem;
+}
+export function fusionarProyecto(base, local, remoto) {
+  const ctx = {choques: 0, ganaLocal: (local.updatedAt || '') > (remoto.updatedAt || '')};
+  // La fecha de guardado no cuenta como choque: queda la del lado que guardó más tarde.
+  const sinFecha = d => { if (!esObjeto(d)) return d; const {updatedAt, ...resto} = d; return resto; };
+  let doc = fusionar3(sinFecha(base), sinFecha(local), sinFecha(remoto), ctx);
+  doc = {...doc, updatedAt: ctx.ganaLocal ? local.updatedAt : remoto.updatedAt};
+  if (Array.isArray(doc.rooms) && doc.rooms.every(r => Number.isSafeInteger(r?.number))) {
+    let siguiente = Math.max(local.nextNumber || 1, remoto.nextNumber || 1, ...doc.rooms.map(r => r.number + 1));
+    const usados = new Set();
+    const rooms = doc.rooms.map(r => { if (!usados.has(r.number)) { usados.add(r.number); return r; } const n = {...r, number: siguiente++}; usados.add(n.number); return n; });
+    doc = {...doc, rooms, nextNumber: siguiente};
+  }
+  return {doc, choques: ctx.choques};
+}
+// Copia del proyecto de este equipo cuando no se pudo juntar (el resultado no era un proyecto válido).
 export function copiaProyecto(doc, id, at) {
   const sufijo = ' (copia de este equipo)';
   return {...doc, id, name: doc.name.slice(0, 160 - sufijo.length) + sufijo, createdAt: at, updatedAt: at, version: 1};
@@ -58,7 +111,14 @@ const corta = e => !e.status || e.status === 401 || e.status === 403;
 const MARGEN = 5 * 60000;
 
 // api(método, ruta, cuerpo, {tipo, binario}); local: almacenes de este equipo; meta: lo último sincronizado.
-export function crearSincronizador({api, local, meta, avisar = () => {}, nuevoId = () => crypto.randomUUID(), ahora = () => new Date().toISOString()}) {
+// validarProyecto: comprueba un proyecto juntado; sin él, un choque deja la versión de este equipo como copia.
+export function crearSincronizador({api, local, meta, avisar = () => {}, nuevoId = () => crypto.randomUUID(), ahora = () => new Date().toISOString(), validarProyecto = null}) {
+  // Lo último sincronizado de cada proyecto se guarda como base para juntar cambios hechos en dos equipos.
+  const datosMeta = (tipo, version, h, data) => ({version, huella: h, ...(tipo === 'proyecto' ? {base: data} : {})});
+  function unir(m, doc, remoto) {
+    if (!validarProyecto) return null;
+    try { const r = fusionarProyecto(m?.base?.doc, sinVersion(doc), remoto); validarProyecto(r.doc); return r; } catch { return null; }
+  }
   async function aplicar(r, locales, resumen) {
     const clave = r.tipo + ':' + r.id, m = await meta.leer(clave);
     if (m && m.version >= r.version) return;
@@ -66,6 +126,13 @@ export function crearSincronizador({api, local, meta, avisar = () => {}, nuevoId
     if (r.tipo === 'proyecto') {
       const doc = locales.proyectos.get(r.id), hl = doc && huella(paqueteProyecto(doc));
       if (doc && hl !== hr && (!m || hl !== m.huella)) {
+        const unido = unir(m, doc, r.data.doc);
+        if (unido) {
+          locales.proyectos.set(r.id, await local.escribirProyecto(unido.doc)); resumen.conflictos++;
+          avisar(`El proyecto «${doc.name}» también cambió en otro equipo. Se juntaron los cambios de ambos${unido.choques ? '; donde los dos cambiaron lo mismo quedó lo guardado más tarde' : ''}.`);
+          await meta.escribir(clave, datosMeta(r.tipo, r.version, hr, r.data));
+          return;
+        }
         const copia = copiaProyecto(doc, nuevoId(), ahora());
         await local.crearProyecto(copia); locales.proyectos.set(copia.id, copia); resumen.conflictos++;
         avisar(`El proyecto «${doc.name}» también cambió en otro equipo. Tu versión quedó como «${copia.name}».`);
@@ -93,7 +160,7 @@ export function crearSincronizador({api, local, meta, avisar = () => {}, nuevoId
         avisar(`El avance de ${remoto.code} también cambió en otro equipo. Se juntaron ambos: en cada partida quedó la marca más reciente.`);
       } else if (!loc || hl !== hr) { locales.avances.set(r.id, await local.escribirAvance(remoto)); resumen.bajados++; }
     } else return;
-    await meta.escribir(clave, {version: r.version, huella: hr});
+    await meta.escribir(clave, datosMeta(r.tipo, r.version, hr, r.data));
   }
 
   // Sube lo que cambió desde la última sincronización; si otro equipo se adelantó (409), se aplica lo suyo y se reintenta.
@@ -105,7 +172,7 @@ export function crearSincronizador({api, local, meta, avisar = () => {}, nuevoId
         if (m && m.huella === h) continue;
         try {
           const r = await api('POST', '/api/campo', {tipo, id, version: m?.version || 0, data});
-          await meta.escribir(clave, {version: r.version, huella: h}); resumen.subidos++;
+          await meta.escribir(clave, datosMeta(tipo, r.version, h, data)); resumen.subidos++;
         } catch (e) {
           if (e.status === 409 && e.data?.registro) { await aplicar(e.data.registro, locales, resumen); otraVuelta = true; }
           else if (corta(e)) throw e;
@@ -141,7 +208,22 @@ export function crearSincronizador({api, local, meta, avisar = () => {}, nuevoId
     }
   }
 
-  return async function sincronizar(rol) {
+  // Cambios de este equipo que aún no están en la nube, con la misma comparación que usa «subir».
+  async function pendientes() {
+    const cuenta = {proyectos: 0, observaciones: 0, avances: 0, fotos: 0};
+    // Con meta.todos / meta.fotosListas se lee todo de una vez (contar es frecuente; leer registro a registro es lento).
+    const todos = meta.todos ? new Map((await meta.todos()).map(r => [r.clave, r])) : null, leer = k => todos ? todos.get(k) : meta.leer(k);
+    const fotosListas = meta.fotosListas ? new Set(await meta.fotosListas()) : null;
+    const revisar = async (tipo, lista, id, paquete) => { for (const v of lista) { const m = await leer(tipo + ':' + id(v)); if (!m || m.huella !== huella(paquete(v))) cuenta[tipo === 'proyecto' ? 'proyectos' : tipo === 'observacion' ? 'observaciones' : 'avances']++; } };
+    await revisar('proyecto', await local.proyectos(), d => d.id, paqueteProyecto);
+    await revisar('observacion', await local.observaciones(), o => o.obs.id, o => paqueteObservacion(o.obs, o.historial));
+    if (local.avances) await revisar('avance', await local.avances(), a => idAvance(a.key), paqueteAvance);
+    for (const id of await local.idsFotos()) if (!(fotosListas ? fotosListas.has(id) : await meta.fotoLista(id))) cuenta.fotos++;
+    return {...cuenta, total: cuenta.proyectos + cuenta.observaciones + cuenta.avances + cuenta.fotos};
+  }
+  sincronizar.pendientes = pendientes;
+  return sincronizar;
+  async function sincronizar(rol) {
     const resumen = {bajados: 0, subidos: 0, conflictos: 0, fotosSubidas: 0, fotosBajadas: 0, fotosEsperando: 0, errores: 0};
     const locales = {proyectos: new Map((await local.proyectos()).map(d => [d.id, d])), observaciones: new Map((await local.observaciones()).map(o => [o.obs.id, o])),
       avances: new Map((local.avances ? await local.avances() : []).map(a => [idAvance(a.key), a]))};

@@ -1,5 +1,23 @@
-/* Botón «Cerrar sesión» de la cabecera (reemplaza al antiguo botón «Nube»; la sincronización no tiene botón). */
+/* Botón «Cerrar sesión» de la cabecera. */
 .logoutButton { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .logoutButton svg { flex: none; }
 .logoutButton:disabled { opacity: .6; cursor: progress; }
 @media (max-width: 700px) { .logoutButton span { display: none; } .logoutButton { padding: 6px 8px; } }
+/* Estado de la nube en la cabecera (nube.mjs): «N sin subir», «Todo subido» o «Subiendo…»; en celular, ícono y número. */
+header #nubeEstado { order: 3; position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: none; min-height: 40px; padding: 6px 10px; border: 1px solid var(--g-marca, #1b2a56); background: #fff; color: var(--g-texto, #000); font-size: 13px !important; font-weight: 600; line-height: 1; white-space: nowrap; }
+header #nubeEstado[hidden] { display: none; }
+header #nubeEstado.listo svg { color: var(--g-listo, #1a7f37); }
+header #nubeEstado.pendiente svg { color: #b45309; }
+header #nubeEstado.subiendo svg { animation: nubeLatido 1.2s ease-in-out infinite; }
+@keyframes nubeLatido { 50% { opacity: .35; } }
+header #nubeEstado .nubeCuenta { display: none; }
+@media (max-width: 700px) {
+  header #nubeEstado { width: 40px; padding: 0; }
+  header #nubeEstado .nubeTexto { display: none; }
+  header #nubeEstado .nubeCuenta:not([hidden]) { display: block; position: absolute; top: -7px; right: -7px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: #b45309; color: #fff; font-size: 11px; line-height: 18px; text-align: center; }
+}
+@media (prefers-reduced-motion: reduce) { header #nubeEstado.subiendo svg { animation: none; } }
+.nubeDialog { width: min(460px, 94vw); }
+.nubeDialog #nubeLista { margin: 8px 0 4px; padding-left: 18px; font-weight: 600; }
+.nubeDialog .nubeAcciones { display: flex; gap: 8px; margin-top: 16px; }
+.nubeDialog .nubeAcciones button { min-height: 44px; }

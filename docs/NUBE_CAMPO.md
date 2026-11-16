@@ -20,14 +20,15 @@ Usa un proyecto Supabase con cuentas personales (es el mismo proyecto que usaba 
 
 ## Uso
 
-- No hay botón aparte: al iniciar sesión en Atlas la nube queda activa. Los errores y conflictos aparecen como avisos.
-- Se sincroniza solo: unos segundos después de cada cambio, al volver la conexión, al volver a la app y cada 3 minutos con la app abierta.
-- La sesión se renueva sola mientras se use la app. **Cerrar sesión** (cabecera) intenta subir lo pendiente y deja lo guardado en el equipo.
+- Al iniciar sesión en Atlas la nube queda activa. La cabecera muestra su estado: **«Todo subido»**, **«N sin subir»** (en celular, el ícono con el número) o **«Subiendo…»**; una cuenta `lector` ve «Solo lectura». Al tocarlo se abre el detalle: qué falta subir (avances, observaciones, proyectos, fotos), la última sincronización y **«Subir ahora»**.
+- Se sincroniza solo: un segundo después de cada cambio (los toques seguidos se juntan), al volver la conexión, al volver a la app, al salir de ella con cambios pendientes y cada 3 minutos con la app abierta. Cada pedido a la nube tiene un límite de tiempo (30 s; 90 s las fotos): con señal débil no queda colgado.
+- La sesión se renueva sola mientras se use la app. **Cerrar sesión** (cabecera) intenta subir lo pendiente; si algo no alcanzó a subir, avisa cuántos cambios quedan y pide confirmar. Lo no subido sigue en el equipo y se sube cuando alguien vuelva a entrar en él con señal.
+- Una actualización de Atlas espera a que termine la subida en curso.
 
 ## Reglas
 
 - **Versión por registro:** cada proyecto u observación se guarda con la versión que tenía el equipo; si otro equipo se adelantó, Supabase lo rechaza y se resuelve sin perder datos:
-  - **Proyecto cambiado en dos equipos:** queda la versión de la nube y lo de este equipo se guarda como «(copia de este equipo)», que también se sube.
+  - **Proyecto cambiado en dos equipos:** se juntan en uno solo, comparando con lo último sincronizado. Lo cambiado en un solo equipo se conserva, lo borrado en un equipo y no tocado en el otro se borra, y los recintos, estados, cortes y filas se juntan uno a uno (dos recintos nuevos con el mismo número reciben números distintos). Si los dos cambiaron el mismo dato, queda lo guardado más tarde y se avisa. Para proyectos sincronizados antes de esta versión no hay base: las listas se suman y algo borrado en un solo equipo puede volver. Solo si el resultado no es un proyecto válido, lo de este equipo queda como «(copia de este equipo)».
   - **Observación cambiada en dos equipos:** se juntan el historial y las fotos de ambos; los datos (estado, descripción, responsable…) son los de la actualización más reciente. El historial muestra todos los cambios.
   - **Avance del mismo recinto cambiado en dos equipos:** se juntan las partidas de ambos; en cada partida queda la marcada más tarde. Protocolos y firma, del registro más reciente. Una marca deshecha en un equipo mientras el otro la tenía puede volver: se corrige marcando de nuevo.
 - **Avance en proyectos de partida:** un proyecto «Avance · <partida>» u «Hoja de ruta» no guarda los estados de las columnas enlazadas a la planilla; los lee del avance de cada recinto. Por eso lo que se pinta ahí viaja como avance (tipo `avance`, id `av_…` que codifica «piso|código»), no como proyecto. Requiere [`supabase/avance-terreno.sql`](../supabase/avance-terreno.sql); sin ese SQL el avance sigue guardándose en el equipo y la nube lo rechaza sin cortar lo demás.

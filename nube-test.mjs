@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {createAtlasServer} from './server/groq-server.mjs';
 import fs from 'node:fs';
-import {canonico, huella, paqueteProyecto, paqueteObservacion, fusionarObservacion, copiaProyecto, crearSincronizador, idAvance, paqueteAvance, fusionarAvance} from './dist/nube-sync.mjs';
+import {canonico, huella, paqueteProyecto, paqueteObservacion, fusionarObservacion, copiaProyecto, crearSincronizador, idAvance, paqueteAvance, fusionarAvance, fusionarProyecto} from './dist/nube-sync.mjs';
 import {newMarking, validateMarking, addMarkedRoom} from './dist/marking-model.mjs';
 import {nuevaObservacion, validarObservacion, cambiarEstado, entrada} from './dist/observaciones-model.mjs';
 
@@ -16,6 +16,20 @@ assert.equal(huella(paqueteProyecto(proyecto)), huella(paqueteProyecto({...proye
 assert.notEqual(huella(paqueteProyecto(proyecto)), huella(paqueteProyecto({...proyecto, name: 'Otro'})));
 const copia = validateMarking(copiaProyecto({...proyecto, name: 'x'.repeat(160)}, 'proy-2', '2026-10-28T11:00:00.000Z'));
 assert(copia.name.endsWith(' (copia de este equipo)') && copia.name.length <= 160 && copia.version === 1);
+{
+  // Fusión de proyectos de tres vías: sin base las listas se suman; con base, lo borrado en un lado se respeta.
+  const sb = {id: 'p', updatedAt: '2026-01-01', rooms: [{id: 'a', number: 1}], nextNumber: 2, purpose: 'x'};
+  const l = {...sb, rooms: [...sb.rooms, {id: 'b', number: 2}], nextNumber: 3}, rr = {...sb, rooms: [{id: 'c', number: 2}], nextNumber: 3};
+  let f = fusionarProyecto(sb, l, rr);
+  assert.deepEqual(f.doc.rooms.map(x => x.id + x.number), ['c2', 'b3']); assert.equal(f.doc.nextNumber, 4); assert.equal(f.choques, 0);
+  f = fusionarProyecto(undefined, l, rr);
+  assert.deepEqual(f.doc.rooms.map(x => x.id).sort(), ['a', 'b', 'c'], 'sin base no se pierde nada');
+  f = fusionarProyecto(sb, {...sb, purpose: 'L', updatedAt: '2026-01-03'}, {...sb, purpose: 'R', updatedAt: '2026-01-02'});
+  assert.deepEqual([f.doc.purpose, f.choques, f.doc.updatedAt], ['L', 1, '2026-01-03']);
+  const lev = {id: 'lv', updatedAt: '1', filas: [{code: 'A', valores: {c1: 'x'}}, {code: 'B', valores: {}}]};
+  f = fusionarProyecto(lev, {...lev, filas: [{code: 'A', valores: {c1: 'y'}}, lev.filas[1]]}, {...lev, filas: [lev.filas[0], {code: 'B', valores: {c1: 'z'}}]});
+  assert.deepEqual(f.doc.filas, [{code: 'A', valores: {c1: 'y'}}, {code: 'B', valores: {c1: 'z'}}], 'filas por código, valor a valor');
+}
 
 // 2. Supabase simulado: Auth con roles, tabla con versión (40001 si cambió), Storage sin reemplazos y jsonb que reordena claves.
 const cuentas = {'editor@hpc.test': {clave: 'clave-editor', rol: 'editor'}, 'otro@hpc.test': {clave: 'clave-otro', rol: 'editor'}, 'lector@hpc.test': {clave: 'clave-lector', rol: 'lector'}, 'pagos@hpc.test': {clave: 'clave-pagos'}};
@@ -67,7 +81,7 @@ const entrar = async (username, password) => pedir('/api/campo/login', {method: 
 const jpeg = n => { const b = new Uint8Array(64 + n); b.set([0xff, 0xd8, 0xff, 0xe0]); for (let i = 4; i < b.length; i++) b[i] = (i * 31 + n) % 256; return b.buffer; };
 
 // Equipo simulado: mismos adaptadores que nube.mjs pero en memoria (proyectos, observaciones, historial, fotos y lo sincronizado).
-function equipo() {
+function equipo({validar = d => validateMarking({...d, version: 1})} = {}) {
   const proyectos = new Map(), observaciones = new Map(), historial = new Map(), fotos = new Map(), registros = new Map(), fotosListas = new Set(), avisos = [], avances = new Map();
   let desde = null, sesion = null;
   const local = {
@@ -89,10 +103,10 @@ function equipo() {
     const data = await r.json().catch(() => null);
     throw Object.assign(Error(data?.error), {status: r.status, data});
   };
-  const sincronizar = crearSincronizador({api, local, meta, avisar: m => avisos.push(m), nuevoId: () => 'copia-' + Math.random().toString(36).slice(2, 10)});
+  const sincronizar = crearSincronizador({api, local, meta, avisar: m => avisos.push(m), nuevoId: () => 'copia-' + Math.random().toString(36).slice(2, 10), validarProyecto: validar});
   return {proyectos, observaciones, historial, fotos, avisos, avances,
     entrar: async (u, p) => { const r = await entrar(u, p); assert.equal(r.status, 200); sesion = await r.json(); },
-    sync: () => sincronizar(sesion.user.role)};
+    sync: () => sincronizar(sesion.user.role), pendientes: () => sincronizar.pendientes()};
 }
 const sinVersion = ({version, ...resto}) => resto;
 const pintar = (doc, room) => ({...addMarkedRoom(doc, room, source, doc.estados[0].id), updatedAt: new Date(reloj += 1000).toISOString(), version: doc.version + 1});
@@ -146,18 +160,49 @@ try {
   assert.equal((await A.sync()).bajados, 1);
   assert.deepEqual(A.proyectos.get(proyecto.id).rooms.map(x => x.id), ['r1', 'r2']);
 
-  // 6. El mismo proyecto cambia en los dos equipos: lo de B queda como copia y nada se pierde.
-  A.proyectos.set(proyecto.id, {...A.proyectos.get(proyecto.id), purpose: 'Avance de vinílicos de octubre', version: A.proyectos.get(proyecto.id).version + 1});
-  B.proyectos.set(proyecto.id, {...B.proyectos.get(proyecto.id), purpose: 'Avance de vinílicos según B', version: B.proyectos.get(proyecto.id).version + 1});
+  // 6. El mismo proyecto cambia en los dos equipos: se juntan en uno solo, sin copias. A pinta la bodega y cambia
+  // el propósito; B pinta la sala de espera y borra el pasillo. Los dos recintos nuevos traían el mismo número.
+  const bodega = {id: 'r3', code: '5.1-3', name: 'Bodega'}, espera = {id: 'r4', code: '5.1-4', name: 'Sala de espera'};
+  assert.equal((await B.pendientes()).total, 0, 'sin cambios propios no hay pendientes');
+  A.proyectos.set(proyecto.id, {...pintar(A.proyectos.get(proyecto.id), bodega), purpose: 'Avance de vinílicos de octubre'});
+  const sinPasillo = B.proyectos.get(proyecto.id);
+  B.proyectos.set(proyecto.id, pintar({...sinPasillo, rooms: sinPasillo.rooms.filter(x => x.id !== 'r2')}, espera));
+  assert.deepEqual(await B.pendientes(), {proyectos: 1, observaciones: 0, avances: 0, fotos: 0, total: 1});
   assert.equal((await A.sync()).subidos, 1);
   r = await B.sync();
-  assert.equal(r.conflictos, 1);
-  const copiaB = [...B.proyectos.values()].find(d => d.name.endsWith('(copia de este equipo)'));
-  assert.equal(copiaB.purpose, 'Avance de vinílicos según B');
-  assert.equal(B.proyectos.get(proyecto.id).purpose, 'Avance de vinílicos de octubre');
-  assert.match(B.avisos.at(-1), /quedó como «Pisos vinílicos \(copia de este equipo\)»/);
+  assert.deepEqual([r.conflictos, r.subidos], [1, 1]);
+  const juntoB = B.proyectos.get(proyecto.id);
+  assert.equal(B.proyectos.size, 1, 'sin copias');
+  assert.deepEqual(juntoB.rooms.map(x => x.id), ['r1', 'r3', 'r4'], 'lo pintado en ambos equipos queda; lo borrado en B no vuelve');
+  assert.equal(new Set(juntoB.rooms.map(x => x.number)).size, 3, 'números sin repetir');
+  assert(juntoB.rooms.every(x => x.number < juntoB.nextNumber));
+  assert.equal(juntoB.purpose, 'Avance de vinílicos de octubre', 'lo cambiado solo en A se conserva');
+  assert.match(B.avisos.at(-1), /Se juntaron los cambios de ambos\./);
+  assert.equal((await B.pendientes()).total, 0, 'lo juntado ya se subió');
   assert.equal((await A.sync()).bajados, 1);
-  assert.equal(A.proyectos.size, 2);
+  assert.equal(A.proyectos.size, 1);
+  assert.deepEqual(sinVersion(A.proyectos.get(proyecto.id)), sinVersion(juntoB));
+
+  // 6b. El mismo dato cambiado en los dos: queda el guardado más tarde y se avisa.
+  A.proyectos.set(proyecto.id, {...A.proyectos.get(proyecto.id), purpose: 'Propósito de A', updatedAt: new Date(reloj += 1000).toISOString(), version: A.proyectos.get(proyecto.id).version + 1});
+  B.proyectos.set(proyecto.id, {...B.proyectos.get(proyecto.id), purpose: 'Propósito de B', updatedAt: new Date(reloj += 1000).toISOString(), version: B.proyectos.get(proyecto.id).version + 1});
+  await A.sync(); r = await B.sync();
+  assert.equal(B.proyectos.get(proyecto.id).purpose, 'Propósito de B');
+  assert.match(B.avisos.at(-1), /quedó lo guardado más tarde/);
+  await A.sync();
+  assert.equal(A.proyectos.get(proyecto.id).purpose, 'Propósito de B');
+
+  // 6c. Si lo juntado no es un proyecto válido, la versión de este equipo queda como copia: nada se pierde.
+  const Dc = equipo({validar: () => { throw Error('inválido'); }}); await Dc.entrar('otro@hpc.test', 'clave-otro'); await Dc.sync();
+  A.proyectos.set(proyecto.id, {...A.proyectos.get(proyecto.id), purpose: 'Avance según A', version: A.proyectos.get(proyecto.id).version + 1});
+  Dc.proyectos.set(proyecto.id, {...Dc.proyectos.get(proyecto.id), purpose: 'Avance según D', version: Dc.proyectos.get(proyecto.id).version + 1});
+  await A.sync(); r = await Dc.sync();
+  const copiaD = [...Dc.proyectos.values()].find(d => d.name.endsWith('(copia de este equipo)'));
+  assert.equal(copiaD.purpose, 'Avance según D');
+  assert.match(Dc.avisos.at(-1), /quedó como «Pisos vinílicos \(copia de este equipo\)»/);
+  // La copia queda en la nube; los demás equipos la reciben. Se borra (marca de eliminado) para no afectar lo siguiente.
+  Dc.proyectos.set(copiaD.id, {...copiaD, eliminado: {at: copiaD.updatedAt, autor: 'prueba'}, version: copiaD.version + 1}); await Dc.sync();
+  await A.sync(); await B.sync();
 
   // 7. La misma observación cambia en los dos equipos: se juntan historial y fotos; los datos son de la última actualización.
   const enA = cambiarEstado(A.observaciones.get(obs.id), 'En corrección', {autor: 'Mauro', comentario: 'Subcontrato avisado', at: '2026-10-28T13:00:00.000Z'});
@@ -182,7 +227,7 @@ try {
   // 8. Cuenta de solo lectura: baja todo, no sube sus cambios y el servidor rechaza sus escrituras.
   const C = equipo(); await C.entrar('lector@hpc.test', 'clave-lector');
   r = await C.sync();
-  assert.deepEqual([r.bajados, r.fotosBajadas, r.subidos], [3, 2, 0]);
+  assert.deepEqual([r.bajados, r.fotosBajadas, r.subidos], [3, 2, 0], 'proyecto, copia de D (eliminada) y observación');
   C.proyectos.set(proyecto.id, pintar(C.proyectos.get(proyecto.id), {id: 'r3', code: '5.1-3', name: 'Bodega'}));
   assert.equal((await C.sync()).subidos, 0);
   const lector = await (await entrar('lector@hpc.test', 'clave-lector')).json();
@@ -248,7 +293,7 @@ try {
   r = await D.sync();
   assert.equal(D.avances.size, 1, 'solo el registro bueno');
   assert.equal(r.errores, 1);
-  console.log('Nube: sesión, permisos (editor/lector), versión con conflicto, fotos, fusión de observaciones, copia de proyectos y avance por recinto validados (Supabase simulado).');
+  console.log('Nube: sesión, permisos (editor/lector), versión con conflicto, fotos, fusión de observaciones, fusión de proyectos (copia solo si no se puede juntar), pendientes y avance por recinto validados (Supabase simulado).');
 } finally {
   server.closeAllConnections(); await new Promise(r => server.close(r));
 }
