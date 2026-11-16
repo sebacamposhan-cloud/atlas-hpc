@@ -3,7 +3,8 @@ export const protocolFloors = {
   'N-1': {code: 'S01', name: 'Piso −1'},
   N01: {code: 'N01', name: 'Piso 1'},
   N02: {code: 'N02', name: 'Piso 2'},
-  N03: {code: 'N03', name: 'Piso 3'}
+  N03: {code: 'N03', name: 'Piso 3'},
+  N04: {code: 'N04', name: 'Piso 4'}
 };
 export function protocolLevels(value) {
   const clean = String(value ?? '').toUpperCase().replace(/\s/g, '').replace(/[–—]/g, '-');

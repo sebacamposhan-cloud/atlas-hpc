@@ -13,7 +13,7 @@ export const MAX_COLUMNAS = 30, MAX_OPCIONES = 24, MAX_FILAS = 5000;
 export const VISTA_LISTO = 'listo';
 export const LISTO = {listo: {nombre: 'Listo para instalar', color: '#2e9e5b'}, pendiente: {nombre: 'Pendiente', color: '#c26a00'}};
 // Pisos de Atlas y cómo pueden venir escritos en una planilla.
-export const PISOS = {'N-1': ['s01', 'n-1', '-1', 'nivel -1', 'subterraneo', 'sotano'], N01: ['n01', '1', 'nivel 1', 'n1'], N02: ['n02', '2', 'nivel 2', 'n2'], N03: ['n03', '3', 'nivel 3', 'n3']};
+export const PISOS = {'N-1': ['s01', 'n-1', '-1', 'nivel -1', 'subterraneo', 'sotano'], N01: ['n01', '1', 'nivel 1', 'n1'], N02: ['n02', '2', 'nivel 2', 'n2'], N03: ['n03', '3', 'nivel 3', 'n3'], N04: ['n04', '4', 'nivel 4', 'n4']};
 const PALETA = ['#2f6db5', '#e07b00', '#7a4fa3', '#2a9d8f', '#b5651d', '#5f6b7a', '#c21f1f', '#1b2a56', '#8a6d00', '#3c8d3c'];
 
 // Clave para unir variantes de escritura: sin tildes, mayúsculas ni espacios dobles, y «Instalada» = «Instalado».

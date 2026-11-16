@@ -13,10 +13,10 @@ import {aAtlas} from '../dwg-plano/marco.mjs';
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const esNumero = id => /^A\d/.test(id), delEdificio = id => /^A/.test(id);
 // s01 es el nivel −1: sus láminas DWG van en el marco de su plano (data/s01/marco.json) y su grilla en dist/ejes.json.
-const NIVELES = ['n01', 'n02', 'n03', 's01'], destino = nivel => nivel === 's01' ? 'dist/ejes.json' : `dist/${nivel}/ejes.json`;
+const NIVELES = ['n01', 'n02', 'n03', 'n04', 's01'], destino = nivel => nivel === 's01' ? 'dist/ejes.json' : `dist/${nivel}/ejes.json`;
 const propios = Object.fromEntries(NIVELES.map(n => [n, new Map(grillaDeNivel(leerCapaEjes(repo, n)).filter(e => !e.id.includes('#') && delEdificio(e.id)).map(e => [e.id, e]))]));
 const completa = new Map(), origen = new Map();
-for (const nivel of ['n01', 'n03', 's01', 'n02']) for (const [id, e] of propios[nivel]) if (!completa.has(id)) { completa.set(id, e); origen.set(id, nivel); }
+for (const nivel of ['n01', 'n03', 's01', 'n02', 'n04']) for (const [id, e] of propios[nivel]) if (!completa.has(id)) { completa.set(id, e); origen.set(id, nivel); }
 const ejes = [...completa.values()].sort((a, b) => a.id.localeCompare(b.id, 'es', {numeric: true}));
 const mediana = v => { const s = [...v].sort((a, b) => a - b), m = s.length >> 1; return !s.length ? 0 : s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 const medio = e => [(e.a[0] + e.b[0]) / 2, (e.a[1] + e.b[1]) / 2];

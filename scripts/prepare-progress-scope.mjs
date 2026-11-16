@@ -7,7 +7,7 @@ import {progressFloor} from '../dist/progress-scope.mjs';
 import {esObraComplementaria} from '../dist/obra-complementaria.mjs';
 const root=fileURLToPath(new URL('../dist/',import.meta.url)),sources={},rooms={},sheets={};
 const read=name=>{const bytes=fs.readFileSync(root+name);sources[name]=createHash('sha256').update(bytes).digest('hex');return JSON.parse(bytes);};
-for(const file of ['runtime.json','n01/runtime.json','n02/runtime.json','n03/runtime.json']){
+for(const file of ['runtime.json','n01/runtime.json','n02/runtime.json','n03/runtime.json','n04/runtime.json']){
  for(const room of decodeRuntime(read(file)).data.rooms){const floor=progressFloor(room.level),code=room.code?.trim();if(!floor||!code||esObraComplementaria(code))continue;(rooms[code]??=[]);if(!rooms[code].includes(floor))rooms[code].push(floor);}
 }
 for(const doc of read('disciplines.json').documents){const floor=progressFloor(doc.level);if(floor)sheets[doc.id]=floor;}

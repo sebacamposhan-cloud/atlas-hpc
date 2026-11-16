@@ -1,14 +1,14 @@
 // Convierte un nivel dibujado desde sus láminas DWG (scripts/dwg-plano) al formato de Atlas.
 // Entrada: data/<nivel>/laminas.json, recintos.json, marco.json y rombos-plano.json, y los mosaicos de dist/<nivel>/map.
 // Salida: dist/<nivel>/runtime.json, geometry/ y laminas.svg (bordes de láminas, capa opcional).
-// Uso: node scripts/import-dwg.mjs <nivel: n01|n03>
+// Uso: node scripts/import-dwg.mjs <nivel: n01, n03 o n04 a n09>
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {aAtlas} from './dwg-plano/marco.mjs';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const nivel = process.argv[2];
-if (!/^n0[13]$/.test(nivel || '')) throw Error('Indica el nivel: n01 o n03 (el N02 se importa con scripts/import-n02.mjs).');
+if (!/^n0[13-9]$/.test(nivel || '')) throw Error('Indica el nivel: n01, n03 o n04 a n09 (el N02 se importa con scripts/import-n02.mjs).');
 const dist = path.join(root, 'dist'), out = path.join(dist, nivel), numero = nivel.slice(-1), NIVEL = nivel.toUpperCase();
 const leer = f => JSON.parse(fs.readFileSync(path.join(root, 'data', nivel, f), 'utf8'));
 const laminas = leer('laminas.json'), {recintos} = leer('recintos.json'), marco = leer('marco.json');

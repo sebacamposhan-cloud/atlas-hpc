@@ -4,13 +4,13 @@
 // si las láminas lo traen (zonas.json). Se acepta si su área queda entre 80 % y 120 % de la superficie del PMA (o del
 // rótulo); entre 60 % y 80 % queda como contorno parcial. Si no, el recinto lleva una superficie auxiliar de selección:
 // la parte que rodea al rótulo, recortada por los muros (no se inventa un límite).
-// Uso: node scripts/dwg-plano/recintos.mjs <nivel: n01|n03>  -> data/<nivel>/recintos.json
+// Uso: node scripts/dwg-plano/recintos.mjs <nivel: n01, n03 o n04 a n09>  -> data/<nivel>/recintos.json
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const nivel = process.argv[2];
-if (!/^n0[13]$/.test(nivel || '')) throw Error('Indica el nivel: n01 o n03 (el N02 conserva sus contornos de data/n02/plano.json).');
+if (!/^n0[13-9]$/.test(nivel || '')) throw Error('Indica el nivel: n01, n03 o n04 a n09 (el N02 conserva sus contornos de data/n02/plano.json).');
 const leer = f => JSON.parse(fs.readFileSync(path.join(repo, 'data', nivel, f), 'utf8'));
 const {rotulos, rombos} = leer('laminas.json'), barreras = leer('barreras.json');
 const opcional = f => fs.existsSync(path.join(repo, 'data', nivel, f)) ? leer(f) : {};
