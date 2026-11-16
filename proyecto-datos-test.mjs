@@ -30,6 +30,6 @@ for (const [nombre, src] of [['marking', marking], ['levantamiento', lev]]) {
 }
 assert.ok(!marking.includes('name="autor"'), 'el corte se firma con la sesión');
 assert.ok(lev.includes('<label>Nombre del proyecto *<input name="name" required maxlength="160" value="${esc(doc?.name || \'\')}"'), 'el nombre se edita también en un proyecto existente');
-assert.ok(lev.includes('Datos y columnas</button>'));
+assert.ok(lev.includes("['levColumnas', 'Columnas', 'columnas', 'data-wait-save']"), 'Columnas va entre las acciones flotantes del proyecto');
 assert.ok(fs.readFileSync('scripts/prepare-offline.mjs', 'utf8').includes("'proyecto-datos.mjs'"));
 console.log('proyecto-datos-test: ok');

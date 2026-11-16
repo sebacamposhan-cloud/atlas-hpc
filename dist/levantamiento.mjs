@@ -14,6 +14,7 @@ import {readMarkings, saveMarking} from './marking-store.mjs';
 import {marcarRecinto, deshacerRecinto} from './avance-marcar.mjs';
 import {exigirFirma, firmante} from './firma.mjs';
 import {propositoHTML, conectarProposito, leerProposito} from './proyecto-datos.mjs';
+import {funcionesProyecto, botonAmpliar} from './proyecto-funciones.mjs';
 
 const NOMBRE_PISO = {'N-1': 'Nivel −1', N01: 'Nivel 1', N02: 'Nivel 2', N03: 'Nivel 3', N04: 'Nivel 4'};
 // Filtro de la tabla de cada levantamiento (por documento): se recuerda en el equipo y acota tabla, plano y exportación.
@@ -142,11 +143,11 @@ export function createLevantamiento(ctx) {
     const estadoPincel = colPincel && pincel ? colPincel.opciones.find(o => o.id === pincel.op) : null;
     const filaLeyenda = e => { const activo = pincel && e.id === pincel.op, nombre = `<i style="background:${e.color};${e.id ? '' : 'border:1px solid #8c8c8c'}"></i>${esc(e.nombre)}`;
       return `<tr class="${activo ? 'levPincelActivo' : ''}"><td>${colPincel && e.id ? `<button type="button" class="levPincelBoton" data-lev-pincel="${esc(e.id)}" aria-pressed="${!!activo}">${nombre}</button>` : nombre}</td><td>${e.n}</td></tr>`; };
-    panel.innerHTML = `<div class="markingHead"><div><small>LEVANTAMIENTO · ${esc(ctx.levelName)}</small><h2>${esc(doc.name)}</h2></div><button id="closeMarking" data-wait-save aria-label="Cerrar proyecto">×</button></div>
-      <div class="markingActions"><button id="markingDocuments" data-wait-save>Proyectos</button><button id="levColumnas" data-wait-save>Datos y columnas</button><button id="levTabla">Tabla</button><button id="levExcel" data-wait-save>Excel</button></div>
+    panel.innerHTML = `<div class="markingHead"><div><small>LEVANTAMIENTO · ${esc(ctx.levelName)}</small><h2>${esc(doc.name)}</h2></div>${botonAmpliar()}<button id="closeMarking" data-wait-save aria-label="Cerrar proyecto">×</button></div>
+      ${funcionesProyecto([['markingDocuments', 'Proyectos', 'proyectos', 'data-wait-save'], ['levColumnas', 'Columnas', 'columnas', 'data-wait-save'], ['levTabla', 'Tabla', 'tabla'], ['levExcel', 'Excel', 'excel', 'data-wait-save'], ['markingBackup', 'Respaldo', 'respaldo', 'data-wait-save'], ['markingExport', 'Exportar', 'exportar', 'data-wait-save']])}
       <div class="markingScroll">
         ${conFiltro ? `<p class="levFiltro"><span><b>Filtro de la tabla:</b> ${esc(L.textoFiltro(doc, filtroLevantamiento(doc.id)))}. El plano y la exportación muestran ${visibles.length} de ${doc.filas.length} recintos.</span><button type="button" id="levQuitarFiltro">Quitar filtro</button></p>` : ''}
-        <label class="levVista">Colorear plano por<select id="levVista">${vistas.map(([k, t]) => `<option value="${esc(k)}" ${doc.vista === k ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
+        <label class="levVista">Colorear plano por<select id="levVista" data-sin-flujo>${vistas.map(([k, t]) => `<option value="${esc(k)}" ${doc.vista === k ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
         ${estadoPincel ? `<div class="levPincel" role="status"><span>Pintando con <b style="--c:${estadoPincel.color}">${esc(estadoPincel.nombre)}</b> · ${pincel.n} ${pincel.n === 1 ? 'recinto' : 'recintos'}. Toca los recintos en el plano.</span>
           <div><button type="button" id="levDeshacer" ${marcas.length ? '' : 'disabled'}>Deshacer</button><button type="button" id="levPincelListo">Listo</button></div></div>`
           : colPincel ? `<p class="markingInstruction">Para marcar varios recintos, toca un estado y luego los recintos en el plano.${partidaDe(colPincel) ? ' Se guarda en el rombo de cada recinto.' : ''}</p>` : ''}
@@ -156,7 +157,7 @@ export function createLevantamiento(ctx) {
           : estadoPincel ? '' : '<p class="markingInstruction">Toca un recinto en el plano para ver y marcar sus columnas.</p>'}
         <h3>${conFiltro ? `${visibles.length} de ${doc.filas.length} recintos (filtro)` : `${doc.filas.length} recintos en este piso`}${fuera ? ` · ${fuera} no están en el plano` : ''}</h3>
         <ol class="levFilas">${visibles.map(f => { const r = roomDe(f.code); return `<li class="${room && r?.id === room.id ? 'focused' : ''}"><button type="button" data-lev-fila="${esc(f.code)}" ${r ? '' : 'disabled'}><b>${esc(f.code)}</b><span>${esc(f.name || r?.name || '')}${r ? '' : ' · no está en el plano de este piso'}</span>${chip(L.categoria(doc, f, enlazado))}</button></li>`; }).join('')}</ol></div>
-      <div class="markingFooter"><span id="markingSaveStatus" role="status"></span><div><button id="markingBackup" data-wait-save>Respaldo JSON</button><button id="markingExport" data-wait-save>Exportar plano</button></div><small>Las columnas enlazadas toman el estado del rombo cuando tiene registro.</small></div>`;
+      <div class="markingFooter"><span id="markingSaveStatus" role="status"></span><small>Las columnas enlazadas toman el estado del rombo cuando tiene registro.</small></div>`;
     panel.querySelector('#closeMarking').onclick = ctx.cerrar;
     panel.querySelector('#markingDocuments').onclick = ctx.biblioteca;
     panel.querySelector('#markingBackup').onclick = ctx.respaldo;
