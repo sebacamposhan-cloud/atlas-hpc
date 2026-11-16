@@ -48,9 +48,14 @@ export function updateTiles(){clearTimeout(tileTimer);tileTimer=0;if(!map||!svg|
  const level=map.levels.find(l=>l.scale>=density)||map.levels.at(-1),span=map.tileSize/level.scale,[ox,oy]=map.origin;
  const left=Math.max(0,Math.floor((a.x-ox)/span)),top=Math.max(0,Math.floor((a.y-oy)/span)),right=Math.min(level.columns-1,Math.floor((b.x-ox)/span)),bottom=Math.min(level.rows-1,Math.floor((b.y-oy)/span));const desired=new Set();
  const capas=[['',map.tilePath||'map/'],...(map.capas||[]).filter(c=>capaVisible(c.id)).map(c=>[c.id,c.tilePath])];
- for(let y=top;y<=bottom;y++)for(let x=left;x<=right;x++)for(const [capa,ruta] of capas){const tesela=level.z+'_'+x+'_'+y;if(capa&&!teselasCapa.get(capa)?.has(tesela))continue;const key=(capa?capa+':':'')+tesela;desired.add(key);if(activeTiles.has(key))continue;const el=document.createElementNS(ns,'image');el.dataset.tile=key;el.setAttribute('href',`${ruta}${level.z}/${x}_${y}.webp`);el.setAttribute('x',ox+x*span);el.setAttribute('y',oy+y*span);el.setAttribute('width',Math.min(span,map.width-x*span));el.setAttribute('height',Math.min(span,map.height-y*span));el.setAttribute('preserveAspectRatio','none');el.setAttribute('decoding','async');el.addEventListener('error',()=>{if(activeTiles.get(key)===el){activeTiles.delete(key);el.remove();}},{once:true});activeTiles.set(key,el);(grupos.get(capa)||tiles).append(el);}
+ for(let y=top;y<=bottom;y++)for(let x=left;x<=right;x++)for(const [capa,ruta] of capas){const tesela=level.z+'_'+x+'_'+y;if(capa&&!teselasCapa.get(capa)?.has(tesela))continue;const key=(capa?capa+':':'')+tesela;desired.add(key);if(activeTiles.has(key)||Date.now()-(teselasFallidas.get(key)||0)<TESELA_PAUSA)continue;const el=document.createElementNS(ns,'image');el.dataset.tile=key;el.setAttribute('href',`${ruta}${level.z}/${x}_${y}.webp`);el.setAttribute('x',ox+x*span);el.setAttribute('y',oy+y*span);el.setAttribute('width',Math.min(span,map.width-x*span));el.setAttribute('height',Math.min(span,map.height-y*span));el.setAttribute('preserveAspectRatio','none');el.setAttribute('decoding','async');el.addEventListener('error',()=>{teselasFallidas.set(key,Date.now());avisarTeselaFaltante();if(activeTiles.get(key)===el){activeTiles.delete(key);el.remove();}},{once:true});activeTiles.set(key,el);(grupos.get(capa)||tiles).append(el);}
  for(const [key,el] of activeTiles)if(!desired.has(key)){el.remove();activeTiles.delete(key);}
 }
-window.addEventListener('online',updateTiles);
+// Una tesela que no cargó (sin señal y piso sin guardar) no se vuelve a pedir en cada movimiento del plano: antes se
+// pedía de nuevo al instante y, con señal débil, cada pedido esperaba la red y el plano se trababa. Vuelve a intentarse
+// al minuto o cuando vuelve la señal. offline.mjs escucha «atlas-teselas-faltan» para avisar que falta guardar el piso.
+const TESELA_PAUSA=60000,teselasFallidas=new Map();let avisoTesela=0;
+function avisarTeselaFaltante(){if(Date.now()-avisoTesela<5000)return;avisoTesela=Date.now();window.dispatchEvent(new Event('atlas-teselas-faltan'));}
+window.addEventListener('online',()=>{teselasFallidas.clear();updateTiles();});
 export function exportMapURL(){return map.export;}
 export function mapa(){return map;}

@@ -243,12 +243,13 @@ Ejes A–W · 1–12
   <button id="offlineClose" class="close" aria-label="Cerrar modo sin conexión">×</button>
   <div class="section-label">ATLAS EN TU DISPOSITIVO</div>
   <h2 id="offlineTitle">Tu plano, incluso sin señal</h2>
-  <p>Guarda los planos de todos los pisos para moverlos y ampliarlos, buscar recintos y consultar sus fichas sin internet.</p>
+  <p>Con señal, Atlas guarda solo en este equipo cada piso que abres. Al llegar a un piso sin señal, el plano, la búsqueda y las fichas siguen funcionando.</p>
   <div id="offlineStatus" class="offlineStatus" role="status" aria-live="polite">Comprobando almacenamiento…</div>
   <progress id="offlineProgress" max="100" value="0" hidden aria-label="Progreso de descarga"></progress>
   <p id="offlineProgressText" class="muted"></p>
+  <ul id="offlinePisos" class="offlinePisos" hidden aria-label="Pisos guardados en este equipo"></ul>
   <div class="offlineActions">
-    <button id="offlineSave" class="primary" disabled>Guardar plano y fichas</button>
+    <button id="offlineSave" disabled>Guardar todos los pisos</button>
     <button id="offlineCancel" hidden>Pausar descarga</button>
     <button id="offlineCheckUpdate">Buscar actualizaciones</button><p id="offlineUpdateInfo" role="status"></p><a href="actualizar.html">Recuperar actualización</a>
     <button id="offlineUpdate" hidden>Actualizar versión</button>
@@ -259,7 +260,7 @@ Ejes A–W · 1–12
     <button id="offlineSaveDocuments" disabled>Guardar originales</button>
   </div>
   <details class="offlineHelp"><summary>Usarlo en iPhone o iPad</summary>
-    <p>Abre este sitio en Safari. En Compartir, elige «Añadir a pantalla de inicio». Abre Atlas desde ese icono y pulsa «Guardar plano y fichas» allí.</p>
+    <p>Abre este sitio en Safari. En Compartir, elige «Añadir a pantalla de inicio». Abre Atlas desde ese icono: los pisos que abras ahí se guardan solos.</p>
     <p>Mantén Atlas abierto durante la descarga. Espera el mensaje «Listo para usar sin conexión» antes de desconectarte.</p>
     <p>La copia y tus correcciones quedan en este navegador. Si borras sus datos, se pierden ambas. Respalda tus correcciones desde Filtros del plano → Colores y respaldo antes de borrarlos.</p>
   </details>
