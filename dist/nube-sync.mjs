@@ -1,8 +1,11 @@
-// Sincronización de proyectos y observaciones con la nube compartida (/api/campo → supabase/campo.sql).
-// Cada equipo guarda primero en su IndexedDB; aquí se baja lo de otros equipos, se sube lo cambiado y se mueven las fotos.
-// Un cambio se detecta comparando la huella del contenido (sin la versión local) con la de la última sincronización.
-// Si el mismo registro cambió en dos equipos: el proyecto de este equipo queda como copia y la observación se fusiona
-// (historial y fotos de ambos; los datos de la versión actualizada más tarde).
+// Sincronización de proyectos, observaciones y avance por recinto con la nube compartida (/api/campo → supabase/campo.sql
+// y supabase/avance-terreno.sql). Cada equipo guarda primero en su IndexedDB; aquí se baja lo de otros equipos, se sube
+// lo cambiado y se mueven las fotos. Un cambio se detecta comparando la huella del contenido (sin la versión local) con
+// la de la última sincronización. Si el mismo registro cambió en dos equipos: el proyecto de este equipo queda como
+// copia, la observación se fusiona (historial y fotos de ambos; los datos de la versión actualizada más tarde) y el
+// avance del recinto también (en cada partida queda la marca más reciente).
+// El avance es lo que se marca en el rombo, en la ficha o con el pincel de un proyecto de partida: el proyecto no
+// guarda esos estados, los lee del avance del recinto, así que sin este tipo lo pintado no salía del equipo.
 import {MAX_FOTOS} from './observaciones-model.mjs';
 
 // JSON con las claves ordenadas: el mismo contenido da el mismo texto aunque la base reordene las claves.
@@ -29,6 +32,20 @@ export function fusionarObservacion(local, remoto) {
   const fotos = [...base.fotos, ...otra.fotos.filter(f => !ids.has(f.id))].slice(0, MAX_FOTOS);
   const historial = new Map([...remoto.historial, ...local.historial].map(h => [h.id, h]));
   return {obs: {...base, fotos}, historial: [...historial.values()].sort(porFecha)};
+}
+// Avance de un recinto (registro de avance-store.mjs, clave «piso|código»). La clave lleva «|» y puntos, que la nube
+// no acepta en el id: cada carácter fuera de [A-Za-z0-9-] se escribe como «_» y 4 cifras hexadecimales (reversible).
+export const idAvance = key => 'av_' + String(key).replace(/[^A-Za-z0-9-]/g, c => '_' + c.charCodeAt(0).toString(16).padStart(4, '0'));
+export const paqueteAvance = registro => ({registro: sinVersion(registro)});
+// Dos versiones del avance del mismo recinto: en cada partida queda la marcada más tarde (su «at»; las que no llevan
+// hora usan la del registro) y se juntan las que estén en una sola. Protocolos y firma, del registro más reciente.
+// Una marca deshecha en un equipo mientras el otro tenía la partida puede volver: se corrige marcando de nuevo.
+export function fusionarAvance(local, remoto) {
+  const [base, otro] = (local.at || '') > (remoto.at || '') ? [local, remoto] : [remoto, local];
+  const hora = (r, p) => p?.at || r.atSinHora || r.at || '';
+  const partidas = {...(otro.partidas || {})};
+  for (const [id, p] of Object.entries(base.partidas || {})) if (!partidas[id] || hora(base, p) >= hora(otro, partidas[id])) partidas[id] = p;
+  return {...base, partidas, protocolos: {...(otro.protocolos || {}), ...(base.protocolos || {})}};
 }
 // Copia del proyecto de este equipo cuando otro equipo cambió el mismo proyecto.
 export function copiaProyecto(doc, id, at) {
@@ -63,6 +80,18 @@ export function crearSincronizador({api, local, meta, avisar = () => {}, nuevoId
       } else if (!loc || hl !== hr) {
         locales.observaciones.set(r.id, {obs: await local.escribirObservacion(r.data.obs, r.data.historial), historial: r.data.historial}); resumen.bajados++;
       }
+    } else if (r.tipo === 'avance') {
+      if (!local.escribirAvance) return;
+      const remoto = r.data?.registro;
+      // Registro incompleto o con un id que no es el de su clave: se cuenta como error y se sigue con los demás.
+      const valido = remoto && typeof remoto.at === 'string' && remoto.partidas && typeof remoto.partidas === 'object'
+        && remoto.key === remoto.level + '|' + String(remoto.code).trim() && idAvance(remoto.key) === r.id;
+      if (!valido) { resumen.errores++; return; }
+      const loc = locales.avances.get(r.id), hl = loc && huella(paqueteAvance(loc));
+      if (loc && hl !== hr && (!m || hl !== m.huella)) {
+        locales.avances.set(r.id, await local.escribirAvance(fusionarAvance(sinVersion(loc), remoto))); resumen.conflictos++;
+        avisar(`El avance de ${remoto.code} también cambió en otro equipo. Se juntaron ambos: en cada partida quedó la marca más reciente.`);
+      } else if (!loc || hl !== hr) { locales.avances.set(r.id, await local.escribirAvance(remoto)); resumen.bajados++; }
     } else return;
     await meta.escribir(clave, {version: r.version, huella: hr});
   }
@@ -70,7 +99,7 @@ export function crearSincronizador({api, local, meta, avisar = () => {}, nuevoId
   // Sube lo que cambió desde la última sincronización; si otro equipo se adelantó (409), se aplica lo suyo y se reintenta.
   async function subir(locales, resumen) {
     let otraVuelta = false;
-    for (const [tipo, mapa, paquete] of [['proyecto', locales.proyectos, d => paqueteProyecto(d)], ['observacion', locales.observaciones, o => paqueteObservacion(o.obs, o.historial)]]) {
+    for (const [tipo, mapa, paquete] of [['proyecto', locales.proyectos, d => paqueteProyecto(d)], ['observacion', locales.observaciones, o => paqueteObservacion(o.obs, o.historial)], ['avance', locales.avances, paqueteAvance]]) {
       for (const [id, valor] of mapa) {
         const clave = tipo + ':' + id, m = await meta.leer(clave), data = paquete(valor), h = huella(data);
         if (m && m.huella === h) continue;
@@ -114,7 +143,8 @@ export function crearSincronizador({api, local, meta, avisar = () => {}, nuevoId
 
   return async function sincronizar(rol) {
     const resumen = {bajados: 0, subidos: 0, conflictos: 0, fotosSubidas: 0, fotosBajadas: 0, fotosEsperando: 0, errores: 0};
-    const locales = {proyectos: new Map((await local.proyectos()).map(d => [d.id, d])), observaciones: new Map((await local.observaciones()).map(o => [o.obs.id, o]))};
+    const locales = {proyectos: new Map((await local.proyectos()).map(d => [d.id, d])), observaciones: new Map((await local.observaciones()).map(o => [o.obs.id, o])),
+      avances: new Map((local.avances ? await local.avances() : []).map(a => [idAvance(a.key), a]))};
     const desde = await meta.desde();
     const {registros} = await api('GET', '/api/campo' + (desde ? '?desde=' + encodeURIComponent(desde) : ''));
     let ultimo = 0;

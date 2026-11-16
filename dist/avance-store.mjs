@@ -1,5 +1,7 @@
 // Avance por partida: registros por recinto (clave piso|código) con historial append-only.
 // El itemizado con precios ya no se usa en la plataforma: borrarItemizado quita la copia que quedara en el equipo.
+// Los registros viajan entre equipos por la nube (nube-sync.mjs, tipo «avance»): lo marcado aquí avisa con origen
+// «equipo» para que se suba; lo bajado de la nube avisa con origen «nube» y no vuelve a disparar la sincronización.
 import {keyFor} from './avance-model.mjs';
 const DB = 'atlas-avance-partidas';
 const abrir = () => new Promise((resolve, reject) => {
@@ -13,7 +15,7 @@ async function conDb(tablas, modo, fn) {
   finally { db.close(); }
 }
 const leerTodo = (tx, tabla) => new Promise((resolve, reject) => { const q = tx.objectStore(tabla).getAll(); q.onsuccess = () => resolve(q.result); q.onerror = () => reject(q.error); });
-const avisar = () => typeof window !== 'undefined' && window.dispatchEvent(new Event('atlas-avance-changed'));
+const avisar = origen => typeof window !== 'undefined' && window.dispatchEvent(new CustomEvent('atlas-avance-changed', {detail: {origen}}));
 
 export async function leerAvance() { return conDb(['rooms', 'history'], 'readonly', async (tx, ok) => { const [registros, historial] = await Promise.all([leerTodo(tx, 'rooms'), leerTodo(tx, 'history')]); ok({registros, historial}); }); }
 
@@ -27,7 +29,23 @@ export async function guardarAvance(registro, versionEsperada) {
       tx.objectStore('rooms').put(registro); tx.objectStore('history').add({id: crypto.randomUUID(), registro}); ok();
     };
   });
-  avisar();
+  avisar('equipo');
+}
+
+// Nube: registros de este equipo para subir, y registro que llegó de otro equipo (o la fusión de ambos). El de la nube
+// reemplaza al de aquí con una versión local más, así una ficha abierta con la versión anterior no lo pisa al guardar.
+export async function leerAvanceParaNube() { return (await leerAvance()).registros; }
+export async function guardarAvanceDesdeNube(registro) {
+  if (!registro || registro.key !== keyFor(registro.code, registro.level) || typeof registro.at !== 'string' || typeof registro.partidas !== 'object') throw Error('Registro de avance no válido en la nube.');
+  const guardado = await conDb(['rooms', 'history'], 'readwrite', (tx, ok) => {
+    const q = tx.objectStore('rooms').get(registro.key);
+    q.onsuccess = () => {
+      const nuevo = {...registro, version: (q.result?.version || 0) + 1};
+      tx.objectStore('rooms').put(nuevo); tx.objectStore('history').add({id: crypto.randomUUID(), registro: nuevo, origen: 'nube'}); ok(nuevo);
+    };
+  });
+  avisar('nube');
+  return guardado;
 }
 
 export async function exportarAvance() { return {format: 'atlas-avance-partidas-v1', at: new Date().toISOString(), ...await leerAvance()}; }
@@ -46,7 +64,7 @@ export async function importarAvance(valor) {
       ok();
     });
   } catch (e) { throw conflicto ? Error('Hay registros diferentes en este dispositivo. No se importó nada.') : e; }
-  avisar();
+  avisar('equipo');
 }
 
 // Itemizado: se guardan las partidas ya interpretadas, no el Excel.
