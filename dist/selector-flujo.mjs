@@ -110,7 +110,8 @@ export const GRUPOS = [
   {selector: '.cfOrden', boton: 'button', tamano: 'baja'},
   {selector: '.cfLista', boton: 'label', tamano: 'baja'},
   {selector: '.matrixGroup > div', boton: '.matrixTypeChoice', tamano: 'media'},
-  {selector: '.hojaLista', boton: 'button', tamano: 'media', soloVisibles: true}
+  // data-sin-flujo: la lista «Más» de terreno queda vertical (navegacion.mjs).
+  {selector: '.hojaLista:not([data-sin-flujo])', boton: 'button', tamano: 'media', soloVisibles: true}
 ];
 // Listas desplegables que quedan fuera: las del panel lateral antiguo, que ya no se muestra.
 export const SIN_FLUJO = '.left, [data-sin-flujo]';

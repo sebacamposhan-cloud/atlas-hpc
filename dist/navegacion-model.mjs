@@ -137,3 +137,16 @@ export function paradaCercana(posicion, largoRiel, paradas) {
   const paso = largoRiel / paradas;
   return Math.max(0, Math.min(paradas - 1, Math.floor(posicion / paso)));
 }
+
+// Modo terreno (celular o tablet vertical): Atlas entra directo al plano de un piso, sin pasar por módulos ni pisos.
+// Primero el último piso abierto en este equipo si sigue disponible; si no, el primero disponible (con perfil de obra,
+// solo están disponibles sus pisos asignados).
+export function pisoDeEntrada(memoria, disponibles) {
+  if (disponibles.includes(memoria?.piso)) return memoria.piso;
+  return disponibles[0] || null;
+}
+// «Más» en terreno: las tarjetas de todos los módulos en una lista, agrupadas por módulo. «Mis tareas» tiene su botón.
+export function gruposMas(lista) {
+  return MODULOS.map(m => ({modulo: m.id, titulo: m.titulo, tarjetas: lista.filter(t => t.modulo === m.id && !t.oculta && t.id !== 'tareas')}))
+    .filter(g => g.tarjetas.length);
+}

@@ -13,3 +13,23 @@ body.terreno #workspacePanel :is(small, .muted, label, th, td) { font-size: max(
 
 /* Nota corta arriba de una lista de la hoja (por ejemplo, recintos encontrados). */
 .hojaNota { margin: 4px 0 8px; font-size: 14px; color: var(--g-texto2, #262626); }
+
+/* Modo terreno: la barra de abajo tiene «Buscar», «Mis tareas» y «Más» (navegacion.mjs); los botones de siempre (Módulos,
+   Pisos y el módulo) quedan para el escritorio. Con más de un piso, «Piso N» de la cabecera abre los pisos (#chipsPisos). */
+.bottomNav .terrenoBoton { display: none; }
+body.terreno .bottomNav > button:not(.terrenoBoton) { display: none !important; }
+body.terreno .bottomNav { grid-template-columns: repeat(var(--botones-terreno, 3), minmax(0, 1fr)); }
+body.terreno .bottomNav .terrenoBoton:not([hidden]) { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; position: relative; font-size: 14px; font-weight: 700; }
+body.terreno .bottomNav .terrenoBoton + .terrenoBoton { border-left: 1px solid var(--g-regla, #8c8c8c); }
+body.terreno .bottomNav .terrenoBoton svg { width: 24px; height: 24px; }
+body.terreno .bottomNav .terrenoNombre { font-size: 14px; line-height: 1.1; }
+body.terreno #terrenoTareas .obraContador { position: absolute; top: 6px; left: calc(50% + 8px); }
+.hojaGrupo { margin: 18px 0 6px; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; color: var(--g-texto2, #262626); }
+.hojaGrupo:first-child { margin-top: 4px; }
+body.entrandoTerreno #moduloExplorer, body.entrandoTerreno #floorExplorer { display: none !important; }
+body.terreno header .project.conPisos { cursor: pointer; }
+body.terreno header .project.conPisos #navPiso::after { content: " ▾"; font-size: .8em; }
+#chipsPisos { display: none; }
+body.terreno #chipsPisos:not([hidden]) { display: flex; gap: 8px; position: fixed; left: 0; right: 0; top: var(--cabecera, 58px); z-index: 45; padding: 10px 12px; overflow-x: auto; background: #fff; border-bottom: 2px solid var(--g-marca, #1b2a56); }
+#chipsPisos button { flex: none; min-width: 72px; min-height: 48px; padding: 0 16px; font-size: 16px; font-weight: 800; border: 1px solid var(--g-marca, #1b2a56); background: #fff; color: var(--g-texto, #000); }
+#chipsPisos button[aria-current=true] { background: var(--g-azul, #0f5499); border-color: var(--g-azul, #0f5499); color: #fff; }
