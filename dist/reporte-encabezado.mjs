@@ -1,0 +1,20 @@
+// Encabezado y leyenda comunes de los reportes de Atlas, para que cualquiera los entienda sin explicación (poka-yoke):
+// qué reporte es, de qué obra y piso, qué período cubre, cuándo y quién lo emitió, y qué significa cada color, siempre
+// con el nombre al lado del color. Sin DOM: lo prueba reporte-encabezado-test.mjs.
+export const OBRA = 'Hospital Provincia Cordillera';
+
+const fechaHora = d => new Date(d).toLocaleString('es-CL', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'});
+
+// tipo: «Compromiso y ejecución semanal». piso: «Nivel 4». periodo: texto libre. autor: quien emite (vacío si no hay sesión).
+// significado: una frase que dice para qué sirve y cómo se lee.
+export function encabezadoReporte({tipo, piso = '', periodo = '', autor = '', emitido = new Date(), significado = ''}, esc = String) {
+  const datos = [['Obra', OBRA], ['Piso', piso], ['Período', periodo], ['Emitido', fechaHora(emitido)], ['Emitido por', autor || 'Sin sesión iniciada']]
+    .filter(([, v]) => v).map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('');
+  return `<header class="reporteEncabezado"><p class="reporteTipo">Reporte · ${esc(tipo)}</p><h1>${esc(tipo)}</h1><dl>${datos}</dl>${significado ? `<p class="reporteSignificado">${esc(significado)}</p>` : ''}</header>`;
+}
+
+// items: [{nombre, color, borde?, detalle?}]. Cada color va con su nombre; el borde sirve para impresión en blanco y negro.
+export function leyendaReporte(items, esc = String, titulo = 'Qué significa cada color') {
+  const filas = items.map(i => `<li><i style="background:${esc(i.color)};border-color:${esc(i.borde || '#000')}"></i><b>${esc(i.nombre)}</b>${i.detalle ? ` <span>${esc(i.detalle)}</span>` : ''}</li>`).join('');
+  return `<section class="reporteLeyenda" aria-label="${esc(titulo)}"><h2>${esc(titulo)}</h2><ul>${filas}</ul></section>`;
+}

@@ -1,5 +1,9 @@
 import {activeExecutions,scopeProgress,blockers} from './lastplanner-cycle-model.mjs';
-export const PLAN_COLORS={Bloqueada:'#efb0ad',Pendiente:'#d9eaf0','En ejecución':'#ecd1a0','Por verificar':'#c7c9ed',Verificada:'#a5d5b6','Sin actividades':'#ffffff'};
+import {ESTADOS_COLOR as C} from './estados-color.mjs';
+// Tintes de la paleta única (estados-color.mjs), los mismos significados que el rombo: en ejecución = amarillo, bloqueo = rojo.
+export const PLAN_COLORS={Bloqueada:C.problema.tinte,Pendiente:C.pendiente.tinte,'En ejecución':C.ejecucion.tinte,'Por verificar':C.revisar.tinte,Verificada:C.conforme.tinte,'Sin actividades':C.sinRegistro.tinte};
+// Borde de cada estado en el plano: el color pleno, para que el tinte se lea también impreso en blanco y negro.
+export const PLAN_BORDES={Bloqueada:C.problema.color,Pendiente:C.pendiente.color,'En ejecución':'#9a7a00','Por verificar':C.revisar.color,Verificada:C.conforme.color,'Sin actividades':'#8c8c8c'};
 export const geometryPath=g=>'M'+g.points.map(p=>p.join(',')).join('L')+(g.type==='polygon'?'Z'+(g.holes||[]).map(h=>'M'+h.map(p=>p.join(',')).join('L')+'Z').join(''):'');
 export function scopeDrawing(activity,scope,restrictions){
  const progress=scopeProgress(activity,scope.id),verified=scopeProgress(activity,scope.id,{verified:true}),blocked=blockers(activity,restrictions).some(r=>(!r.scopeIds.length||r.scopeIds.includes(scope.id))&&(r.critica||r.estado==='Bloqueando ejecución'));

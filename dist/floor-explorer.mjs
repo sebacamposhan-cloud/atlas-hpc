@@ -23,9 +23,11 @@ pistaModulos.tarjetas.forEach(b=>b.onclick=()=>{marcarModulo(b.dataset.modulo);p
 marcarModulo(modulo);
 // Pisos apilados con su plano real: el de más arriba es el piso más alto. Tocar el plano o su etiqueta lo marca; «Continuar» lo abre.
 const pila=[...floors].reverse();let elegidos=[];
+// Cantidad de pisos para el alto de la pila: con muchos, la portada se desplaza hasta el piso elegido (navegacion.css).
+gallery.style.setProperty('--n',String(pila.length));
 const orden=floors.map(f=>f.id),disponible=id=>floors.some(f=>f.id===id&&f.piso);
-function mostrar(nombre){vista=nombre;seccionModulos.hidden=nombre!=='modulos';gallery.hidden=nombre!=='pisos';if(nombre==='modulos')pistaModulos.acomodar(lugarModulo(modulo));else{$('floorModulo').textContent=moduloDe(modulo).titulo;pisos.redibujar();}}
-$('floorGrid').innerHTML=pila.map(({id,numero,piso},i)=>`<button type="button" class="pisoCapa" data-floor="${id}" style="--i:${i}" aria-label="Piso ${numero}" aria-pressed="false" ${piso?'':'disabled'}>>${piso?`<img class="pisoBlanco" src="pisos3d/${id.toLowerCase()}-blanco.png" alt="" width="760" height="490" decoding="async"><img class="pisoAzul" src="pisos3d/${id.toLowerCase()}-azul.png" alt="" width="760" height="490" decoding="async">`:''}</button>`).join('');
+function mostrar(nombre){vista=nombre;seccionModulos.hidden=nombre!=='modulos';gallery.hidden=nombre!=='pisos';if(nombre==='modulos')pistaModulos.acomodar(lugarModulo(modulo));else{$('floorModulo').textContent=moduloDe(modulo).titulo;pisos.redibujar();if(pila.length>5)gallery.querySelector(`.pisoCapa[data-floor="${elegidos[0]}"]`)?.scrollIntoView?.({block:'center'});}}
+$('floorGrid').innerHTML=pila.map(({id,numero,piso},i)=>`<button type="button" class="pisoCapa" data-floor="${id}" style="--i:${i}" aria-label="Piso ${numero}" aria-pressed="false" ${piso?'':'disabled'}>${piso?`<img class="pisoBlanco" src="pisos3d/${id.toLowerCase()}-blanco.png" alt="" width="760" height="490" decoding="async"><img class="pisoAzul" src="pisos3d/${id.toLowerCase()}-azul.png" alt="" width="760" height="490" decoding="async">`:''}</button>`).join('');
 $('floorLista').innerHTML=pila.map(({id,numero,piso},i)=>`<button type="button" class="pisoEtiqueta" data-floor="${id}" style="--i:${i}" aria-pressed="false" ${piso?'':'disabled'}>Piso ${numero}</button>`).join('');
 // Azul: el piso bajo el cursor o, sin cursor encima, los elegidos. Cada elegido lleva ✓ y «Continuar» los abre.
 let bajoCursor=null,puedeVarios=false;
@@ -48,7 +50,7 @@ const quietud=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
 // Pasar el cursor ilumina el piso y lo mueve con el mismo flujo del arrastre. Al salir, todo vuelve al piso elegido.
 let colocados=[],lado=[],fila=[],fuerza=[];
 function pintarPisos(){const ancho=$('floorGrid').offsetWidth,abre=ancho*.05;capas.forEach((capa,i)=>{const d=i-(colocados[i]??0),h=fuerza[i]||0,dh=i-(fila[i]||0),cerca=Math.exp(-dh*dh*3),y=abre*Math.tanh(d*1.6)+h*(abre*.8*Math.tanh(dh*1.5)-ancho*.03*cerca);capa.style.setProperty('--y',y.toFixed(1)+'px');capa.style.setProperty('--x',((lado[i]||0)*h*ancho*.035).toFixed(1)+'px');capa.style.setProperty('--e',(1+.04*Math.exp(-d*d*3)+.025*h*cerca).toFixed(3));etiquetas[i].style.setProperty('--y',y.toFixed(1)+'px');});}
-const pisos=crearFluido({cantidad:pila.length,inicial:Math.max(0,lugarDe(leerMemoria(almacen()).piso)),quieto:quietud,alCambiar:i=>{if(!pila[i].piso)return;if(bajoCursor){bajoCursor=pila[i].id;iluminar();}else if(!varios())marcar(pila[i].id);},dibujar:posiciones=>{colocados=posiciones;pintarPisos();}});
+const pisos=crearFluido({cantidad:pila.length,inicial:Math.max(0,lugarDe(leerMemoria(almacen()).piso)),quieto:quietud,alCambiar:i=>{if(pila.length>5)capas[i]?.scrollIntoView?.({block:'nearest'});if(!pila[i].piso)return;if(bajoCursor){bajoCursor=pila[i].id;iluminar();}else if(!varios())marcar(pila[i].id);},dibujar:posiciones=>{colocados=posiciones;pintarPisos();}});
 const oleaje=crearOleaje({cantidad:pila.length,quieto:quietud,dibujar:(x,f,h)=>{lado=x;fila=f;fuerza=h;pintarPisos();}});
 function elegir(id){if(varios()){alternar(id);return;}marcar(id);if(elegidos[0])pisos.ir(lugarDe(elegidos[0]));}
 marcar(leerMemoria(almacen()).piso);pisos.redibujar();

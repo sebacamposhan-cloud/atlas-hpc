@@ -1,5 +1,6 @@
 import {progressFloors,progressRooms,progressFloor} from './progress-scope.mjs';
 import {matchPma,pmaWarnings,pmaDifferences} from './pma-model.mjs';
+import {ESTADOS_COLOR as C} from './estados-color.mjs';
 export const installation=['Sin registrar','No iniciado','En proceso','Instalado'];
 export const quality=['Sin revisar','Con observaciones','Conforme'];
 export const fields={PAV:'Pavimento',CIE:'Cielo',M1:'Muro norte',M2:'Muro oriente',M3:'Muro sur',M4:'Muro poniente'};
@@ -26,7 +27,8 @@ export function tasksFor(model,room,level='N-1'){if(progressFloor(room.level)!==
 export function validateRecord(r){if(!progressFloors[r?.level]||typeof r.code!=='string'||r.key!==keyFor(r.code,r.level)||!Number.isInteger(r.version)||r.version<1||!r.responsible?.trim()||!/^\d{4}-\d{2}-\d{2}$/.test(r.date)||!Number.isFinite(Date.parse(r.date))||new Date(r.date).toISOString().slice(0,10)!==r.date||!/^[a-f0-9]{64}$/.test(r.sourceSha)||typeof r.notes!=='string'||r.notes.length>10000||!r.fields||typeof r.at!=='string')throw Error('Registro de avance incompleto.');for(const [f,v] of Object.entries(r.fields)){if(!fields[f]||!installation.includes(v.installation)||!quality.includes(v.quality)||typeof v.code!=='string'||typeof v.missing!=='string'||typeof v.notes!=='string'||v.notes.length>5000||v.missing.length>5000||v.quality==='Conforme'&&v.installation!=='Instalado')throw Error('Revisa estado, condición y observaciones de '+(fields[f]||f));}return r;}
 // Estado de ejecución de una partida para el rombo y la tabla de avance: lo observado manda, luego lo conforme.
 export const ESTADOS_PARTIDA=['Sin registrar','No iniciado','En proceso','Instalado · por revisar','Con observaciones','Instalado y conforme','No aplica','Sin definición'];
-export const COLOR_PARTIDA={'Sin registrar':'#ffffff','No iniciado':'#8c8c8c','En proceso':'#c26a00','Instalado · por revisar':'#0f5499','Con observaciones':'#c21f1f','Instalado y conforme':'#1a7f37','No aplica':'#ffffff','Sin definición':'#ffffff'};
+// Colores de la paleta única (estados-color.mjs): en proceso = amarillo, por revisar = azul, observado = rojo, conforme = verde.
+export const COLOR_PARTIDA={'Sin registrar':C.sinRegistro.color,'No iniciado':C.pendiente.color,'En proceso':C.ejecucion.color,'Instalado · por revisar':C.revisar.color,'Con observaciones':C.problema.color,'Instalado y conforme':C.conforme.color,'No aplica':'#ffffff','Sin definición':'#ffffff'};
 export function estadoPartida(t){if(!t)return 'Sin definición';if(!t.applicable)return 'No aplica';if(!t.documented)return 'Sin definición';if(t.quality==='Con observaciones')return 'Con observaciones';if(t.installation==='Instalado')return t.quality==='Conforme'?'Instalado y conforme':'Instalado · por revisar';return t.installation||'Sin registrar';}
 // Registro nuevo del recinto con una sola terminación cambiada desde el rombo (las que no tienen partidas en el avance);
 // las demás conservan lo guardado para la fuente vigente. Bajar de «Instalado» quita la conformidad y «Conforme» exige

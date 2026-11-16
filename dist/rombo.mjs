@@ -26,7 +26,8 @@ const ZONAS = {
   PAV: {puntos: '95,150 205,150 205,195 95,195', texto: [150, 173], aviso: [183, 153]}
 };
 const NOMBRE_OBS = {PAV: 'Pavimento', CIE: 'Cielo', M: 'Muros'}, MUROS = ['M1', 'M2', 'M3', 'M4'];
-const OSCUROS = new Set(['No iniciado', 'En proceso', 'Instalado · por revisar', 'Con observaciones', 'Instalado y conforme']);
+// Texto blanco solo sobre los colores oscuros; «En proceso» es amarillo y lleva texto negro.
+const OSCUROS = new Set(['No iniciado', 'Instalado · por revisar', 'Con observaciones', 'Instalado y conforme']);
 const hoy = () => new Intl.DateTimeFormat('en-CA', {timeZone: 'America/Santiago', year: 'numeric', month: '2-digit', day: '2-digit'}).format(new Date());
 const fecha = d => String(d || '').split('-').reverse().join('-');
 

@@ -1,7 +1,7 @@
-// Terreno o escritorio. Escritorio es una pantalla de 1024 px o más manejada con mouse; todo lo demás (celular o tablet)
-// es terreno. Marca <body class="escritorio"> y lo vuelve a marcar si cambia (al girar una tablet o achicar la ventana):
+// Terreno o escritorio. Escritorio es una pantalla de 1024 px o más manejada con mouse, o una tablet horizontal (1024 px o
+// más de ancho y 700 px o más de alto); todo lo demás (celular, o tablet vertical) es terreno. Marca <body class="escritorio"> y lo vuelve a marcar si cambia (al girar una tablet o achicar la ventana):
 // terreno.css esconde en terreno lo que lleva data-oficina, y escritorio.css arma los tres paneles.
-const consulta = typeof matchMedia === 'function' ? matchMedia('(min-width:1024px) and (pointer:fine)') : null;
+const consulta = typeof matchMedia === 'function' ? matchMedia('(min-width:1024px) and (pointer:fine), (min-width:1024px) and (min-height:700px) and (orientation:landscape)') : null;
 export const esEscritorio = () => !!consulta?.matches;
 const avisos = new Set();
 // Llama a fn cada vez que se pasa de terreno a escritorio o al revés.
