@@ -15,7 +15,7 @@ import {marcarRecinto, deshacerRecinto} from './avance-marcar.mjs';
 import {exigirFirma, firmante} from './firma.mjs';
 import {propositoHTML, conectarProposito, leerProposito} from './proyecto-datos.mjs';
 
-const NOMBRE_PISO = {'N-1': 'Nivel −1', N01: 'Nivel 1', N02: 'Nivel 2', N03: 'Nivel 3'};
+const NOMBRE_PISO = {'N-1': 'Nivel −1', N01: 'Nivel 1', N02: 'Nivel 2', N03: 'Nivel 3', N04: 'Nivel 4'};
 // Filtro de la tabla de cada levantamiento (por documento): se recuerda en el equipo y acota tabla, plano y exportación.
 const CLAVE_FILTROS = 'atlas-levantamiento-filtros', filtros = new Map();
 const leerFiltros = () => { try { return JSON.parse(localStorage.getItem(CLAVE_FILTROS) || '{}') || {}; } catch { return {}; } };

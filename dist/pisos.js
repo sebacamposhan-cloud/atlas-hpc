@@ -9,7 +9,8 @@
     {id: 'N-1', nombre: 'Nivel −1', corto: '−1', datos: '', especialidades: true},
     {id: 'N01', nombre: 'Nivel 1', corto: '1', datos: 'n01/', especialidades: false},
     {id: 'N02', nombre: 'Nivel 2', corto: '2', datos: 'n02/', especialidades: false},
-    {id: 'N03', nombre: 'Nivel 3', corto: '3', datos: 'n03/', especialidades: false}
+    {id: 'N03', nombre: 'Nivel 3', corto: '3', datos: 'n03/', especialidades: false},
+    {id: 'N04', nombre: 'Nivel 4', corto: '4', datos: 'n04/', especialidades: false}
   ];
   var pedido = new URLSearchParams(location.search).get('nivel');
   var actual = PISOS.find(function (piso) { return piso.id === pedido; }) || PISOS[0];
@@ -17,9 +18,9 @@
   var raiz = document.currentScript.src.replace(/pisos\.js(?:[?#].*)?$/, '');
   window.ATLAS_PISOS = PISOS;
   window.ATLAS_RAIZ = raiz;
-  window.ATLAS_TARJETAS = ['N-1','N01','N02','N03'].map(function(id,index){
+  window.ATLAS_TARJETAS = ['N-1','N01','N02','N03','N04'].map(function(id,index){
     var piso=PISOS.find(function(p){return p.id===id;});
-    return {id:id,numero:['−1','1','2','3'][index],piso:piso||null};
+    return {id:id,numero:['−1','1','2','3','4'][index],piso:piso||null};
   });
   window.ATLAS_PISO = actual;
 })();

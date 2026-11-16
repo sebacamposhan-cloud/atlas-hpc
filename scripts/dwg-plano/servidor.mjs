@@ -8,7 +8,7 @@ const here = path.dirname(fileURLToPath(import.meta.url)), repo = path.resolve(h
 const ROOTS = {'/repo/': repo, '/tool/': here};
 // Solo se escribe dentro de estas carpetas.
 // El nivel −1 (s01) escribe sus mosaicos en dist/map, la carpeta de su plano.
-const WRITABLE = [...['n01', 'n02', 'n03'].flatMap(n => [path.join(repo, 'dist', n, 'map'), path.join(repo, 'dist', n, 'rombos'), path.join(repo, 'data', n)]), path.join(repo, 'dist', 'map'), path.join(repo, 'data', 's01')];
+const WRITABLE = [...['n01', 'n02', 'n03', 'n04', 'n05', 'n06', 'n07', 'n08', 'n09'].flatMap(n => [path.join(repo, 'dist', n, 'map'), path.join(repo, 'dist', n, 'rombos'), path.join(repo, 'data', n)]), path.join(repo, 'dist', 'map'), path.join(repo, 'data', 's01')];
 const mime = {'.html': 'text/html; charset=utf-8', '.mjs': 'text/javascript', '.js': 'text/javascript', '.json': 'application/json'};
 http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');

@@ -18,7 +18,7 @@ add('protocols/open-aging.json');
 add('pma/catalog.json');
 for(const name of walk('protocols/registers'))add(name);
 // Pisos adicionales. Las páginas de redirección n0x/index.html no se guardan (solo la portada es HTML).
-for(const name of [...walk('n01'),...walk('n02'),...walk('n03')]) if(!/\.(html|txt)$/.test(name)) add(name);
+for(const name of [...walk('n01'),...walk('n02'),...walk('n03'),...walk('n04')]) if(!/\.(html|txt)$/.test(name)) add(name);
 for(const name of walk('map')) if(name!=='map/overview.webp') add(name);
 for(const name of walk('doors')) if(!['doors/catalog.json','doors/overview.webp'].includes(name)) add(name);
 for(const name of walk('disciplines')) add(name);

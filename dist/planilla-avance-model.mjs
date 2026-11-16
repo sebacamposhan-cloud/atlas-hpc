@@ -177,7 +177,7 @@ export function leerHoja(nombre, aoa) {
 }
 
 // ---------- Libro completo ----------
-const PISOS = {'N-1': /^(S01|S-1|N-1|-1|NIVEL -1)$/, N01: /^(N01|N1|1|NIVEL 1)$/, N02: /^(N02|N2|2|NIVEL 2)$/, N03: /^(N03|N3|3|NIVEL 3)$/};
+const PISOS = {'N-1': /^(S01|S-1|N-1|-1|NIVEL -1)$/, N01: /^(N01|N1|1|NIVEL 1)$/, N02: /^(N02|N2|2|NIVEL 2)$/, N03: /^(N03|N3|3|NIVEL 3)$/, N04: /^(N04|N4|4|NIVEL 4)$/};
 // Piso de la planilla: lo que más se repite en la columna NIVEL; si no, el nombre del archivo.
 export function pisoDeLibro(hojas, archivo = '') {
   const votos = {};
@@ -228,7 +228,7 @@ export function leerPlanilla(hojas, {conocidos, archivo = '', nivel = null} = {}
 
 // Validación de lo que se guarda en la nube (también la usa el servidor de pruebas).
 export function validarPlanilla(p) {
-  if (!p || p.schema !== SCHEMA || !['N-1', 'N01', 'N02', 'N03'].includes(p.nivel) || typeof p.recintos !== 'object' || Array.isArray(p.recintos) || !Array.isArray(p.hojas)) throw Error('Planilla de avance inválida.');
+  if (!p || p.schema !== SCHEMA || !['N-1', 'N01', 'N02', 'N03', 'N04'].includes(p.nivel) || typeof p.recintos !== 'object' || Array.isArray(p.recintos) || !Array.isArray(p.hojas)) throw Error('Planilla de avance inválida.');
   if (typeof p.cargada !== 'string' || !Number.isFinite(Date.parse(p.cargada)) || typeof p.por !== 'string' || !p.por.trim()) throw Error('Falta la fecha o el responsable de la carga.');
   const familias = new Set(FAMILIAS.map(f => f.id));
   for (const [code, fams] of Object.entries(p.recintos)) {

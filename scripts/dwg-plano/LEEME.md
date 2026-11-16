@@ -1,8 +1,8 @@
 # Plano por capas, rombos y contornos desde las láminas DWG
 
-Dibuja el plano de un nivel directamente desde sus láminas DWG de arquitectura 1:50, sin PDF. Se usa para los niveles 1, 2 y 3, y para el −1 (`s01`), que se dibuja en el marco de su plano anterior: ver `scripts/s01-plano/LEEME.md`.
+Dibuja el plano de un nivel directamente desde sus láminas DWG de arquitectura 1:50, sin PDF. Se usa para los niveles 1, 2, 3 y 4, y para el −1 (`s01`), que se dibuja en el marco de su plano anterior: ver `scripts/s01-plano/LEEME.md`.
 
-Fuentes, fuera del repo: carpetas «Planos N01», «Planos N02» y «Planos N03» con las láminas `HPC-ARQ-PLA-N0x-A-5xx`.
+Fuentes, fuera del repo: carpetas «Planos N01» a «Planos N04» (N04: Rev01) con las láminas `HPC-ARQ-PLA-N0x-A-5xx`.
 
 - **Coordenadas.** Las láminas exportadas desde Revit comparten las coordenadas del modelo, en metros, así que se unen sin ajustes.
 - **Encuadre.** Cada lámina aporta solo el contorno de lo dibujado, que Revit corta en el borde de la vista. Así no entran la viñeta, la leyenda ni el plano llave.
@@ -39,7 +39,7 @@ Fuentes, fuera del repo: carpetas «Planos N01», «Planos N02» y «Planos N03�
    - Genera `data/n0x/zonas.json` si las láminas traen rellenos de color de recinto (capa `A-AREA-PATT`). Hoy solo el N02.
    - También genera `dibujo.json` y `barreras.json`. Son grandes y no se publican.
    - En el −1 reescribe `marco.json`: hay que restaurarlo (`git checkout data/s01/marco.json`) o repetir `scripts/s01-plano/ajuste.mjs`.
-3. **Calcular recintos.** Solo para N01 y N03:
+3. **Calcular recintos.** Para N01, N03 y N04 (sirve para N05 a N09):
    `node scripts/dwg-plano/recintos.mjs n0x` → `data/n0x/recintos.json`
    - El contorno lo calcula `contorno.mjs`. Ver «Contornos» más abajo.
    - Se acepta si el área queda entre 80 % y 120 % de la superficie del PMA, o hasta 1,5 m² de más en recintos chicos.
@@ -53,7 +53,7 @@ Fuentes, fuera del repo: carpetas «Planos N01», «Planos N02» y «Planos N03�
    - Genera `dist/n0x/map/` con la base, las capas, la vista general y la exportación, las imágenes `dist/n0x/rombos/<código>.png` y `data/n0x/rombos-plano.json`.
    - El avance queda en `dist/n0x/map/estado.txt`.
 5. **Importar.**
-   - N01 y N03: `node scripts/import-dwg.mjs n0x`
+   - N01, N03 y N04: `node scripts/import-dwg.mjs n0x`
    - N02: `node scripts/n02-plano/recalcular-contornos.mjs` y después `node scripts/import-n02.mjs`
      - El primero recalcula los contornos de `data/n02/plano.json` desde las láminas y los deja en `data/n02/contornos-recalculados.json`.
      - El importador usa el recalculado si el recinto cierra. Si no, conserva el de `plano.json`, corrido con el desfase medido.
@@ -98,3 +98,11 @@ Los auxiliares que quedan son recintos abiertos, sin muro ni puerta que los sepa
 **Revisar una zona sin generar todo:** `render.html?nivel=n01&x=1600&y=2000&w=700&h=500&s=2&guardar=nombre`, en coordenadas de Atlas. La imagen queda en `data/n01/revision/`, que Git ignora.
 
 **Láminas faltantes:** cuando lleguen (por ejemplo N01 A-509 o N03 A-501), se copian en su carpeta y se repiten los pasos 2 a 5.
+
+## Nivel 4 (N04)
+
+Cargado el 2026-11-15 desde las 8 láminas `HPC-ARQ-PLA-N04-A-501` a `A-508` (Rev01_V1), con los mismos pasos que N01 y N03:
+214 recintos, todos en el PMA (`A-N04`); 191 con contorno, 23 con superficie auxiliar; 210 imágenes de rombo.
+Además de `pisos.js`, el piso se agrega en `pma-model.mjs`, `progress-scope.mjs`, `protocol-scope.mjs`, `planilla-avance-model.mjs`,
+`levantamiento-model.mjs`, `levantamiento.mjs`, `editor-contornos/archivo.mjs`, `server/groq-server.mjs` y los scripts de
+mosaicos, ejes, líneas del editor, maqueta 3D (`dist/pisos3d/n04-*.png`), alcance de avance y manifiesto sin conexión.
