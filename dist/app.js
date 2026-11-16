@@ -30,7 +30,7 @@ import {loadRuntime,decodeRuntime} from './runtime-loader.mjs';
 import {combinarContornos} from './contornos-nube.mjs';
 import {startPan,panView,startPinch,pinchView} from './gestures.mjs';
 import './offline.mjs';
-import {conectarAsa,restaurarAncho} from './panel-ajustable.mjs';
+import {conectarAsa,restaurarAnchos} from './panel-ajustable.mjs';
 'use strict';
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let spatial,spatialSnapshot,spatialScale;
@@ -262,7 +262,7 @@ function syncPaths(markup){
 }
 
 // Paneles de la derecha (ficha, hojas, protocolos, resumen): se agrandan arrastrando el asa de su borde; el ancho queda guardado.
-restaurarAncho();conectarAsa($('asaPanel'),()=>updateTiles());
+restaurarAnchos();conectarAsa($('asaPanel'),()=>updateTiles());conectarAsa($('asaBarra'),()=>updateTiles(),'izquierda');
 
 function bindExport(){$('exportPDF').onclick=()=>{ $('modal').close();exportAtlas();};$('exportPNG').onclick=()=>{$('modal').close();exportAtlas('png');};}
 
