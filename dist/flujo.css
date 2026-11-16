@@ -35,7 +35,9 @@
 
 /* Elegir la vista de planificación: la muestra de la vista ocupa el lugar del dibujo. */
 .lpPlanChooser .ruedaPista.conFlujo { --alto: 196px; --ancho: 228px; }
-.lpPlanChooser .ruedaPista.conFlujo .ruedaTarjeta { display: grid; align-content: start; gap: 6px; }
+/* Una sola columna: el dibujo arriba y el texto debajo con todo el ancho (las tres columnas de la lista partían «actividades»). */
+.lpPlanChooser .ruedaPista.conFlujo .ruedaTarjeta, .lpPlanChooser .ruedaPista.conFlujo .ruedaTarjeta[role=radio] { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: 6px; }
+.lpPlanChooser .ruedaPista.conFlujo .ruedaTarjeta small { overflow-wrap: normal; word-break: normal; hyphens: manual; }
 .lpPlanChooser .ruedaPista.conFlujo .ruedaTarjeta em { position: absolute; top: 8px; right: 10px; font-style: normal; }
 .lpPlanChooser .ruedaPista.conFlujo .ruedaTarjeta span { display: grid; gap: 2px; }
 .lpPlanChooser .ruedaPista.conFlujo .ruedaTarjeta strong { font-size: 15px; }

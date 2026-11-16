@@ -59,3 +59,14 @@ body.escritorio.ruedaPortada:not(.floorHome) main > :is(svg, .planWrap, #planVie
 /* El plano se encoge para no quedar debajo del panel derecho (como cuando se abre la ficha). */
 body.escritorio:not(.floorHome):is(.ruedaPortada, .hojaAbierta, .protocolOpen) #viewport { right: var(--detail) !important; }
 body.escritorio:not(.floorHome):is(.ruedaPortada, .hojaAbierta, .protocolOpen) .toolbar { right: calc(var(--detail) + 12px) !important; }
+/* Asa para agrandar los paneles de la derecha (panel-ajustable.mjs): una barra visible en el borde izquierdo del panel
+   abierto. Se arrastra hacia la izquierda para agrandarlo; doble clic alterna entre amplio y normal. La ficha del recinto
+   deja 12 px a la derecha; las hojas, protocolos y el resumen van pegados al borde. */
+#asaPanel { display: none; }
+body.escritorio:not(.floorHome):is(.ruedaPortada, .hojaAbierta, .protocolOpen) #asaPanel { display: flex; right: calc(var(--detail) - 9px); }
+body.escritorio:not(.floorHome):not(.hideRight):not(.fichaMinima) #asaPanel { display: flex; right: calc(var(--detail) + 12px - 9px); }
+body.escritorio #asaPanel { position: fixed; top: calc(var(--cabecera) + 12px); bottom: 12px; width: 18px; z-index: 40; align-items: center; justify-content: center; cursor: ew-resize; touch-action: none; outline: 0; }
+#asaPanel span { display: block; width: 8px; height: 56px; box-sizing: border-box; border: 2px solid var(--g-marca); border-radius: 4px; background: repeating-linear-gradient(#fff 0 4px, var(--g-marca) 4px 6px); box-shadow: 0 0 0 3px #fff; transition: height .15s ease-out; }
+#asaPanel:hover span, #asaPanel:focus-visible span, body.ajustandoPanel #asaPanel span { height: 88px; border-color: var(--g-azul); background: repeating-linear-gradient(#fff 0 4px, var(--g-azul) 4px 6px); }
+#asaPanel:hover::before, #asaPanel:focus-visible::before, body.ajustandoPanel #asaPanel::before { content: ""; position: absolute; top: 0; bottom: 0; left: 8px; width: 2px; background: var(--g-azul); z-index: -1; }
+body.ajustandoPanel, body.ajustandoPanel * { cursor: ew-resize !important; user-select: none !important; }
