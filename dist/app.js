@@ -63,7 +63,7 @@ syncPaths(shapes);$('labels').innerHTML=labels.join('');const selectedPath=selec
 function changeDoc(id,fit=true){doc=data.documents.find(d=>d.id===id);$('document').value=id;$('planTitle').textContent=nivel.nombre;$('revision').textContent=atlas.scope.name;if(fit)setView(fullView(),false);render();}
 function listResults(){ $('count').textContent=`${results.length} resultados`;$('scopeSummary').textContent=filtered?'Dentro de '+atlas.scope.name:'Toca cualquier punto del recinto';$('results').innerHTML=results.map(r=>`<button class="result ${selected?.id===r.id?'active':''}" data-id="${esc(r.id)}"><strong>${esc(r.code)}</strong><span>${esc(r.name)}</span><small>${esc(nivel.corto)} · Sector ${esc(r.sector)} · ${footprint(r.id)?'Selección por superficie':'Revisar superficie'}${r.status==='Validado'?' · Validado':''}</small></button>`).join('');}
 async function runSearch(){const serial=++querySerial;try{const r=await api('/api/search?'+params());if(serial!==querySerial)return;results=uniqueRooms(r.rooms).filter(r=>matchesLayers(r,ui?.filters()||{}));filtered=!!(Object.values(ui?.filters()||{}).some(v=>v.length)||$('search').value||$('asepsis').value||$('material').value||$('pending').checked||$('geometryOnly').checked);if(filtered&&selected&&!results.some(room=>room.id===selected.id)){selected=null;document.body.classList.add('hideRight');}if(filtered&&results.length>1){selected=null;isolation=false;if(!ui?.filtersOpen())setView(fullView());document.body.classList.add('hideRight');}listResults();render();ui?.refresh();// Con un solo resultado o su código exacto se va a ese recinto. En celular y tablet solo se ilumina: el menú ocuparía toda la pantalla.
-const conEnter=pedidoEnter;pedidoEnter=false;if(filtered&&!ui?.filtersOpen()){const codigo=$('search').value.trim(),hallado=results.length===1?results[0]:results.find(r=>r.code===codigo);if(hallado){const abrir=!fichaCompleta();selectRoom(hallado.id,true,{abrir});if(!abrir)toast(hallado.code+' · toca el recinto para abrir su menú.');}else if(conEnter&&fichaCompleta()&&$('search').value.trim()){if(results.length)nav?.listaRecintos(results,id=>selectRoom(id,true,{abrir:false}));else toast('Ningún recinto coincide con «'+$('search').value.trim()+'».');}} }catch(e){pedidoEnter=false;toast(e.message);}}
+const conEnter=pedidoEnter;pedidoEnter=false;if(filtered&&!ui?.filtersOpen()){const codigo=$('search').value.trim(),hallado=results.length===1?results[0]:results.find(r=>r.code===codigo);if(hallado){const abrir=!fichaCompleta();selectRoom(hallado.id,true,{abrir});if(!abrir&&selected?.id===hallado.id){recintoFicha=hallado.id;document.body.classList.add('fichaMinima');}}else if(conEnter&&fichaCompleta()&&$('search').value.trim()){if(results.length)nav?.listaRecintos(results,id=>selectRoom(id,true,{abrir:false}));else toast('Ningún recinto coincide con «'+$('search').value.trim()+'».');}} }catch(e){pedidoEnter=false;toast(e.message);}}
 // Enter en la búsqueda de arriba: en terreno, varios resultados se listan en la hoja (sin el panel de oficina).
 let pedidoEnter=false;addEventListener('atlas-buscar-enter',()=>{pedidoEnter=true;});
 function markResultActive(){for(const el of $('results').querySelectorAll('.active'))el.classList.remove('active');if(selected)$('results').querySelector('[data-id="'+selected.id+'"]')?.classList.add('active');}
@@ -77,6 +77,11 @@ function minimizarFicha(){if(fichaCompleta()&&!document.body.classList.contains(
 function verEnPlano(mostrar){const completa=fichaCompleta()&&!document.body.classList.contains('hideRight')&&selected;mostrar();if(completa)document.body.classList.add('fichaMinima');}
 function abrirDesdeBarra(){const id=recintoFicha;document.body.classList.remove('fichaMinima');if(id&&selected?.id!==id)selectRoom(id,false);else document.body.classList.remove('hideRight');}
 let recintoFicha=null;
+// Celular: el primer toque en el plano ilumina el recinto y deja abajo la franja con su nombre, código, avance y «Abrir
+// rombo»; el segundo toque (en el mismo recinto o en la franja) abre la ficha. Tocar fuera del recinto lo suelta.
+// En escritorio la ficha se abre al primer clic, a media pantalla, como antes.
+function tocarRecinto(id){if(!fichaCompleta()){selectRoom(id,false);return;}if(selected?.id===id&&document.body.classList.contains('fichaMinima')){abrirDesdeBarra();return;}selectRoom(id,false);if(selected?.id===id){recintoFicha=id;document.body.classList.add('fichaMinima');}}
+function soltarRecinto(){if(!fichaCompleta()||!document.body.classList.contains('fichaMinima')||!selected)return;document.body.classList.remove('fichaMinima');document.body.classList.add('hideRight');selected=null;recintoFicha=null;render();}
 // Rombo de la ficha con su panel de avance (bajo el nombre) y el bloque de protocolos previos.
 function fichaRombo(r){if($('romboEvidence'))romboAvance?.ficha($('romboEvidence'),r,{alGuardar:()=>render(),panel:$('avanceRecinto'),previos:$('protocolosPrevios')});}
 function clearArchitectureSelection(code){
@@ -85,7 +90,7 @@ function clearArchitectureSelection(code){
   $('detail').innerHTML=`<div class="intro"><h2>Sin recinto seleccionado</h2><p>${code?'El código '+esc(code)+' requiere seleccionar una correspondencia en Arquitectura.':'Selecciona un recinto en el plano o busca su código.'}</p></div>`;
   document.body.classList.add('hideRight');
 }
-function renderDetail(){const r=selected;if(!r)return;const source=data.documents.find(d=>d.id===r.document_id);$('detail').innerHTML=`<h2 class="detailName">${esc(r.name)}</h2><p class="detailCode">${esc(r.code)}</p><section class="romboAvance"><div id="romboEvidence"></div></section><section id="avanceRecinto" class="avanceRecinto" aria-label="Avance del recinto" hidden></section><section class="obsRoom" aria-label="Observaciones del recinto"><div id="obsRoomEvidence"></div></section><section id="protocolosPrevios" class="protocolosPrevios" hidden></section><details class="protRecinto" ${protocolosAbiertos?'open':''}><summary>Protocolos abiertos</summary><div id="protocolRoomEvidence"></div></details>`;$('fichaBarraTexto').textContent=r.code+' · '+r.name;recintoFicha=r.id;
+function renderDetail(){const r=selected;if(!r)return;const source=data.documents.find(d=>d.id===r.document_id);$('detail').innerHTML=`<h2 class="detailName">${esc(r.name)}</h2><p class="detailCode">${esc(r.code)}</p><section class="romboAvance"><div id="romboEvidence"></div></section><section id="avanceRecinto" class="avanceRecinto" aria-label="Avance del recinto" hidden></section><section class="obsRoom" aria-label="Observaciones del recinto"><div id="obsRoomEvidence"></div></section><section id="protocolosPrevios" class="protocolosPrevios" hidden></section><details class="protRecinto" ${protocolosAbiertos?'open':''}><summary>Protocolos abiertos</summary><div id="protocolRoomEvidence"></div></details>`;$('fichaBarraTexto').textContent=r.code;$('fichaBarraNombre').textContent=r.name;recintoFicha=r.id;
 fichaRombo(r);if($('obsRoomEvidence'))observaciones?.ficha($('obsRoomEvidence'),r);const protSection=$('detail').querySelector('.protRecinto'),verProtRecinto=()=>protocolosRecinto?.ficha($('protocolRoomEvidence'),r,protSection.querySelector('summary'));protSection?.addEventListener('toggle',()=>{if(!protSection.isConnected)return;protocolosAbiertos=protSection.open;if(protSection.open)verProtRecinto();});if(protSection?.open)verProtRecinto();
 
 }
@@ -133,7 +138,7 @@ $('svg').addEventListener('pointerup',e=>{
  if(!drag)return;const d=drag;drag=null;$('svg').classList.remove('dragging');
  if(!d.moved){
   if(edit){if(d.vertex===null){const p=point(e);rememberGeometry();edit.points.push([+p.x.toFixed(2),+p.y.toFixed(2)]);renderEdit();}}
-  else{const p=point(e);if(!d.diamondId&&!spatial?.active()&&puertas?.tocar(p))return;const id=d.diamondId||hitRoom(p);if(spatial?.active())spatial.choose(id,p);else if(id){if(marking?.active())marking.choose(roomById.get(aliases.get(id)||id));else selectRoom(id,false);}}
+  else{const p=point(e);if(!d.diamondId&&!spatial?.active()&&puertas?.tocar(p))return;const id=d.diamondId||hitRoom(p);if(spatial?.active())spatial.choose(id,p);else if(id){if(marking?.active())marking.choose(roomById.get(aliases.get(id)||id));else tocarRecinto(id);}else if(!id&&!spatial?.active()&&!marking?.active())soltarRecinto();}
  }else loadDetail();
 });
 $('svg').addEventListener('keydown',e=>{const id=e.target.dataset.diamondId;if(id&&(e.key==='Enter'||e.key===' ')){e.preventDefault();if(marking?.active())marking.choose(roomById.get(aliases.get(id)||id));else selectRoom(id,false);}});
@@ -239,6 +244,8 @@ async function exportAtlas(format='pdf',markingDocument=marking?.active()?struct
 $('bottomMap').onclick=()=>{ui?.show('map');document.body.classList.add('hideLeft','hideRight');setView(fullView());};
 // En celulares y tablets la ficha ocupa la pantalla completa; «← Plano» la baja a una barra con el código y el nombre.
 $('fichaPlano').onclick=minimizarFicha;$('fichaBarra').onclick=abrirDesdeBarra;
+// Avance del recinto en la franja: el mismo porcentaje que la ficha muestra bajo el nombre, cuando el rombo ya lo calculó.
+new MutationObserver(()=>{const b=$('detail').querySelector('.arCabecera b');$('fichaBarraAvance').textContent=b?' · avance '+b.textContent.trim():'';}).observe($('detail'),{childList:true,subtree:true});
 document.querySelector('.right').addEventListener('click',e=>{if(performance.now()-fichaAbiertaEn<500){e.preventDefault();e.stopPropagation();}},true);
 $('closeSearch').onclick=()=>document.body.classList.add('hideLeft');
 

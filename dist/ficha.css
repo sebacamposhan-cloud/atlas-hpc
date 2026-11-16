@@ -13,7 +13,10 @@
   /* Ficha bajada: el plano a la vista y una barra para volver al recinto (también si «Ver en el plano» lo deseleccionó). */
   body.fichaMinima .right { display: none !important; }
   body.fichaMinima #fichaBarra { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; align-items: center; justify-content: space-between; gap: 10px; min-height: 52px; padding: 8px 16px calc(8px + env(safe-area-inset-bottom)); border: 0; border-top: 3px solid var(--g-marca, #1b2a56); border-radius: 0; background: #fff; color: #000; font-size: 14px; font-weight: 700; text-align: left; box-shadow: 0 -4px 16px #0000001a; }
-  #fichaBarra span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #fichaBarra .fichaBarraDatos { display: flex; flex-direction: column; min-width: 0; }
+  #fichaBarra .fichaBarraDatos strong, #fichaBarra .fichaBarraDatos small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #fichaBarra .fichaBarraDatos small { font-size: 12px; font-weight: 600; color: var(--g-texto, #262626); }
+  #fichaBarra .fichaBarraAbrir { flex: none; display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; background: var(--g-azul, #0f5499); color: #fff; font-size: 14px; font-weight: 800; white-space: nowrap; }
   body[data-module]:not([data-module="map"]) #fichaBarra, body.floorHome #fichaBarra, .protocolOpen #fichaBarra, .markingOpen #fichaBarra { display: none !important; }
   .obsDetailDrawer[open] { z-index: 45; }
 }
