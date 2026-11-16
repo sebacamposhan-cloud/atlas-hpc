@@ -77,3 +77,4 @@ body.lpPicking #viewport{inset:var(--lp-picker-top,180px) 12px var(--lp-picker-b
 .lpGantt tbody th{background:#fff!important;color:#173652!important}.lpGantt tbody th button{color:#173652!important;background:#fff;border:0}.lpGantt tbody th small{color:#47627c!important}.lpPlanTask small{white-space:normal}.lpPlanningBoard .lpGanttScroll{min-width:0}
 .lpPlanDay[data-drag-over]{outline:3px solid #0f65bf;outline-offset:-3px;background:#eaf4ff}
 .lpPlanTask>button.lpPlanDragHandle{cursor:grab;border:1px dashed #a5c1dc;padding:7px;margin-bottom:9px;min-height:36px;font-size:11px;text-align:center;color:#215a8b;background:#f3f8fc}.lpPlanDragHandle:active{cursor:grabbing}
+.lpImportResumen{margin:10px 0;font-size:13px}.lpImportTabla td small{display:block;color:#262626}.lpImportTabla label{display:flex;gap:6px;align-items:center;font-size:12px;margin-top:4px}.lpImportError{color:#c21f1f}.lpImportAtrasada{color:#7a5f00}.lpImportLista{color:#1a7f37}

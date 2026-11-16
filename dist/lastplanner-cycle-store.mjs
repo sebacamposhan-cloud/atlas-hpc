@@ -37,6 +37,13 @@ export async function saveDraft(values,{activityId=null,expected=null,allocation
  activities=activities.map(a=>({...a,restrictionIds:[...new Set([...a.restrictionIds,...newRestrictions.map(r=>r.id)])]}));
  await commitWorkflow([...activities.map(a=>op('actividades',a,activityId?expected??a.version-1:0)),...newRestrictions.map(r=>op('restricciones',r,0))],{action:'draft',actor});return activities;
 }
+// Carga en lote desde planilla (lastplanner-importar.mjs): items [{values, allocations}] → borradores, en operaciones de
+// hasta 400 registros (el límite de una operación compartida es 500). Devuelve cuántas actividades y tramos se crearon.
+export async function saveDraftsBatch(items){
+ const actor=authenticatedActor('draft'),activities=items.flatMap(({values,allocations})=>C.createSegments(values,allocations||[],actor));
+ for(let i=0;i<activities.length;i+=400)await commitWorkflow(activities.slice(i,i+400).map(a=>op('actividades',a,0)),{action:'draft',actor});
+ return {actividades:items.length,tramos:activities.length};
+}
 export async function redistribute(groupId,quantities){const actor=authenticatedActor('draft'),data=await readWorkflow(),rows=data.actividades.filter(a=>a.grupo?.id===groupId).sort((a,b)=>a.grupo.indice-b.grupo.indice),next=C.redistributeGroup(rows,quantities,actor);await commitWorkflow(next.map(a=>op('actividades',a)),{action:'draft',actor});return next;}
 export async function publishPlan(week,level){
  const actor=authenticatedActor('publish'),data=await readWorkflow(),plan=data.semanas.find(s=>s.id===level+'_'+week),next=C.publishWeek(data.actividades,week,level,actor,plan);
