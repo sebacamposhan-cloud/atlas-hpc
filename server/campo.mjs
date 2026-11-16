@@ -4,7 +4,8 @@ const ID = /^[A-Za-z0-9_-]{1,100}$/, DESDE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{
 const BUCKET = 'atlas-campo', MAX_JSON = 2500000, MAX_FOTO = 5242880, PAGINA = 500, CAMPOS = 'tipo,id,version,data,updated_at,updated_by';
 // «contorno»: correcciones del editor de contornos, un registro por recinto (supabase/contornos.sql).
 // «planilla»: avance por recinto leído de la planilla de la oficina, un registro por piso (supabase/planillas-avance.sql).
-const TIPOS = ['proyecto', 'observacion', 'contorno', 'planilla'];
+// «avance»: lo marcado en terreno por recinto (rombo, ficha y pincel de proyectos de partida), id «av_…» (supabase/avance-terreno.sql).
+const TIPOS = ['proyecto', 'observacion', 'contorno', 'planilla', 'avance'];
 const fallo = (status, message) => Object.assign(Error(message), {status});
 
 const INCORRECTOS = 'Usuario o contraseña incorrectos.';

@@ -122,7 +122,7 @@ Detalles y capturas: [CRITICAL_PROTOCOLS.md](docs/CRITICAL_PROTOCOLS.md). Tests:
 
 ## Planillas de avance de la oficina
 
-Control → Avance → Avance por partida → «Cargar planilla de avance» (escritorio). Atlas lee la planilla de avance del piso, la guarda en Nube y la usa como base del avance de cada recinto; lo marcado en terreno después de la carga manda. Requiere ejecutar `supabase/planillas-avance.sql`. Detalle: [PLANILLAS_AVANCE.md](docs/PLANILLAS_AVANCE.md). Prueba: `node planilla-avance-test.mjs`.
+Control → Avance → Avance por partida → «Cargar planilla de avance» (escritorio). Atlas lee la planilla de avance del piso, la guarda en Nube y la usa como base del avance de cada recinto; lo marcado en terreno después de la carga manda y se sincroniza entre equipos. Requiere ejecutar `supabase/planillas-avance.sql` y después `supabase/avance-terreno.sql`. Detalle: [PLANILLAS_AVANCE.md](docs/PLANILLAS_AVANCE.md). Prueba: `node planilla-avance-test.mjs`.
 
 ## Editor de contornos
 

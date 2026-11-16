@@ -43,6 +43,7 @@ Guardapolvo, puertas, prefabricados, pintura de cenefa e impermeabilización de 
 ## Datos
 - Lectura y reglas: `dist/planilla-avance-model.mjs`. Nube y copia en el equipo: `dist/planilla-avance-nube.mjs`. Precedencia: `aplicarPlanilla` en `dist/avance-model.mjs`. Interfaz: `dist/avance.mjs`.
 - Nube: tipo `planilla`, un registro por piso (`avance-N02`). **Requiere ejecutar `supabase/planillas-avance.sql`** después de `campo.sql` y `contornos.sql`. Cada carga queda también en el historial de Supabase.
+- Lo marcado en terreno (rombo, ficha y pincel de los proyectos de partida) viaja como tipo `avance`, un registro por recinto: así lo pintado en el celular aparece en el escritorio y entra en la planilla que se devuelve a la oficina. **Requiere ejecutar `supabase/avance-terreno.sql`** después de `planillas-avance.sql` (si después se vuelve a ejecutar `planillas-avance.sql`, ejecutar otra vez `avance-terreno.sql`). Reglas en [NUBE_CAMPO.md](NUBE_CAMPO.md).
 - Pruebas: `planilla-avance-test.mjs`, en el build de Render. Con `PLANILLAS_AVANCE=<carpeta con los .xlsx>` revisa además las planillas reales, que no se publican.
 
 ## Panel «Avance por partida»

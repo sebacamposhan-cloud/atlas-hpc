@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {createAtlasServer} from './server/groq-server.mjs';
-import {canonico, huella, paqueteProyecto, paqueteObservacion, fusionarObservacion, copiaProyecto, crearSincronizador} from './dist/nube-sync.mjs';
+import fs from 'node:fs';
+import {canonico, huella, paqueteProyecto, paqueteObservacion, fusionarObservacion, copiaProyecto, crearSincronizador, idAvance, paqueteAvance, fusionarAvance} from './dist/nube-sync.mjs';
 import {newMarking, validateMarking, addMarkedRoom} from './dist/marking-model.mjs';
 import {nuevaObservacion, validarObservacion, cambiarEstado, entrada} from './dist/observaciones-model.mjs';
 
@@ -67,7 +68,7 @@ const jpeg = n => { const b = new Uint8Array(64 + n); b.set([0xff, 0xd8, 0xff, 0
 
 // Equipo simulado: mismos adaptadores que nube.mjs pero en memoria (proyectos, observaciones, historial, fotos y lo sincronizado).
 function equipo() {
-  const proyectos = new Map(), observaciones = new Map(), historial = new Map(), fotos = new Map(), registros = new Map(), fotosListas = new Set(), avisos = [];
+  const proyectos = new Map(), observaciones = new Map(), historial = new Map(), fotos = new Map(), registros = new Map(), fotosListas = new Set(), avisos = [], avances = new Map();
   let desde = null, sesion = null;
   const local = {
     proyectos: async () => [...proyectos.values()].map(d => structuredClone(d)),
@@ -78,6 +79,8 @@ function equipo() {
     idsFotos: async () => new Set(fotos.keys()),
     leerFoto: async id => fotos.get(id),
     guardarFoto: async f => { fotos.set(f.id, f); },
+    avances: async () => [...avances.values()].map(a => structuredClone(a)),
+    escribirAvance: async a => { const next = {...structuredClone(a), version: (avances.get(a.key)?.version || 0) + 1}; avances.set(a.key, next); return structuredClone(next); },
   };
   const meta = {leer: async k => registros.get(k), escribir: async (k, v) => { registros.set(k, {...v}); }, fotoLista: async id => fotosListas.has(id), marcarFoto: async id => { fotosListas.add(id); }, desde: async () => desde, guardarDesde: async v => { desde = v; }};
   const api = async (method, ruta, cuerpo, {tipo, binario} = {}) => {
@@ -87,7 +90,7 @@ function equipo() {
     throw Object.assign(Error(data?.error), {status: r.status, data});
   };
   const sincronizar = crearSincronizador({api, local, meta, avisar: m => avisos.push(m), nuevoId: () => 'copia-' + Math.random().toString(36).slice(2, 10)});
-  return {proyectos, observaciones, historial, fotos, avisos,
+  return {proyectos, observaciones, historial, fotos, avisos, avances,
     entrar: async (u, p) => { const r = await entrar(u, p); assert.equal(r.status, 200); sesion = await r.json(); },
     sync: () => sincronizar(sesion.user.role)};
 }
@@ -189,7 +192,102 @@ try {
   // 9. Fusión directa: el historial no se duplica y el máximo de fotos se respeta.
   const f = fusionarObservacion(paqueteObservacion(unida, [h1, hB]), paqueteObservacion(unida, [hB, h1]));
   assert.deepEqual(f.historial.map(h => h.id), ['h-1', 'h-b']);
-  console.log('Nube: sesión, permisos (editor/lector), versión con conflicto, fotos, fusión de observaciones y copia de proyectos validados (Supabase simulado; SQL real no ejercitado).');
+
+  // 10. Avance por recinto (rombo, ficha y pincel de proyectos de partida): lo marcado en un equipo llega al otro.
+  const clave = 'N02|5.1-1', idA = idAvance(clave);
+  assert.match(idA, /^[A-Za-z0-9_-]{1,100}$/);
+  assert.equal(idA, 'av_N02_007c5_002e1-1');
+  assert.notEqual(idAvance('N02|5_1'), idAvance('N02|5.1'), 'el «_» también se codifica: no hay choques');
+  const etapas = (a, b) => [{nombre: 'Estructura', pct: a}, {nombre: 'Tapado', pct: b}];
+  const marca = (registro, id, partida, at) => ({...registro, at, version: registro.version + 1, partidas: {...registro.partidas, [id]: {...partida, at}}});
+  const base10 = {key: clave, code: '5.1-1', level: 'N02', version: 1, at: '2026-11-16T10:00:00.000Z', responsable: 'Mauro', fecha: '2026-11-16', protocolos: {},
+    partidas: {'5.1.1': {ejecucion: 'En ejecución', pct: 50, etapas: etapas(1, 0), at: '2026-11-16T10:00:00.000Z'}}};
+  assert.equal(huella(paqueteAvance(base10)), huella(paqueteAvance({...base10, version: 7})));
+  A.avances.set(clave, base10);
+  r = await A.sync();
+  assert.deepEqual([r.subidos, r.errores], [1, 0]);
+  assert.equal(filas.get('avance:' + idA).data.registro.code, '5.1-1');
+  r = await B.sync();
+  assert.deepEqual([r.bajados, r.errores], [1, 0]);
+  assert.deepEqual(sinVersion(B.avances.get(clave)), sinVersion(base10));
+  assert.deepEqual([(await A.sync()).subidos, (await B.sync()).subidos], [0, 0], 'lo bajado no se vuelve a subir');
+
+  // Partidas distintas del mismo recinto en los dos equipos: se juntan las dos.
+  A.avances.set(clave, marca(A.avances.get(clave), '5.1.1', {ejecucion: 'Instalado', pct: 100, etapas: etapas(1, 1)}, '2026-11-16T11:00:00.000Z'));
+  B.avances.set(clave, marca(B.avances.get(clave), '6.1.1', {ejecucion: 'En ejecución', pct: 30}, '2026-11-16T11:30:00.000Z'));
+  assert.equal((await A.sync()).subidos, 1);
+  r = await B.sync();
+  assert.deepEqual([r.conflictos, r.subidos], [1, 1]);
+  assert.match(B.avisos.at(-1), /avance de 5\.1-1 también cambió/);
+  assert.deepEqual(Object.keys(B.avances.get(clave).partidas).sort(), ['5.1.1', '6.1.1']);
+  assert.equal(B.avances.get(clave).partidas['5.1.1'].ejecucion, 'Instalado');
+  assert.equal((await A.sync()).bajados, 1);
+  assert.deepEqual(sinVersion(A.avances.get(clave)), sinVersion(B.avances.get(clave)));
+
+  // La misma partida en los dos: queda la marcada más tarde, aunque ese equipo sincronice último o primero.
+  B.avances.set(clave, marca(B.avances.get(clave), '6.1.1', {ejecucion: 'Instalado', pct: 100}, '2026-11-16T12:05:00.000Z'));
+  A.avances.set(clave, marca(A.avances.get(clave), '6.1.1', {ejecucion: 'En ejecución', pct: 60}, '2026-11-16T12:00:00.000Z'));
+  assert.equal((await B.sync()).subidos, 1);
+  assert.equal((await A.sync()).conflictos, 1);
+  assert.equal(A.avances.get(clave).partidas['6.1.1'].ejecucion, 'Instalado');
+  await B.sync();
+  assert.deepEqual(sinVersion(B.avances.get(clave)), sinVersion(A.avances.get(clave)));
+  assert.deepEqual(fusionarAvance({...base10, protocolos: {P1: {estado: 'Liberado'}}}, {...base10, at: '2026-11-16T09:00:00.000Z'}).protocolos, {P1: {estado: 'Liberado'}});
+
+  // Cuenta de solo lectura: ve el avance de los demás y no sube el suyo.
+  r = await C.sync();
+  assert.equal(C.avances.get(clave).partidas['6.1.1'].ejecucion, 'Instalado');
+  C.avances.set(clave, marca(C.avances.get(clave), '5.3.1', {ejecucion: 'Instalado', pct: 100}, '2026-11-16T13:00:00.000Z'));
+  assert.equal((await C.sync()).subidos, 0);
+  assert.equal(filas.get('avance:' + idA).data.registro.partidas['5.3.1'], undefined);
+
+  // Registro de la nube con id que no calza con su clave: no se aplica.
+  const D = equipo(); await D.entrar('otro@hpc.test', 'clave-otro');
+  const malo = await pedir('/api/campo', {method: 'POST', token: (await (await entrar('otro@hpc.test', 'clave-otro')).json()).token, body: {tipo: 'avance', id: 'av_otro', version: 0, data: {registro: base10}}});
+  assert.equal(malo.status, 200, 'el Supabase simulado no valida; el real sí (avance-terreno.sql)');
+  r = await D.sync();
+  assert.equal(D.avances.size, 1, 'solo el registro bueno');
+  assert.equal(r.errores, 1);
+  console.log('Nube: sesión, permisos (editor/lector), versión con conflicto, fotos, fusión de observaciones, copia de proyectos y avance por recinto validados (Supabase simulado).');
 } finally {
   server.closeAllConnections(); await new Promise(r => server.close(r));
+}
+
+// 11. supabase/avance-terreno.sql: reemplaza guardar_atlas_campo sin perder las validaciones anteriores.
+const sqlAvance = fs.readFileSync(new URL('./supabase/avance-terreno.sql', import.meta.url), 'utf8');
+assert.match(sqlAvance, /check \(tipo in \('proyecto','observacion','contorno','planilla','avance'\)\)/);
+assert.match(sqlAvance, /p_tipo not in \('proyecto','observacion','contorno','planilla','avance'\)/);
+for (const tipo of ['proyecto', 'observacion', 'contorno', 'planilla', 'avance']) assert.match(sqlAvance, new RegExp("if p_tipo = '" + tipo + "' and"), tipo);
+assert.match(sqlAvance, /^begin;[\s\S]*commit;\s*$/m);
+
+// SQL real en PGlite (opcional, PGLITE_MODULE como en lastplanner-sql-test.mjs): campo → contornos → planillas → avance.
+if (process.env.PGLITE_MODULE) {
+  const {PGlite} = await import(process.env.PGLITE_MODULE), db = new PGlite();
+  await db.exec(`create role authenticated;create role anon;create schema auth;create schema storage;
+    create function auth.jwt() returns jsonb language sql stable as $$select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb$$;
+    create function auth.uid() returns uuid language sql stable as $$select (auth.jwt()->>'sub')::uuid$$;
+    create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
+    create table storage.objects(id uuid default gen_random_uuid(),bucket_id text,name text);alter table storage.objects enable row level security;
+    grant usage on schema public,auth,storage to authenticated,anon;`);
+  for (const archivo of ['campo', 'contornos', 'planillas-avance', 'avance-terreno', 'avance-terreno']) await db.exec(fs.readFileSync(new URL(`./supabase/${archivo}.sql`, import.meta.url), 'utf8'));
+  const guardar = (rol, tipo, id, version, data) => db.transaction(async tx => {
+    await tx.query("select set_config('request.jwt.claims',$1,true)", [JSON.stringify({sub: '11111111-1111-4111-8111-111111111111', email: 'editor@hpc.test', app_metadata: {campo_role: rol}})]);
+    await tx.exec('set local role authenticated');
+    return (await tx.query('select public.guardar_atlas_campo($1,$2,$3,$4::jsonb) as r', [tipo, id, version, JSON.stringify(data)])).rows[0].r;
+  });
+  const falla = async (args, motivo) => { await assert.rejects(guardar(...args), motivo); };
+  const reg = {key: 'N04|5.1-1', code: '5.1-1', level: 'N04', at: '2026-11-16T10:00:00.000Z', responsable: 'Mauro', fecha: '2026-11-16', protocolos: {}, partidas: {}};
+  assert.equal((await guardar('editor', 'avance', idAvance(reg.key), 0, {registro: reg})).version, 1);
+  assert.equal((await guardar('editor', 'avance', idAvance(reg.key), 1, {registro: {...reg, at: '2026-11-16T11:00:00.000Z'}})).version, 2);
+  await falla(['editor', 'avance', idAvance(reg.key), 1, {registro: reg}], /Version conflict/);
+  await falla(['editor', 'avance', idAvance(reg.key), 2, {registro: {...reg, key: 'N04|otro'}}], /Invalid progress record/);
+  await falla(['editor', 'avance', idAvance('N09|1'), 0, {registro: {...reg, key: 'N10|1', level: 'N10', code: '1'}}], /Invalid progress record/);
+  await falla(['editor', 'avance', 'sin-prefijo', 0, {registro: reg}], /Invalid progress record/);
+  await falla(['lector', 'avance', idAvance('N04|5.1-2'), 0, {registro: {...reg, key: 'N04|5.1-2', code: '5.1-2'}}], /Unauthorized/);
+  await falla(['editor', 'contorno', 'N02-x', 0, {nivel: 'N02', code: ''}], /Invalid contour/);
+  await falla(['editor', 'otro', 'x', 0, {}], /Invalid fields/);
+  assert.equal((await guardar('editor', 'planilla', 'avance-N04', 0, {nivel: 'N04', recintos: {}, hojas: [], cargada: '2026-11-16', por: 'Mauro'})).version, 1, 'planilla de N04 aceptada');
+  assert.equal((await db.query("select count(*)::int n from public.atlas_campo_historial where tipo = 'avance'")).rows[0].n, 2);
+  await db.close();
+  console.log('Nube: avance-terreno.sql ejecutado dos veces en PostgreSQL (PGlite): versión, validación, lector y pisos N04.');
 }

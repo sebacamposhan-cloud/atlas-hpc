@@ -1,6 +1,6 @@
 # Nube de proyectos y observaciones en terreno
 
-Los **proyectos** (recintos pintados por estado, con cortes) y las **observaciones en terreno con fotos** se guardan primero en el equipo (IndexedDB) y se sincronizan con Supabase usando la sesión con que se entró a Atlas ([LOGIN.md](LOGIN.md)). Así no se pierden al cerrar la app, al actualizar el código ni al cambiar de celular, y todos los equipos ven lo mismo.
+Los **proyectos** (recintos pintados por estado, con cortes), las **observaciones en terreno con fotos** y el **avance por recinto** (lo marcado en el rombo, en la ficha o con el pincel de un proyecto de partida) se guardan primero en el equipo (IndexedDB) y se sincronizan con Supabase usando la sesión con que se entró a Atlas ([LOGIN.md](LOGIN.md)). Así no se pierden al cerrar la app, al actualizar el código ni al cambiar de celular, y todos los equipos ven lo mismo.
 
 Usa un proyecto Supabase con cuentas personales (es el mismo proyecto que usaba el antiguo módulo Estados de pago, retirado el 28 de octubre de 2026). No usa la clave `service_role`.
 
@@ -29,6 +29,8 @@ Usa un proyecto Supabase con cuentas personales (es el mismo proyecto que usaba 
 - **Versión por registro:** cada proyecto u observación se guarda con la versión que tenía el equipo; si otro equipo se adelantó, Supabase lo rechaza y se resuelve sin perder datos:
   - **Proyecto cambiado en dos equipos:** queda la versión de la nube y lo de este equipo se guarda como «(copia de este equipo)», que también se sube.
   - **Observación cambiada en dos equipos:** se juntan el historial y las fotos de ambos; los datos (estado, descripción, responsable…) son los de la actualización más reciente. El historial muestra todos los cambios.
+  - **Avance del mismo recinto cambiado en dos equipos:** se juntan las partidas de ambos; en cada partida queda la marcada más tarde. Protocolos y firma, del registro más reciente. Una marca deshecha en un equipo mientras el otro la tenía puede volver: se corrige marcando de nuevo.
+- **Avance en proyectos de partida:** un proyecto «Avance · <partida>» u «Hoja de ruta» no guarda los estados de las columnas enlazadas a la planilla; los lee del avance de cada recinto. Por eso lo que se pinta ahí viaja como avance (tipo `avance`, id `av_…` que codifica «piso|código»), no como proyecto. Requiere [`supabase/avance-terreno.sql`](../supabase/avance-terreno.sql); sin ese SQL el avance sigue guardándose en el equipo y la nube lo rechaza sin cortar lo demás.
 - **Fotos:** se suben (foto y miniatura) antes que su observación y no se reemplazan ni se borran en la nube. Quitar una foto de una observación la saca del registro, pero el archivo queda en Storage como evidencia.
 - **Historial en la nube:** `atlas_campo_historial` guarda cada versión subida, con quién y cuándo.
 - **Solo lectura:** una cuenta `lector` baja todo; lo que cambie en su equipo no se sube.
@@ -45,4 +47,5 @@ Usa un proyecto Supabase con cuentas personales (es el mismo proyecto que usaba 
 - `server/campo.mjs`: rutas `/api/campo` (sesión, lectura, guardado y fotos) que reenvían a Supabase con la sesión de cada usuario.
 - `dist/nube-sync.mjs`: reglas de sincronización (huellas, conflictos, fotos).
 - `dist/nube.mjs` y `dist/nube.css`: sesión, «Cerrar sesión» y disparadores de la sincronización.
-- `nube-test.mjs`: dos equipos y una cuenta lectora contra un Supabase simulado (no ejercita el SQL real).
+- `supabase/avance-terreno.sql`: acepta el tipo `avance` y los pisos N04 a N09 en contornos y planillas.
+- `nube-test.mjs`: dos equipos y una cuenta lectora contra un Supabase simulado; con `PGLITE_MODULE` ejecuta además los SQL en PostgreSQL (PGlite).

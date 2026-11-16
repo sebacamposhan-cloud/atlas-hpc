@@ -1,10 +1,11 @@
 import {syncLastPlanner} from './lastplanner-sync.mjs';
-// Nube: sincronización de proyectos, observaciones con fotos y Last Planner entre equipos, con la cuenta personal con
+// Nube: sincronización de proyectos, observaciones con fotos, avance por recinto y Last Planner entre equipos, con la cuenta personal con
 // que se entró a Atlas (login.html). Sin conexión todo sigue guardándose en este equipo; se sincroniza al volver la
 // señal, después de cada guardado y cada 3 minutos con la app abierta. No tiene botón: sus avisos salen como toast.
 import {crearSincronizador} from './nube-sync.mjs';
 import {readMarkings, saveMarking, replaceMarking} from './marking-store.mjs';
 import {leerParaNube, idsFotos, leerFoto, guardarDesdeNube, guardarFotoDesdeNube} from './observaciones-store.mjs';
+import {leerAvanceParaNube, guardarAvanceDesdeNube} from './avance-store.mjs';
 import {refrescarContornosNube} from './contornos-nube.mjs';
 import {refrescarPlanillasNube} from './planilla-avance-nube.mjs';
 
@@ -49,6 +50,9 @@ const local = {
   crearProyecto: doc => saveMarking(doc, 0),
   observaciones: leerParaNube,
   escribirObservacion: guardarDesdeNube,
+  // Avance por recinto: rombo, ficha y pincel de los proyectos de partida.
+  avances: leerAvanceParaNube,
+  escribirAvance: guardarAvanceDesdeNube,
   idsFotos, leerFoto,
   guardarFoto: async foto => guardarFotoDesdeNube({...foto, ...await medidas(foto.datos)}),
 };
@@ -147,6 +151,8 @@ export function iniciarNube({toast = aviso} = {}) {
   });
 
   for (const nombre of ['atlas-observaciones-changed', 'atlas-markings-changed','atlas-lastplanner-changed','atlas-jerarquia-changed']) window.addEventListener(nombre, e => { if (e.detail?.origen !== 'nube' && leerSesion()) programar(); });
+  // El avance también avisa al bajar una planilla o lo de otro equipo: solo lo marcado en este equipo se sube.
+  window.addEventListener('atlas-avance-changed', e => { if (e.detail?.origen === 'equipo' && leerSesion()) programar(); });
   window.addEventListener('online', () => programar(1000));
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && leerSesion()) programar(1000); });
   setInterval(() => { if (document.visibilityState === 'visible' && leerSesion()) sincronizar(); }, 180000);
