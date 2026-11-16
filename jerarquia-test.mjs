@@ -61,7 +61,7 @@ t('funciones por nivel', () => {
   // Desde 2026-11-09 el supervisor o capataz abre Last Planner para su reporte diario; sus permisos los acota PERMISOS_NIVEL.
   assert.ok(J.funcionesDe(P(11)).tarjetas.includes('lastplanner'), 'Last Planner para el reporte diario');
   assert.deepEqual(J.PERMISOS_NIVEL[4], ['execution', 'attendance', 'restriction', 'evidence'], 'sin planificar ni verificar');
-  assert.deepEqual(J.funcionesDe(P(11)).funciones.herramientas, ['proyectos', 'mas'], 'Proyectos completo');
+  assert.deepEqual(J.funcionesDe(P(11)).funciones.herramientas, ['proyectos', 'filtros', 'puertas', 'impermeabilizacion', 'mas'], 'Proyectos completo y herramientas del plano');
   assert.ok(J.funcionesDe(P(11)).tarjetas.includes('puertas') && J.funcionesDe(P(3)).tarjetas.includes('puertas'), 'Puertas para todos');
   assert.deepEqual(J.funcionesDe(P(2)).tareas, ['asignar', 'equipo']);
   assert.deepEqual(J.funcionesDe(P(3)).tareas, ['mias', 'asignar', 'equipo']);

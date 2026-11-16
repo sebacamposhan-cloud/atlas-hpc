@@ -6,18 +6,32 @@ Atlas distingue dos tipos de equipo (`dist/dispositivo.mjs`):
 
 Marca `body.escritorio` o `body.terreno`, y vuelve a marcar si cambia, por ejemplo al girar una tablet o achicar la ventana.
 
-## Modo terreno: directo al plano
+## Navegación: directo al plano, sin módulos
 Decidido con Mauro el 2026-11-16, después de que Sebastian pidiera una navegación «a prueba de tontos».
 
-- **Entrada:** en terreno, Atlas abre directo el plano del piso, sin pasar por Módulos ni por la pila de pisos. Abre el último piso usado en ese equipo si sigue disponible; si no, el primero disponible. Con perfil de obra, solo cuentan sus pisos asignados (`pisoDeEntrada` en `navegacion-model.mjs`, `entrarTerreno` en `floor-explorer.mjs`). Las direcciones con piso o módulo, los QR y el escritorio funcionan como antes.
-- **Barra de abajo:** **Buscar** (lleva al buscador), **Mis tareas** (la libreta; si la cuenta no tiene, Last Planner) y **Más**. Módulos, Pisos y el botón del módulo quedan solo en escritorio (`terreno.css`).
-- **Más:** una lista vertical con las tarjetas de todos los módulos (Control, Plano, Protocolos), más «Módulos» y la simbología (`gruposMas`). Tocar una tarjeta hace lo mismo que en la rueda.
-- **Avance y observaciones** siguen en el rombo del recinto, a un toque desde el plano o la búsqueda; no tienen un segundo camino.
-- **Pisos:** con más de un piso disponible, «Piso N ▾» en la cabecera muestra los pisos como botones grandes (`#chipsPisos`). Con un solo piso no aparece.
+- **Entrada:** Atlas abre directo el plano del piso, en el celular y en el escritorio. Ya no hay pantalla de Módulos ni pila de pisos.
+  - Abre el último piso usado en ese equipo si sigue disponible; si no, el primero disponible.
+  - Con perfil de obra, solo cuentan sus pisos asignados (`pisoDeEntrada` en `navegacion-model.mjs`, `entrarTerreno` en `floor-explorer.mjs`).
+  - Las direcciones con piso y los QR funcionan como antes.
+- **Tu cuenta (arriba a la izquierda):** tus iniciales en un círculo y «Piso N ▾». Al tocarlos sube una hoja con:
+  - tu nombre y correo;
+  - tus pisos para elegir, con su estado sin conexión y «Guardar»;
+  - «Sin conexión y actualizaciones»;
+  - «Cerrar sesión».
 
-Medido a 375×812 (supervisor con un piso):
-- abrir el plano pasa de 2 toques, en una rueda con tarjetas cortadas, a 0;
-- buscar un recinto y abrir su rombo: 2 toques más el código.
+  El botón de descarga y el de cerrar sesión salieron de la cabecera.
+- **Herramientas** está en Plano y reúne Proyectos, Filtros y capas, Puertas e Impermeabilización (solo en el −1). Las tarjetas sueltas de Filtros, Puertas e IMP quedan ocultas, por permisos y direcciones antiguas.
+- **Celular, barra de abajo:**
+  - **Plano** cierra lo que esté abierto y deja el plano a la vista.
+  - **Mis tareas** abre la libreta (o Last Planner, si la cuenta no tiene libreta).
+  - **Más** sube los accesos en cuadrícula, agrupados en Control, Plano y Protocolos (`accesosMas`). Cada función es un acceso directo.
+
+  La búsqueda es la de arriba.
+- **Escritorio, columna izquierda:** la libreta y los grupos Control, Plano y Protocolos, uno debajo de otro.
+- **«Ver simbología»** se quitó.
+- **Avance y observaciones** siguen en el rombo del recinto, a un toque desde el plano o la búsqueda.
+- **Proyectos:** al quitar un recinto, los siguientes se renumeran (1, 2, 3… sin huecos).
+- **Sin cubrir:** la vista de varios pisos a la vez (franja de pisos) ya no tiene cómo elegirse.
 
 ## Terreno: solo herramientas de terreno
 Decidido con Mauro el 2026-11-09.

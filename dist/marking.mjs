@@ -95,7 +95,7 @@ export function createMarking(ctx) {
     // Acciones del proyecto: botones flotantes a la izquierda del plano (proyecto-funciones.mjs), como en Recintos.
     const cabecera = `<div class="markingHead"><div><small>ARQUITECTURA · ${esc(ctx.levelName)}</small><h2>${esc(active.name)}</h2></div>${botonAmpliar()}<button id="closeMarking" data-wait-save aria-label="Cerrar proyecto">×</button></div>
       ${funcionesProyecto([['markingDocuments', 'Proyectos', 'proyectos', 'data-wait-save'], ['markingEdit', 'Leyenda', 'columnas', 'data-wait-save'], ...(comp ? [['salirComparacion', 'Estados', 'estados']] : []), ['markingBackup', 'Respaldo', 'respaldo', 'data-wait-save'], ['markingExport', 'Exportar', 'exportar', 'data-wait-save']])}`;
-    const pie = `<div class="markingFooter"><span id="markingSaveStatus" role="status"></span><small>Marcado de consulta sobre los contornos disponibles. Quitar un recinto conserva los números de los demás.</small></div>`;
+    const pie = `<div class="markingFooter"><span id="markingSaveStatus" role="status"></span><small>Marcado de consulta sobre los contornos disponibles. Al quitar un recinto, los siguientes se renumeran.</small></div>`;
     let cuerpo;
     if (comp) {
       const r = comp.resultado, opcion = (c, sel) => `<option value="${esc(c.id)}" ${c.id === sel ? 'selected' : ''}>${esc(c.fecha ? fecha(c.fecha) + ' · ' : '')}${esc(c.nombre)}</option>`;

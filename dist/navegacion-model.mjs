@@ -23,14 +23,15 @@ export const TARJETAS = [
     dibujo: '<rect x="14" y="14" width="132" height="72"/><path d="M14 28h132M40 14v72M66 14v72M92 14v72M118 14v72"/><path class="f" d="M42 33h48v10H42zM68 50h48v10H68zM94 67h22v10H94z"/>'},
   {id: 'resumen', modulo: 'control', titulo: 'Avance', texto: 'Resumen de avance y observaciones', panel: 'avance', vista: 'recinto', funciones: [],
     dibujo: '<path d="M20 86h120M20 14v72"/><path class="f" d="M28 74l28-18 26 8 28-30 22-12"/>'},
-  {id: 'herramientas', modulo: 'control', titulo: 'Herramientas', texto: 'Proyectos y más', funciones: [['proyectos', 'Proyectos'], ['mas', 'Más']], dibujo: DESLIZADORES},
   {id: 'recintos', modulo: 'plano', titulo: 'Recintos', texto: 'Avance y observaciones', funciones: [['avance', 'Avance'], ['observaciones', 'Observaciones'], ['resumen', 'Resumen']],
     dibujo: '<path d="M80 8l42 42-42 42-42-42z"/><path class="f" d="M62 34h36v32H62z"/><path d="M62 50h36"/>'},
-  {id: 'capas', modulo: 'plano', titulo: 'Filtros y capas', texto: 'Qué se ve en el plano', accion: 'filtros', funciones: [], dibujo: DESLIZADORES},
+  // Herramientas del plano: Proyectos, Filtros y capas, Puertas e Impermeabilización (solo en el −1) en un solo lugar.
+  {id: 'herramientas', modulo: 'plano', titulo: 'Herramientas', texto: 'Proyectos, filtros, puertas y más', funciones: [['proyectos', 'Proyectos'], ['filtros', 'Filtros y capas'], ['puertas', 'Puertas'], ['impermeabilizacion', 'Impermeabilización'], ['mas', 'Más']], dibujo: DESLIZADORES},
+  {id: 'capas', modulo: 'plano', oculta: true, titulo: 'Filtros y capas', texto: 'Qué se ve en el plano', accion: 'filtros', funciones: [], dibujo: DESLIZADORES},
   // Plano de puertas: modelo, llave, vano y estado de cada puerta (puertas.mjs).
-  {id: 'puertas', modulo: 'plano', titulo: 'Puertas', texto: 'Modelo, llave, vano y estado', accion: 'puertas', funciones: [],
+  {id: 'puertas', modulo: 'plano', oculta: true, titulo: 'Puertas', texto: 'Modelo, llave, vano y estado', accion: 'puertas', funciones: [],
     dibujo: '<rect x="52" y="10" width="56" height="80"/><path class="f" d="M52 90V10l40 10v80z"/><path d="M84 54v6"/>'},
-  {id: 'impermeabilizacion', modulo: 'plano', titulo: 'Impermeabilización', texto: 'Plano IMP · contornos, avance y exportación', accion: 'impermeabilizacion', niveles: ['N-1'], funciones: [],
+  {id: 'impermeabilizacion', modulo: 'plano', oculta: true, titulo: 'Impermeabilización', texto: 'Plano IMP · contornos, avance y exportación', accion: 'impermeabilizacion', niveles: ['N-1'], funciones: [],
     dibujo: '<path d="M28 82h104M34 72V24h92v48z"/><path class="f" d="M34 58h92v14H34z"/><path d="M64 24v48M94 24v48M34 48h92"/>'},
   {id: 'tipos', modulo: 'protocolos', titulo: 'Por tipo', texto: 'Protocolos abiertos de este piso', grupo: 'protocolos', funcion: 'tipos', funciones: [], dibujo: HOJA},
   {id: 'criticos', modulo: 'protocolos', titulo: 'Críticos', texto: 'Más de un año abiertos', grupo: 'protocolos', funcion: 'criticos', funciones: [],
@@ -43,6 +44,7 @@ export const TARJETAS = [
 export const TARJETA_TAREAS = {id: 'tareas', modulo: 'control', titulo: 'Mis tareas', texto: 'Lo que te asignaron y lo de tu equipo', funciones: [['mias', 'Mis tareas'], ['asignar', 'Asignar'], ['equipo', 'Mi equipo']],
   dibujo: '<rect x="40" y="10" width="80" height="80"/><path class="f" d="M40 10h14v80H40z"/><path d="M64 32l5 5 9-9M64 54l5 5 9-9M64 76h0"/><path d="M84 34h24M84 56h24M64 76h44"/>'};
 // Tarjetas y funciones que ve cada nivel. funciones = funcionesDe(perfil) de jerarquia-model.mjs; null = como hoy.
+const REQUIERE = {filtros: 'capas', impermeabilizacion: 'capas', puertas: 'puertas'};
 export function tarjetasPara(funciones) {
   if (!funciones) return TARJETAS;
   const todas = [TARJETA_TAREAS, ...TARJETAS];
@@ -51,13 +53,15 @@ export function tarjetasPara(funciones) {
   if(funciones.tarjetas.includes('capas')&&!incluidas.some(t=>t.id==='impermeabilizacion'))incluidas.push(TARJETAS.find(t=>t.id==='impermeabilizacion'));
   return incluidas
     .map(t => t.id === 'tareas' ? {...t, funciones: t.funciones.filter(([f]) => funciones.tareas.includes(f))} : funciones.funciones[t.id] ? {...t, funciones: t.funciones.filter(([f]) => funciones.funciones[t.id].includes(f))} : t)
+    // Herramientas: Filtros e Impermeabilización van con el permiso de «capas»; Puertas, con el de «puertas».
+    .map(t => t.id !== 'herramientas' ? t : {...t, funciones: t.funciones.filter(([f]) => !REQUIERE[f] || funciones.tarjetas.includes(REQUIERE[f]))})
     .filter(t => t.panel || t.accion || t.grupo || t.funciones.length);
 }
 // Tarjetas que se ven en la rueda de un módulo.
 export const cartasDelModulo = (lista, idModulo) => lista.filter(t => t.modulo === idModulo && !t.oculta);
 // Lo de oficina (tablas grandes y resúmenes con tablas) solo va en escritorio. En terreno el avance se ve pintado en el
 // plano y los protocolos por tipo, críticos y dentro de cada recinto, con la ficha completa de cada folio.
-export const OFICINA = {tarjetas: ['resumen', 'matriz'], funciones: {recintos: ['resumen'], protocolos: ['resumen']}};
+export const OFICINA = {tarjetas: ['resumen', 'matriz'], funciones: {recintos: ['resumen'], protocolos: ['resumen'], herramientas: ['mas']}};
 export function paraTerreno(lista) {
   return lista.filter(t => !OFICINA.tarjetas.includes(t.id))
     .map(t => OFICINA.funciones[t.id] ? {...t, funciones: t.funciones.filter(([f]) => !OFICINA.funciones[t.id].includes(f))} : t)
@@ -65,7 +69,7 @@ export function paraTerreno(lista) {
 }
 // Opciones de «Más herramientas». En terreno solo la simbología: exportar, fuentes, rombos y respaldos son de oficina.
 export function opcionesMas(escritorio) {
-  const todas = [['exportPlan', 'Exportar plano', true], ['legend', 'Ver simbología', false], ['original', 'Documentos fuente', true], ['diamondCatalogOpen', 'Rombos', true], ['import', 'Respaldos', true], ['editorContornos', 'Editor de contornos', true]];
+  const todas = [['exportPlan', 'Exportar plano', true], ['original', 'Documentos fuente', true], ['diamondCatalogOpen', 'Rombos', true], ['import', 'Respaldos', true], ['editorContornos', 'Editor de contornos', true]];
   return todas.filter(([, , oficina]) => escritorio || !oficina).map(([id, nombre]) => [id, nombre]);
 }
 // Íconos de los botones flotantes (trazo de 24 unidades). Observaciones lleva la cámara.
@@ -149,4 +153,20 @@ export function pisoDeEntrada(memoria, disponibles) {
 export function gruposMas(lista) {
   return MODULOS.map(m => ({modulo: m.id, titulo: m.titulo, tarjetas: lista.filter(t => t.modulo === m.id && !t.oculta && t.id !== 'tareas')}))
     .filter(g => g.tarjetas.length);
+}
+
+// Íconos de las funciones de Herramientas en el plano.
+ICONOS.puertas = trazo('<path d="M6 21V4h10v17"/><path d="M6 4l7 2v15"/><path d="M11 13v1"/><path d="M3 21h16"/>');
+ICONOS.impermeabilizacion = trazo('<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/><path d="M9 15a3 3 0 0 0 3 3"/>');
+// Herramientas sin Impermeabilización fuera del −1 (el plano IMP es de ese piso).
+export const herramientasDelPiso = (lista, piso) => lista.map(t => t.id !== 'herramientas' ? t : {...t, funciones: t.funciones.filter(([f]) => f !== 'impermeabilizacion' || piso === 'N-1')});
+// Accesos de «Más» (celular): una cuadrícula por grupo. Cada función de una tarjeta es un acceso directo; una tarjeta sin
+// funciones (Last Planner, Por tipo, Críticos) es un acceso. De la libreta van solo Asignar y Mi equipo: «Mis tareas»
+// tiene su botón abajo.
+export function accesosMas(lista) {
+  const nombres = {avance: 'Avance en el plano'};
+  const deTarjeta = t => t.funciones.length ? t.funciones.map(([f, nombre]) => ({tarjeta: t.id, funcion: f, nombre: nombres[f] || nombre, icono: f})) : [{tarjeta: t.id, funcion: null, nombre: t.titulo, dibujo: t.dibujo}];
+  const tareas = lista.find(t => t.id === 'tareas');
+  return gruposMas(lista).map(g => ({...g, accesos: [...(g.modulo === 'control' && tareas ? tareas.funciones.filter(([f]) => f !== 'mias').map(([f, nombre]) => ({tarjeta: 'tareas', funcion: f, nombre, icono: f})) : []), ...g.tarjetas.flatMap(deTarjeta)]}))
+    .filter(g => g.accesos.length);
 }

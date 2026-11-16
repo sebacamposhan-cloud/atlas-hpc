@@ -62,6 +62,7 @@ function paintPisos() {
   }));
 }
 function paint() {
+  try { window.dispatchEvent?.(new Event('atlas-offline-estado')); } catch {}
   const online = navigator.onLine, busy = !!status?.downloading, ready = pisoListo(), actual = pisoAbierto ? pisoActual() : null;
   $('offlineLabel').textContent = busy ? 'Guardando…' : !online ? 'Sin señal' : ready ? 'Disponible offline' : 'Sin guardar';
   $('offlineOpen').classList.toggle('ready', ready);
@@ -188,3 +189,5 @@ function avisarFalta() {
 window.addEventListener('atlas-teselas-faltan', avisarFalta);
 window.addEventListener('atlas-shell-ready', () => setup(), {once:true});
 paint();
+// La hoja de tu cuenta (floor-explorer.mjs) muestra qué pisos están guardados y permite guardar uno.
+window.atlasSinConexion = {estado: () => status, guardar: pack => { recordar(pack); download(['plan', pack]); }};

@@ -84,9 +84,14 @@ export function addMarkedRoom(doc, room, source, estado) {
   const mark = {id: room.id, code: room.code, name: room.name, source: source.code, revision: source.revision, number: doc.nextNumber, ...(doc.schema === 2 ? {estado: estado ?? estadoInicial(doc)} : {})};
   return validateMarking({...doc, rooms: [...doc.rooms, mark], nextNumber: doc.nextNumber + 1});
 }
+// Quitar un recinto renumera los que quedan en su orden (1, 2, 3… sin huecos): el próximo recinto recibe el número que sigue.
 export function removeMarkedRoom(doc, id) {
   if (!doc.rooms.some(mark => mark.id === id)) return doc;
-  return validateMarking({...doc, rooms: doc.rooms.filter(mark => mark.id !== id)});
+  return validateMarking(renumerar({...doc, rooms: doc.rooms.filter(mark => mark.id !== id)}));
+}
+export function renumerar(doc) {
+  const orden = [...doc.rooms].sort((a, b) => a.number - b.number), nuevo = new Map(orden.map((r, i) => [r.id, i + 1]));
+  return {...doc, rooms: doc.rooms.map(r => ({...r, number: nuevo.get(r.id)})), nextNumber: doc.rooms.length + 1};
 }
 // Cambia la leyenda. Los recintos con un estado eliminado pasan al primer estado; los cortes conservan su registro original.
 export function setEstados(doc, estados) {

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {TARJETAS, ICONOS, MODULOS, moduloDe, conPortada, cartasDelModulo, consultaPiso, leerConsulta, pisosEnOrden, pisoParaAbrir, tarjeta, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar, paradaCercana, CLAVE_MEMORIA, tarjetasPara, TARJETA_TAREAS, paraTerreno, opcionesMas, OFICINA} from './dist/navegacion-model.mjs';
 import {funcionesDe, puedeVariosPisos} from './dist/jerarquia-model.mjs';
-import {pisoDeEntrada, gruposMas} from './dist/navegacion-model.mjs';
+import {pisoDeEntrada, gruposMas, accesosMas} from './dist/navegacion-model.mjs';
 import {crearFluido, crearOleaje, arrastrar} from './dist/fluido.mjs';
 import {palancaHTML} from './dist/palanca.mjs';
 import {GRUPOS, SIN_FLUJO, claveDe, indiceActivo, firmaDeSelect} from './dist/selector-flujo.mjs';
@@ -17,8 +17,9 @@ assert.equal(moduloDe('inexistente'), null);
 for (const m of MODULOS) assert.ok(m.titulo && m.texto && m.dibujo, m.id);
 
 // Tarjetas de cada módulo: un panel, una acción sobre el plano, una función de su grupo o sus botones flotantes.
-assert.deepEqual(cartasDelModulo(TARJETAS, 'control').map(t => t.id), ['lastplanner', 'resumen', 'herramientas']);
-assert.deepEqual(cartasDelModulo(TARJETAS, 'plano').map(t => t.id), ['recintos', 'capas', 'puertas', 'impermeabilizacion']);
+assert.deepEqual(cartasDelModulo(TARJETAS, 'control').map(t => t.id), ['lastplanner', 'resumen']);
+// Herramientas está en Plano y reúne Proyectos, Filtros y capas, Puertas e Impermeabilización (que quedan ocultas como tarjeta).
+assert.deepEqual(cartasDelModulo(TARJETAS, 'plano').map(t => t.id), ['recintos', 'herramientas']);
 assert.deepEqual(tarjeta('impermeabilizacion').niveles,['N-1']);
 assert.equal(tarjeta('puertas').accion, 'puertas', 'Puertas abre su plano propio');
 assert.deepEqual(cartasDelModulo(TARJETAS, 'protocolos').map(t => t.id), ['tipos', 'criticos', 'matriz']);
@@ -28,7 +29,7 @@ assert.equal(tarjeta('resumen').panel, 'avance');
 assert.equal(tarjeta('capas').accion, 'filtros');
 assert.equal(tarjeta('tipos').grupo, 'protocolos');
 assert.deepEqual(tarjeta('recintos').funciones.map(([id]) => id), ['avance', 'observaciones', 'resumen']);
-assert.deepEqual(tarjeta('herramientas').funciones.map(([, nombre]) => nombre), ['Proyectos', 'Más']);
+assert.deepEqual(tarjeta('herramientas').funciones.map(([, nombre]) => nombre), ['Proyectos', 'Filtros y capas', 'Puertas', 'Impermeabilización', 'Más']);
 assert.equal(tarjeta('inexistente'), null);
 assert.equal(tituloNavegacion('recintos', 'observaciones'), 'Recintos · Observaciones');
 assert.equal(tituloNavegacion('protocolos', null), 'Protocolos');
@@ -65,14 +66,14 @@ assert.equal(pisoParaAbrir([], 'N-1'), null);
   assert.equal(tarjetasPara(funcionesDe(null)), TARJETAS);
   assert.equal(tarjetasPara(funcionesDe(perfil(3, {activo: false}))), TARJETAS, 'un perfil inactivo no cambia nada');
   const capataz = tarjetasPara(funcionesDe(perfil(4)));
-  assert.deepEqual(cartasDelModulo(capataz, 'control').map(t => t.id), ['tareas', 'lastplanner', 'herramientas'], 'Last Planner para su reporte diario; sin el resumen de gerencia');
-  assert.deepEqual(capataz.find(t => t.id === 'herramientas').funciones.map(([id]) => id), ['proyectos', 'mas'], 'Proyectos completo para supervisor o capataz');
-  assert.deepEqual(cartasDelModulo(capataz, 'plano').map(t => t.id), ['recintos', 'capas', 'puertas', 'impermeabilizacion']);
+  assert.deepEqual(cartasDelModulo(capataz, 'control').map(t => t.id), ['tareas', 'lastplanner'], 'Last Planner para su reporte diario; sin el resumen de gerencia');
+  assert.deepEqual(cartasDelModulo(capataz, 'plano').map(t => t.id), ['recintos', 'herramientas']);
+  assert.deepEqual(capataz.find(t => t.id === 'herramientas').funciones.map(([id]) => id), ['proyectos', 'filtros', 'puertas', 'impermeabilizacion', 'mas'], 'Proyectos completo y herramientas del plano para supervisor o capataz');
   assert.deepEqual(cartasDelModulo(capataz, 'protocolos').map(t => t.id), ['tipos', 'criticos']);
   assert.deepEqual(capataz[0].funciones.map(([id]) => id), ['mias']);
   assert.deepEqual(capataz.find(t => t.id === 'recintos').funciones.map(([id]) => id), ['avance', 'observaciones'], 'el resumen de gerencia no va al capataz');
   const jefe = tarjetasPara(funcionesDe(perfil(2)));
-  assert.deepEqual(cartasDelModulo(jefe, 'control').map(t => t.id), ['tareas', 'lastplanner', 'resumen', 'herramientas']);
+  assert.deepEqual(cartasDelModulo(jefe, 'control').map(t => t.id), ['tareas', 'lastplanner', 'resumen']);
   assert.deepEqual(jefe[0].funciones.map(([id]) => id), ['mias', 'asignar', 'equipo']);
   assert.deepEqual(jefe.slice(1).map(t => t.id).sort(), TARJETAS.map(t => t.id).sort(), 'la jefatura conserva todas sus tarjetas');
   assert.deepEqual(jefe.slice(1).map(t => t.funciones.length).sort(), TARJETAS.map(t => t.funciones.length).sort(), 'y todas sus funciones');
@@ -199,7 +200,7 @@ assert.deepEqual(leerMemoria(a), {piso: 'N02', tarjeta: 'recintos', funcion: 'ob
 // Lo guardado antes de los módulos se sigue leyendo, y un módulo que no existe se ignora.
 assert.deepEqual(leerMemoria(almacen({[CLAVE_MEMORIA]: JSON.stringify({piso: 'N01', tarjeta: 'protocolos', funcion: 'tipos'})})), {piso: 'N01', tarjeta: 'protocolos', funcion: 'tipos', modulo: null, pisos: []});
 assert.equal(leerMemoria(almacen({[CLAVE_MEMORIA]: JSON.stringify({modulo: 'otro'})})).modulo, null);
-assert.equal(leerMemoria(almacen({[CLAVE_MEMORIA]: JSON.stringify({tarjeta: 'herramientas', funcion: 'filtros'})})).funcion, null, 'Filtros pasó a Plano');
+assert.equal(leerMemoria(almacen({[CLAVE_MEMORIA]: JSON.stringify({tarjeta: 'herramientas', funcion: 'filtros'})})).funcion, null, 'Filtros es de Herramientas, pero no se retoma al volver (es momentánea)');
 assert.equal(leerMemoria(almacen({[CLAVE_MEMORIA]: JSON.stringify({tarjeta: 'recintos', funcion: 'resumen'})})).funcion, null);
 assert.equal(leerMemoria(almacen({[CLAVE_MEMORIA]: JSON.stringify({tarjeta: 'lastplanner', funcion: 'x'})})).tarjeta, null);
 assert.equal(leerMemoria(almacen({[CLAVE_MEMORIA]: JSON.stringify({tarjeta: 'recintos', funcion: 'criticos'})})).funcion, null);
@@ -274,16 +275,17 @@ for (const [, alto] of cssTareas.matchAll(/min-height: (\d+)px/g)) assert.ok(Num
 console.log('navegacion-test: ok');
 
 // Terreno (celular o tablet): sin tablas de oficina. Avance y la matriz quedan para el escritorio; Recintos y Protocolos
-// pierden su «Resumen»; en «Más» solo queda la simbología.
+// pierden su «Resumen»; «Más herramientas» (exportar, fuentes, rombos, respaldos) es de oficina.
 {
   const terreno = paraTerreno(TARJETAS);
-  assert.deepEqual(cartasDelModulo(terreno, 'control').map(t => t.id), ['lastplanner', 'herramientas']);
+  assert.deepEqual(cartasDelModulo(terreno, 'control').map(t => t.id), ['lastplanner']);
+  assert.deepEqual(terreno.find(t => t.id === 'herramientas').funciones.map(([id]) => id), ['proyectos', 'filtros', 'puertas', 'impermeabilizacion'], 'en terreno Herramientas no lleva «Más» (sus opciones son de oficina)');
   assert.deepEqual(cartasDelModulo(terreno, 'protocolos').map(t => t.id), ['tipos', 'criticos']);
   assert.deepEqual(terreno.find(t => t.id === 'recintos').funciones.map(([id]) => id), ['avance', 'observaciones']);
   assert.deepEqual(terreno.find(t => t.id === 'protocolos').funciones.map(([id]) => id), ['tipos', 'criticos']);
   assert.ok(OFICINA.tarjetas.every(id => TARJETAS.some(t => t.id === id)), 'las tarjetas de oficina existen');
-  assert.deepEqual(opcionesMas(false).map(([id]) => id), ['legend']);
-  assert.deepEqual(opcionesMas(true).map(([id]) => id), ['exportPlan', 'legend', 'original', 'diamondCatalogOpen', 'import', 'editorContornos']);
+  assert.deepEqual(opcionesMas(false).map(([id]) => id), [], 'sin «Ver simbología»');
+  assert.deepEqual(opcionesMas(true).map(([id]) => id), ['exportPlan', 'original', 'diamondCatalogOpen', 'import', 'editorContornos']);
   assert.match(index, /terreno\.css/); assert.match(index, /escritorio\.css/); assert.match(index, /puertas\.css/);
 }
 
@@ -297,7 +299,13 @@ console.log('navegacion-test: ok');
   const grupos = gruposMas(paraTerreno(tarjetasPara(null)));
   assert.deepEqual(grupos.map(g => g.modulo), ['control', 'plano', 'protocolos']);
   const ids = grupos.flatMap(g => g.tarjetas.map(t => t.id));
-  assert(ids.includes('lastplanner') && ids.includes('capas') && ids.includes('tipos'));
+  assert(ids.includes('lastplanner') && ids.includes('herramientas') && ids.includes('tipos'));
+  assert(!ids.includes('capas') && !ids.includes('puertas'), 'Filtros y Puertas van dentro de Herramientas');
+  // Accesos de «Más»: cada función es un acceso directo; Mis tareas no (tiene su botón).
+  const accesos = accesosMas(paraTerreno(tarjetasPara(funcionesDe({id: 'x', nombre: 'J', area: 'linea', nivel: 2, pisos: [], activo: true}))));
+  const nombres = accesos.flatMap(g => g.accesos.map(a => a.nombre));
+  assert(nombres.includes('Avance en el plano') && nombres.includes('Proyectos') && nombres.includes('Filtros y capas') && nombres.includes('Puertas') && nombres.includes('Por tipo'), nombres.join(', '));
+  assert(!nombres.includes('Mis tareas') && !nombres.includes('Más'), 'sin Mis tareas ni «Más» dentro de Más');
   assert(!ids.includes('tareas') && !ids.includes('protocolos') && !ids.includes('resumen') && !ids.includes('matriz'), 'sin libreta, ocultas ni tablas de oficina');
   const css = fs.readFileSync('dist/terreno.css', 'utf8');
   assert.match(css, /body\.terreno \.bottomNav > button:not\(\.terrenoBoton\)/);

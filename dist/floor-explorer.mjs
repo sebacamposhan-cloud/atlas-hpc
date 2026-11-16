@@ -1,7 +1,7 @@
 // Lightweight entry point. The existing viewer and its runtime load only after a floor is chosen.
 // Orden de entrada: módulo → piso → módulo abierto. Los enlaces con piso, los QR y las tareas entran directo.
 import './offline.mjs';
-import {esEscritorio} from './dispositivo.mjs';
+import './dispositivo.mjs';
 import {iniciarNube} from './nube.mjs';
 import {leerMemoria,guardarMemoria,MODULOS,moduloDe,conPortada,consultaPiso,leerConsulta,pisosEnOrden,pisoParaAbrir,pisoDeEntrada} from './navegacion-model.mjs';
 import {crearFluido,arrastrar,crearOleaje} from './fluido.mjs';
@@ -14,7 +14,8 @@ const gallery=$('floorExplorer'),seccionModulos=$('moduloExplorer');
 const almacen=()=>{try{return localStorage;}catch{return {getItem:()=>null,setItem:()=>{}};}};
 // Módulo elegido. Un enlace directo a un piso abre Plano; al entrar normal queda marcado el último de este equipo.
 const pedido=leerConsulta(location.search);
-let modulo=pedido.modulo||(pedido.nivel||location.hash?'plano':leerMemoria(almacen()).modulo)||'control',moduloAbierto=null,vista='modulos';
+// Sin pantalla de módulos: Atlas siempre trabaja en Plano; Control y Protocolos están en «Más» y en la columna izquierda.
+let modulo='plano',moduloAbierto=null,vista='modulos';
 const lugarModulo=id=>Math.max(0,MODULOS.findIndex(m=>m.id===id));
 $('moduloPista').innerHTML=MODULOS.map(m=>`<button type="button" class="ruedaTarjeta" data-modulo="${m.id}" aria-pressed="false"><svg class="panelArt" viewBox="0 0 160 100" aria-hidden="true">${m.dibujo}</svg><strong>${m.titulo}</strong><small>${m.texto}</small></button>`).join('');
 function marcarModulo(id){modulo=id;seccionModulos.querySelectorAll('[data-modulo]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.modulo===id)));$('moduloContinuar').textContent=`Continuar a ${moduloDe(id).titulo} →`;}
@@ -96,7 +97,7 @@ async function openFloor(id,push=true,lista=[id]){
  const floor=floors.find(f=>f.id===id)?.piso;if(!floor||!safeToLeave())return;
  const abiertos=conPortada(modulo)?lista:[id];
  guardarMemoria(almacen(),{piso:id,modulo,pisos:abiertos});
- window.ATLAS_MODULO=modulo;window.ATLAS_PISOS_ELEGIDOS=abiertos;moduloAbierto=modulo;
+ window.ATLAS_MODULO='plano';window.ATLAS_PISOS_ELEGIDOS=abiertos;moduloAbierto=modulo;
  const direccion=root+consultaPiso({nivel:id,modulo,pisos:abiertos});
  if(id!==active.id){location.assign(direccion);return;}
  if(push)history.pushState(null,'',direccion);
@@ -123,9 +124,9 @@ window.addEventListener('popstate',()=>{
  else if(enDireccion)home(false);else irAModulos(false);
 });
 // Preserve existing explicit floor links, QR room links, and module deep links.
-// Modo terreno: en el celular Atlas entra directo al plano de su piso (el último abierto o el primero asignado), sin
-// pasar por módulos ni pisos. Los módulos siguen en «Más». En el escritorio, y con una dirección que pide un módulo, como antes.
-const terrenoDirecto=!esEscritorio()&&!pedido.nivel&&!pedido.modulo&&!location.hash;
+// Atlas entra directo al plano de su piso (el último abierto o el primero asignado), en el celular y en el escritorio.
+// Los pisos se cambian desde tu cuenta (arriba a la izquierda); lo demás está en «Más» o en la columna izquierda.
+const terrenoDirecto=!pedido.nivel&&!location.hash;
 function entrarTerreno(){
  document.body.classList.remove('entrandoTerreno');
  const destino=pisoDeEntrada(leerMemoria(almacen()),floors.filter(f=>f.piso).map(f=>f.id));
@@ -151,24 +152,46 @@ async function limitarPisos(){
   if(vista==='pisos')prepararPisos();
   if(!document.body.classList.contains('floorHome')&&!floors.some(f=>f.id===active.id&&f.piso))home();
  }catch{}
- pintarChips();
+ pintarCuenta();
 }
-// Modo terreno: con más de un piso disponible, tocar «Piso N» en la cabecera muestra los pisos como botones grandes.
-const cabeceraPiso=document.querySelector('header .project'),chips=document.createElement('nav');
-chips.id='chipsPisos';chips.hidden=true;chips.setAttribute('aria-label','Cambiar de piso');document.querySelector('header')?.after(chips);
-const conVariosPisos=()=>floors.filter(f=>f.piso).length>1;
-function pintarChips(){
- const varios=conVariosPisos();cabeceraPiso?.classList.toggle('conPisos',varios);
- if(cabeceraPiso){if(varios){cabeceraPiso.setAttribute('role','button');cabeceraPiso.tabIndex=0;cabeceraPiso.setAttribute('aria-label','Cambiar de piso');cabeceraPiso.setAttribute('aria-expanded',String(!chips.hidden));}else{cabeceraPiso.removeAttribute('role');cabeceraPiso.removeAttribute('tabindex');cabeceraPiso.removeAttribute('aria-label');cabeceraPiso.removeAttribute('aria-expanded');chips.hidden=true;}}
- chips.innerHTML=floors.filter(f=>f.piso).map(f=>`<button type="button" data-chip="${f.id}" aria-current="${f.id===active.id}">Piso ${f.numero}</button>`).join('');
- chips.querySelectorAll('[data-chip]').forEach(b=>b.onclick=()=>{mostrarChips(false);if(b.dataset.chip!==active.id)openFloor(b.dataset.chip,true,[b.dataset.chip]);});
+// Tu cuenta (arriba a la izquierda): tus iniciales y el piso. Al tocarlos sube una hoja con tu nombre, tus pisos para
+// elegir (con su estado sin conexión y «Guardar»), «Sin conexión y actualizaciones» y «Cerrar sesión». Reemplaza la
+// pantalla de módulos, la pila de pisos, el botón de descarga y el de cerrar sesión de la cabecera.
+const cabeceraPiso=document.querySelector('header .project'),avatar=document.createElement('div');
+avatar.className='cuentaAvatar';avatar.setAttribute('aria-hidden','true');cabeceraPiso?.prepend(avatar);
+if(cabeceraPiso){cabeceraPiso.setAttribute('role','button');cabeceraPiso.tabIndex=0;cabeceraPiso.setAttribute('aria-haspopup','dialog');cabeceraPiso.setAttribute('aria-label','Tu cuenta y tus pisos');}
+const hojaCuenta=document.createElement('dialog');hojaCuenta.id='hojaCuenta';hojaCuenta.className='hojaCuenta';hojaCuenta.setAttribute('aria-label','Tu cuenta');document.body.append(hojaCuenta);
+const usuario=()=>{try{return JSON.parse(localStorage.getItem('atlas-nube-sesion')||'null')?.user||null;}catch{return null;}};
+const nombreDe=u=>(u?.nombre||u?.username||'').trim();
+function iniciales(u){const partes=nombreDe(u).replace(/@.*/,'').split(/[\s._-]+/).filter(Boolean);return partes.length?(partes[0][0]+(partes[1]?.[0]||'')).toUpperCase():'A';}
+const escapar=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const packDe=f=>f.piso?.datos?f.piso.datos.replace(/\/$/,''):'n-1';
+const mb=b=>(b/1e6).toLocaleString('es-CL',{maximumFractionDigits:0})+' MB';
+function pintarCuenta(){
+ const u=usuario();avatar.textContent=iniciales(u);
+ if(!hojaCuenta.open)return;
+ const sc=window.atlasSinConexion?.estado?.()||null,online=navigator.onLine;
+ const estadoPiso=f=>{const p=sc?.packs?.[packDe(f)];if(!p)return '';if(p.ready)return 'Guardado sin conexión ✓';if(sc.downloading===packDe(f))return 'Guardando…';return 'Sin guardar'+(p.count?' · '+Math.round(p.count/p.total*100)+' %':'');};
+ const puedeGuardar=f=>{const p=sc?.packs?.[packDe(f)];return p&&!p.ready&&online&&sc.downloading!==packDe(f);};
+ const lista=floors.filter(f=>f.piso);
+ hojaCuenta.innerHTML=`<div class="hojaAsa" aria-hidden="true"></div>
+  <div class="cuentaCabeza"><span class="cuentaAvatar grande" aria-hidden="true">${escapar(iniciales(u))}</span><div><b>${escapar(nombreDe(u).replace(/@.*/,'')||'Atlas HPC')}</b><small>${escapar(u?.username||'Sin sesión en este equipo')}</small></div><button type="button" class="close" data-cerrar aria-label="Cerrar">×</button></div>
+  <h3 class="hojaGrupo">${lista.length>1?'Tus pisos':'Tu piso'}</h3>
+  <ul class="cuentaPisos">${lista.map(f=>`<li><button type="button" class="cuentaPiso" data-piso="${f.id}" aria-current="${f.id===active.id}"><span class="pisoNumero">${escapar(f.numero)}</span><span><b>Piso ${escapar(f.numero)}${f.id===active.id?' · abierto':''}</b><small>${escapar(estadoPiso(f))}</small></span></button>${puedeGuardar(f)?`<button type="button" class="cuentaGuardar" data-guardar="${packDe(f)}">Guardar · ${mb(sc.packs[packDe(f)].bytes-sc.packs[packDe(f)].savedBytes)}</button>`:''}</li>`).join('')}</ul>
+  <div class="cuentaFilas"><button type="button" class="cuentaFila" data-offline><span aria-hidden="true">⤓</span>Sin conexión y actualizaciones</button>${$('logoutButton')?'<button type="button" class="cuentaFila salir" data-salir><span aria-hidden="true">⇥</span>Cerrar sesión</button>':''}</div>`;
+ hojaCuenta.querySelector('[data-cerrar]').onclick=()=>hojaCuenta.close();
+ hojaCuenta.querySelectorAll('[data-piso]').forEach(b=>b.onclick=()=>{hojaCuenta.close();if(b.dataset.piso!==active.id)openFloor(b.dataset.piso,true,[b.dataset.piso]);});
+ hojaCuenta.querySelectorAll('[data-guardar]').forEach(b=>b.onclick=()=>{window.atlasSinConexion?.guardar?.(b.dataset.guardar);setTimeout(pintarCuenta,300);});
+ hojaCuenta.querySelector('[data-offline]').onclick=()=>{hojaCuenta.close();$('offlineOpen')?.click();};
+ hojaCuenta.querySelector('[data-salir]')?.addEventListener('click',()=>{hojaCuenta.close();$('logoutButton')?.click();});
 }
-function mostrarChips(ver){chips.hidden=!ver;cabeceraPiso?.setAttribute('aria-expanded',String(ver));}
-const alternarChips=()=>{if(document.body.classList.contains('floorHome')||!document.body.classList.contains('terreno')||!conVariosPisos())return;pintarChips();mostrarChips(chips.hidden);};
-cabeceraPiso?.addEventListener('click',alternarChips);
-cabeceraPiso?.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();alternarChips();}});
-document.addEventListener('click',e=>{if(!chips.hidden&&!e.target.closest('#chipsPisos,header .project'))mostrarChips(false);},true);
-window.addEventListener('atlas-floor-home',()=>mostrarChips(false));
+function abrirCuenta(){if(document.body.classList.contains('floorHome'))return;hojaCuenta.showModal();pintarCuenta();}
+cabeceraPiso?.addEventListener('click',abrirCuenta);
+cabeceraPiso?.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();abrirCuenta();}});
+hojaCuenta.addEventListener('click',e=>{if(e.target===hojaCuenta)hojaCuenta.close();});
+for(const nombre of ['atlas-session-changed','atlas-offline-estado','online','offline'])window.addEventListener(nombre,pintarCuenta);
+window.addEventListener('atlas-floor-home',()=>{if(hojaCuenta.open)hojaCuenta.close();});
+pintarCuenta();
 limitarPisos();window.addEventListener('atlas-jerarquia-changed',limitarPisos);window.addEventListener('atlas-session-changed',limitarPisos);
 // Set up update detection even when the user stays on the cards without opening a plan.
 window.dispatchEvent(new Event('atlas-shell-ready'));
