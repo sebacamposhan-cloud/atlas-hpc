@@ -4,6 +4,7 @@ import {createLevantamiento} from './levantamiento.mjs';
 import {marcarEliminado, esPuertas} from './marking-model.mjs';
 import {firmante, exigirFirma} from './firma.mjs';
 import {propositoHTML, conectarProposito, leerProposito} from './proyecto-datos.mjs';
+import {funcionesProyecto, botonAmpliar, conectarAmpliar} from './proyecto-funciones.mjs';
 
 // Proyectos de marcado: se parte de un piso, se definen estados con leyenda (por ejemplo Pendiente / En ejecución / Terminado),
 // se pintan recintos tocándolos y se guardan cortes con fecha para comparar el avance (plano de cambios y vista lado a lado).
@@ -42,8 +43,8 @@ export function createMarking(ctx) {
 
   function close() {
     if (pending) {ctx.toast('Espera a que termine el guardado.'); return false;}
-    active = null; comparando = null; panel.hidden = true;
-    document.body.classList.remove('markingOpen'); launch.setAttribute('aria-expanded', 'false'); redraw();
+    active = null; comparando = null; panel.hidden = true; panel.classList.remove('amplio');
+    document.body.classList.remove('markingOpen', 'markingAmplio'); launch.setAttribute('aria-expanded', 'false'); redraw();
     return true;
   }
   function open(doc) {
@@ -87,13 +88,14 @@ export function createMarking(ctx) {
 
   function render() {
     if (!active) return;
-    if (esLevantamiento(active)) { lev.render(panel, active, focused); status(); return; }
+    if (esLevantamiento(active)) { lev.render(panel, active, focused); conectarAmpliar(panel); status(); return; }
     const comp = comparacion(), varios = active.estados.length > 1;
     if (!active.estados.some(e => e.id === pincel)) pincel = active.estados[0].id;
     const cuenta = id => active.rooms.filter(r => r.estado === id), suma = rooms => rooms.reduce((s, r) => s + (m2(r.id) || 0), 0);
-    const cabecera = `<div class="markingHead"><div><small>ARQUITECTURA · ${esc(ctx.levelName)}</small><h2>${esc(active.name)}</h2></div><button id="closeMarking" data-wait-save aria-label="Cerrar proyecto">×</button></div>
-      <div class="markingActions"><button id="markingDocuments" data-wait-save>Proyectos</button><button id="markingEdit" data-wait-save>Datos y leyenda</button>${comp ? '<button id="salirComparacion">Estados</button>' : ''}</div>`;
-    const pie = `<div class="markingFooter"><span id="markingSaveStatus" role="status"></span><div><button id="markingBackup" data-wait-save>Respaldo JSON</button><button id="markingExport" data-wait-save>Exportar plano</button></div><small>Marcado de consulta sobre los contornos disponibles. Quitar un recinto conserva los números de los demás.</small></div>`;
+    // Acciones del proyecto: botones flotantes a la izquierda del plano (proyecto-funciones.mjs), como en Recintos.
+    const cabecera = `<div class="markingHead"><div><small>ARQUITECTURA · ${esc(ctx.levelName)}</small><h2>${esc(active.name)}</h2></div>${botonAmpliar()}<button id="closeMarking" data-wait-save aria-label="Cerrar proyecto">×</button></div>
+      ${funcionesProyecto([['markingDocuments', 'Proyectos', 'proyectos', 'data-wait-save'], ['markingEdit', 'Leyenda', 'columnas', 'data-wait-save'], ...(comp ? [['salirComparacion', 'Estados', 'estados']] : []), ['markingBackup', 'Respaldo', 'respaldo', 'data-wait-save'], ['markingExport', 'Exportar', 'exportar', 'data-wait-save']])}`;
+    const pie = `<div class="markingFooter"><span id="markingSaveStatus" role="status"></span><small>Marcado de consulta sobre los contornos disponibles. Quitar un recinto conserva los números de los demás.</small></div>`;
     let cuerpo;
     if (comp) {
       const r = comp.resultado, opcion = (c, sel) => `<option value="${esc(c.id)}" ${c.id === sel ? 'selected' : ''}>${esc(c.fecha ? fecha(c.fecha) + ' · ' : '')}${esc(c.nombre)}</option>`;
@@ -117,6 +119,7 @@ export function createMarking(ctx) {
         ${active.rooms.length ? '' : '<p>El primer recinto que toques será el número 1.</p>'}</div>`;
     }
     panel.innerHTML = cabecera + cuerpo + pie;
+    conectarAmpliar(panel);
     panel.querySelector('#closeMarking').onclick = close;
     panel.querySelector('#markingDocuments').onclick = library;
     panel.querySelector('#markingEdit').onclick = () => editor(active);

@@ -10,8 +10,6 @@
 .markingHead h2 { margin: 4px 0; font-size: 17px; overflow-wrap: anywhere; }
 .markingHead small { font-size: 9px; }
 .markingHead > button { border: 0; font-size: 22px; }
-.markingActions { display: flex; gap: 8px; padding: 0 16px; }
-.markingActions button { font-size: 11px; }
 .markingInstruction { color: #386c84; font-size: 11px; margin: 10px 16px; }
 .markingScroll { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 0 16px; }
 .markingMetadata { font-size: 11px; overflow-wrap: anywhere; }
@@ -142,25 +140,21 @@ body.markingOpen .toolbar, body.markingOpen main > footer { right: 332px; }
 #markingForm .levOps input[name=op] { flex: 1 1 120px; width: auto; font-size: 13px; }
 .levOps label { display: inline-flex; gap: 3px; align-items: center; font-weight: 400; }
 @media(max-width:700px) {
-  #markingPanel {
-    top: auto; width: 100%; height: clamp(170px,33dvh,260px); border-left: 0; border-top: 1px solid var(--line);
-    display: grid; grid-template-columns: minmax(0,1fr) auto; grid-template-rows: auto auto minmax(0,1fr) auto;
-  }
-  .markingHead { padding: 7px 10px; grid-column: 1; min-width: 0; }
-  .markingHead h2 { font-size: 13px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 47vw; }
-  .markingHead small { font-size: 8px; }
-  .markingActions { grid-column: 2; grid-row: 1; padding: 6px; gap: 4px; align-items: center; }
-  .markingActions button { font-size: 9px; padding: 5px; }
-  .markingInstruction { grid-column: 1/-1; margin: 0 10px 4px; font-size: 10px; }
-  .markingScroll { grid-column: 1/-1; padding: 0 10px; }
-  .markingScroll h3 { font-size: 10px; margin: 5px 0; }
-  .markingMetadata { font-size: 10px; }
-  .markingFooter { grid-column: 1/-1; display: flex; align-items: center; justify-content: space-between; padding: 4px 10px; gap: 6px; }
+  /* Celular: el panel abre a media pantalla con el plano arriba para pintar; «Ampliar» lo lleva a pantalla completa. */
+  #markingPanel { top: auto; bottom: 0; left: 0; right: 0; width: 100%; height: min(46dvh, 100%); border-left: 0; border-top: 2px solid var(--g-marca, #1b2a56); display: flex; flex-direction: column; }
+  #markingPanel.amplio { top: 0; height: auto; }
+  .markingHead { padding: 8px 12px 4px; align-items: center; }
+  .markingHead h2 { font-size: 16px; margin: 2px 0 0; }
+  .markingHead small { font-size: 11px; }
+  .markingInstruction { margin: 4px 12px; font-size: 13px; }
+  .markingScroll { padding: 0 12px 10px; }
+  .markingScroll h3 { font-size: 13px; margin: 8px 0 4px; }
+  .markingMetadata { font-size: 13px; }
+  .markingFooter { display: flex; align-items: center; padding: 4px 12px; min-height: 0; }
   .markingFooter small { display: none; }
-  .markingFooter > div { margin: 0; }
-  .markingFooter button { font-size: 9px; padding: 6px; }
-  .markingFooter > span { font-size: 9px; }
-  body.markingOpen #viewport { right: 0; bottom: clamp(170px,33dvh,260px); }
+  .markingFooter > span { font-size: 12px; }
+  .markingFooter:has(> span:empty) { display: none; }
+  body.markingOpen #viewport { right: 0; bottom: min(46dvh, 100%); }
   body.markingOpen .toolbar { right: 10px; top: 52px; padding: 4px; }
   .markingOpen .toolbar button { min-height: 28px; height: 28px; padding: 3px; font-size: 10px; }
   .markingOpen .toolbar #planSettingsOpen, .markingOpen .toolbar #markingOpen { height: 32px; }
@@ -178,3 +172,23 @@ body.markingOpen .toolbar, body.markingOpen main > footer { right: 332px; }
 /* Datos del proyecto: autor automático y propósito personalizado (proyecto-datos.mjs). */
 .propositoAutor { margin: 4px 0 14px; font-size: 13px; color: #4a4a4a; }
 .propositoOtro[hidden] { display: none; }
+
+/* Acciones del proyecto (proyecto-funciones.mjs): botones flotantes a la izquierda del plano, como los de Recintos.
+   Van dentro del panel pero fijos sobre el plano; en el celular se desplazan si no caben sobre el panel. */
+.proyectoFunciones { position: fixed; z-index: 18; left: 12px; top: calc(var(--cabecera, 64px) + 12px); display: flex; flex-direction: column; align-items: center; gap: 8px; max-height: calc(100dvh - var(--cabecera, 64px) - 24px); overflow-y: auto; overscroll-behavior: contain; padding: 2px 2px 8px; scrollbar-width: none; }
+body.escritorio .proyectoFunciones { left: calc(var(--izq, 0px) + 12px); }
+.proyectoFunciones .funcionFlotante, .proyectoFunciones .funcionFlotante:hover:not(:disabled) { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 78px; min-height: 0; padding: 0; border: 0; outline: 0; background: transparent !important; color: var(--g-texto, #000) !important; font-weight: 700; flex: none; }
+.proyectoFunciones .funcionFlotante:disabled { opacity: .5; }
+body.markingOpen #barraFunciones { visibility: hidden; }
+.markingAmpliar { display: none; }
+.markingHead .markingAmpliar { flex: none; min-height: 40px; padding: 0 12px; font-size: 13px; font-weight: 700; border: 1px solid var(--g-marca, #1b2a56); background: #fff; }
+@media (max-width: 700px) {
+  .markingHead .markingAmpliar { display: inline-block; }
+  .proyectoFunciones { left: 6px; top: calc(var(--cabecera, 54px) + 8px); gap: 4px; max-height: calc(100dvh - var(--cabecera, 54px) - var(--barra-obra, 64px) - min(46dvh, 100%) - 16px); }
+  /* En el celular el nombre va al lado del círculo: seis acciones caben sobre el plano, arriba del panel. */
+  .proyectoFunciones { align-items: flex-start; }
+  .proyectoFunciones .funcionFlotante, .proyectoFunciones .funcionFlotante:hover:not(:disabled) { flex-direction: row; width: auto; gap: 6px; }
+  .proyectoFunciones .funcionCirculo { width: 44px; height: 44px; }
+  .proyectoFunciones .funcionNombre { max-width: none; font-size: 12px; padding: 2px 8px; box-shadow: 0 1px 4px rgba(27, 42, 86, .18); }
+  body.markingAmplio .proyectoFunciones { display: none; }
+}

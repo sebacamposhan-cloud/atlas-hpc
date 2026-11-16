@@ -164,7 +164,8 @@ function fluido(opciones = {}) {
 // Selecciones con flujo: cada grupo dice qué botones usa y su tamaño; las vistas sobre una tabla llevan dibujo y texto.
 {
   assert.ok(GRUPOS.length >= 9 && GRUPOS.every(g => g.selector && g.boton && ['grande', 'media', 'baja'].includes(g.tamano)));
-  for (const selector of ['.jerPasos', '.jerGente', '.levOpciones', '.cfLista', '.matrixGroup > div', '.hojaLista:not([data-sin-flujo])']) assert.ok(GRUPOS.some(g => g.selector === selector), selector);
+  for (const selector of ['.jerPasos', '.jerGente', '.levOpciones', '.cfLista', '.matrixGroup > div']) assert.ok(GRUPOS.some(g => g.selector === selector), selector);
+  assert(!GRUPOS.some(g => g.selector.includes('hojaLista')), 'las listas de la hoja quedan verticales');
   // El rombo y las palancas quedan como están.
   assert.ok(!GRUPOS.some(g => /rombo|palanca/i.test(g.selector)));
   assert.equal(SIN_FLUJO, '.left, [data-sin-flujo]');
