@@ -59,3 +59,18 @@ body.escritorio.ruedaPortada:not(.floorHome) main > :is(svg, .planWrap, #planVie
 /* El plano se encoge para no quedar debajo del panel derecho (como cuando se abre la ficha). */
 body.escritorio:not(.floorHome):is(.ruedaPortada, .hojaAbierta, .protocolOpen) #viewport { right: var(--detail) !important; }
 body.escritorio:not(.floorHome):is(.ruedaPortada, .hojaAbierta, .protocolOpen) .toolbar { right: calc(var(--detail) + 12px) !important; }
+/* Asas para cambiar el ancho de los paneles arrastrando su borde (panel-ajustable.mjs). La de la derecha va en el borde
+   izquierdo del panel abierto (ficha del recinto, hojas, protocolos, resumen; la ficha deja 12 px a la derecha); la del
+   detalle de una observación va dentro de su panel; la de la izquierda en el borde de la barra de Módulos/Plano/Control.
+   Doble clic: la derecha alterna amplio y normal; la izquierda, angosta y normal. */
+.asaPanel { display: none; }
+body.escritorio .asaPanel { position: fixed; top: calc(var(--cabecera) + 12px); bottom: 12px; width: 18px; z-index: 40; align-items: center; justify-content: center; cursor: ew-resize; touch-action: none; outline: 0; }
+body.escritorio:not(.floorHome):is(.ruedaPortada, .hojaAbierta, .protocolOpen) #asaPanel { display: flex; right: calc(var(--detail) - 9px); }
+body.escritorio:not(.floorHome):not(.hideRight):not(.fichaMinima) #asaPanel { display: flex; right: calc(var(--detail) + 12px - 9px); }
+body.escritorio:not(.floorHome) #asaBarra { display: flex; top: var(--cabecera); bottom: 0; left: calc(var(--izq) - 9px); z-index: 37; }
+body.escritorio dialog.obsDetailDrawer { width: var(--detail); }
+body.escritorio dialog.obsDetailDrawer > .asaDentro { display: flex; position: absolute; top: 0; bottom: 0; left: 0; width: 16px; z-index: 6; }
+.asaPanel span { display: block; width: 8px; height: 56px; box-sizing: border-box; border: 2px solid var(--g-marca); border-radius: 4px; background: repeating-linear-gradient(#fff 0 4px, var(--g-marca) 4px 6px); box-shadow: 0 0 0 3px #fff; transition: height .15s ease-out; }
+.asaPanel:hover span, .asaPanel:focus-visible span, body.ajustandoPanel .asaPanel span { height: 88px; border-color: var(--g-azul); background: repeating-linear-gradient(#fff 0 4px, var(--g-azul) 4px 6px); }
+.asaPanel:hover::before, .asaPanel:focus-visible::before { content: ""; position: absolute; top: 0; bottom: 0; left: calc(50% - 1px); width: 2px; background: var(--g-azul); z-index: -1; }
+body.ajustandoPanel, body.ajustandoPanel * { cursor: ew-resize !important; user-select: none !important; }

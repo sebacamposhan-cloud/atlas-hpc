@@ -188,14 +188,16 @@ aside.right, aside.left { border-color: var(--g-marca); }
 
 /* Encabezado y leyenda comunes de los reportes (reporte-encabezado.mjs): qué es, de qué obra y piso, cuándo y quién lo
    emitió, y cada color con su nombre al lado. Se lee igual en pantalla e impreso en blanco y negro. */
-.reporteEncabezado { border-top: 6px solid var(--g-marca); border-bottom: 1px solid var(--g-marca); padding: 10px 0 12px; margin: 0 0 14px; }
-.reporteEncabezado .reporteTipo { margin: 0; font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--g-texto); }
-.reporteEncabezado h1 { margin: 2px 0 8px; font-size: 22px; color: #000; }
-.reporteEncabezado dl { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 0; }
-.reporteEncabezado dl div { display: flex; gap: 6px; font-size: 12px; }
-.reporteEncabezado dt { font-weight: 700; }
-.reporteEncabezado dd { margin: 0; }
-.reporteEncabezado .reporteSignificado { margin: 8px 0 0; font-size: 12px; max-width: 70ch; }
+.reporteEncabezado { display: block; height: auto; border-top: 6px solid var(--g-marca); border-bottom: 1px solid var(--g-regla); padding: 12px 0 12px; margin: 0 0 14px; }
+.reporteEncabezado h1 { margin: 0 0 6px; font-size: 24px; line-height: 1.2; color: #000; }
+.reporteEncabezado p { margin: 0; line-height: 1.45; }
+.reporteEncabezado .reporteLugar { font-size: 14px; font-weight: 700; color: #000; }
+.reporteEncabezado .reporteEmision { margin-top: 2px; font-size: 12px; color: var(--g-texto); }
+.reporteEncabezado .reporteSignificado { margin-top: 8px; font-size: 12px; max-width: 90ch; color: var(--g-texto); }
+.reporteCifras { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; padding: 0; list-style: none; }
+.reporteCifras li { min-width: 120px; padding: 8px 14px; border: 1px solid var(--g-marca); border-top-width: 4px; }
+.reporteCifras b { display: block; font-size: 24px; line-height: 1.1; color: #000; }
+.reporteCifras span { display: block; margin-top: 2px; font-size: 12px; color: var(--g-texto); }
 .reporteLeyenda { margin: 10px 0; }
 .reporteLeyenda h2 { margin: 0 0 6px; font-size: 13px; }
 .reporteLeyenda ul { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0; padding: 0; list-style: none; font-size: 12px; }

@@ -30,6 +30,7 @@ import {loadRuntime,decodeRuntime} from './runtime-loader.mjs';
 import {combinarContornos} from './contornos-nube.mjs';
 import {startPan,panView,startPinch,pinchView} from './gestures.mjs';
 import './offline.mjs';
+import {conectarAsa,restaurarAnchos} from './panel-ajustable.mjs';
 'use strict';
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let spatial,spatialSnapshot,spatialScale;
@@ -260,15 +261,8 @@ function syncPaths(markup){
  for(const [id,value] of pathNodes)if(!desired.has(id)){value.node.remove();pathNodes.delete(id);}
 }
 
-let resizeStart=null;
-$('detailResize').addEventListener('pointerdown',e=>{resizeStart={x:e.clientX,width:document.querySelector('.right').getBoundingClientRect().width};e.target.setPointerCapture(e.pointerId);});
-// En computador la ficha abre a media pantalla; el ancho que se ajuste con el borde queda guardado en el equipo.
-const anchoFicha=w=>{const v=Math.max(310,Math.min(innerWidth*.75,w));document.body.style.setProperty('--detail',(100*v/innerWidth).toFixed(2)+'vw');return v;};
-const guardarAnchoFicha=()=>{try{localStorage.setItem('atlas-ficha-ancho',String(document.querySelector('.right').getBoundingClientRect().width/innerWidth));}catch{}};
-try{const f=Number(localStorage.getItem('atlas-ficha-ancho'));if(f>0&&f<1)anchoFicha(f*innerWidth);}catch{}
-$('detailResize').addEventListener('pointermove',e=>{if(!resizeStart)return;anchoFicha(resizeStart.width+resizeStart.x-e.clientX);});
-$('detailResize').addEventListener('pointerup',()=>{if(!resizeStart)return;resizeStart=null;guardarAnchoFicha();updateTiles();});
-$('detailResize').addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();const w=document.querySelector('.right').getBoundingClientRect().width;anchoFicha(w+(e.key==='ArrowLeft'?20:-20));guardarAnchoFicha();updateTiles();}});
+// Paneles de la derecha (ficha, hojas, protocolos, resumen): se agrandan arrastrando el asa de su borde; el ancho queda guardado.
+restaurarAnchos();conectarAsa($('asaPanel'),()=>updateTiles());conectarAsa($('asaBarra'),()=>updateTiles(),'izquierda');
 
 function bindExport(){$('exportPDF').onclick=()=>{ $('modal').close();exportAtlas();};$('exportPNG').onclick=()=>{$('modal').close();exportAtlas('png');};}
 

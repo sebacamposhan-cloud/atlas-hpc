@@ -1,3 +1,4 @@
+import {asaDentroDe} from './panel-ajustable.mjs';
 import * as M from './observaciones-model.mjs';
 import {estadoObservacion,referenciaObservacion} from './observaciones-query.mjs';
 import {leerObservacion,leerHistorial,leerFotos,guardarObservacion} from './observaciones-store.mjs';
@@ -7,7 +8,7 @@ const colors={'Abierta':'#bd7927','En corrección':'#a78a21','Corregida':'#337ea
 const date=iso=>iso?new Date(iso).toLocaleString('es-CL',{dateStyle:'short',timeStyle:'short'}):'Sin registro';
 const plazo=iso=>iso?iso.split('-').reverse().join('-'):'Sin plazo';
 export function createObservationDetail(ctx){
- const esc=ctx.esc,drawer=document.createElement('dialog');drawer.className='obsDetailDrawer';drawer.id='obsDetailDrawer';drawer.setAttribute('aria-label','Ficha de observación');document.body.append(drawer);
+ const esc=ctx.esc,drawer=document.createElement('dialog');drawer.className='obsDetailDrawer';drawer.id='obsDetailDrawer';drawer.setAttribute('aria-label','Ficha de observación');document.body.append(drawer);asaDentroDe(drawer);
  let serial=0,urls=[],activeId=null,dirty=false,saving=false,opener=null,onChanged=null;
  const blobUrl=(buffer,mime='image/jpeg')=>{const u=URL.createObjectURL(new Blob([buffer],{type:mime}));urls.push(u);return u;};
  const release=()=>{urls.forEach(u=>URL.revokeObjectURL(u));urls=[];};

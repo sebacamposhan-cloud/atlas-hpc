@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {ESTADOS_COLOR, textoSobre} from './dist/estados-color.mjs';
 import {COLOR_PARTIDA} from './dist/room-progress-model.mjs';
 import {PLAN_COLORS, PLAN_BORDES} from './dist/lastplanner-map.mjs';
-import {encabezadoReporte, leyendaReporte, OBRA} from './dist/reporte-encabezado.mjs';
+import {encabezadoReporte, leyendaReporte, cifrasReporte, OBRA} from './dist/reporte-encabezado.mjs';
 
 const C = ESTADOS_COLOR;
 // Mismo significado, mismo color: en proceso/en ejecución = amarillo; por revisar = azul; problema = rojo; conforme = verde.
@@ -30,7 +30,11 @@ assert.equal(textoSobre(C.problema.color), '#fff');
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'})[c]);
 const h = encabezadoReporte({tipo: 'Compromiso y ejecución semanal', piso: 'Nivel 4', periodo: 'Semana 46', autor: 'Ana <QA>', emitido: '2026-11-16T12:00:00Z', significado: 'Para qué sirve.'}, esc);
 for (const t of ['Compromiso y ejecución semanal', OBRA, 'Nivel 4', 'Semana 46', 'Ana &lt;QA&gt;', 'Para qué sirve.', '16-11-2026']) assert.ok(h.includes(t), 'falta ' + t);
-assert.ok(encabezadoReporte({tipo: 'X'}, esc).includes('Sin sesión iniciada'));
+assert.ok(encabezadoReporte({tipo: 'X'}, esc).includes('sin sesión iniciada'));
+assert.ok(!h.includes('<header') && h.split('Compromiso y ejecución semanal').length === 2, 'bloque propio y el tipo una sola vez');
+assert.ok(h.includes(OBRA + ' · Nivel 4 · Semana 46'), 'obra, piso y período en una línea');
+const c = cifrasReporte([{valor: 3, nombre: 'Comprometidas'}, {valor: 'Sin base', nombre: 'PPC'}], esc);
+assert.ok(c.includes('<b>3</b><span>Comprometidas</span>') && c.includes('<b>Sin base</b>'));
 // Leyenda: cada color con su nombre.
 const l = leyendaReporte([{nombre: 'En ejecución', color: C.ejecucion.tinte, borde: '#9a7a00', detalle: 'avance parcial'}], esc);
 assert.ok(l.includes('<b>En ejecución</b>') && l.includes(C.ejecucion.tinte) && l.includes('avance parcial') && l.includes('Qué significa cada color'));
