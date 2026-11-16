@@ -1,9 +1,9 @@
 // Lightweight entry point. The existing viewer and its runtime load only after a floor is chosen.
 // Orden de entrada: módulo → piso → módulo abierto. Los enlaces con piso, los QR y las tareas entran directo.
 import './offline.mjs';
-import './dispositivo.mjs';
+import {esEscritorio} from './dispositivo.mjs';
 import {iniciarNube} from './nube.mjs';
-import {leerMemoria,guardarMemoria,MODULOS,moduloDe,conPortada,consultaPiso,leerConsulta,pisosEnOrden,pisoParaAbrir} from './navegacion-model.mjs';
+import {leerMemoria,guardarMemoria,MODULOS,moduloDe,conPortada,consultaPiso,leerConsulta,pisosEnOrden,pisoParaAbrir,pisoDeEntrada} from './navegacion-model.mjs';
 import {crearFluido,arrastrar,crearOleaje} from './fluido.mjs';
 import {crearPista} from './selector-flujo.mjs';
 iniciarNube();
@@ -123,7 +123,21 @@ window.addEventListener('popstate',()=>{
  else if(enDireccion)home(false);else irAModulos(false);
 });
 // Preserve existing explicit floor links, QR room links, and module deep links.
-if(disponible(pedido.nivel)||(!pedido.nivel&&location.hash))openFloor(active.id,false,pedido.pisos.length?pedido.pisos:[active.id]);else{vista=pedido.modulo?'pisos':'modulos';if(pedido.modulo)prepararPisos();state(true);}
+// Modo terreno: en el celular Atlas entra directo al plano de su piso (el último abierto o el primero asignado), sin
+// pasar por módulos ni pisos. Los módulos siguen en «Más». En el escritorio, y con una dirección que pide un módulo, como antes.
+const terrenoDirecto=!esEscritorio()&&!pedido.nivel&&!pedido.modulo&&!location.hash;
+function entrarTerreno(){
+ document.body.classList.remove('entrandoTerreno');
+ const destino=pisoDeEntrada(leerMemoria(almacen()),floors.filter(f=>f.piso).map(f=>f.id));
+ if(!destino){$('loading').hidden=true;vista='modulos';state(true);return;}
+ modulo='plano';marcarModulo('plano');
+ const direccion=root+consultaPiso({nivel:destino,modulo:'plano',pisos:[destino]});
+ if(destino!==active.id){guardarMemoria(almacen(),{piso:destino,modulo:'plano',pisos:[destino]});location.replace(direccion);return;}
+ openFloor(destino,false);history.replaceState(null,'',direccion);
+}
+if(disponible(pedido.nivel)||(!pedido.nivel&&location.hash))openFloor(active.id,false,pedido.pisos.length?pedido.pisos:[active.id]);
+else if(terrenoDirecto){document.body.classList.add('entrandoTerreno');$('loading').hidden=false;limitarPisos().then(entrarTerreno);}
+else{vista=pedido.modulo?'pisos':'modulos';if(pedido.modulo)prepararPisos();state(true);}
 window.addEventListener('hashchange',()=>{if(location.hash&&document.body.classList.contains('floorHome')){if(ready)state(false);else openFloor(active.id,false);}});
 // Jerarquía de obra: un supervisor o capataz con pisos en su perfil solo abre sus pisos. Sin perfil, todos como hoy.
 async function limitarPisos(){
@@ -137,7 +151,24 @@ async function limitarPisos(){
   if(vista==='pisos')prepararPisos();
   if(!document.body.classList.contains('floorHome')&&!floors.some(f=>f.id===active.id&&f.piso))home();
  }catch{}
+ pintarChips();
 }
+// Modo terreno: con más de un piso disponible, tocar «Piso N» en la cabecera muestra los pisos como botones grandes.
+const cabeceraPiso=document.querySelector('header .project'),chips=document.createElement('nav');
+chips.id='chipsPisos';chips.hidden=true;chips.setAttribute('aria-label','Cambiar de piso');document.querySelector('header')?.after(chips);
+const conVariosPisos=()=>floors.filter(f=>f.piso).length>1;
+function pintarChips(){
+ const varios=conVariosPisos();cabeceraPiso?.classList.toggle('conPisos',varios);
+ if(cabeceraPiso){if(varios){cabeceraPiso.setAttribute('role','button');cabeceraPiso.tabIndex=0;cabeceraPiso.setAttribute('aria-label','Cambiar de piso');cabeceraPiso.setAttribute('aria-expanded',String(!chips.hidden));}else{cabeceraPiso.removeAttribute('role');cabeceraPiso.removeAttribute('tabindex');cabeceraPiso.removeAttribute('aria-label');cabeceraPiso.removeAttribute('aria-expanded');chips.hidden=true;}}
+ chips.innerHTML=floors.filter(f=>f.piso).map(f=>`<button type="button" data-chip="${f.id}" aria-current="${f.id===active.id}">Piso ${f.numero}</button>`).join('');
+ chips.querySelectorAll('[data-chip]').forEach(b=>b.onclick=()=>{mostrarChips(false);if(b.dataset.chip!==active.id)openFloor(b.dataset.chip,true,[b.dataset.chip]);});
+}
+function mostrarChips(ver){chips.hidden=!ver;cabeceraPiso?.setAttribute('aria-expanded',String(ver));}
+const alternarChips=()=>{if(document.body.classList.contains('floorHome')||!document.body.classList.contains('terreno')||!conVariosPisos())return;pintarChips();mostrarChips(chips.hidden);};
+cabeceraPiso?.addEventListener('click',alternarChips);
+cabeceraPiso?.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();alternarChips();}});
+document.addEventListener('click',e=>{if(!chips.hidden&&!e.target.closest('#chipsPisos,header .project'))mostrarChips(false);},true);
+window.addEventListener('atlas-floor-home',()=>mostrarChips(false));
 limitarPisos();window.addEventListener('atlas-jerarquia-changed',limitarPisos);window.addEventListener('atlas-session-changed',limitarPisos);
 // Set up update detection even when the user stays on the cards without opening a plan.
 window.dispatchEvent(new Event('atlas-shell-ready'));

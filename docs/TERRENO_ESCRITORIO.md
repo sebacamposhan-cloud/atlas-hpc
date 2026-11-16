@@ -6,6 +6,19 @@ Atlas distingue dos tipos de equipo (`dist/dispositivo.mjs`):
 
 Marca `body.escritorio` o `body.terreno`, y vuelve a marcar si cambia, por ejemplo al girar una tablet o achicar la ventana.
 
+## Modo terreno: directo al plano
+Decidido con Mauro el 2026-11-16, después de que Sebastian pidiera una navegación «a prueba de tontos».
+
+- **Entrada:** en terreno, Atlas abre directo el plano del piso, sin pasar por Módulos ni por la pila de pisos. Abre el último piso usado en ese equipo si sigue disponible; si no, el primero disponible. Con perfil de obra, solo cuentan sus pisos asignados (`pisoDeEntrada` en `navegacion-model.mjs`, `entrarTerreno` en `floor-explorer.mjs`). Las direcciones con piso o módulo, los QR y el escritorio funcionan como antes.
+- **Barra de abajo:** **Buscar** (lleva al buscador), **Mis tareas** (la libreta; si la cuenta no tiene, Last Planner) y **Más**. Módulos, Pisos y el botón del módulo quedan solo en escritorio (`terreno.css`).
+- **Más:** una lista vertical con las tarjetas de todos los módulos (Control, Plano, Protocolos), más «Módulos» y la simbología (`gruposMas`). Tocar una tarjeta hace lo mismo que en la rueda.
+- **Avance y observaciones** siguen en el rombo del recinto, a un toque desde el plano o la búsqueda; no tienen un segundo camino.
+- **Pisos:** con más de un piso disponible, «Piso N ▾» en la cabecera muestra los pisos como botones grandes (`#chipsPisos`). Con un solo piso no aparece.
+
+Medido a 375×812 (supervisor con un piso):
+- abrir el plano pasa de 2 toques, en una rueda con tarjetas cortadas, a 0;
+- buscar un recinto y abrir su rombo: 2 toques más el código.
+
 ## Terreno: solo herramientas de terreno
 Decidido con Mauro el 2026-11-09.
 

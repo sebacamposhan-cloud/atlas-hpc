@@ -1,5 +1,5 @@
 // Barra inferior, rueda de tarjetas de cada módulo y botones de función sobre el plano. La lógica vive en navegacion-model.mjs.
-import {TARJETAS, ICONOS, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar, tarjetasPara, cartasDelModulo, moduloDe, conPortada, consultaPiso, paraTerreno, opcionesMas} from './navegacion-model.mjs';
+import {TARJETAS, ICONOS, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar, tarjetasPara, cartasDelModulo, moduloDe, conPortada, consultaPiso, paraTerreno, opcionesMas, gruposMas} from './navegacion-model.mjs';
 import {alCambiarDispositivo} from './dispositivo.mjs';
 import {createResumenPiso} from './resumen-piso.mjs';
 import {funcionesDe} from './jerarquia-model.mjs';
@@ -50,7 +50,7 @@ export function createNavegacion(ctx) {
     const permitidas = tarjetasPara(funcionesDe(ctx.perfil?.() || null)), todas = permitidas.filter(t=>!t.niveles||t.niveles.includes(nivel.id));
     const nuevas = ctx.escritorio() ? todas : paraTerreno(todas), cartas = cartasDelModulo(nuevas, modulo), clave = modulo + '|' + nuevas.map(t => t.id + ':' + t.funciones.map(([f]) => f).join(',')).join('|');
     if (clave === firma && pista) return false;
-    firma = clave; lista = nuevas;
+    firma = clave; lista = nuevas; pintarTerreno();
     rueda.setAttribute('aria-label', tituloModulo());
     // Control con libreta: la agenda (Hoy y Esta semana) va arriba de las tarjetas.
     const conAgenda = modulo === 'control' && cartas.some(t => t.id === 'tareas');
@@ -106,7 +106,8 @@ export function createNavegacion(ctx) {
     const enTarjeta = rueda.querySelector('.ruedaContador');
     if (enTarjeta) { enTarjeta.hidden = !n; enTarjeta.textContent = texto; enTarjeta.setAttribute('aria-label', n + ' pendientes'); }
     // En Control va en su botón. En los otros módulos va en Módulos, que es el camino para llegar a la libreta.
-    const destino = $(modulo === 'control' ? 'bottomObra' : 'bottomModulos');
+    // En terreno va en «Mis tareas» de la barra de abajo.
+    const destino = !ctx.escritorio() && $('terrenoTareas') && !$('terrenoTareas').hidden ? $('terrenoTareas') : $(modulo === 'control' ? 'bottomObra' : 'bottomModulos');
     let enBarra = document.querySelector('.obraContador');
     if (!enBarra) { enBarra = document.createElement('b'); enBarra.className = 'obraContador'; }
     if (enBarra.parentElement !== destino) destino.append(enBarra);
@@ -272,7 +273,42 @@ export function createNavegacion(ctx) {
   }
 
   $('bottomObra').onclick = () => { if (rueda.hidden) abrirRueda(); else if (!portada()) cerrarRueda(true); };
-  construirRueda(); rotular(); dibujarFranja();
+  // Modo terreno (celular o tablet vertical): la barra de abajo tiene tres botones grandes. «Buscar» lleva al buscador,
+  // «Mis tareas» abre la libreta (o Last Planner, si la cuenta no tiene libreta) y «Más» lista las tarjetas de todos los
+  // módulos, el cambio de módulo y la simbología. Avance y observaciones se hacen en el rombo del recinto. terreno.css
+  // esconde los botones de siempre (Módulos, Pisos, módulo) en terreno y estos en el escritorio.
+  const BUSCAR = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>';
+  document.querySelector('.bottomNav')?.insertAdjacentHTML('beforeend', `<button type="button" class="terrenoBoton" id="terrenoBuscar">${BUSCAR}<span class="terrenoNombre">Buscar</span></button>`
+    + `<button type="button" class="terrenoBoton" id="terrenoTareas" hidden>${ICONOS.mias}<span class="terrenoNombre">Mis tareas</span></button>`
+    + `<button type="button" class="terrenoBoton" id="terrenoMas" aria-haspopup="dialog">${ICONOS.mas}<span class="terrenoNombre">Más</span></button>`);
+  function pintarTerreno() {
+    const boton = $('terrenoTareas'); if (!boton) return;
+    const libreta = buscarTarjeta('tareas')?.funciones.some(([f]) => f === 'mias'), lp = !!buscarTarjeta('lastplanner');
+    boton.hidden = !libreta && !lp;
+    boton.querySelector('.terrenoNombre').textContent = libreta ? 'Mis tareas' : 'Last Planner';
+    document.querySelector('.bottomNav')?.style.setProperty('--botones-terreno', boton.hidden ? 2 : 3);
+  }
+  function buscarTerreno() {
+    cerrarHoja(); cerrarRueda();
+    const s = $('globalSearch'); if (!s || s.disabled) return;
+    s.focus(); s.select?.();
+  }
+  function tareasTerreno() {
+    if (abrirTareas('mias')) return;
+    if (buscarTarjeta('lastplanner')) elegirTarjeta('lastplanner');
+  }
+  function masTerreno() {
+    const cuerpo = abrirHoja('Más');
+    const grupos = gruposMas(lista), extra = opcionesMas(ctx.escritorio()).filter(([id]) => $(id));
+    cuerpo.innerHTML = grupos.map(g => `<h3 class="hojaGrupo">${esc(g.titulo)}</h3><ul class="hojaLista" data-sin-flujo>${g.tarjetas.map(t => `<li><button type="button" data-carta="${t.id}"><span><b>${esc(t.titulo)}</b><small>${esc(t.texto)}</small></span></button></li>`).join('')}</ul>`).join('')
+      + `<h3 class="hojaGrupo">Atlas</h3><ul class="hojaLista" data-sin-flujo><li><button type="button" data-ir="modulos"><span><b>Módulos</b><small>Control, Plano y Protocolos, con su selección de pisos</small></span></button></li>`
+      + extra.map(([id, nombre]) => `<li><button type="button" data-mas="${id}"><span><b>${esc(nombre)}</b></span></button></li>`).join('') + '</ul>';
+    cuerpo.querySelectorAll('[data-carta]').forEach(b => b.onclick = () => { cerrarHoja(); elegirTarjeta(b.dataset.carta); });
+    cuerpo.querySelectorAll('[data-mas]').forEach(b => b.onclick = () => { const destino = $(b.dataset.mas); cerrarHoja(); destino.click(); });
+    cuerpo.querySelector('[data-ir=modulos]').onclick = () => { cerrarHoja(); $('bottomModulos')?.click(); };
+  }
+  if ($('terrenoBuscar')) { $('terrenoBuscar').onclick = buscarTerreno; $('terrenoTareas').onclick = tareasTerreno; $('terrenoMas').onclick = masTerreno; }
+  construirRueda(); rotular(); dibujarFranja(); pintarTerreno();
   activarFlujos();
   // Al sincronizar puede llegar (o irse) el perfil: se rearma la rueda y se actualiza el contador.
   function alCambiarTareas() {

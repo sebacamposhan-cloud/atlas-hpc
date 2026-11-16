@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {TARJETAS, ICONOS, MODULOS, moduloDe, conPortada, cartasDelModulo, consultaPiso, leerConsulta, pisosEnOrden, pisoParaAbrir, tarjeta, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar, paradaCercana, CLAVE_MEMORIA, tarjetasPara, TARJETA_TAREAS, paraTerreno, opcionesMas, OFICINA} from './dist/navegacion-model.mjs';
 import {funcionesDe, puedeVariosPisos} from './dist/jerarquia-model.mjs';
+import {pisoDeEntrada, gruposMas} from './dist/navegacion-model.mjs';
 import {crearFluido, crearOleaje, arrastrar} from './dist/fluido.mjs';
 import {palancaHTML} from './dist/palanca.mjs';
 import {GRUPOS, SIN_FLUJO, claveDe, indiceActivo, firmaDeSelect} from './dist/selector-flujo.mjs';
@@ -163,7 +164,7 @@ function fluido(opciones = {}) {
 // Selecciones con flujo: cada grupo dice qué botones usa y su tamaño; las vistas sobre una tabla llevan dibujo y texto.
 {
   assert.ok(GRUPOS.length >= 9 && GRUPOS.every(g => g.selector && g.boton && ['grande', 'media', 'baja'].includes(g.tamano)));
-  for (const selector of ['.jerPasos', '.jerGente', '.levOpciones', '.cfLista', '.matrixGroup > div', '.hojaLista']) assert.ok(GRUPOS.some(g => g.selector === selector), selector);
+  for (const selector of ['.jerPasos', '.jerGente', '.levOpciones', '.cfLista', '.matrixGroup > div', '.hojaLista:not([data-sin-flujo])']) assert.ok(GRUPOS.some(g => g.selector === selector), selector);
   // El rombo y las palancas quedan como están.
   assert.ok(!GRUPOS.some(g => /rombo|palanca/i.test(g.selector)));
   assert.equal(SIN_FLUJO, '.left, [data-sin-flujo]');
@@ -283,4 +284,21 @@ console.log('navegacion-test: ok');
   assert.deepEqual(opcionesMas(false).map(([id]) => id), ['legend']);
   assert.deepEqual(opcionesMas(true).map(([id]) => id), ['exportPlan', 'legend', 'original', 'diamondCatalogOpen', 'import', 'editorContornos']);
   assert.match(index, /terreno\.css/); assert.match(index, /escritorio\.css/); assert.match(index, /puertas\.css/);
+}
+
+// Modo terreno: entra directo al último piso abierto si sigue disponible; si no, al primero disponible (sus asignados).
+{
+  assert.equal(pisoDeEntrada({piso: 'N03'}, ['N02', 'N03']), 'N03');
+  assert.equal(pisoDeEntrada({piso: 'N04'}, ['N02', 'N03']), 'N02', 'un piso que ya no tiene asignado no se abre');
+  assert.equal(pisoDeEntrada({piso: null}, ['N02']), 'N02');
+  assert.equal(pisoDeEntrada({piso: 'N02'}, []), null);
+  // «Más»: las tarjetas de todos los módulos agrupadas por módulo, sin Mis tareas (tiene su botón) ni las ocultas.
+  const grupos = gruposMas(paraTerreno(tarjetasPara(null)));
+  assert.deepEqual(grupos.map(g => g.modulo), ['control', 'plano', 'protocolos']);
+  const ids = grupos.flatMap(g => g.tarjetas.map(t => t.id));
+  assert(ids.includes('lastplanner') && ids.includes('capas') && ids.includes('tipos'));
+  assert(!ids.includes('tareas') && !ids.includes('protocolos') && !ids.includes('resumen') && !ids.includes('matriz'), 'sin libreta, ocultas ni tablas de oficina');
+  const css = fs.readFileSync('dist/terreno.css', 'utf8');
+  assert.match(css, /body\.terreno \.bottomNav > button:not\(\.terrenoBoton\)/);
+  console.log('Modo terreno: piso de entrada y lista «Más» por módulo validados');
 }
