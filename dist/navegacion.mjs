@@ -47,7 +47,7 @@ export function createNavegacion(ctx) {
   const tituloModulo = () => moduloDe(modulo).titulo;
 
   function construirRueda() {
-    const permitidas = tarjetasPara(funcionesDe(ctx.perfil?.() || null)), todas = herramientasDelPiso(permitidas.filter(t=>!t.niveles||t.niveles.includes(nivel.id)), nivel.id);
+    const permitidas = tarjetasPara(funcionesDe(ctx.perfil?.() || null)), todas = herramientasDelPiso(permitidas.filter(t=>!t.niveles||t.niveles.includes(nivel.id)), nivel);
     // Sin pantalla de módulos: en el escritorio la columna izquierda muestra la libreta y los grupos Control, Plano y
     // Protocolos, uno debajo de otro. En el celular las mismas tarjetas están en «Más».
     const escritorio = ctx.escritorio(), nuevas = escritorio ? todas : paraTerreno(todas);

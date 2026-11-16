@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {TARJETAS, ICONOS, MODULOS, moduloDe, conPortada, cartasDelModulo, consultaPiso, leerConsulta, pisosEnOrden, pisoParaAbrir, tarjeta, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar, paradaCercana, CLAVE_MEMORIA, tarjetasPara, TARJETA_TAREAS, paraTerreno, opcionesMas, OFICINA} from './dist/navegacion-model.mjs';
 import {funcionesDe, puedeVariosPisos} from './dist/jerarquia-model.mjs';
-import {pisoDeEntrada, gruposMas, accesosMas} from './dist/navegacion-model.mjs';
+import {pisoDeEntrada, gruposMas, accesosMas, herramientasDelPiso} from './dist/navegacion-model.mjs';
 import {crearFluido, crearOleaje, arrastrar} from './dist/fluido.mjs';
 import {palancaHTML} from './dist/palanca.mjs';
 import {GRUPOS, SIN_FLUJO, claveDe, indiceActivo, firmaDeSelect} from './dist/selector-flujo.mjs';
@@ -20,7 +20,15 @@ for (const m of MODULOS) assert.ok(m.titulo && m.texto && m.dibujo, m.id);
 assert.deepEqual(cartasDelModulo(TARJETAS, 'control').map(t => t.id), ['lastplanner', 'resumen']);
 // Herramientas está en Plano y reúne Proyectos, Filtros y capas, Puertas e Impermeabilización (que quedan ocultas como tarjeta).
 assert.deepEqual(cartasDelModulo(TARJETAS, 'plano').map(t => t.id), ['recintos', 'herramientas']);
-assert.deepEqual(tarjeta('impermeabilizacion').niveles,['N-1']);
+// Lo especial de cada piso depende de sus datos (pisos.js), no de que sea el −1.
+assert.equal(tarjeta('impermeabilizacion').niveles, undefined);
+{
+  const fn = piso => herramientasDelPiso(TARJETAS, piso).find(t => t.id === 'herramientas').funciones.map(([f]) => f);
+  assert.deepEqual(fn({id: 'N-1', imp: 's01', puertasPiloto: true}), ['proyectos', 'filtros', 'puertas', 'impermeabilizacion', 'mas']);
+  assert.deepEqual(fn({id: 'N02', puertas: true}), ['proyectos', 'filtros', 'puertas', 'mas']);
+  assert.deepEqual(fn({id: 'N03'}), ['proyectos', 'filtros', 'mas']);
+  assert.deepEqual(fn({id: 'N05', imp: 'n05'}), ['proyectos', 'filtros', 'impermeabilizacion', 'mas'], 'un piso nuevo con su lámina IMP la muestra');
+}
 assert.equal(tarjeta('puertas').accion, 'puertas', 'Puertas abre su plano propio');
 assert.deepEqual(cartasDelModulo(TARJETAS, 'protocolos').map(t => t.id), ['tipos', 'criticos', 'matriz']);
 assert.equal(tarjeta('lastplanner').panel, 'lastplanner');

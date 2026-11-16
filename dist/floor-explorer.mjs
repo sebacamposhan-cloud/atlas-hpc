@@ -150,7 +150,8 @@ async function limitarPisos(){
   puedeVarios=!!puedeVariosPisos(perfil);
   elegidos=elegidos.filter(disponible);if(!elegidos.length)marcar(floors.find(f=>f.piso)?.id||null);
   if(vista==='pisos')prepararPisos();
-  if(!document.body.classList.contains('floorHome')&&!floors.some(f=>f.id===active.id&&f.piso))home();
+  // Un piso que la cuenta no tiene asignado: se abre su piso (el último o el primero asignado), sin pasar por la pila de pisos.
+  if(!document.body.classList.contains('floorHome')&&!floors.some(f=>f.id===active.id&&f.piso)){const destino=pisoDeEntrada(leerMemoria(almacen()),floors.filter(f=>f.piso).map(f=>f.id));if(destino)location.replace(root+consultaPiso({nivel:destino,modulo:'plano',pisos:[destino]}));else home();}
  }catch{}
  pintarCuenta();
 }

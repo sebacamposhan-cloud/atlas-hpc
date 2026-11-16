@@ -1,14 +1,20 @@
 /* Pisos disponibles de Atlas. Todos los pisos usan la misma interfaz; cambia solo el conjunto de datos.
    Para sumar un piso: genera sus datos en dist/<datos> (ver scripts/dwg-plano/LEEME.md) y agrega una línea a PISOS.
    - datos: carpeta con runtime.json y geometry/ ('' para la raíz).
-   - especialidades: tiene láminas de Cielos y Pavimentos (disciplines.json).
+   - especialidades: tiene láminas de Cielos y Pavimentos (<datos>disciplines.json, con sus documentos ceilings/floors).
+   - imp: código de su lámina de Impermeabilización (por ejemplo 's01'): impermeabilizacion/<imp>.json, el avance de
+     artefactos impermeabilizacion/artefactos-<imp>.json y las teselas disciplines/imp-<imp>/ (scripts/imp/LEEME.md).
+     Sin «imp», el piso no muestra Impermeabilización ni artefactos.
+   - puertas: tiene el plano de puertas por recinto (<datos>puertas.json, puertas.mjs).
+   - puertasPiloto: tiene el catálogo piloto de puertas como tipo de plano (doors/catalog.json; hoy el −1).
+   Todo lo especial de un piso depende de estas marcas, nunca de que sea el −1.
    El explorador visual se monta en floor-explorer.mjs. */
 (function () {
   'use strict';
   var PISOS = [
-    {id: 'N-1', nombre: 'Nivel −1', corto: '−1', datos: '', especialidades: true},
+    {id: 'N-1', nombre: 'Nivel −1', corto: '−1', datos: '', especialidades: true, imp: 's01', puertasPiloto: true},
     {id: 'N01', nombre: 'Nivel 1', corto: '1', datos: 'n01/', especialidades: false},
-    {id: 'N02', nombre: 'Nivel 2', corto: '2', datos: 'n02/', especialidades: false},
+    {id: 'N02', nombre: 'Nivel 2', corto: '2', datos: 'n02/', especialidades: false, puertas: true},
     {id: 'N03', nombre: 'Nivel 3', corto: '3', datos: 'n03/', especialidades: false},
     {id: 'N04', nombre: 'Nivel 4', corto: '4', datos: 'n04/', especialidades: false}
   ];

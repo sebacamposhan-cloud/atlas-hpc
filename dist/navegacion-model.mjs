@@ -31,7 +31,7 @@ export const TARJETAS = [
   // Plano de puertas: modelo, llave, vano y estado de cada puerta (puertas.mjs).
   {id: 'puertas', modulo: 'plano', oculta: true, titulo: 'Puertas', texto: 'Modelo, llave, vano y estado', accion: 'puertas', funciones: [],
     dibujo: '<rect x="52" y="10" width="56" height="80"/><path class="f" d="M52 90V10l40 10v80z"/><path d="M84 54v6"/>'},
-  {id: 'impermeabilizacion', modulo: 'plano', oculta: true, titulo: 'Impermeabilización', texto: 'Plano IMP · contornos, avance y exportación', accion: 'impermeabilizacion', niveles: ['N-1'], funciones: [],
+  {id: 'impermeabilizacion', modulo: 'plano', oculta: true, titulo: 'Impermeabilización', texto: 'Plano IMP · contornos, avance y exportación', accion: 'impermeabilizacion', funciones: [],
     dibujo: '<path d="M28 82h104M34 72V24h92v48z"/><path class="f" d="M34 58h92v14H34z"/><path d="M64 24v48M94 24v48M34 48h92"/>'},
   {id: 'tipos', modulo: 'protocolos', titulo: 'Por tipo', texto: 'Protocolos abiertos de este piso', grupo: 'protocolos', funcion: 'tipos', funciones: [], dibujo: HOJA},
   {id: 'criticos', modulo: 'protocolos', titulo: 'Críticos', texto: 'Más de un año abiertos', grupo: 'protocolos', funcion: 'criticos', funciones: [],
@@ -158,8 +158,10 @@ export function gruposMas(lista) {
 // Íconos de las funciones de Herramientas en el plano.
 ICONOS.puertas = trazo('<path d="M6 21V4h10v17"/><path d="M6 4l7 2v15"/><path d="M11 13v1"/><path d="M3 21h16"/>');
 ICONOS.impermeabilizacion = trazo('<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/><path d="M9 15a3 3 0 0 0 3 3"/>');
-// Herramientas sin Impermeabilización fuera del −1 (el plano IMP es de ese piso).
-export const herramientasDelPiso = (lista, piso) => lista.map(t => t.id !== 'herramientas' ? t : {...t, funciones: t.funciones.filter(([f]) => f !== 'impermeabilizacion' || piso === 'N-1')});
+// Herramientas según los datos del piso (pisos.js): Impermeabilización solo con su lámina IMP («imp») y Puertas solo con
+// su plano de puertas («puertas») o el catálogo piloto («puertasPiloto»). Ya no depende de que el piso sea el −1.
+export const herramientasDelPiso = (lista, piso = {}) => lista.map(t => t.id !== 'herramientas' ? t : {...t, funciones: t.funciones.filter(([f]) =>
+  f === 'impermeabilizacion' ? !!piso.imp : f === 'puertas' ? !!(piso.puertas || piso.puertasPiloto) : true)});
 // Accesos de «Más» (celular): una cuadrícula por grupo. Cada función de una tarjeta es un acceso directo; una tarjeta sin
 // funciones (Last Planner, Por tipo, Críticos) es un acceso. De la libreta van solo Asignar y Mi equipo: «Mis tareas»
 // tiene su botón abajo.
