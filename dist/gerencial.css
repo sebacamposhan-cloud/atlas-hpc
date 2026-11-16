@@ -185,3 +185,21 @@ aside.right, aside.left { border-color: var(--g-marca); }
 .bottomNav button { color: var(--g-texto2); }
 .bottomNav button.active, .bottomNav button:hover:not(:disabled) { color: var(--g-texto); background: transparent; font-weight: 700; outline: 0; }
 #toast { background: var(--g-marca); color: #fff; border-left: 6px solid var(--g-cian); }
+
+/* Encabezado y leyenda comunes de los reportes (reporte-encabezado.mjs): qué es, de qué obra y piso, cuándo y quién lo
+   emitió, y cada color con su nombre al lado. Se lee igual en pantalla e impreso en blanco y negro. */
+.reporteEncabezado { border-top: 6px solid var(--g-marca); border-bottom: 1px solid var(--g-marca); padding: 10px 0 12px; margin: 0 0 14px; }
+.reporteEncabezado .reporteTipo { margin: 0; font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--g-texto); }
+.reporteEncabezado h1 { margin: 2px 0 8px; font-size: 22px; color: #000; }
+.reporteEncabezado dl { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 0; }
+.reporteEncabezado dl div { display: flex; gap: 6px; font-size: 12px; }
+.reporteEncabezado dt { font-weight: 700; }
+.reporteEncabezado dd { margin: 0; }
+.reporteEncabezado .reporteSignificado { margin: 8px 0 0; font-size: 12px; max-width: 70ch; }
+.reporteLeyenda { margin: 10px 0; }
+.reporteLeyenda h2 { margin: 0 0 6px; font-size: 13px; }
+.reporteLeyenda ul { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0; padding: 0; list-style: none; font-size: 12px; }
+.reporteLeyenda li { display: flex; align-items: center; gap: 6px; }
+.reporteLeyenda i { display: inline-block; width: 16px; height: 16px; border: 2px solid #000; box-sizing: border-box; flex: none; }
+.reporteLeyenda span { color: var(--g-texto); }
+@media print { .reporteLeyenda i { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
