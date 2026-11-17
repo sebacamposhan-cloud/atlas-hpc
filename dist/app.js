@@ -6,6 +6,7 @@ import {createProtocolPlan} from './protocolos-plano.mjs';
 import {createPuertas} from './puertas.mjs';
 import {markingItems} from './marking-model.mjs';
 import {iniciarCapaAvance} from './avance.mjs';
+import './cielos-lamina.mjs';
 import {createObservaciones,iniciarCapaObservaciones,cargarObservaciones} from './observaciones.mjs';
 import {createRombo} from './rombo.mjs';
 import {createLastPlanner,iniciarCapaLastPlanner} from './lastplanner.mjs';

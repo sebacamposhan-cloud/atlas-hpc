@@ -109,7 +109,8 @@ async function openFloor(id,push=true,lista=[id]){
 gallery.querySelectorAll('[data-floor]').forEach(b=>b.onclick=()=>elegir(b.dataset.floor));
 // «Continuar» se usa siempre, en celular y en computador.
 $('pisoContinuar').onclick=()=>{if(!elegidos.length)return;const lista=pisosEnOrden(elegidos,orden);openFloor(pisoParaAbrir(lista,active.id),true,lista);};
-$('pisoVolver').onclick=()=>irAModulos();
+// Sin pantalla de módulos, «Volver» desde la pila de pisos regresa al plano abierto.
+$('pisoVolver').onclick=()=>{if(ready&&disponible(active.id))openFloor(active.id,true,[active.id]);else irAModulos();};
 $('moduloContinuar').onclick=continuarModulo;
 // Volver a lo que estaba abierto, sin cambiar de módulo.
 $('moduloVolver').onclick=()=>{marcarModulo(moduloAbierto);openFloor(active.id,true,window.ATLAS_PISOS_ELEGIDOS);};
@@ -177,10 +178,12 @@ function pintarCuenta(){
  const lista=floors.filter(f=>f.piso);
  hojaCuenta.innerHTML=`<div class="hojaAsa" aria-hidden="true"></div>
   <div class="cuentaCabeza"><span class="cuentaAvatar grande" aria-hidden="true">${escapar(iniciales(u))}</span><div><b>${escapar(nombreDe(u).replace(/@.*/,'')||'Atlas HPC')}</b><small>${escapar(u?.username||'Sin sesión en este equipo')}</small></div><button type="button" class="close" data-cerrar aria-label="Cerrar">×</button></div>
-  <h3 class="hojaGrupo">${lista.length>1?'Tus pisos':'Tu piso'}</h3>
+  <h3 class="hojaGrupo">${lista.length>1?'Tus pisos':'Tu piso'}</h3>${lista.length>1?'<button type="button" class="cuentaFila cuenta3d" data-pisos3d><span aria-hidden="true">▤</span>Ver los pisos en 3D</button>':''}
   <ul class="cuentaPisos">${lista.map(f=>`<li><button type="button" class="cuentaPiso" data-piso="${f.id}" aria-current="${f.id===active.id}"><span class="pisoNumero">${escapar(f.numero)}</span><span><b>Piso ${escapar(f.numero)}${f.id===active.id?' · abierto':''}</b><small>${escapar(estadoPiso(f))}</small></span></button>${puedeGuardar(f)?`<button type="button" class="cuentaGuardar" data-guardar="${packDe(f)}">Guardar · ${mb(sc.packs[packDe(f)].bytes-sc.packs[packDe(f)].savedBytes)}</button>`:''}</li>`).join('')}</ul>
   <div class="cuentaFilas"><button type="button" class="cuentaFila" data-offline><span aria-hidden="true">⤓</span>Sin conexión y actualizaciones</button>${$('logoutButton')?'<button type="button" class="cuentaFila salir" data-salir><span aria-hidden="true">⇥</span>Cerrar sesión</button>':''}</div>`;
  hojaCuenta.querySelector('[data-cerrar]').onclick=()=>hojaCuenta.close();
+ // La pila de pisos en 3D (con su luz al pasar el cursor): se elige el piso y «Continuar» lo abre; «Volver» regresa al plano.
+ hojaCuenta.querySelector('[data-pisos3d]')?.addEventListener('click',()=>{hojaCuenta.close();home();});
  hojaCuenta.querySelectorAll('[data-piso]').forEach(b=>b.onclick=()=>{hojaCuenta.close();if(b.dataset.piso!==active.id)openFloor(b.dataset.piso,true,[b.dataset.piso]);});
  hojaCuenta.querySelectorAll('[data-guardar]').forEach(b=>b.onclick=()=>{window.atlasSinConexion?.guardar?.(b.dataset.guardar);setTimeout(pintarCuenta,300);});
  hojaCuenta.querySelector('[data-offline]').onclick=()=>{hojaCuenta.close();$('offlineOpen')?.click();};
