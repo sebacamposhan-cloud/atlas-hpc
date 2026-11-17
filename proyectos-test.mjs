@@ -51,7 +51,7 @@ assert.deepEqual(comp.porEstado.map(e => [e.nombre, e.antes, e.despues, e.m2Ante
 assert.equal(compareCuts(p.estados, p.cortes[0], p.cortes[0]).totales.igual, 3, 'un corte comparado consigo mismo no cambia');
 
 // Colores en el plano: estado de cada recinto o, al comparar, el tipo de cambio.
-assert.deepEqual(markingItems(p).map(x => [x.id, x.color, x.number]), [['rb', '#9aa3ad', 2], ['rc', '#2e9e5b', 3], ['rd', '#d9a21b', 4]]);
+assert.deepEqual(markingItems(p).map(x => [x.id, x.color, x.number]), [['rb', '#9aa3ad', 1], ['rc', '#2e9e5b', 2], ['rd', '#d9a21b', 3]], 'al quitar ra los demás se renumeran desde 1');
 assert(markingItems(p, comp).every(x => x.color === CAMBIOS[comp.filas.find(f => f.id === x.id).cambio].color && x.number === null));
 // Exportación: rótulo del piso con simbología y tabla de recintos (marcado, comparación y levantamiento), y hojas PDF.
 const {datosExportacion, codigoPiso, altoRotulo, paginasProyecto} = await import('./dist/marking-overlay.mjs');

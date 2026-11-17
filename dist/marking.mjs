@@ -5,6 +5,7 @@ import {marcarEliminado, esPuertas} from './marking-model.mjs';
 import {firmante, exigirFirma} from './firma.mjs';
 import {propositoHTML, conectarProposito, leerProposito} from './proyecto-datos.mjs';
 import {funcionesProyecto, botonAmpliar, conectarAmpliar} from './proyecto-funciones.mjs';
+import {nivel} from './level.mjs';
 
 // Proyectos de marcado: se parte de un piso, se definen estados con leyenda (por ejemplo Pendiente / En ejecución / Terminado),
 // se pintan recintos tocándolos y se guardan cortes con fecha para comparar el avance (plano de cambios y vista lado a lado).
@@ -95,7 +96,7 @@ export function createMarking(ctx) {
     // Acciones del proyecto: botones flotantes a la izquierda del plano (proyecto-funciones.mjs), como en Recintos.
     const cabecera = `<div class="markingHead"><div><small>ARQUITECTURA · ${esc(ctx.levelName)}</small><h2>${esc(active.name)}</h2></div>${botonAmpliar()}<button id="closeMarking" data-wait-save aria-label="Cerrar proyecto">×</button></div>
       ${funcionesProyecto([['markingDocuments', 'Proyectos', 'proyectos', 'data-wait-save'], ['markingEdit', 'Leyenda', 'columnas', 'data-wait-save'], ...(comp ? [['salirComparacion', 'Estados', 'estados']] : []), ['markingBackup', 'Respaldo', 'respaldo', 'data-wait-save'], ['markingExport', 'Exportar', 'exportar', 'data-wait-save']])}`;
-    const pie = `<div class="markingFooter"><span id="markingSaveStatus" role="status"></span><small>Marcado de consulta sobre los contornos disponibles. Quitar un recinto conserva los números de los demás.</small></div>`;
+    const pie = `<div class="markingFooter"><span id="markingSaveStatus" role="status"></span><small>Marcado de consulta sobre los contornos disponibles. Al quitar un recinto, los siguientes se renumeran.</small></div>`;
     let cuerpo;
     if (comp) {
       const r = comp.resultado, opcion = (c, sel) => `<option value="${esc(c.id)}" ${c.id === sel ? 'selected' : ''}>${esc(c.fecha ? fecha(c.fecha) + ' · ' : '')}${esc(c.nombre)}</option>`;
@@ -156,7 +157,7 @@ export function createMarking(ctx) {
       showDialog(`<h2>Mis proyectos</h2><p>Arquitectura · ${esc(ctx.levelName)}. Un proyecto pinta recintos por estado (por ejemplo, pisos vinílicos instalados) y guarda cortes para comparar el avance; un levantamiento lleva una tabla con tus columnas y se importa o exporta en Excel.</p>
         <div class="markingNuevo"><button id="newMarking" class="primary">+ Nuevo proyecto</button><label class="markingImportar">Importar planilla (Excel o CSV)<input id="levImportar" type="file" accept=".xlsx,.xls,.csv,.txt"></label></div><p id="levAviso" class="levAviso" role="alert"></p>
         <div class="markingLibrary">${docs.map(doc => `<div class="markingFila"><button data-open-marking="${esc(doc.id)}"><b>${esc(doc.name)}</b><span>${esPuertas(doc) ? `Puertas · ${Object.keys(doc.filas).length} cambios en terreno · plano «${esc(doc.fuente.archivo)}»` : esLevantamiento(doc) ? `Levantamiento · ${doc.filas.length} recintos · ${doc.columnas.length} columnas` : `${esc(doc.author)} · ${doc.rooms.length} recintos${doc.cortes?.length ? ` · ${doc.cortes.length} cortes` : ''}`}</span><small>${esc(doc.purpose)}</small></button><button class="markingEliminar" data-eliminar-marking="${esc(doc.id)}" aria-label="Eliminar ${esc(doc.name)}">Eliminar</button></div>`).join('') || '<p>Aún no hay proyectos para este piso.</p>'}</div>
-        ${ctx.level==='N-1'?'<button id="impArtifactsOpen" type="button">Avance de artefactos · plano S01</button>':''}<button id="markingBackupAll" ${docs.length ? '' : 'disabled'}>Respaldar proyectos de este piso</button><label>Restaurar respaldo JSON<input id="markingRestore" type="file" accept=".json,application/json"></label>
+        ${nivel.imp?`<button id="impArtifactsOpen" type="button">Avance de artefactos · plano ${esc(nivel.imp.toUpperCase())}</button>`:''}<button id="markingBackupAll" ${docs.length ? '' : 'disabled'}>Respaldar proyectos de este piso</button><label>Restaurar respaldo JSON<input id="markingRestore" type="file" accept=".json,application/json"></label>
         <p>Se guarda en este equipo. Se sincroniza con los demás equipos con tu sesión de Atlas; el respaldo queda como copia adicional.</p>`);
       dialog.querySelector('#newMarking').onclick = () => tipoNuevo();
       dialog.querySelector('#levImportar').onchange = event => { const file = event.target.files[0]; event.target.value = ''; if (file) lev.importar(file); };

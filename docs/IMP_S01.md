@@ -133,3 +133,7 @@ Verde indica instalación completa, amarillo instalación parcial y rojo cero in
 Cada tabla tiene separación visual y se mantiene completa al cambiar de página cuando cabe; solo una tabla mayor que una página se divide con encabezado de continuación. No se reintroducen anexos de historial ni se modifican registros guardados. `imp-report-test.mjs` comprueba agrupación, cantidades, estados, conservación y paginación. `pdf-export-recovery-browser-test.mjs` genera PDFs reales a 390/1280 px y verifica 80 encabezados únicos, sin anexos ni mutación de datos.
 
 Comprobación adicional: PNG real con filas completas y parciales, sin mutación del documento; guardado con un toque/reapertura/recarga y manejo de conflicto a 320/375/390/430/768/1280 px. Se actualiza la expectativa del PDF de esa prueba para exigir cantidades agregadas y un único encabezado de recinto.
+
+## Otros pisos (2026-11-16)
+
+La Impermeabilización y el avance de artefactos ya no dependen de que el piso sea el −1. Cada piso declara sus láminas en `dist/pisos.js` (`imp`, `especialidades`, `puertas`, `puertasPiloto`). El controlador IMP toma sus rutas, rótulos y nivel PMA de esa marca, y el registro IMP toma su id, piso y hoja del catálogo de la lámina. Los registros del S01 no cambian. Los importadores reciben el piso como argumento. Pasos en [`scripts/imp/LEEME.md`](../scripts/imp/LEEME.md). Para activar Impermeabilización en N01–N04 faltan sus láminas IMP; para los artefactos, el libro PMA-03.

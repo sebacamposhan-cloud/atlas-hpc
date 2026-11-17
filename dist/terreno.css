@@ -27,9 +27,46 @@ body.terreno #terrenoTareas .obraContador { position: absolute; top: 6px; left: 
 .hojaGrupo { margin: 18px 0 6px; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; color: var(--g-texto2, #262626); }
 .hojaGrupo:first-child { margin-top: 4px; }
 body.entrandoTerreno #moduloExplorer, body.entrandoTerreno #floorExplorer { display: none !important; }
-body.terreno header .project.conPisos { cursor: pointer; }
-body.terreno header .project.conPisos #navPiso::after { content: " ▾"; font-size: .8em; }
-#chipsPisos { display: none; }
-body.terreno #chipsPisos:not([hidden]) { display: flex; gap: 8px; position: fixed; left: 0; right: 0; top: var(--cabecera, 58px); z-index: 45; padding: 10px 12px; overflow-x: auto; background: #fff; border-bottom: 2px solid var(--g-marca, #1b2a56); }
-#chipsPisos button { flex: none; min-width: 72px; min-height: 48px; padding: 0 16px; font-size: 16px; font-weight: 800; border: 1px solid var(--g-marca, #1b2a56); background: #fff; color: var(--g-texto, #000); }
-#chipsPisos button[aria-current=true] { background: var(--g-azul, #0f5499); border-color: var(--g-azul, #0f5499); color: #fff; }
+
+/* «Más» en el celular: hoja que sube desde abajo, con su asa y accesos en cuadrícula por grupo (navegacion.mjs). */
+body.terreno #hojaFuncion { border-radius: 16px 16px 0 0 !important; }
+body.terreno #hojaFuncion::before { content: ""; display: block; width: 40px; height: 4px; margin: 8px auto 0; border-radius: 2px; background: var(--g-regla, #8c8c8c); }
+.hojaAccesos .accesos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 6px; }
+.acceso { display: flex; flex-direction: column; align-items: center; gap: 6px; min-height: 92px; padding: 8px 4px; border: 0; background: #fff; color: var(--g-texto, #000); white-space: normal; }
+.acceso:hover:not(:disabled) { background: #fff; }
+.accesoIcono { display: grid; place-items: center; width: 56px; height: 56px; border: 1px solid var(--g-marca, #1b2a56); border-radius: 16px !important; color: var(--g-marca, #1b2a56); }
+.accesoIcono svg { width: 28px; height: 28px; }
+.accesoIcono svg[viewBox="0 0 160 100"] { width: 44px; height: 28px; fill: none; stroke: currentColor; stroke-width: 5; }
+.accesoIcono svg[viewBox="0 0 160 100"] .f { fill: currentColor; }
+.accesoNombre { font-size: 13px; font-weight: 700; line-height: 1.2; text-align: center; }
+.acceso:active .accesoIcono { background: var(--g-azul, #0f5499); border-color: var(--g-azul, #0f5499); color: #fff; }
+
+/* Tu cuenta: iniciales y piso arriba a la izquierda; al tocarlos sube la hoja con tus pisos y Cerrar sesión. Por eso
+   salen de la cabecera el botón de descarga y el de cerrar sesión (siguen funcionando desde la hoja). */
+header #offlineOpen, header .logoutButton { display: none !important; }
+body:not(.floorHome) header .project { display: grid !important; grid-template-columns: auto minmax(0, auto); column-gap: 8px; align-items: center; cursor: pointer; }
+body:not(.floorHome) header .project #navLogo { display: none; }
+body:not(.floorHome) header .project #navPiso::after { content: " ▾"; font-size: .8em; }
+header .project .cuentaAvatar, .cuentaAvatar { display: grid; place-items: center; width: 38px; height: 38px; border: 2px solid var(--g-marca, #1b2a56); border-radius: 50% !important; background: #fff; color: var(--g-marca, #1b2a56); font-size: 14px; font-weight: 800; letter-spacing: .02em; grid-row: span 2; }
+body.floorHome header .cuentaAvatar { display: none; }
+.hojaCuenta .cuentaAvatar.grande { width: 56px; height: 56px; font-size: 20px; flex: none; }
+.hojaCuenta { width: 100vw; max-width: none; max-height: 86dvh; margin: auto 0 0; padding: 0 20px 20px; border: 0; border-radius: 16px 16px 0 0 !important; box-sizing: border-box; }
+.hojaCuenta::backdrop { background: rgba(27, 42, 86, .35); }
+.hojaCuenta .hojaAsa { width: 40px; height: 4px; margin: 10px auto 12px; border-radius: 2px !important; background: var(--g-regla, #8c8c8c); }
+.cuentaCabeza { display: flex; align-items: center; gap: 14px; }
+.cuentaCabeza > div { flex: 1; min-width: 0; }
+.cuentaCabeza b { display: block; font-size: 20px; line-height: 1.2; }
+.cuentaCabeza small { display: block; font-size: 14px; color: var(--g-texto2, #262626); overflow-wrap: anywhere; }
+.cuentaCabeza .close { position: static; align-self: flex-start; }
+.cuentaPisos { list-style: none; margin: 0; padding: 0; }
+.cuentaPisos li { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #e1e7e8; }
+.cuentaPiso { flex: 1; display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 6px 0; border: 0; background: #fff; text-align: left; white-space: normal; }
+.cuentaPiso b { display: block; font-size: 16px; }
+.cuentaPiso small { display: block; font-size: 13px; color: var(--g-texto2, #262626); }
+.pisoNumero { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border: 1px solid var(--g-marca, #1b2a56); border-radius: 12px !important; font-size: 16px; font-weight: 800; }
+.cuentaPiso[aria-current=true] .pisoNumero { background: var(--g-azul, #0f5499); border-color: var(--g-azul, #0f5499); color: #fff; }
+.cuentaGuardar { flex: none; min-height: 40px; font-size: 13px; }
+.cuentaFilas { margin-top: 12px; border-top: 1px solid var(--g-marca, #1b2a56); }
+.cuentaFila { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 0; border: 0; background: #fff; font-size: 16px; font-weight: 600; text-align: left; }
+.cuentaFila span { width: 24px; font-size: 20px; text-align: center; }
+@media (min-width: 701px) { .hojaCuenta { width: 400px; margin: var(--cabecera, 64px) auto auto 12px; border-radius: 16px !important; box-shadow: 0 12px 40px rgba(27, 42, 86, .25); } }

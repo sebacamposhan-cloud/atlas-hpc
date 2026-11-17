@@ -1,5 +1,5 @@
 // Barra inferior, rueda de tarjetas de cada módulo y botones de función sobre el plano. La lógica vive en navegacion-model.mjs.
-import {TARJETAS, ICONOS, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar, tarjetasPara, cartasDelModulo, moduloDe, conPortada, consultaPiso, paraTerreno, opcionesMas, gruposMas} from './navegacion-model.mjs';
+import {TARJETAS, ICONOS, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar, tarjetasPara, cartasDelModulo, moduloDe, conPortada, consultaPiso, paraTerreno, opcionesMas, gruposMas, herramientasDelPiso, accesosMas} from './navegacion-model.mjs';
 import {alCambiarDispositivo} from './dispositivo.mjs';
 import {createResumenPiso} from './resumen-piso.mjs';
 import {funcionesDe} from './jerarquia-model.mjs';
@@ -47,16 +47,23 @@ export function createNavegacion(ctx) {
   const tituloModulo = () => moduloDe(modulo).titulo;
 
   function construirRueda() {
-    const permitidas = tarjetasPara(funcionesDe(ctx.perfil?.() || null)), todas = permitidas.filter(t=>!t.niveles||t.niveles.includes(nivel.id));
-    const nuevas = ctx.escritorio() ? todas : paraTerreno(todas), cartas = cartasDelModulo(nuevas, modulo), clave = modulo + '|' + nuevas.map(t => t.id + ':' + t.funciones.map(([f]) => f).join(',')).join('|');
+    const permitidas = tarjetasPara(funcionesDe(ctx.perfil?.() || null)), todas = herramientasDelPiso(permitidas.filter(t=>!t.niveles||t.niveles.includes(nivel.id)), nivel);
+    // Sin pantalla de módulos: en el escritorio la columna izquierda muestra la libreta y los grupos Control, Plano y
+    // Protocolos, uno debajo de otro. En el celular las mismas tarjetas están en «Más».
+    const escritorio = ctx.escritorio(), nuevas = escritorio ? todas : paraTerreno(todas);
+    const grupos = escritorio ? gruposMas(nuevas) : null, libreta = nuevas.find(t => t.id === 'tareas');
+    const cartas = escritorio ? [...(libreta ? [libreta] : []), ...grupos.flatMap(g => g.tarjetas)] : cartasDelModulo(nuevas, modulo);
+    const clave = (escritorio ? 'e|' : modulo + '|') + nuevas.map(t => t.id + ':' + t.funciones.map(([f]) => f).join(',')).join('|');
     if (clave === firma && pista) return false;
     firma = clave; lista = nuevas; pintarTerreno();
     rueda.setAttribute('aria-label', tituloModulo());
     // Control con libreta: la agenda (Hoy y Esta semana) va arriba de las tarjetas.
-    const conAgenda = modulo === 'control' && cartas.some(t => t.id === 'tareas');
-    rueda.innerHTML = `<div class="ruedaCabeza"><h2>${esc(tituloModulo())}</h2><button type="button" id="ruedaCerrar" aria-label="Cerrar ${esc(tituloModulo())}">×</button></div>
+    const conAgenda = (escritorio || modulo === 'control') && cartas.some(t => t.id === 'tareas');
+    const carta = t => `<button type="button" class="ruedaTarjeta" data-tarjeta="${t.id}"><svg class="panelArt" viewBox="0 0 160 100" aria-hidden="true">${t.dibujo}</svg><strong>${esc(t.titulo)}</strong><small>${esc(t.texto)}</small>${t.id === 'tareas' ? '<b class="ruedaContador" hidden></b>' : ''}</button>`;
+    const titulo = escritorio ? nivel.nombre : tituloModulo();
+    rueda.innerHTML = `<div class="ruedaCabeza"><h2>${esc(titulo)}</h2><button type="button" id="ruedaCerrar" aria-label="Cerrar ${esc(titulo)}">×</button></div>
     ${conAgenda ? '<div class="agendaObra" id="agendaObra" aria-label="Agenda" hidden></div>' : ''}
-    <div class="ruedaPista" tabindex="-1">${cartas.map(t => `<button type="button" class="ruedaTarjeta" data-tarjeta="${t.id}"><svg class="panelArt" viewBox="0 0 160 100" aria-hidden="true">${t.dibujo}</svg><strong>${esc(t.titulo)}</strong><small>${esc(t.texto)}</small>${t.id === 'tareas' ? '<b class="ruedaContador" hidden></b>' : ''}</button>`).join('')}</div>`;
+    <div class="ruedaPista" tabindex="-1">${escritorio ? (libreta ? carta(libreta) : '') + grupos.map(g => `<h3 class="ruedaGrupo">${esc(g.titulo)}</h3>${g.tarjetas.map(carta).join('')}`).join('') : cartas.map(carta).join('')}</div>`;
     pista = ctx.escritorio() ? pistaFija(rueda.querySelector('.ruedaPista')) : crearPista(rueda.querySelector('.ruedaPista'));
     marcarTarjeta();
     pista.tarjetas.forEach(t => t.onclick = () => elegirTarjeta(t.dataset.tarjeta));
@@ -133,7 +140,7 @@ export function createNavegacion(ctx) {
     if (foco) $('bottomObra').focus();
   }
 
-  function abrirHoja(titulo) { $('hojaTitulo').textContent = titulo; $('hojaCuerpo').innerHTML = '<p role="status">Cargando…</p>'; hoja.hidden = false; document.body.classList.add('hojaAbierta'); return $('hojaCuerpo'); }
+  function abrirHoja(titulo) { hoja.classList.remove('hojaAccesos'); $('hojaTitulo').textContent = titulo; $('hojaCuerpo').innerHTML = '<p role="status">Cargando…</p>'; hoja.hidden = false; document.body.classList.add('hojaAbierta'); return $('hojaCuerpo'); }
   function cerrarHoja() { if (hoja.hidden) return; hoja.hidden = true; document.body.classList.remove('hojaAbierta'); $('hojaCuerpo').replaceChildren(); }
   $('hojaCerrar').onclick = () => { cerrarHoja(); if (['tipos', 'criticos', 'mias', 'asignar', 'equipo'].includes(funcion)) { funcion = null; dibujarBarra(); } };
 
@@ -234,6 +241,10 @@ export function createNavegacion(ctx) {
     else if (id === 'tipos') { funcion = id; verTipos(); }
     else if (id === 'criticos') { funcion = id; verCriticos(); }
     else if (id === 'proyectos') $('markingOpen')?.click();
+    // Herramientas del plano: si había un panel abierto (Last Planner, Avance), se vuelve al plano.
+    else if (id === 'filtros') { if (ui.panelAbierto()) ui.show('map'); ui.openFilters(); }
+    else if (id === 'puertas') { if (ui.panelAbierto()) ui.show('map'); ctx.abrirPuertas?.(); }
+    else if (id === 'impermeabilizacion') { if (ui.panelAbierto()) ui.show('map'); ctx.abrirImpermeabilizacion?.(); }
     else if (id === 'mas') verMas();
     else if (actual === 'tareas') { funcion = id; const nombre = buscarTarjeta('tareas')?.funciones.find(([f]) => f === id)?.[1] || 'Mis tareas'; ctx.tareas?.mostrar(id, abrirHoja(nombre), {titulo: texto => { $('hojaTitulo').textContent = texto; }, cerrar: () => { cerrarHoja(); funcion = null; dibujarBarra(); }}); }
     recordar(); dibujarBarra();
@@ -273,12 +284,12 @@ export function createNavegacion(ctx) {
   }
 
   $('bottomObra').onclick = () => { if (rueda.hidden) abrirRueda(); else if (!portada()) cerrarRueda(true); };
-  // Modo terreno (celular o tablet vertical): la barra de abajo tiene tres botones grandes. «Buscar» lleva al buscador,
-  // «Mis tareas» abre la libreta (o Last Planner, si la cuenta no tiene libreta) y «Más» lista las tarjetas de todos los
-  // módulos, el cambio de módulo y la simbología. Avance y observaciones se hacen en el rombo del recinto. terreno.css
-  // esconde los botones de siempre (Módulos, Pisos, módulo) en terreno y estos en el escritorio.
-  const BUSCAR = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>';
-  document.querySelector('.bottomNav')?.insertAdjacentHTML('beforeend', `<button type="button" class="terrenoBoton" id="terrenoBuscar">${BUSCAR}<span class="terrenoNombre">Buscar</span></button>`
+  // Modo terreno (celular o tablet vertical): la barra de abajo tiene tres botones grandes. «Plano» cierra lo que esté
+  // abierto y deja el plano a la vista (el camino de vuelta, como «Inicio»), «Mis tareas» abre la libreta (o Last Planner,
+  // si la cuenta no tiene libreta) y «Más» sube los accesos de Control, Plano y Protocolos en cuadrícula. La búsqueda es
+  // la de arriba. Avance y observaciones se hacen en el rombo del recinto. terreno.css esconde los botones de siempre.
+  const PLANO = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>';
+  document.querySelector('.bottomNav')?.insertAdjacentHTML('beforeend', `<button type="button" class="terrenoBoton" id="terrenoPlano">${PLANO}<span class="terrenoNombre">Plano</span></button>`
     + `<button type="button" class="terrenoBoton" id="terrenoTareas" hidden>${ICONOS.mias}<span class="terrenoNombre">Mis tareas</span></button>`
     + `<button type="button" class="terrenoBoton" id="terrenoMas" aria-haspopup="dialog">${ICONOS.mas}<span class="terrenoNombre">Más</span></button>`);
   function pintarTerreno() {
@@ -288,26 +299,35 @@ export function createNavegacion(ctx) {
     boton.querySelector('.terrenoNombre').textContent = libreta ? 'Mis tareas' : 'Last Planner';
     document.querySelector('.bottomNav')?.style.setProperty('--botones-terreno', boton.hidden ? 2 : 3);
   }
-  function buscarTerreno() {
-    cerrarHoja(); cerrarRueda();
-    const s = $('globalSearch'); if (!s || s.disabled) return;
-    s.focus(); s.select?.();
+  function volverAlPlano() {
+    if (ctx.ocupado?.()) return;
+    cerrarHoja(); cerrarRueda(); ctx.cerrarModos();
+    if (actual) cerrarTarjeta();
+    ui.show('map');
+    // La ficha del recinto, si estaba abierta, también se cierra.
+    const ficha = $('closeDetail'); if (ficha && ficha.offsetParent) ficha.click();
   }
   function tareasTerreno() {
     if (abrirTareas('mias')) return;
     if (buscarTarjeta('lastplanner')) elegirTarjeta('lastplanner');
   }
+  // «Más»: accesos en cuadrícula por grupo, al estilo de una billetera móvil. Cada acceso abre su función directo.
   function masTerreno() {
     const cuerpo = abrirHoja('Más');
-    const grupos = gruposMas(lista), extra = opcionesMas(ctx.escritorio()).filter(([id]) => $(id));
-    cuerpo.innerHTML = grupos.map(g => `<h3 class="hojaGrupo">${esc(g.titulo)}</h3><ul class="hojaLista" data-sin-flujo>${g.tarjetas.map(t => `<li><button type="button" data-carta="${t.id}"><span><b>${esc(t.titulo)}</b><small>${esc(t.texto)}</small></span></button></li>`).join('')}</ul>`).join('')
-      + `<h3 class="hojaGrupo">Atlas</h3><ul class="hojaLista" data-sin-flujo><li><button type="button" data-ir="modulos"><span><b>Módulos</b><small>Control, Plano y Protocolos, con su selección de pisos</small></span></button></li>`
-      + extra.map(([id, nombre]) => `<li><button type="button" data-mas="${id}"><span><b>${esc(nombre)}</b></span></button></li>`).join('') + '</ul>';
-    cuerpo.querySelectorAll('[data-carta]').forEach(b => b.onclick = () => { cerrarHoja(); elegirTarjeta(b.dataset.carta); });
-    cuerpo.querySelectorAll('[data-mas]').forEach(b => b.onclick = () => { const destino = $(b.dataset.mas); cerrarHoja(); destino.click(); });
-    cuerpo.querySelector('[data-ir=modulos]').onclick = () => { cerrarHoja(); $('bottomModulos')?.click(); };
+    hoja.classList.add('hojaAccesos');
+    const icono = a => a.icono && ICONOS[a.icono] ? ICONOS[a.icono] : `<svg viewBox="0 0 160 100" aria-hidden="true">${a.dibujo || ''}</svg>`;
+    const grupos = accesosMas(lista);
+    cuerpo.innerHTML = grupos.map((g, i) => `<h3 class="hojaGrupo">${esc(g.titulo)}</h3><div class="accesos">${g.accesos.map((a, j) => `<button type="button" class="acceso" data-g="${i}" data-a="${j}"><span class="accesoIcono">${icono(a)}</span><span class="accesoNombre">${esc(a.nombre)}</span></button>`).join('')}</div>`).join('');
+    cuerpo.querySelectorAll('.acceso').forEach(b => b.onclick = () => {
+      const a = grupos[b.dataset.g].accesos[b.dataset.a];
+      cerrarHoja();
+      if (a.tarjeta === 'tareas') { abrirTareas(a.funcion); return; }
+      if (!a.funcion) { elegirTarjeta(a.tarjeta); return; }
+      if (actual !== a.tarjeta) cambiarTarjeta(a.tarjeta);
+      elegirFuncion(a.funcion);
+    });
   }
-  if ($('terrenoBuscar')) { $('terrenoBuscar').onclick = buscarTerreno; $('terrenoTareas').onclick = tareasTerreno; $('terrenoMas').onclick = masTerreno; }
+  if ($('terrenoPlano')) { $('terrenoPlano').onclick = volverAlPlano; $('terrenoTareas').onclick = tareasTerreno; $('terrenoMas').onclick = masTerreno; }
   construirRueda(); rotular(); dibujarFranja(); pintarTerreno();
   activarFlujos();
   // Al sincronizar puede llegar (o irse) el perfil: se rearma la rueda y se actualiza el contador.

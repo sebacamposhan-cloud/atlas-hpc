@@ -9,9 +9,13 @@ body.escritorio:not(.floorHome) { --barra-obra: 0px; }
 /* La barra de abajo sube a la columna izquierda. */
 body.escritorio:not(.floorHome) .bottomNav { position: fixed; top: var(--cabecera); left: 0; right: auto; bottom: auto; width: var(--izq); height: 56px; padding: 0; box-sizing: border-box; border: 0; border-right: 2px solid var(--g-marca); border-bottom: 1px solid var(--g-marca); z-index: 36; }
 body.escritorio:not(.floorHome) .bottomNav button { font-size: 13px; }
+/* Sin pantalla de módulos ni pila de pisos: la columna izquierda empieza bajo la cabecera, con la libreta y los grupos
+   Control, Plano y Protocolos. Los pisos se cambian desde tu cuenta (arriba a la izquierda). */
+body.escritorio:not(.floorHome) .bottomNav { display: none !important; }
+body.escritorio:not(.floorHome) #ruedaObra .ruedaGrupo { margin: 10px 0 0; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; color: var(--g-texto2, #262626); }
 
 /* Columna izquierda: el módulo y sus tarjetas. */
-body.escritorio:not(.floorHome) #ruedaObra, body.escritorio:not(.floorHome) #ruedaObra[hidden] { display: flex !important; flex-direction: column; justify-content: flex-start; gap: 12px; position: fixed; left: 0; right: auto; top: calc(var(--cabecera) + 56px); bottom: 0; width: var(--izq); box-sizing: border-box; padding: 14px 14px 24px; overflow-y: auto; z-index: 30; background: #fff; border: 0; border-right: 2px solid var(--g-marca); animation: none; }
+body.escritorio:not(.floorHome) #ruedaObra, body.escritorio:not(.floorHome) #ruedaObra[hidden] { display: flex !important; flex-direction: column; justify-content: flex-start; gap: 12px; position: fixed; left: 0; right: auto; top: var(--cabecera); bottom: 0; width: var(--izq); box-sizing: border-box; padding: 14px 14px 24px; overflow-y: auto; z-index: 30; background: #fff; border: 0; border-right: 2px solid var(--g-marca); animation: none; }
 body.escritorio:not(.floorHome) #ruedaObra .ruedaCabeza { justify-content: flex-start; min-height: 0; padding: 0; }
 body.escritorio:not(.floorHome) #ruedaObra .ruedaCabeza h2 { font-size: 22px; line-height: 1.15; }
 body.escritorio:not(.floorHome) #ruedaCerrar { display: none !important; }
