@@ -5,7 +5,8 @@ const BUCKET = 'atlas-campo', MAX_JSON = 2500000, MAX_FOTO = 5242880, PAGINA = 5
 // «contorno»: correcciones del editor de contornos, un registro por recinto (supabase/contornos.sql).
 // «planilla»: avance por recinto leído de la planilla de la oficina, un registro por piso (supabase/planillas-avance.sql).
 // «avance»: lo marcado en terreno por recinto (rombo, ficha y pincel de proyectos de partida), id «av_…» (supabase/avance-terreno.sql).
-const TIPOS = ['proyecto', 'observacion', 'contorno', 'planilla', 'avance'];
+// «programa»: programa de obra de Sacyr por piso, con las ventanas por sector de Planificación (supabase/programa-obra.sql).
+const TIPOS = ['proyecto', 'observacion', 'contorno', 'planilla', 'avance', 'programa'];
 const fallo = (status, message) => Object.assign(Error(message), {status});
 
 const INCORRECTOS = 'Usuario o contraseña incorrectos.';

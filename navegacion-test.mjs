@@ -185,7 +185,7 @@ function fluido(opciones = {}) {
     assert.equal(g.tamano, 'grande', selector);
     for (const [clave, c] of Object.entries(g.cartas)) assert.ok(c.dibujo.startsWith('<') && c.texto.length <= 26, clave);
   }
-  assert.deepEqual(Object.keys(GRUPOS.find(g => g.selector === '.lpCycleNav').cartas), ['resumen', 'planificacion', 'ejecucion', 'revision']);
+  assert.deepEqual(Object.keys(GRUPOS.find(g => g.selector === '.lpCycleNav').cartas), ['resumen', 'programa', 'planificacion', 'ejecucion', 'revision']);
   const boton = (attrs, dataset = {}) => ({getAttribute: a => attrs[a] ?? null, dataset});
   assert.equal(indiceActivo([boton({'aria-pressed': 'false'}), boton({'aria-pressed': 'true'})]), 1);
   assert.equal(indiceActivo([boton({'aria-selected': 'true'})]), 0);

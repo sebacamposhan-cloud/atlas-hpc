@@ -1,8 +1,14 @@
 // Curva de avance: % acumulado de partidas instaladas por semana, real contra programado. Solo con registros reales.
+// La línea programada sale del programa de obra (programa-obra-model.mjs): cada partida del recinto avanza lineal entre el
+// inicio y el término de su tarea del programa en el piso.
+import {fraccionProgramada} from './programa-obra-model.mjs';
 const SEMANA = 7 * 864e5;
 const fecha = d => Date.parse(d + 'T12:00:00Z'), dia = t => new Date(t).toISOString().slice(0, 10);
 const uno = v => Math.round(v * 10) / 10;
 const corta = d => d.slice(8, 10) + '/' + d.slice(5, 7);
+// Con el programa la curva cubre años: el eje va en mes y año, y el detalle lleva el año.
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+const mesAno = d => MESES[Number(d.slice(5, 7)) - 1] + ' ' + d.slice(2, 4);
 // Curva real: partidas instaladas acumuladas según la fecha del registro de su recinto. Sin programa cargado, no hay línea programada.
 export function curvaReal(fechas, total, hoy) {
   if (!total || !fechas.length) return [];
@@ -10,6 +16,21 @@ export function curvaReal(fechas, total, hoy) {
   return Array.from({length: semanas + 1}, (_, i) => {
     const corte = h - (semanas - i) * SEMANA;
     return {fecha: dia(corte), programado: null, real: uno(100 * fechas.filter(f => fecha(f) <= corte).length / total)};
+  });
+}
+
+// Con programa: planes[i] = {inicio, fin} de la tarea i (null si el programa no la trae; cuenta como no programada).
+// Va desde lo primero (registro o inicio programado) hasta lo último programado; después de hoy solo hay línea programada.
+export function curvaConPrograma(fechas, total, hoy, planes) {
+  const conPlan = (planes || []).filter(Boolean);
+  if (!total || !conPlan.length) return curvaReal(fechas, total, hoy);
+  const h = fecha(hoy), primera = Math.min(h, ...fechas.map(fecha), ...conPlan.map(p => fecha(p.inicio))), ultima = Math.max(h, ...conPlan.map(p => fecha(p.fin)));
+  // Una semana antes de lo primero, para que ambas líneas partan de cero.
+  const atras = Math.ceil((h - primera) / SEMANA) + 1, adelante = Math.ceil((ultima - h) / SEMANA);
+  return Array.from({length: atras + adelante + 1}, (_, i) => {
+    const corte = h + (i - atras) * SEMANA, d = dia(corte);
+    return {fecha: d, programado: uno(100 * conPlan.reduce((a, p) => a + fraccionProgramada(p.inicio, p.fin, d), 0) / total),
+      real: corte <= h ? uno(100 * fechas.filter(f => fecha(f) <= corte).length / total) : null};
   });
 }
 
@@ -30,7 +51,7 @@ function textoResumen(r) {
 // Tarjeta del gráfico. Se dibuja al ancho real, para que los textos no se achiquen en el celular.
 export function montarCurva(root, {puntos}, esc) {
   const r = resumenCurva(puntos), hayPrograma = puntos.some(p => p.programado !== null);
-  root.innerHTML = `<div class="chartHeading"><h3>Avance real vs programado</h3><span>% de partidas instaladas</span></div>${!r ? '<p class="chartEmpty">El gráfico aparecerá cuando se instalen partidas registradas.</p>' : `<div class="curvaResumen">${textoResumen(r)}</div>${hayPrograma ? '<div class="curvaLeyenda"><span><i class="real"></i>Real</span><span><i class="programado"></i>Programado</span></div>' : '<p class="chartSubtitle">Falta cargar el programa de obra para compararlo.</p>'}<div class="curvaGrafico"><div class="curvaDato" hidden></div></div><details class="obsCerradas curvaTabla"><summary>Ver tabla</summary><div class="tableScroll"><table><thead><tr><th>Semana</th><th>Programado</th><th>Real</th></tr></thead><tbody>${puntos.map(p => `<tr><td>${esc(corta(p.fecha))}</td><td>${pct(p.programado)}</td><td>${pct(p.real)}</td></tr>`).join('')}</tbody></table></div></details>`}`;
+  root.innerHTML = `<div class="chartHeading"><h3>Avance real vs programado</h3><span>% de partidas instaladas</span></div>${!r ? '<p class="chartEmpty">El gráfico aparecerá cuando se instalen partidas registradas.</p>' : `<div class="curvaResumen">${textoResumen(r)}</div>${hayPrograma ? '<div class="curvaLeyenda"><span><i class="real"></i>Real</span><span><i class="programado"></i>Programado</span></div>' : '<p class="chartSubtitle">Falta cargar el programa de obra para compararlo.</p>'}<div class="curvaGrafico"><div class="curvaDato" hidden></div></div><details class="obsCerradas curvaTabla"><summary>Ver tabla</summary><div class="tableScroll"><table><thead><tr><th>Semana</th><th>Programado</th><th>Real</th></tr></thead><tbody>${puntos.map(p => `<tr><td>${esc(corta(p.fecha) + (puntos.length > 26 ? '/' + p.fecha.slice(2, 4) : ''))}</td><td>${pct(p.programado)}</td><td>${pct(p.real)}</td></tr>`).join('')}</tbody></table></div></details>`}`;
   if (!r) return;
   const zona = root.querySelector('.curvaGrafico'), dato = zona.querySelector('.curvaDato');
   const pintar = () => {
@@ -39,7 +60,7 @@ export function montarCurva(root, {puntos}, esc) {
     const linea = campo => puntos.flatMap((p, i) => p[campo] === null ? [] : [`${x(i).toFixed(1)} ${y(p[campo]).toFixed(1)}`]).map((c, i) => (i ? 'L' : 'M') + c).join('');
     const ultimo = puntos.reduce((u, p, i) => p.real !== null ? i : u, 0), cada = Math.max(1, Math.ceil(n / Math.max(3, Math.floor(w / 80))));
     const ejeY = [0, 25, 50, 75, 100].map(v => `<line class="curvaGrilla" x1="${m.izquierda}" x2="${w - m.derecha}" y1="${y(v)}" y2="${y(v)}"/><text x="${m.izquierda - 8}" y="${y(v) + 4}" text-anchor="end">${v} %</text>`).join('');
-    const ejeX = puntos.map((p, i) => i % cada ? '' : `<text x="${x(i)}" y="${h - 8}" text-anchor="middle">${esc(corta(p.fecha))}</text>`).join('');
+    const ejeX = puntos.map((p, i) => i % cada ? '' : `<text x="${x(i)}" y="${h - 8}" text-anchor="middle">${esc(n > 26 ? mesAno(p.fecha) : corta(p.fecha))}</text>`).join('');
     const hoyX = x(ultimo), real = puntos[ultimo].real, prog = puntos[ultimo].programado;
     const marca = (v, color) => `<circle cx="${hoyX}" cy="${y(v)}" r="4" fill="${color}" stroke="#fff" stroke-width="2"/>`;
     // A la derecha del día de hoy si el texto cabe; si no, a su izquierda.
@@ -54,7 +75,7 @@ export function montarCurva(root, {puntos}, esc) {
       cruz.setAttribute('x1', px); cruz.setAttribute('x2', px); cruz.setAttribute('visibility', 'visible');
       dato.replaceChildren();
       const fila = (nombre, valor) => { if (valor === null && nombre === 'Programado' && !hayPrograma) return; const f = document.createElement('div'), v = document.createElement('b'); v.textContent = pct(valor); f.append(v, ' ' + nombre); dato.append(f); };
-      const t = document.createElement('small'); t.textContent = 'Semana del ' + corta(p.fecha); dato.append(t);
+      const t = document.createElement('small'); t.textContent = 'Semana del ' + corta(p.fecha) + (n > 26 ? '/' + p.fecha.slice(2, 4) : ''); dato.append(t);
       fila('Real', p.real); fila('Programado', p.programado);
       dato.hidden = false; dato.style.left = Math.max(0, Math.min(w - 140, px + (px > w / 2 ? -148 : 8))) + 'px'; dato.style.top = '18px';
     };
