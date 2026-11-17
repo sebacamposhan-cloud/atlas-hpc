@@ -7,6 +7,7 @@
 // dibuja el panel de avance del recinto (bajo su nombre) y el bloque de protocolos previos de todas sus partidas.
 import {loadPma} from './pma.mjs';
 import {nivel} from './level.mjs';
+import {lineaCielo} from './cielos-lamina.mjs';
 import {tasksFor, reportProgress, keyFor, fields, ESTADOS_PARTIDA, COLOR_PARTIDA, estadoPartida, actualizarPartida, esMuro, muroUnico} from './room-progress-model.mjs';
 import {readProgress, saveProgress} from './room-progress-store.mjs';
 import {progressFloors, progressFloor} from './progress-scope.mjs';
@@ -118,6 +119,7 @@ export function createRombo(ctx) {
       <section class="romboPartida" aria-live="polite"><button type="button" class="romboVolver" data-rombo-volver>← Rombo</button>
         <div class="romboEncabezado"><div class="romboMini">${romboSVG(partes, elegido, esc, true)}</div><div class="romboTitulo"><h4>${esc(nombreElegido)} · ${elegido === 'M' ? '' : esc(elegido) + ' · '}${esc(codigoElegido)}</h4><span class="romboChip" style="--c:${COLOR_PARTIDA[estado]}">${esc(estado)}</span></div></div>
         <p class="romboTipo">${esc(t?.description || room.finishes?.find(f => f.field === elegido)?.description || 'Sin descripción en el PMA')}</p>
+        ${elegido === 'CIE' && lineaCielo(room.code) ? `<p class="romboCielo">${esc(lineaCielo(room.code).texto)}</p>${lineaCielo(room.code).difiere ? `<p class="pmaWarning">El cielo de la lámina no coincide con el del PMA (${esc(lineaCielo(room.code).pma.join(', '))}).</p>` : ''}` : ''}
         <p class="romboDesc">${t && elegido !== 'PAV' && t.asepsis ? `Asepsia ${esc(t.asepsis)} ` : ''}${ctx.verCodigo && !['—', 'N/A', '-'].includes(codigoElegido) ? ` <button type="button" class="romboVerCodigo" data-rombo-ver-codigo>Ver en el plano los recintos con ${elegido === 'M' ? 'muros' : esc(elegido)} ${esc(codigoElegido.split(' / ')[0])}</button>` : ''}</p>
         ${aplica && !firmante() ? '<p class="romboNota romboSesion">Inicia sesión en Atlas para marcar el avance. <button type="button" data-rombo-entrar>Entrar</button></p>' : ''}
         ${traspasar ? '<p class="romboNota">Marcada antes en el rombo: al marcar una partida, ese estado pasa a todas las de esta terminación.</p>' : ''}

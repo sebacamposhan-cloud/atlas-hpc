@@ -103,3 +103,6 @@
 .previoTexto b { color: #000; }
 .previoTexto small { font-size: 11px; color: #262626; }
 .progressEditor .avanceRecinto, .progressEditor .protocolosPrevios, #avanceEditor .avanceRecinto, #avanceEditor .protocolosPrevios { max-width: 560px; margin-left: auto; margin-right: auto; }
+
+/* Cielo según la lámina CIE (cielos-lamina.mjs): tipo y altura NCT, en la terminación CIE del rombo. */
+.romboCielo { margin: 4px 0 8px; font-size: 15px; font-weight: 700; color: var(--g-marca, #1b2a56); }

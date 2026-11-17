@@ -6,6 +6,7 @@ Lo que hoy existe solo en el −1 (Impermeabilización con la ficha rápida de S
 |---|---|---|
 | `imp: 'n02'` | Impermeabilización en Herramientas y en el tipo de plano; Proyectos → «Avance de artefactos · plano N02» | `impermeabilizacion/n02.json`, `n02-export.pdf`, `disciplines/imp-n02/`, `source/imp-n02.pdf` y, para los artefactos, `impermeabilizacion/artefactos-n02.json` |
 | `especialidades: true` | Cielos y Pavimentos en el tipo de plano | `<datos>disciplines.json` con sus documentos `ceilings` y `floors` y sus teselas en `disciplines/` |
+| `cielos: true` | Cielos como tipo de plano (capa «Cielos según lámina CIE» y «Altura de cielo NCT») y la línea de la lámina en el rombo | `<datos>cielos.json`, de `node scripts/cielos/extraer-cie.mjs <libredwg> <carpeta DWG CIE> <piso> <datos>` |
 | `puertas: true` | Puertas en Herramientas y en el tipo de plano (plano de puertas por recinto) | `<datos>puertas.json` |
 | `puertasPiloto: true` | Puertas como catálogo piloto (hoy solo el −1) | `doors/catalog.json` |
 

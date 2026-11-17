@@ -100,7 +100,7 @@ export const GRUPOS = [
   {selector: '.obsStateTabs', boton: 'button', tamano: 'media'},
   {selector: '.lpDays', boton: 'button', tamano: 'media'},
   {selector: '.planTypes:not([data-sin-flujo])', boton: 'button', tamano: 'baja'},
-  {selector: '.filterTiposPlano', boton: 'button', tamano: 'baja'},
+  // .filterTiposPlano (Especialidad en Filtros y capas) queda como fila de botones: como carrusel cortaba los tipos.
   {selector: '.lpSpatialModes', boton: 'button', tamano: 'baja'},
   // Formularios y listas. soloVisibles: la búsqueda de la lista esconde filas.
   {selector: '.jerPasos', boton: 'button', tamano: 'baja'},

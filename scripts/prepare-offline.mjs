@@ -25,7 +25,7 @@ for(const name of walk('protocols/registers'))add(name);
 // Las fichas de todos los pisos (runtime.json, contornos y ejes, unos 200 KB cada uno) van en la base, así la búsqueda
 // y las fichas se abren siempre, aunque el plano de ese piso no esté guardado. La lista de pisos sale de pisos.js.
 // Las páginas de redirección n0x/index.html no se guardan (solo la portada es HTML).
-const fichasPiso=/^n\d\d\/(runtime|contornos|ejes)\.json$/;
+const fichasPiso=/^n\d\d\/(runtime|contornos|ejes|cielos)\.json$/;
 const carpetasPiso=[...fs.readFileSync(path.join(dist,'pisos.js'),'utf8').matchAll(/datos:\s*'([a-z0-9-]+)\/'/g)].map(m=>m[1]);
 for(const carpeta of carpetasPiso) for(const name of walk(carpeta)) if(!/\.(html|txt)$/.test(name)) add(name,fichasPiso.test(name)?'plan':carpeta,fichasPiso.test(name));
 // Nivel −1: sus datos viven en la raíz (plano, láminas de especialidades, impermeabilización y geometría).

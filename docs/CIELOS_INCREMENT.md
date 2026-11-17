@@ -50,3 +50,22 @@ Las nueve suites Node de la línea base y la nueva suite del modelo pasan. El re
 ## Pendientes
 
 Continúan pendientes la validación técnica de contornos CIE, alineación por puntos de control, revisión de los atributos extraídos, posiciones PAV, ensayos Safari/iPhone físicos y modo avión real. Protocolos/avances locales y el piloto de puertas conservan su alcance previo; las puertas no constituyen un inventario fiable. No hay sincronización multiusuario.
+
+## Cielos de N01–N04 desde las láminas CIE (2026-11-16)
+
+Los pisos 1 a 4 no tienen láminas PDF de cielos como el −1. Sus cielos salen de las láminas DWG `HPC-ARQ-CIE-N0x-A-50x` (cielo reflejado), con `scripts/cielos/extraer-cie.mjs`, y quedan en `dist/n0x/cielos.json`. La marca `cielos: true` en `pisos.js` los activa.
+
+- **Qué se lee:** el tipo de cielo de cada recinto (etiqueta 201…219 de la capa A-AREA-IDEN) y su altura (`NCT 2,80 m`, capa A-CLNG-IDEN).
+- **Cómo se ubica:** las láminas no traen muros (vienen por referencia), así que se calzan sobre el plano de Atlas con los códigos de recinto. Se usa una semejanza por mínimos cuadrados, con el eje Y invertido y descartando los que no calzan. El giro queda bajo 1° y el residuo mediano entre 0,4 y 0,8 m, que es la distancia entre rótulos. Cada etiqueta se asigna al recinto que la contiene, o al más cercano a menos de 0,6 m.
+- **Resultado:**
+
+  | Piso | Con tipo de cielo | Con NCT | Nota |
+  |---|---|---|---|
+  | N01 | 339 | 316 | |
+  | N02 | 352 | 312 | |
+  | N03 | 297 | 236 | No hay lámina A-501 |
+  | N04 | 208 | 150 | La A-502 no comparte códigos con el plano |
+
+  En todos los recintos el tipo de la lámina coincide con el del PMA. Si alguno difiere, el rombo lo avisa.
+- **En la app:** en Filtros y capas → Especialidad, «Cielos» pinta la capa «Cielos según lámina CIE». También hay una capa «Altura de cielo (NCT)». En el rombo, la terminación CIE muestra «Lámina CIE A-50x: cielo 2xx · NCT x,xx m».
+- **Prueba:** `node cielos-test.mjs`.

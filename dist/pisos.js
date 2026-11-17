@@ -5,6 +5,8 @@
    - imp: código de su lámina de Impermeabilización (por ejemplo 's01'): impermeabilizacion/<imp>.json, el avance de
      artefactos impermeabilizacion/artefactos-<imp>.json y las teselas disciplines/imp-<imp>/ (scripts/imp/LEEME.md).
      Sin «imp», el piso no muestra Impermeabilización ni artefactos.
+   - cielos: tiene sus láminas CIE leídas (<datos>cielos.json, scripts/cielos/extraer-cie.mjs): tipo de cielo y NCT por
+     recinto como capas sobre Arquitectura y en el rombo.
    - puertas: tiene el plano de puertas por recinto (<datos>puertas.json, puertas.mjs).
    - puertasPiloto: tiene el catálogo piloto de puertas como tipo de plano (doors/catalog.json; hoy el −1).
    Todo lo especial de un piso depende de estas marcas, nunca de que sea el −1.
@@ -13,10 +15,10 @@
   'use strict';
   var PISOS = [
     {id: 'N-1', nombre: 'Nivel −1', corto: '−1', datos: '', especialidades: true, imp: 's01', puertasPiloto: true},
-    {id: 'N01', nombre: 'Nivel 1', corto: '1', datos: 'n01/', especialidades: false},
-    {id: 'N02', nombre: 'Nivel 2', corto: '2', datos: 'n02/', especialidades: false, puertas: true},
-    {id: 'N03', nombre: 'Nivel 3', corto: '3', datos: 'n03/', especialidades: false},
-    {id: 'N04', nombre: 'Nivel 4', corto: '4', datos: 'n04/', especialidades: false}
+    {id: 'N01', nombre: 'Nivel 1', corto: '1', datos: 'n01/', especialidades: false, cielos: true},
+    {id: 'N02', nombre: 'Nivel 2', corto: '2', datos: 'n02/', especialidades: false, cielos: true, puertas: true},
+    {id: 'N03', nombre: 'Nivel 3', corto: '3', datos: 'n03/', especialidades: false, cielos: true},
+    {id: 'N04', nombre: 'Nivel 4', corto: '4', datos: 'n04/', especialidades: false, cielos: true}
   ];
   var pedido = new URLSearchParams(location.search).get('nivel');
   var actual = PISOS.find(function (piso) { return piso.id === pedido; }) || PISOS[0];
