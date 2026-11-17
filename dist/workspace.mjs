@@ -3,6 +3,7 @@ import {renderAvanceControl} from './avance.mjs';
 import {renderAvancePartida} from './avance-partida.mjs';
 import {supplementalSources} from './supplemental-sources.mjs';
 import {createPlanFilters} from './plan-filters.mjs';
+import {createBuscadorTerminaciones} from './buscador-terminaciones.mjs';
 import {renderProtocolCritical} from './protocol-critical.mjs';
 import {renderProtocolCatalog} from './protocol-catalog.mjs';
 import {categories,distribution,matchesLayers,categoryAppearance,layerNames,auditRoom,UNKNOWN} from './layers.mjs';
@@ -46,6 +47,7 @@ export function createWorkspace(ctx){
    categoriasDe:r=>active==='selected'?[]:categories(r,active).filter(k=>!filters[active]?.length||filters[active].includes(k)).map(k=>({nombre:label(active,k),color:categoryAppearance(active,k,colors).color}))};
  }
  function legend(){
+  buscador.actualizar();
   const root=$('activeLegend'),hasFilters=Object.values(filters).some(v=>v.length);
   root.hidden=!enabled&&!hasFilters;if(root.hidden)return;
   root.classList.toggle('minimized',legendMinimized);
@@ -57,8 +59,19 @@ export function createWorkspace(ctx){
  }
  function exportCSV(){const r=rows().filter(r=>!quality||auditRoom(r,ctx.hasGeometry(r.id)).length);const cell=v=>'"'+String(v??'').replace(/^[=+@-]/,"'$&").replaceAll('"','""')+'"';const fields=['Código','Nombre','Nivel','Sector','Estado','PAV','M1','M2','M3','M4','CIE','Asepsia','Fuente','Revisión'];const lines=r.map(v=>[v.code,v.name,v.level,v.sector,v.status,...['PAV','M1','M2','M3','M4','CIE'].map(k=>v.finishes.find(f=>f.field===k)?.description||UNKNOWN),v.asepsis.join(', '),v.document_id,ctx.data().documents.find(d=>d.id===v.document_id)?.revision]);ctx.download(new Blob(['\uFEFF'+[fields,...lines].map(a=>a.map(cell).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'}),archivo('Atlas_HPC_recintos.csv'));}
  function exportGeometry(){ctx.download(new Blob([JSON.stringify({format:'atlas-hpc-selection-v1',coordinateSystem:'plano unificado; unidades PDF',warning:'Superficies de consulta; revisar estado técnico individual',rooms:rows().map(r=>({id:r.id,code:r.code,level:r.level,source:r.document_id,geometry_status:r.geometry_status,geometry:ctx.footprint(r.id)}))},null,2)],{type:'application/json'}),archivo('Atlas_HPC_geometrias.json'));}
- $('globalSearch').oninput=e=>{$('search').value=e.target.value;ctx.search();};$('globalSearch').onkeydown=e=>{if(e.key==='Enter'){show('map');if(esEscritorio())document.body.classList.remove('hideLeft');else e.target.blur();dispatchEvent(new Event('atlas-buscar-enter'));ctx.search();}};
+ $('globalSearch').oninput=e=>{if(buscador.ofrece(e.target.value))return;$('search').value=e.target.value;ctx.search();};$('globalSearch').onkeydown=e=>{if(e.key==='Enter'){show('map');if(esEscritorio())document.body.classList.remove('hideLeft');else e.target.blur();dispatchEvent(new Event('atlas-buscar-enter'));ctx.search();}};
  window.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();$('globalSearch').focus();}});
+ // Lista de terminaciones bajo la caja (buscador-terminaciones.mjs): un tipo a la vez. Un sector enciende además sus bordes.
+ let bordesPorBuscador=false;
+ function bordesSectores(ver){const casilla=document.querySelector('[data-overlay-toggle="sectores"]');if(!casilla||casilla.checked===ver)return false;casilla.checked=ver;casilla.dispatchEvent(new Event('change'));return true;}
+ function soloUno(){const elegidos=Object.entries(filters).filter(([,v])=>v.length);return elegidos.length===1&&elegidos[0][1].length===1?[elegidos[0][0],elegidos[0][1][0]]:null;}
+ const buscador=createBuscadorTerminaciones({input:$('globalSearch'),etiqueta:label,muestra:swatch,activo:soloUno,
+  disponible:()=>!document.body.classList.contains('floorHome')&&['architecture',undefined].includes(document.querySelector('main')?.dataset.discipline),
+  distribucion:tipo=>distribution(all(),tipo).filter(([k])=>!(tipo==='sector'&&k===UNKNOWN)),
+  elegir:(tipo,clave)=>{ctx.architecture?.();filters={[tipo]:[clave]};active=tipo;enabled=true;$('globalSearch').value='';$('search').value='';
+   if(tipo==='sector')bordesPorBuscador=bordesSectores(true)||bordesPorBuscador;else if(bordesPorBuscador){bordesSectores(false);bordesPorBuscador=false;}
+   $('globalSearch').blur();show('map');ctx.refresh();},
+  quitar:()=>{filters={};enabled=false;if(bordesPorBuscador){bordesSectores(false);bordesPorBuscador=false;}ctx.refresh();}});
  function saveColors(){try{localStorage.setItem('atlas-layer-colors',JSON.stringify(colors));}catch{ctx.toast('No se pudo guardar la preferencia de color.');}}
  const drawer=createPlanFilters({esc,label,all,rows,capas:ctx.capas,mostrarCapa:ctx.mostrarCapa,state:()=>({active,filters,enabled,colors}),query:()=>$('globalSearch').value,editing:ctx.editing,toast:ctx.toast,resize:ctx.resize,enter:()=>{ctx.architecture?.();show('map');},search:value=>{$('globalSearch').value=value;$('search').value=value;ctx.search();},change:(value,search=true)=>{if(value.active)active=value.active;if('enabled' in value)enabled=value.enabled;if(search)ctx.refresh();else ctx.redraw();},filter:(type,keys)=>{filters[type]=keys;enabled=true;ctx.refresh();},color:(type,key,value)=>{colors[type+'|'+key]=value;saveColors();ctx.redraw();},resetColors:type=>{for(const key of Object.keys(colors))if(key.startsWith(type+'|'))delete colors[key];saveColors();ctx.redraw();},reset:ctx.reset});
  return {show,refresh,clear,rows,resumenFiltro,abrirPanel,panelAbierto:()=>module==='work'?workTab:null,vistaDe:id=>vistas[id],pintarCapa,openFilters:drawer.open,closeFilters:drawer.close,filtersOpen:drawer.isOpen,paint,appearance,legend,setLayer:type=>{enabled=!!type;if(type)active=type;show('map');ctx.refresh();},filters:()=>filters,enabled:()=>enabled,layer:()=>active,apply};
