@@ -56,6 +56,8 @@ export function createRombo(ctx) {
   const esc = ctx.esc;
   // Dos pasos: el rombo del recinto, y al tocar una parte su menú de avance. abierta: partida con sus palancas desplegadas.
   let elegido = 'PAV', menu = false, abierta = null, recinto = null;
+  // Las partes del último rombo dibujado de cada recinto: el formulario de observación las muestra igual.
+  const ultimas = new Map();
   async function ficha(root, room, {alGuardar = () => {}, panel = null, previos = null} = {}) {
     const serial = (Number(root.dataset.romboSerial) || 0) + 1; root.dataset.romboSerial = serial;
     if (recinto !== room.code) { recinto = room.code; menu = false; abierta = null; }
@@ -81,6 +83,7 @@ export function createRombo(ctx) {
     const partes = Object.fromEntries(Object.keys(ZONAS).map(c => [c, esMuro(c)
       ? {codigo: codigo(c), estado: !todas.length ? 'Sin definición' : marcadaUna(c)?.applicable ? estadoMuros : estadoPartida(marcadaUna(c)), pendientes: c === primerMuro ? pendientes('M').length : 0}
       : {codigo: codigo(c), estado: todas.length ? estadoPartida(tarea(c)) : 'Sin definición', pendientes: pendientes(c).length}]));
+    ultimas.set(String(room.code).trim(), partes);
     const avisos = [...(fila?.warnings || []), ...(actual && model && actual.sourceSha !== model.source.sha256 ? ['El avance guardado es de otra versión del PMA.'] : [])];
     const registrable = !!(model && todas.length);
     const t = tarea(elegido), estado = elegido === 'M' ? estadoMuros : partes[elegido].estado, aplica = registrable && t?.applicable && t?.documented;
@@ -205,5 +208,5 @@ export function createRombo(ctx) {
     root.querySelectorAll('[data-rombo-inst]').forEach(b => b.onclick = () => { if (!sinCambio(b)) guardarDirecto({installation: b.dataset.romboInst}); });
     root.querySelectorAll('[data-rombo-cal]').forEach(b => b.onclick = () => { if (!sinCambio(b)) guardarDirecto({quality: b.dataset.romboCal}); });
   }
-  return {ficha};
+  return {ficha, partesDe: code => ultimas.get(String(code ?? '').trim()) || null};
 }

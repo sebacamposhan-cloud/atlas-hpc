@@ -6,6 +6,8 @@ import {iniciarNube} from './nube.mjs';
 import {leerMemoria,guardarMemoria,MODULOS,moduloDe,conPortada,consultaPiso,leerConsulta,pisosEnOrden,pisoParaAbrir,pisoDeEntrada} from './navegacion-model.mjs';
 import {crearFluido,arrastrar,crearOleaje} from './fluido.mjs';
 import {crearPista} from './selector-flujo.mjs';
+import {crearRodillo} from './rodillo-pisos.mjs';
+let rodilloPiso=null;
 iniciarNube();
 const $=id=>document.getElementById(id),floors=window.ATLAS_TARJETAS,active=window.ATLAS_PISO;
 const root=window.ATLAS_RAIZ;
@@ -172,29 +174,46 @@ const mb=b=>(b/1e6).toLocaleString('es-CL',{maximumFractionDigits:0})+' MB';
 function pintarCuenta(){
  const u=usuario();avatar.textContent=iniciales(u);
  if(!hojaCuenta.open)return;
- const sc=window.atlasSinConexion?.estado?.()||null,online=navigator.onLine;
- const estadoPiso=f=>{const p=sc?.packs?.[packDe(f)];if(!p)return '';if(p.ready)return 'Guardado sin conexión ✓';if(sc.downloading===packDe(f))return 'Guardando…';return 'Sin guardar'+(p.count?' · '+Math.round(p.count/p.total*100)+' %':'');};
- const puedeGuardar=f=>{const p=sc?.packs?.[packDe(f)];return p&&!p.ready&&online&&sc.downloading!==packDe(f);};
+ const {estadoPiso,guardarHTML}=estadosSinConexion();
  const lista=floors.filter(f=>f.piso);
  hojaCuenta.innerHTML=`<div class="hojaAsa" aria-hidden="true"></div>
   <div class="cuentaCabeza"><span class="cuentaAvatar grande" aria-hidden="true">${escapar(iniciales(u))}</span><div><b>${escapar(nombreDe(u).replace(/@.*/,'')||'Atlas HPC')}</b><small>${escapar(u?.username||'Sin sesión en este equipo')}</small></div><button type="button" class="close" data-cerrar aria-label="Cerrar">×</button></div>
   <h3 class="hojaGrupo">${lista.length>1?'Tus pisos':'Tu piso'}</h3>
-  <ul class="cuentaPisos pila3d">${[...lista].reverse().map(f=>`<li><button type="button" class="cuentaPiso" data-piso="${f.id}" aria-current="${f.id===active.id}"><span class="pisoLamina" data-numero="${escapar(f.numero)}" aria-hidden="true"><img class="pisoBlanco" src="pisos3d/${f.id.toLowerCase()}-blanco.png" alt="" width="760" height="490" decoding="async"><img class="pisoAzul" src="pisos3d/${f.id.toLowerCase()}-azul.png" alt="" width="760" height="490" decoding="async"></span><span><b>Piso ${escapar(f.numero)}${f.id===active.id?' · abierto':''}</b><small>${escapar(estadoPiso(f))}</small></span></button>${puedeGuardar(f)?`<button type="button" class="cuentaGuardar" data-guardar="${packDe(f)}">Guardar · ${mb(sc.packs[packDe(f)].bytes-sc.packs[packDe(f)].savedBytes)}</button>`:''}</li>`).join('')}</ul>
+  <div class="rodilloPisos" role="listbox" aria-label="Tus pisos"><div class="rodilloVentana" aria-hidden="true"></div>${[...lista].reverse().map(f=>`<div class="rodilloPiso" role="option" data-piso="${f.id}" aria-current="${f.id===active.id}"><span class="pisoLamina" data-numero="${escapar(f.numero)}" aria-hidden="true"><img class="pisoBlanco" src="pisos3d/${f.id.toLowerCase()}-blanco.png" alt="" width="760" height="490" decoding="async"><img class="pisoAzul" src="pisos3d/${f.id.toLowerCase()}-azul.png" alt="" width="760" height="490" decoding="async"></span><span><b>Piso ${escapar(f.numero)}</b>${f.id===active.id?'<small class="rodilloAbierto">Abierto ahora</small>':''}<small data-estado>${escapar(estadoPiso(f))}</small></span><span class="rodilloAccion" data-accion>${guardarHTML(f)}</span></div>`).join('')}</div>
   <div class="cuentaFilas"><button type="button" class="cuentaFila" data-offline><span aria-hidden="true">⤓</span>Sin conexión y actualizaciones</button>${$('logoutButton')?'<button type="button" class="cuentaFila salir" data-salir><span aria-hidden="true">⇥</span>Cerrar sesión</button>':''}</div>`;
  hojaCuenta.querySelector('[data-cerrar]').onclick=()=>hojaCuenta.close();
  // Los pisos van apilados en 3D, el más alto arriba, con su lámina azul al pasar el cursor o si está abierto. Tocar uno lo
  // abre directo. Si falta la imagen de un piso, se ve su número.
  hojaCuenta.querySelectorAll('.pisoLamina img').forEach(img=>img.addEventListener('error',()=>img.parentElement.classList.add('sinImagen'),{once:true}));
- hojaCuenta.querySelectorAll('[data-piso]').forEach(b=>b.onclick=()=>{hojaCuenta.close();if(b.dataset.piso!==active.id)openFloor(b.dataset.piso,true,[b.dataset.piso]);});
- hojaCuenta.querySelectorAll('[data-guardar]').forEach(b=>b.onclick=()=>{window.atlasSinConexion?.guardar?.(b.dataset.guardar);setTimeout(pintarCuenta,300);});
+ // Rodillo tipo tragamonedas (rodillo-pisos.mjs): parte en el piso elegido antes o en el abierto; el de la ventana se abre al tocarlo.
+ const ids=[...lista].reverse().map(f=>f.id),inicio=Math.max(0,ids.indexOf(rodilloPiso||active.id));
+ crearRodillo(hojaCuenta.querySelector('.rodilloPisos'),{inicial:inicio,alCambiar:i=>{rodilloPiso=ids[i];},alElegir:i=>{hojaCuenta.close();if(ids[i]!==active.id)openFloor(ids[i],true,[ids[i]]);}});
+ enlazarGuardar();
  hojaCuenta.querySelector('[data-offline]').onclick=()=>{hojaCuenta.close();$('offlineOpen')?.click();};
  hojaCuenta.querySelector('[data-salir]')?.addEventListener('click',()=>{hojaCuenta.close();$('logoutButton')?.click();});
+}
+// Estado sin conexión de cada piso y su ícono para guardarlo (solo se ve el del piso en la ventana del rodillo).
+function estadosSinConexion(){
+ const sc=window.atlasSinConexion?.estado?.()||null,online=navigator.onLine;
+ const estadoPiso=f=>{const p=sc?.packs?.[packDe(f)];if(!p)return '';if(p.ready)return 'Guardado sin conexión ✓';if(sc.downloading===packDe(f))return 'Guardando…';return 'Sin guardar'+(p.count?' · '+Math.round(p.count/p.total*100)+' %':'');};
+ const puedeGuardar=f=>{const p=sc?.packs?.[packDe(f)];return p&&!p.ready&&online&&sc.downloading!==packDe(f);};
+ const guardarHTML=f=>puedeGuardar(f)?`<button type="button" class="rodilloGuardar" data-guardar="${packDe(f)}" aria-label="Guardar Piso ${escapar(f.numero)} sin conexión"><span aria-hidden="true">⤓</span><small>${mb(sc.packs[packDe(f)].bytes-sc.packs[packDe(f)].savedBytes)}</small></button>`:'';
+ return {estadoPiso,guardarHTML};
+}
+function enlazarGuardar(){hojaCuenta.querySelectorAll('[data-guardar]').forEach(b=>b.onclick=e=>{e.stopPropagation();window.atlasSinConexion?.guardar?.(b.dataset.guardar);setTimeout(actualizarEstados,300);});}
+// Durante una descarga el estado cambia seguido: se cambian solo los textos, sin volver a armar el rodillo (perdería su giro).
+function actualizarEstados(){
+ if(!hojaCuenta.open||!hojaCuenta.querySelector('.rodilloPisos'))return pintarCuenta();
+ const {estadoPiso,guardarHTML}=estadosSinConexion();
+ hojaCuenta.querySelectorAll('.rodilloPiso').forEach(item=>{const f=floors.find(x=>x.id===item.dataset.piso);if(!f)return;item.querySelector('[data-estado]').textContent=estadoPiso(f);const accion=item.querySelector('[data-accion]'),html=guardarHTML(f);if(accion.innerHTML!==html)accion.innerHTML=html;});
+ enlazarGuardar();
 }
 function abrirCuenta(){if(document.body.classList.contains('floorHome'))return;hojaCuenta.showModal();pintarCuenta();}
 cabeceraPiso?.addEventListener('click',abrirCuenta);
 cabeceraPiso?.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();abrirCuenta();}});
 hojaCuenta.addEventListener('click',e=>{if(e.target===hojaCuenta)hojaCuenta.close();});
-for(const nombre of ['atlas-session-changed','atlas-offline-estado','online','offline'])window.addEventListener(nombre,pintarCuenta);
+window.addEventListener('atlas-session-changed',pintarCuenta);
+for(const nombre of ['atlas-offline-estado','online','offline'])window.addEventListener(nombre,actualizarEstados);
 window.addEventListener('atlas-floor-home',()=>{if(hojaCuenta.open)hojaCuenta.close();});
 pintarCuenta();
 limitarPisos();window.addEventListener('atlas-jerarquia-changed',limitarPisos);window.addEventListener('atlas-session-changed',limitarPisos);
