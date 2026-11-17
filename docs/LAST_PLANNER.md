@@ -2,6 +2,8 @@
 
 Control de obra → **Last Planner** utiliza el visor de arquitectura, los recintos y la cuenta personal de Nube de ATLAS. Se amplía el módulo existente; no se agrega una aplicación ni una base local paralela.
 
+El nivel maestro es la vista **Programa de obra**: el programa de Sacyr por piso, con su avance real, ventanas por sector y actividades del plan intermedio ligadas a sus partidas. Ver [PROGRAMA_OBRA.md](PROGRAMA_OBRA.md).
+
 ## Uso
 
 Antes de registrar, inicia sesión con tu cuenta personal mediante **Nube**. Sin sesión, «Nueva actividad» abre el inicio de sesión y continúa automáticamente al formulario después de entrar. La pantalla explica el acceso junto a los botones; las cuentas lectoras y las operaciones sin permiso permanecen protegidas.

@@ -9,6 +9,7 @@ import * as M from './avance-model.mjs';
 import {crearFiltrosColumna} from './column-filters.mjs';
 import {leerAvance, exportarAvance, importarAvance, borrarItemizado} from './avance-store.mjs';
 import {planillaDe, guardarPlanillaNube} from './planilla-avance-nube.mjs';
+import {tareaDeItem} from './programa-obra-model.mjs';
 import {leerPlanilla, compararPlanillas, totalesPorFamilia} from './planilla-avance-model.mjs';
 import {firmante} from './firma.mjs';
 import {loadVendor} from './vendor-loader.mjs';
@@ -53,6 +54,13 @@ export function iniciarCapaAvance(alCambiar) {
 if (typeof window !== 'undefined') window.addEventListener('atlas-planilla-avance', () => { cargando = null; });
 // Estado de cada terminación del rombo calculado desde sus partidas registradas (null si ninguna tiene registro).
 // campo 'M': los cuatro muros juntos.
+// Plazo programado de una terminación del recinto (PAV, CIE o M): desde el inicio más temprano hasta el término más tardío
+// de las tareas del programa de obra de sus partidas. null si el programa no trae ninguna (programa-obra-model.mjs).
+export function planDeTerminacion(c, programa, room, campo) {
+  const f = programa && c?.porCodigo.get(String(room.code).trim()); if (!f) return null;
+  const tareas = (campo === 'M' ? M.partidasDeMuros(f.nodos, f.row) : M.partidasDeTerminacion(f.nodos, campo, f.row)).map(n => tareaDeItem(programa, n.id)).filter(Boolean);
+  return tareas.length ? {inicio: tareas.reduce((m, t) => t.inicio < m ? t.inicio : m, tareas[0].inicio), fin: tareas.reduce((m, t) => t.fin > m ? t.fin : m, tareas[0].fin)} : null;
+}
 export const derivador = c => (room, campo) => { const f = c?.porCodigo.get(String(room.code).trim()); return f ? M.estadoTerminacion(campo === 'M' ? M.partidasDeMuros(f.nodos, f.row) : M.partidasDeTerminacion(f.nodos, campo, f.row)) : null; };
 
 // ---------- Gráficos ----------

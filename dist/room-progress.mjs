@@ -3,12 +3,13 @@ import {progressFloors} from './progress-scope.mjs';
 import {loadPma} from './pma.mjs';
 import {nivel} from './level.mjs';
 import {installation,quality,fields,CAMPOS,reportProgress,agruparMuros,ESTADOS_PARTIDA,COLOR_PARTIDA,estadoPartida} from './room-progress-model.mjs';
-import {curvaReal,montarCurva} from './curva-avance.mjs';
+import {curvaConPrograma,montarCurva} from './curva-avance.mjs';
+import {programaDe} from './programa-obra-nube.mjs';
 import {crearFiltrosColumna} from './column-filters.mjs';
 import {createRombo} from './rombo.mjs';
 import {cargarObservaciones} from './observaciones.mjs';
 import {readProgress,exportProgress,importProgress} from './room-progress-store.mjs';
-import {cargarAvance,derivador,textoPlanilla} from './avance.mjs';
+import {cargarAvance,derivador,textoPlanilla,planDeTerminacion} from './avance.mjs';
 import {workChart} from './work-charts.mjs';
 const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const download=value=>{const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='Atlas-avance-'+nivel.id+'-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);};
@@ -49,7 +50,9 @@ export async function renderProgressControl(root,ctx){
   <section class="chartCard progressTabla"><div class="chartHeading"><h3>Recintos · ${rows.length} de ${all.rows.length}</h3>${cf.limpiar()}</div><p class="chartSubtitle">Toca un encabezado para ordenar o filtrar, como en Excel; los indicadores y gráficos de arriba siguen a la tabla. Cada partida lleva el color de su estado en el rombo.</p><div class="romboLeyenda progressLeyenda">${ESTADOS_PARTIDA.map(e=>`<span><span class="partidaEstado${['Sin registrar','No aplica','Sin definición','En proceso'].includes(e)?' clara':''}${e==='No aplica'?' na':''}" style="--c:${COLOR_PARTIDA[e]}">${ABREVIA[e]}</span>${esc(e)}</span>`).join('')}</div><div class="tableScroll"><table class="masterTable progressRooms"><thead><tr>${cf.cabecera()}</tr></thead><tbody>${rows.slice(page*30,page*30+30).map(fila).join('')||`<tr><td colspan="${columnas.length}">Sin recintos con estos filtros.</td></tr>`}</tbody></table></div><div class="pagination"><button type="button" id="progressPrev" ${page===0?'disabled':''}>Anterior</button><span>Página ${page+1} de ${pages}</span><button type="button" id="progressNext" ${page+1===pages?'disabled':''}>Siguiente</button></div></section><section id="progressEditor" class="chartCard progressEditor" ${selected?'':'hidden'}></section>`;
  cf.conectar(root,all.rows);
  const hoy=today();
- montarCurva(root.querySelector('#progressCurva'),{puntos:curvaReal(rows.flatMap(r=>r.tasks.filter(t=>t.documented&&(!family||t.field===family)&&t.installation==='Instalado').map(()=>r.record?.date||hoy)),tasks.length,hoy)},esc);
+ // Línea programada: cada terminación avanza entre el inicio y el término de las tareas del programa de sus partidas.
+ const programa=programaDe(nivel.id),planes=programa?rows.flatMap(r=>r.tasks.filter(t=>t.documented&&(!family||t.field===family)).map(t=>planDeTerminacion(avance,programa,r.room,t.field))):[];
+ montarCurva(root.querySelector('#progressCurva'),{puntos:curvaConPrograma(rows.flatMap(r=>r.tasks.filter(t=>t.documented&&(!family||t.field===family)&&t.installation==='Instalado').map(()=>r.record?.date||hoy)),tasks.length,hoy,planes)},esc);
  root.querySelector('#progressPrev').onclick=()=>{page--;draw();};root.querySelector('#progressNext').onclick=()=>{page++;draw();};
  root.querySelectorAll('[data-progress-room]').forEach(b=>b.onclick=()=>{root.querySelectorAll('.progressRooms tr.selectedRow').forEach(tr=>tr.classList.remove('selectedRow'));b.closest('tr').classList.add('selectedRow');abrirRecinto(ctx.rooms().find(r=>r.id===b.dataset.progressRoom));root.querySelector('#progressEditor').scrollIntoView({block:'start'});});
  root.querySelector('#progressRefresh').onclick=refresh;

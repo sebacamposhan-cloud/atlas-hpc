@@ -72,6 +72,8 @@ export function crearPista(elemento, {inicial = 0, alCambiar = () => {}, tarjeta
 // Dibujos de las tarjetas de vista, con la misma cuadrícula y trazo que los de la rueda.
 const D = {
   curva: '<path d="M20 86h120M20 14v72"/><path class="f" d="M28 74l28-18 26 8 28-30 22-12"/>',
+  // Programa de obra: barras largas escalonadas por piso y la línea de hoy.
+  programa: '<path d="M14 86h132M14 14v72"/><path class="f" d="M20 22h70v9H20zM44 40h74v9H44zM70 58h70v9H70z"/><path d="M96 14v72" stroke-dasharray="4 4"/>',
   gantt: '<rect x="14" y="14" width="132" height="72"/><path d="M14 28h132M40 14v72M66 14v72M92 14v72M118 14v72"/><path class="f" d="M42 33h48v10H42zM68 50h48v10H68zM94 67h22v10H94z"/>',
   lista: '<rect x="34" y="14" width="92" height="72"/><path class="f" d="M48 34l7 7 13-13M48 60l7 7 13-13"/><path d="M80 36h32M80 62h32"/>',
   sello: '<path d="M80 12l52 20v24c0 18-22 28-52 34-30-6-52-16-52-34V32z"/><path class="f" d="M58 50l15 15 30-30"/>',
@@ -88,7 +90,7 @@ const D = {
 // cartas: dibujo y texto de cada botón, según su clave (data-id o data-vista).
 export const GRUPOS = [
   {selector: '.lpCycleNav', boton: 'button', tamano: 'grande', cartas: {
-    resumen: {dibujo: D.curva, texto: 'Indicadores de la semana'}, planificacion: {dibujo: D.gantt, texto: 'Actividades y compromisos'},
+    resumen: {dibujo: D.curva, texto: 'Indicadores de la semana'}, programa: {dibujo: D.programa, texto: 'Programa de Sacyr por piso'}, planificacion: {dibujo: D.gantt, texto: 'Actividades y compromisos'},
     ejecucion: {dibujo: D.lista, texto: 'Avance y asistencia'}, revision: {dibujo: D.sello, texto: 'Verificar y cerrar'}}},
   {selector: '.lpCycleSubnav', boton: 'button', tamano: 'grande', cartas: {
     checklist: {dibujo: D.lista, texto: 'Lista para ejecutar'}, attendance: {dibujo: D.personas, texto: 'Personal del día'}, execution: {dibujo: D.avance, texto: 'Cantidad ejecutada'},
