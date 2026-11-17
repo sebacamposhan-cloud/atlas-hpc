@@ -2,7 +2,7 @@
 // se manejan en la plataforma). Las partidas se marcan en el rombo del recinto (rombo.mjs), en la ficha del plano y en
 // Control de obra; aquí, el panel con indicadores y gráficos y la capa de color del plano.
 import {loadPma} from './pma.mjs';
-import {nivel} from './level.mjs';
+import {nivel,prefijo} from './level.mjs';
 import {registerLayer} from './layers.mjs';
 import {progressFloors} from './progress-scope.mjs';
 import * as M from './avance-model.mjs';
@@ -181,7 +181,7 @@ export async function renderAvanceControl(root, ctx) {
         const cuerpo = $('#avanceEditorCuerpo'); if (cuerpo) rombo.ficha(cuerpo, plano, {alGuardar: async () => { c = await cargarAvance(); }, panel: editor.querySelector('.avanceRecinto'), previos: editor.querySelector('.protocolosPrevios')});
       });
       $('#avancePlano').onclick = () => ctx.pintarCapa?.('avance');
-      $('#avanceExportar').onclick = async () => { try { const v = await exportarAvance(), url = URL.createObjectURL(new Blob([JSON.stringify(v, null, 2)], {type: 'application/json'})), a = document.createElement('a'); a.href = url; a.download = 'Atlas-avance-partidas-' + hoy() + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 10000); } catch (e) { mensaje.textContent = e.message; } };
+      $('#avanceExportar').onclick = async () => { try { const v = await exportarAvance(), url = URL.createObjectURL(new Blob([JSON.stringify(v, null, 2)], {type: 'application/json'})), a = document.createElement('a'); a.href = url; a.download = prefijo + 'avance-partidas-' + hoy() + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 10000); } catch (e) { mensaje.textContent = e.message; } };
       $('#avanceImportar').onchange = async e => { const f = e.target.files[0]; if (!f) return; try { if (f.size > 30 * 1024 * 1024) throw Error('Respaldo demasiado grande.'); await importarAvance(JSON.parse(await f.text())); c = await cargarAvance(true); dibujar(); $('#avanceMensaje').textContent = 'Respaldo importado.'; } catch (error) { mensaje.textContent = error.message; } };
       if (elegido) root.querySelector(`[data-avance-room="${CSS.escape(elegido)}"]`)?.click();
     };

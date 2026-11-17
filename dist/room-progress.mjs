@@ -1,7 +1,7 @@
 import {progressDetails,progressCoverage} from './progress-analysis.mjs';
 import {progressFloors} from './progress-scope.mjs';
 import {loadPma} from './pma.mjs';
-import {nivel} from './level.mjs';
+import {nivel,prefijo} from './level.mjs';
 import {installation,quality,fields,CAMPOS,reportProgress,agruparMuros,ESTADOS_PARTIDA,COLOR_PARTIDA,estadoPartida} from './room-progress-model.mjs';
 import {curvaConPrograma,montarCurva} from './curva-avance.mjs';
 import {programaDe} from './programa-obra-nube.mjs';
@@ -12,7 +12,7 @@ import {readProgress,exportProgress,importProgress} from './room-progress-store.
 import {cargarAvance,derivador,textoPlanilla,planDeTerminacion} from './avance.mjs';
 import {workChart} from './work-charts.mjs';
 const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-const download=value=>{const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='Atlas-avance-'+nivel.id+'-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);};
+const download=value=>{const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=prefijo+'avance-'+nivel.id+'-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);};
 // Avance por recinto: indicadores y gráficos arriba; abajo la tabla de recintos con el estado de cada partida (los colores
 // del rombo) y filtros por columna como en Excel, que también acotan indicadores y gráficos. Tocar un recinto abre su rombo.
 const ABREVIA={'Sin registrar':'—','No iniciado':'NI','En proceso':'EP','Instalado · por revisar':'INST','Con observaciones':'OBS','Instalado y conforme':'✓','No aplica':'N/A','Sin definición':'?'};

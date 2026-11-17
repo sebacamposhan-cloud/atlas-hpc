@@ -33,7 +33,7 @@ try{
  assert.equal((await fetch(protectedBase+'/healthz')).status,200);
  for(const url of ['/','/api/groq/chat','/runtime.json','/sw.js','/api/sesion','/api/campo'])assert.equal((await fetch(protectedBase+url)).status,401,url);
  const page=await fetch(protectedBase+'/?nivel=N-1',{redirect:'manual',headers:{Accept:'text/html'}});assert.equal(page.status,302);assert.equal(page.headers.get('location'),'/login.html?next=%2F%3Fnivel%3DN-1');
- for(const url of ['/login','/login.html','/login.css','/login.mjs','/login/logo.png','/login/fachada.webp','/fonts/google-sans-flex-latin-wght-normal.woff2','/icons/atlas.svg'])assert.equal((await fetch(protectedBase+url)).status,200,url);
+ for(const url of ['/login','/login.html','/login.css','/login.mjs','/login/logo.png','/login/fachada.webp','/fonts/google-sans-flex-latin-wght-normal.woff2','/icons/atlas.svg','/icons/atlas-marca.svg'])assert.equal((await fetch(protectedBase+url)).status,200,url);
  for(const url of ['/login/..%2Findex.html','/login/%2e%2e/index.html','/fonts/..%5Cindex.html','/login/..%2Fruntime.json'])assert.notEqual((await fetch(protectedBase+url)).status,200,url);
  assert.equal((await fetch(protectedBase+'/',{headers:{Authorization:'Basic '+Buffer.from('atlas:isolated-password').toString('base64')}})).status,401,'la clave básica de Render ya no abre Atlas');
  assert.equal((await fetch(protectedBase+'/',{headers:{Cookie:'atlas_sesion='+cookieDeSesion('other-secret-of-at-least-32-characters!',{usuario:'qa@hpc.test',rol:'editor'})}})).status,401,'cookie firmada con otro secreto');

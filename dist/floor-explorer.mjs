@@ -7,6 +7,7 @@ import {leerMemoria,guardarMemoria,MODULOS,moduloDe,conPortada,consultaPiso,leer
 import {crearFluido,arrastrar,crearOleaje} from './fluido.mjs';
 import {crearPista} from './selector-flujo.mjs';
 import {crearRodillo} from './rodillo-pisos.mjs';
+import {MARCA} from './level.mjs';
 let rodilloPiso=null;
 iniciarNube();
 const $=id=>document.getElementById(id),floors=window.ATLAS_TARJETAS,active=window.ATLAS_PISO;
@@ -71,7 +72,7 @@ function state(home){
  $('globalSearch').disabled=home||!ready;$('navToggle').disabled=home||!ready;
  $('bottomObra').disabled=home||!ready;$('bottomModulos').disabled=home||!ready;
  $('navPiso').textContent=home?'Hospital Provincia Cordillera':'Piso '+active.corto;
- if(home)document.querySelector('header .project span').textContent='Atlas HPC';else window.dispatchEvent(new Event('atlas-piso-visible'));
+ if(home)document.querySelector('header .project > span:last-child').textContent=MARCA;else window.dispatchEvent(new Event('atlas-piso-visible'));
  // Buttons added by the viewer should not appear above the entry screen.
  for(const id of ['assistantOpen','diamondCatalogOpen'])if($(id))$(id).hidden=home;
 }
@@ -177,7 +178,7 @@ function pintarCuenta(){
  const {estadoPiso,guardarHTML}=estadosSinConexion();
  const lista=floors.filter(f=>f.piso);
  hojaCuenta.innerHTML=`<div class="hojaAsa" aria-hidden="true"></div>
-  <div class="cuentaCabeza"><span class="cuentaAvatar grande" aria-hidden="true">${escapar(iniciales(u))}</span><div><b>${escapar(nombreDe(u).replace(/@.*/,'')||'Atlas HPC')}</b><small>${escapar(u?.username||'Sin sesión en este equipo')}</small></div><button type="button" class="close" data-cerrar aria-label="Cerrar">×</button></div>
+  <div class="cuentaCabeza"><span class="cuentaAvatar grande" aria-hidden="true">${escapar(iniciales(u))}</span><div><b>${escapar(nombreDe(u).replace(/@.*/,'')||MARCA)}</b><small>${escapar(u?.username||'Sin sesión en este equipo')}</small></div><button type="button" class="close" data-cerrar aria-label="Cerrar">×</button></div>
   <h3 class="hojaGrupo">${lista.length>1?'Tus pisos':'Tu piso'}</h3>
   <div class="rodilloPisos" role="listbox" aria-label="Tus pisos"><div class="rodilloVentana" aria-hidden="true"></div>${[...lista].reverse().map(f=>`<div class="rodilloPiso" role="option" data-piso="${f.id}" aria-current="${f.id===active.id}"><span class="pisoLamina" data-numero="${escapar(f.numero)}" aria-hidden="true"><img class="pisoBlanco" src="pisos3d/${f.id.toLowerCase()}-blanco.png" alt="" width="760" height="490" decoding="async"><img class="pisoAzul" src="pisos3d/${f.id.toLowerCase()}-azul.png" alt="" width="760" height="490" decoding="async"></span><span><b>Piso ${escapar(f.numero)}</b>${f.id===active.id?'<small class="rodilloAbierto">Abierto ahora</small>':''}<small data-estado>${escapar(estadoPiso(f))}</small></span><span class="rodilloAccion" data-accion>${guardarHTML(f)}</span></div>`).join('')}</div>
   <div class="cuentaFilas"><button type="button" class="cuentaFila" data-offline><span aria-hidden="true">⤓</span>Sin conexión y actualizaciones</button>${$('logoutButton')?'<button type="button" class="cuentaFila salir" data-salir><span aria-hidden="true">⇥</span>Cerrar sesión</button>':''}</div>`;

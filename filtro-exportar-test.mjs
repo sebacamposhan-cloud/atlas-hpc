@@ -24,7 +24,7 @@ assert.equal(nombreArchivo(info), 'Plano filtrado - Pinturas - Sector 3');
 const sinFiltro = datosFiltro({level: 'N-1', nivelNombre: 'Nivel −1', capa: 'Sectores', recintos: [{code: 'A', categorias: []}]});
 assert.equal(sinFiltro.piso, 'S01');
 assert.equal(sinFiltro.proposito, 'Plano coloreado por sectores, sin filtro');
-assert.equal(sinFiltro.autor, 'Atlas HPC');
+assert.equal(sinFiltro.autor, 'ATLAS');
 assert.equal(nombreArchivo(sinFiltro), 'Plano filtrado - Sectores');
 
 // La leyenda del plano tiene el botón y la app arma el PDF recortado al ámbito del piso (el piso 1 ya no muestra la A-510).

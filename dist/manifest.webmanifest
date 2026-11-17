@@ -1,6 +1,6 @@
 {
-  "id": "/", "name": "Atlas HPC", "short_name": "Atlas HPC",
-  "description": "Gestión de obra del Hospital Provincia Cordillera.",
+  "id": "/", "name": "ATLAS", "short_name": "ATLAS",
+  "description": "Plataforma de gestión de obra.",
   "lang": "es", "start_url": "/", "scope": "/", "display": "standalone",
   "background_color": "#ffffff", "theme_color": "#13285a",
   "icons": [

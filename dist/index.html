@@ -6,11 +6,11 @@
 <meta name="theme-color" content="#12343a">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Atlas HPC">
+<meta name="apple-mobile-web-app-title" content="ATLAS">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/atlas.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/atlas-180.png">
-<title>Atlas HPC · Planos inteligentes</title>
+<title>ATLAS · Planos inteligentes</title>
 <script src="sesion-guardia.js"></script>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="workspace.css">
@@ -36,11 +36,11 @@
 <header>
 <button id="navToggle" title="Buscar recintos" aria-label="Buscar recintos">⌕</button>
 <div class="brand">
-<b>ATLAS<span>HPC</span>
+<b>ATLAS
 </b>
 <small>EXPLORADOR DE RECINTOS</small>
 </div>
-<div class="project"><img id="navLogo" src="login/logo.png" alt="Atlas HPC"><b id="navPiso">Hospital Provincia Cordillera</b> <span>Atlas HPC</span>
+<div class="project"><span id="navLogo" class="marcaAtlas" role="img" aria-label="ATLAS"><img src="icons/atlas-marca.svg" width="318" height="192" alt=""><span aria-hidden="true">ATLAS</span></span><b id="navPiso">Hospital Provincia Cordillera</b> <span>ATLAS</span>
 </div>
 <button id="floorHomeButton" hidden aria-label="Volver a los pisos">▦ <span>Pisos</span></button>
 <div class="globalSearchWrap"><input id="globalSearch" aria-label="Búsqueda global" placeholder="Buscar código, recinto o terminación…"><kbd>⌘ K</kbd></div><button id="dashboard">Dashboard</button>
@@ -106,7 +106,7 @@
 </div>
 </aside>
 <section id="moduloExplorer" aria-labelledby="moduloTitulo" hidden>
-  <div class="floorIntro"><div><span class="section-label">Atlas HPC</span><h1 id="moduloTitulo">Selecciona el módulo</h1><p>Elige con qué información deseas trabajar.</p></div></div>
+  <div class="floorIntro"><div><span class="section-label">ATLAS</span><h1 id="moduloTitulo">Selecciona el módulo</h1><p>Elige con qué información deseas trabajar.</p></div></div>
   <div class="moduloEscena"><div id="moduloPista" class="ruedaPista" role="group" aria-label="Módulos de Atlas" tabindex="-1"></div></div>
   <div class="portadaAcciones"><button id="moduloVolver" type="button" hidden>← Volver</button><button id="moduloContinuar" type="button" class="primary">Continuar →</button></div>
 </section>

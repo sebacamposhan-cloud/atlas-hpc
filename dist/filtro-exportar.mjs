@@ -4,6 +4,7 @@
 // aquí se arman los datos con el mismo formato de la exportación de proyectos (marking-overlay.mjs, paginasProyecto).
 // Sin DOM: lo prueba filtro-exportar-test.mjs.
 import {codigoPiso} from './marking-overlay.mjs';
+import {MARCA} from './level.mjs';
 
 // capa: nombre de la capa activa («Pinturas»). filtros: [{capa, valores: [nombres]}]. leyenda: [{nombre, color, n}].
 // recintos: [{code, name, categorias: [{nombre, color}]}], ya filtrados. autor: quien exporta (sesión) o vacío.
@@ -16,7 +17,7 @@ export function datosFiltro({level, nivelNombre, capa, filtros = [], leyenda = [
       return [r.code, r.name || '', c.length ? {texto: c.map(x => x.nombre).join(' / '), color: c[0].color || '#ffffff'} : {texto: 'Sin dato', color: '#ffffff'}];
     });
   return {
-    piso: codigoPiso(level), titulo: `${capa} · ${nivelNombre}`, autor: autor || 'Atlas HPC',
+    piso: codigoPiso(level), titulo: `${capa} · ${nivelNombre}`, autor: autor || MARCA,
     proposito: texto ? 'Plano filtrado: ' + texto : 'Plano coloreado por ' + capa.toLowerCase() + ', sin filtro',
     actualizado: at, tipo: 'Plano filtrado',
     detalle: `${filas.length} de ${total || filas.length} recintos cumplen el filtro`,
