@@ -259,3 +259,25 @@ body.floorHome header .project b, body.floorHome header .project span { display:
 .romboEtapas button[aria-pressed="true"] { background: var(--g-listo); border-color: var(--g-listo); color: #fff; }
 .romboEtapas button[aria-pressed="true"] small { color: #fff; }
 .romboPlanilla { color: var(--g-marca); }
+
+/* Lista de terminaciones bajo la caja de búsqueda (buscador-terminaciones.mjs) y etiqueta del tipo pintado en el plano. */
+.listaTerminaciones { position: absolute; z-index: 60; top: calc(100% + 4px); left: 0; right: 0; min-width: min(460px, calc(100vw - 24px)); max-height: min(62vh, 520px); overflow-x: hidden; overflow-y: auto; background: #fff; border: 1px solid var(--g-marca); }
+.listaTerminacionesCabeza { position: sticky; top: 0; display: grid; gap: 2px; padding: 10px 14px; background: #fff; border-bottom: 1px solid var(--g-marca); }
+.listaTerminacionesCabeza b { font-size: 15px; color: var(--g-texto); }
+.listaTerminacionesCabeza small { font-size: 12px; color: var(--g-texto2); }
+.listaTerminaciones [role="option"] { display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 12px; width: 100%; min-height: 48px; padding: 8px 14px; border: 0; border-bottom: 1px solid var(--g-regla); border-left: 4px solid transparent; background: #fff; color: var(--g-texto); font-size: 14px; line-height: 1.3; text-align: left; white-space: normal; cursor: pointer; }
+.listaTerminaciones [role="option"] span { min-width: 0; overflow-wrap: anywhere; }
+.listaTerminaciones [role="option"]:last-child { border-bottom: 0; }
+.listaTerminaciones [role="option"]:hover, .listaTerminaciones [role="option"]:focus-visible { border-left-color: var(--g-azul); outline: none; }
+.listaTerminaciones [role="option"][aria-selected="true"] { border-left-color: var(--g-marca); font-weight: 700; }
+.listaTerminaciones i, .chipTerminacion i { display: block; width: 22px; height: 22px; border: 1px solid var(--g-regla); }
+.listaTerminaciones [role="option"] b { font-size: 13px; }
+.chipTerminacion { position: absolute; z-index: 59; top: calc(100% + 6px); left: 0; display: inline-flex; align-items: center; gap: 8px; max-width: 100%; padding: 4px 4px 4px 10px; background: #fff; border: 1px solid var(--g-marca); color: var(--g-texto); font-size: 13px; font-weight: 700; }
+.chipTerminacion i { width: 16px; height: 16px; flex: none; }
+.chipTerminacion span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chipTerminacion button { flex: none; width: 32px; height: 32px; min-height: 0; padding: 0; border: 0; background: none; color: var(--g-texto); font-size: 20px; line-height: 1; }
+body.floorHome .chipTerminacion { display: none; }
+@media (max-width: 700px) {
+  .listaTerminaciones { position: fixed; top: calc(var(--cabecera) + 4px); left: 8px; right: 8px; max-height: calc(100dvh - var(--cabecera) - 90px); }
+  .chipTerminacion { position: fixed; top: calc(var(--cabecera) + 8px); left: 10px; max-width: calc(100vw - 90px); }
+}
