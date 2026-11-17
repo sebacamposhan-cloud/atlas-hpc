@@ -11,8 +11,9 @@ El 28 de octubre de 2026, por decisión del jefe de producción, Estados de pago
 
 Todo sigue en el historial de git, en el commit anterior a este retiro.
 
+- **Datos en Supabase (17 de noviembre de 2026).** Se borraron las tablas `atlas_payments` y `atlas_payment_audit`, que estaban vacías, y `atlas_price_items`, que tenía 4044 precios copiados de la hoja Formulario n°11A de `HPC-GEN-GEN-PRE-01-Rev01.xlsx`. También se borraron las funciones `save_atlas_payment` e `import_atlas_prices`. El catálogo se puede reconstruir desde ese Excel.
+
 ## Qué no se tocó
 
-- **Datos en Supabase.** Las tablas `atlas_payments`, `atlas_payment_audit` y `atlas_price_items`, y las funciones `save_atlas_payment` e `import_atlas_prices`, siguen en el proyecto. Si se quieren eliminar, primero hay que exportarlas y luego borrarlas desde el SQL Editor de Supabase. Lo decide y lo hace el responsable del proyecto.
-- **Cuentas.** Las cuentas personales siguen sirviendo para la Nube (permiso `campo_role`). El permiso `payments_role` ya no tiene uso y se puede quitar.
+- **Cuentas.** Las cuentas personales siguen sirviendo para la Nube (permiso `campo_role`). El permiso `payments_role` se quitó de la única cuenta que lo tenía el 17 de noviembre de 2026.
 - **Render.** Si existen las variables `PAYMENTS_DB_PATH` o `PAYMENTS_USERS_JSON`, ya no se usan y se pueden borrar. `SUPABASE_URL` y `SUPABASE_ANON_KEY` se mantienen, porque las usa la Nube.
