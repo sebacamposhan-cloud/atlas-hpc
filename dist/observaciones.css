@@ -124,3 +124,21 @@ dialog.phEditor::backdrop, dialog.phVisor::backdrop { background: #000; }
 .obsRoom .obsFotosFicha .obsMas { font-size: 16px; font-weight: 700; color: #000; background: #fff; }
 .obsRoom .obsLista button > span { flex: 1; min-width: 0; }
 .obsCerradas { margin-top: 8px; font-size: 12px; } .obsCerradas > summary { cursor: pointer; font-weight: 700; padding: 6px 0; text-decoration: underline; text-underline-offset: 3px; } .obsCerradas .obsLista { margin-top: 6px; }
+
+/* Terminación con el rombo del recinto y botón «General del recinto». */
+.obsRombo { display: grid; justify-items: center; align-content: start; gap: 8px; margin: 0; padding: 0; border: 0; min-width: 0; }
+.obsRombo legend { justify-self: start; padding: 0; font-weight: 700; }
+.obsRomboDibujo { width: min(240px, 100%); }
+.obsRomboDibujo .romboSVG { display: block; width: 100%; height: auto; }
+.obsGeneral { width: min(240px, 100%); min-height: 44px; border: 1px solid var(--g-marca, #1b2a56); background: #fff; color: var(--g-texto, #000); font-weight: 700; }
+.obsGeneral[aria-pressed="true"] { background: var(--g-azul, #0f5499); border-color: var(--g-azul, #0f5499); color: #fff; }
+.obsRomboElegida { margin: 0; font-size: 13px; text-align: center; }
+
+/* Responsable: lista de subcontratos que se despliega al tocar la caja (en el flujo, para que el formulario no la corte). */
+.obsResponsable { display: grid; gap: 4px; align-content: start; min-width: 0; }
+.obsListaResponsables { max-height: 260px; overflow-y: auto; border: 1px solid var(--g-marca, #1b2a56); background: #fff; }
+.obsListaResponsables button { display: grid; gap: 2px; width: 100%; min-height: 48px; padding: 8px 12px; border: 0; border-bottom: 1px solid var(--g-regla, #8c8c8c); background: #fff; color: var(--g-texto, #000); text-align: left; white-space: normal; }
+.obsListaResponsables button:last-child { border-bottom: 0; }
+.obsListaResponsables button:hover, .obsListaResponsables button:focus-visible { outline: none; box-shadow: inset 4px 0 0 var(--g-azul, #0f5499); }
+.obsListaResponsables small { font-size: 12px; color: var(--g-texto2, #262626); }
+.obsCampos > .obsPrioridad { align-self: start; }

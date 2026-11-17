@@ -8,6 +8,7 @@ import {firmante,pedirSesion,exigirFirma,SIN_SESION} from './firma.mjs';
 // Datos disponibles en el equipo; nube.mjs sincroniza observaciones, fotos e historial con una sesión autorizada.
 import {nivel} from './level.mjs';
 import {registerLayer} from './layers.mjs';
+import {SUBCONTRATOS} from './subcontratos.mjs';
 import * as M from './observaciones-model.mjs';
 import {leerObservaciones, leerHistorial, leerFotos, guardarObservacion, espacio, pedirPersistencia, exportarObservaciones, importarObservaciones} from './observaciones-store.mjs';
 
@@ -103,8 +104,6 @@ export function createObservaciones(ctx) {
     const nuevas = [], quitar = new Set(), tipoInicial = obs && obs.estado !== 'Abierta' ? 'despues' : 'antes';
     const finishes = room.finishes || [], source = ctx.source(room);
     const terminacionInicial = obs?.terminacion || (terminacion in M.TERMINACIONES ? terminacion : 'GENERAL');
-    const opcionesTerminacion = Object.entries(M.TERMINACIONES).map(([k, nombre]) => { const f = finishes.find(f => f.field === k); return `<option value="${k}" ${terminacionInicial === k ? 'selected' : ''}>${esc(nombre)}${f ? ' · ' + esc(f.code) + ' ' + esc(f.description || '') : ''}</option>`; }).join('');
-    const responsables = [...new Set((cache?.lista || []).map(o => o.responsable).filter(Boolean))].sort();
     dialog.innerHTML = `<form class="obsForm" novalidate>
       <header><div><small>${esc(ctx.levelName)} · ${esc(source?.code?.split('-').at(-1) || '')}</small><h2>${esc(room.code)} · ${esc(room.name)}</h2>${obs ? `<span class="obsChip" style="--c:${COLOR_ESTADO[obs.estado]}">${esc(estadoObservacion(obs.estado))}</span>` : '<span class="obsNota">Nueva observación</span>'}</div><button type="button" class="obsCerrar" aria-label="Cerrar">×</button></header>
       <div class="obsCuerpo">
@@ -112,10 +111,10 @@ export function createObservaciones(ctx) {
         <div class="obsMiniaturas"></div><small class="obsNota">Foto tomada con la cámara en el recinto. Se reduce y queda guardada en este equipo. Máximo ${M.MAX_FOTOS} por observación.</small></section>
       <label>Qué se observa *<textarea name="descripcion" rows="3" maxlength="2000" required placeholder="Ej.: sello perimetral incompleto junto a la puerta">${esc(obs?.descripcion || '')}</textarea></label>
       <div class="obsCampos">
-        <label>Terminación<select name="terminacion">${opcionesTerminacion}</select></label>
+        <fieldset class="obsRombo"><legend>Terminación</legend><input type="hidden" name="terminacion" value="${esc(terminacionInicial)}"><div class="obsRomboDibujo"></div><button type="button" class="obsGeneral">General del recinto</button><p class="obsRomboElegida" role="status"></p></fieldset>
         <label>Categoría<select name="categoria">${M.CATEGORIAS.map(c => `<option ${(obs?.categoria || categoriaDe(terminacionInicial)) === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></label>
         <fieldset class="obsPrioridad"><legend>Prioridad</legend>${M.PRIORIDADES.map(p => `<label><input type="radio" name="prioridad" value="${p}" ${(obs?.prioridad || 'Media') === p ? 'checked' : ''}> ${p}</label>`).join('')}</fieldset>
-        <label>Responsable<input name="responsable" list="obsResponsables" maxlength="160" value="${esc(obs?.responsable || '')}" placeholder="Subcontrato o persona"><datalist id="obsResponsables">${responsables.map(r => `<option value="${esc(r)}">`).join('')}</datalist></label>
+        <div class="obsResponsable"><label for="obsResponsableCampo">Responsable</label><input id="obsResponsableCampo" name="responsable" maxlength="160" value="${esc(obs?.responsable || '')}" placeholder="Subcontrato o persona" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="obsListaResponsables"><div id="obsListaResponsables" class="obsListaResponsables" role="listbox" aria-label="Subcontratos" hidden></div></div>
         <label>Plazo<input type="date" name="plazo" value="${esc(obs?.plazo || '')}"></label>
       </div>
       <p class="obsNota obsFirma">${obs ? 'Hace este cambio' : 'Registra'} <b>${esc(firmante())}</b></p>
@@ -127,7 +126,37 @@ export function createObservaciones(ctx) {
       <footer><span class="obsMensaje" role="alert"></span><button type="submit" class="primary">${obs ? 'Guardar cambios' : 'Guardar observación'}</button></footer></form>`;
     const form = dialog.querySelector('form'), mensaje = form.querySelector('.obsMensaje');
     form.querySelector('.obsCerrar').onclick = () => { if (!guardando) dialog.close(); };
-    if (!obs) form.terminacion.onchange = () => { form.categoria.value = categoriaDe(form.terminacion.value); };
+    // Terminación con el rombo del recinto (el mismo de la ficha, con su avance si ya se dibujó): tocar una parte la elige;
+    // «General del recinto» es lo que no es de una terminación. En una observación nueva, la categoría la sigue.
+    const partesRombo = ctx.rombo?.partes?.(room.code) || Object.fromEntries(Object.keys(M.TERMINACIONES).filter(k => k !== 'GENERAL').map(k => [k, {codigo: finishes.find(f => f.field === k)?.code || '—', estado: 'Sin definición', pendientes: 0}]));
+    function elegirTerminacion(campo, cambiar = true) {
+      form.terminacion.value = campo;
+      const caja = form.querySelector('.obsRomboDibujo');
+      caja.innerHTML = ctx.rombo?.svg ? ctx.rombo.svg(partesRombo, campo === 'GENERAL' ? null : campo, esc, true) : '';
+      caja.querySelectorAll('[data-rombo]').forEach(p => { p.onclick = () => elegirTerminacion(p.dataset.rombo); p.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); elegirTerminacion(p.dataset.rombo); } }; });
+      form.querySelector('.obsGeneral').setAttribute('aria-pressed', String(campo === 'GENERAL'));
+      const f = finishes.find(f => f.field === campo);
+      form.querySelector('.obsRomboElegida').textContent = M.TERMINACIONES[campo] + (f ? ' · ' + f.code + (f.description ? ' ' + f.description : '') : '');
+      if (cambiar && !obs) { form.categoria.value = categoriaDe(campo); form.categoria.dispatchEvent(new Event('change', {bubbles: true})); }
+    }
+    form.querySelector('.obsGeneral').onclick = () => elegirTerminacion('GENERAL');
+    elegirTerminacion(terminacionInicial, false);
+    // Responsable: al tocar la caja se despliegan los subcontratos de la obra; escribir filtra y se puede escribir otro nombre.
+    const campoResp = form.responsable, listaResp = form.querySelector('.obsListaResponsables');
+    const normal = v => String(v || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLocaleLowerCase('es');
+    function verResponsables() {
+      const q = normal(campoResp.value.trim()), filas = SUBCONTRATOS.filter(s => !q || normal(s.etiqueta).includes(q));
+      listaResp.innerHTML = filas.map(s => `<button type="button" role="option" data-resp="${esc(s.nombre)}"><b>${esc(s.nombre)}</b>${s.especialidad ? `<small>${esc(s.especialidad)}</small>` : ''}</button>`).join('');
+      listaResp.hidden = !filas.length; campoResp.setAttribute('aria-expanded', String(!listaResp.hidden));
+      listaResp.querySelectorAll('[data-resp]').forEach(b => { b.onpointerdown = e => e.preventDefault(); b.onclick = () => { campoResp.value = b.dataset.resp; cerrarResponsables(); }; });
+    }
+    function cerrarResponsables() { listaResp.hidden = true; campoResp.setAttribute('aria-expanded', 'false'); }
+    campoResp.addEventListener('focus', verResponsables);
+    campoResp.addEventListener('click', verResponsables);
+    campoResp.addEventListener('input', verResponsables);
+    campoResp.addEventListener('blur', () => setTimeout(() => { if (!listaResp.contains(document.activeElement)) cerrarResponsables(); }, 120));
+    campoResp.addEventListener('keydown', e => { if (e.key === 'Escape' && !listaResp.hidden) { e.preventDefault(); e.stopPropagation(); cerrarResponsables(); } else if (e.key === 'ArrowDown' && !listaResp.hidden) { e.preventDefault(); listaResp.querySelector('button')?.focus(); } });
+    listaResp.addEventListener('keydown', e => { const bs = [...listaResp.querySelectorAll('button')], i = bs.indexOf(document.activeElement); if (e.key === 'ArrowDown') { e.preventDefault(); bs[Math.min(i + 1, bs.length - 1)]?.focus(); } else if (e.key === 'ArrowUp') { e.preventDefault(); (i <= 0 ? campoResp : bs[i - 1]).focus(); } else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrarResponsables(); campoResp.focus(); } });
     // Marcas: las de fotos ya guardadas se cambian aquí y se guardan con la observación; las nuevas viajan con su foto.
     const editadas = new Map(), marcasDe = f => f.miniUrl ? f.marcas || [] : editadas.get(f.id) ?? (obs?.fotos.find(r => r.id === f.id)?.marcas || []);
     const titulo = f => `${room.code} · ${M.TIPOS_FOTO[f.tipo]}`;

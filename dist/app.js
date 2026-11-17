@@ -8,7 +8,7 @@ import {markingItems} from './marking-model.mjs';
 import {iniciarCapaAvance} from './avance.mjs';
 import './cielos-lamina.mjs';
 import {createObservaciones,iniciarCapaObservaciones,cargarObservaciones} from './observaciones.mjs';
-import {createRombo} from './rombo.mjs';
+import {createRombo,romboSVG} from './rombo.mjs';
 import {createLastPlanner,iniciarCapaLastPlanner} from './lastplanner.mjs';
 import {createProtocolosRecinto} from './protocolos-recinto.mjs';
 import {createDiamondCatalog,diamondBox} from './diamonds.mjs';
@@ -19,7 +19,7 @@ import {createNavegacion} from './navegacion.mjs';
 import {consultaPiso} from './navegacion-model.mjs';
 import {createTareas} from './jerarquia-ui.mjs';
 import {perfilActual} from './jerarquia-store.mjs';
-import {matchesLayers} from './layers.mjs';
+import {matchesLayers,tonoOscuro,OPACIDAD_FILTRO} from './layers.mjs';
 import {prepareViewer,footprint,footprintPath,hitRoom,updateFootprint,mapView,flushView,updateTiles,exportMapURL,mapa,overlays,showOverlay,capasDibujo,mostrarCapa} from './viewer.mjs';
 import {nivel,archivo,pisos,datos} from './level.mjs';
 import {asignarSectores,conCapaSectores} from './sectores-model.mjs';
@@ -59,7 +59,9 @@ function loadDetail(){updateTiles();}
 function path(r){const ring=p=>'M'+p.map(v=>v.join(',')).join('L')+'Z';return ring(r.polygon)+(r.holes||[]).map(ring).join('');}
 function group(r){const by=$('colorBy').value;if(by==='asepsis')return r.asepsis.join(' / ')||'Sin clasificación documentada';if(by==='status')return r.status;if(by==='walls')return [...new Set(r.finishes.filter(f=>f.field.startsWith('M')).map(f=>f.code))].join(' / ');if(by==='PAV'||by==='CIE')return r.finishes.find(f=>f.field===by)?.code||'Sin información';return 'Recintos';}
 function color(){return '#49575d';}
-function render(){if(!data||!doc)return;const rooms=uniqueRooms(data.rooms),ids=new Set(results.map(r=>r.id));let shapes=[],labels=[];for(const r of rooms){const active=selected?.id===r.id,match=ids.has(r.id),dim=(isolation&&!active)||(filtered&&!match);const appearance=marking?.active()?null:ui?.appearance(r),fill=appearance?.fill;{const d=footprintPath(r.id);if(d)shapes.push(`<path class="roomshape" data-geometry-quality="${esc(footprint(r.id)?.quality)}" data-id="${esc(r.id)}" d="${d}" fill="${fill||'#425158'}" fill-opacity="${!dim&&fill?appearance.opacity:!marking?.active()&&!dim&&filtered?.16:0}" stroke="#111" stroke-opacity="${dim?.2:.6}" style="mix-blend-mode:${appearance?.blend||'normal'}" fill-rule="evenodd"><title>${esc(r.code+' · '+r.name)}</title></path>`);}if(!dim&&($('layerCodes').checked||$('layerNames').checked)){const w=world(r);labels.push(`<text class="roomLabel" x="${w.position[0]}" y="${w.position[1]-14}" text-anchor="middle">${esc(($('layerCodes').checked?r.code:'')+($('layerNames').checked?' '+r.name:''))}</text>`);}}
+function render(){if(!data||!doc)return;const rooms=uniqueRooms(data.rooms),ids=new Set(results.map(r=>r.id));let shapes=[],labels=[];for(const r of rooms){const active=selected?.id===r.id,match=ids.has(r.id),dim=(isolation&&!active)||(filtered&&!match);const appearance=marking?.active()?null:ui?.appearance(r),fill=appearance?.fill;
+ // Con un filtro, lo que no cumple queda lavado en gris claro y lo filtrado se pinta fuerte con borde de su tono.
+ const lavar=filtered&&!match&&!isolation&&!marking?.active(),borde=!dim&&fill?appearance.borde:null;{const d=footprintPath(r.id);if(d)shapes.push(`<path class="roomshape${borde?' fuerte':''}" data-geometry-quality="${esc(footprint(r.id)?.quality)}" data-id="${esc(r.id)}" d="${d}" fill="${lavar?'#fff':fill||'#425158'}" fill-opacity="${lavar?.62:!dim&&fill?appearance.opacity:!marking?.active()&&!dim&&filtered?.16:0}" stroke="${borde||'#111'}" stroke-opacity="${borde?1:dim?.2:.6}" style="mix-blend-mode:${lavar?'normal':appearance?.blend||'normal'}" fill-rule="evenodd"><title>${esc(r.code+' · '+r.name)}</title></path>`);}if(!dim&&($('layerCodes').checked||$('layerNames').checked)){const w=world(r);labels.push(`<text class="roomLabel" x="${w.position[0]}" y="${w.position[1]-14}" text-anchor="middle">${esc(($('layerCodes').checked?r.code:'')+($('layerNames').checked?' '+r.name:''))}</text>`);}}
 if(showDiamonds&&!edit)for(const r of rooms){const box=diamondBox(r,atlas);if(box)labels.push(`<rect class="diamondHit" data-diamond-id="${esc(r.id)}" x="${box[0]}" y="${box[1]}" width="${box[2]}" height="${box[3]}" tabindex="0" role="button" aria-label="Abrir rombo ${esc(r.code)}"><title>Rombo ${esc(r.code)} · selección documental, no contorno</title></rect>`);}
 syncPaths(shapes);$('labels').innerHTML=labels.join('');const selectedPath=selected&&footprintPath(selected.id);$('selectionHighlight').innerHTML=selectedPath?`<path class="selectionHalo" d="${selectedPath}"/><path class="selectionOutline" d="${selectedPath}"/>`:'';$('selectedRoomBadge').hidden=!selected;$('selectedRoomBadge').textContent=selected?'Seleccionado · '+selected.code:'';$('background').style.opacity=isolation?'.35':'1';$('detailImage').style.opacity=$('background').style.opacity;$('background').style.display=$('layerOriginal').checked?'':'none';$('detailImage').style.display=$('layerOriginal').checked?'':'none';$('emptyState').hidden=!(filtered&&!results.length);$('isolate').disabled=!selected;$('back').hidden=!isolation;$('backResults').hidden=!(selected&&filtered);$('coverage').textContent=`${rooms.length} recintos · ${rooms.filter(r=>footprint(r.id)).length} superficies seleccionables`;$('colorLegend').textContent='Toca el interior de un recinto para abrir su ficha.';ui?.legend();renderEdit();markingOverlay?.render();spatial?.render();lastplanner?.renderOverlay?.();}
 function changeDoc(id,fit=true){doc=data.documents.find(d=>d.id===id);$('document').value=id;$('planTitle').textContent=nivel.nombre;$('revision').textContent=atlas.scope.name;if(fit)setView(fullView(),false);render();}
@@ -174,7 +176,7 @@ async function initialize(){
   layerList.parentElement.querySelectorAll('[data-overlay-toggle]').forEach(e=>e.onchange=()=>showOverlay(e.dataset.overlayToggle,e.checked));
   if(!avanceCapa){avanceCapa=true;iniciarCapaAvance(()=>render());}
   romboAvance ||= createRombo({esc,toast,verCodigo:(campo,codigo)=>verEnPlano(()=>ui?.apply(/^M/.test(campo)?'walls':campo,codigo)),observaciones:()=>cargarObservaciones(),nuevaObservacion:(room,campo,listo)=>observaciones?.editor(room,null,listo,{terminacion:campo}),abrirObservacion:(id,listo)=>observaciones?.abrir(id,listo)});
-  observaciones ||= createObservaciones({esc,toast,levelName:nivel.nombre,rooms:()=>uniqueRooms(data.rooms),source:r=>data.documents.find(d=>d.id===r.document_id),download:downloadBlob,locate:async id=>{await disciplines?.switchMode('architecture');ui?.show('map');selectRoom(id);}});
+  observaciones ||= createObservaciones({esc,toast,levelName:nivel.nombre,rombo:{svg:romboSVG,partes:code=>romboAvance?.partesDe(code)},rooms:()=>uniqueRooms(data.rooms),source:r=>data.documents.find(d=>d.id===r.document_id),download:downloadBlob,locate:async id=>{await disciplines?.switchMode('architecture');ui?.show('map');selectRoom(id);}});
   if(!obsCapa){obsCapa=true;iniciarCapaObservaciones(()=>render());}
   spatial ||= createSpatialSelector({esc,toast,zoom,fit:()=>setView(fullView()),enter:enterSpatial,loadFloor:loadSpatialFloor,restore:restoreSpatial,room:id=>roomById.get(aliases.get(id)||id),source:r=>data.documents.find(d=>d.id===r.document_id),footprint,path:footprintPath,focus:r=>setView(bounds(r,60)),scale:()=>spatialScale,floorRoomLevel:()=>data.rooms[0]?.level});
   tareas ||= createTareas({esc,toast,nivelId:nivel.id,pisos,path:footprintPath,footprint,svg:$('svg'),abrir:id=>nav?.abrirTareas(id),
@@ -236,7 +238,7 @@ async function exportarFiltro(){try{
  for(const r of recintos){const d=footprintPath(r.id);if(!d)continue;const p=new Path2D(d);zona.addPath(p);trazos.push([p,resumen.categoriasDe(r)[0]?.color||ui?.paint(r)||'#0f5499']);}
  g.save();g.setTransform(1,0,0,1,0,0);g.fillStyle='rgba(255,255,255,.62)';g.fillRect(0,0,recorte.w,recorte.h);g.restore();
  g.save();g.clip(zona);g.setTransform(1,0,0,1,0,0);g.drawImage(im,recorte.sx,recorte.sy,recorte.w,recorte.h,0,0,recorte.w,recorte.h);g.restore();
- for(const [p,color] of trazos){g.globalAlpha=.42;g.fillStyle=color;g.fill(p,'evenodd');g.globalAlpha=1;g.strokeStyle='#000';g.lineWidth=Math.max(1.5,u*.12)/kx;g.stroke(p);}
+ for(const [p,color] of trazos){g.globalAlpha=OPACIDAD_FILTRO;g.fillStyle=color;g.fill(p,'evenodd');g.globalAlpha=1;g.strokeStyle=tonoOscuro(color);g.lineWidth=Math.max(2.5,u*.2)/kx;g.stroke(p);}
  dibujarRotulo(g,canvas.width,canvas.height,info.piso,info.leyenda,u);
  const scope=atlas.scope.view,pdf=await PDFLib.PDFDocument.create(),alto=scope[3]*.15*canvas.height/recorte.h,page=pdf.addPage([scope[2]*.15,alto]),png=await pdf.embedPng(canvas.toDataURL('image/png'));
  page.drawImage(png,{x:0,y:0,width:scope[2]*.15,height:alto});await addExportLegend(pdf,info);

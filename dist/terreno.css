@@ -71,22 +71,23 @@ body.floorHome header .cuentaAvatar { display: none; }
 .cuentaFila span { width: 24px; font-size: 20px; text-align: center; }
 @media (min-width: 701px) { .hojaCuenta { width: 400px; margin: var(--cabecera, 64px) auto auto 12px; border-radius: 16px !important; box-shadow: 0 12px 40px rgba(27, 42, 86, .25); } }
 
-/* «Tus pisos» como pila 3D: la lámina de cada piso se monta sobre la del vecino, el más alto arriba. Sin fondos ni líneas
-   entre filas para que las láminas se vean enteras; la del piso abierto o bajo el cursor se ve azul. */
-.cuentaPisos.pila3d { padding: 18px 0 22px; }
-.pila3d li { position: relative; height: 54px; gap: 8px; border-bottom: 0; }
-.pila3d .cuentaPiso { min-height: 54px; padding: 0; gap: 14px; background: transparent; }
-.pila3d .pisoLamina { position: relative; flex: none; width: 150px; height: 97px; margin: -22px 0 -21px; pointer-events: none; }
-.pila3d .pisoLamina img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; transition: opacity .18s ease-out; }
-.pila3d .pisoAzul { opacity: 0; }
-.pila3d .cuentaPiso:hover .pisoAzul, .pila3d .cuentaPiso:focus-visible .pisoAzul, .pila3d .cuentaPiso[aria-current=true] .pisoAzul { opacity: 1; }
-.pila3d .cuentaPiso:focus-visible { outline: 2px solid var(--g-cian, #29a8df); outline-offset: 2px; }
-.pila3d .cuentaPiso[aria-current=true] b { color: var(--g-azul, #0f5499); }
-.pila3d .pisoLamina.sinImagen img { display: none; }
-.pila3d .pisoLamina.sinImagen::after { content: attr(data-numero); position: absolute; inset: 22px 44px; display: grid; place-items: center; border: 1px solid var(--g-marca, #1b2a56); font-size: 16px; font-weight: 800; }
-.pila3d .cuentaGuardar { position: relative; z-index: 1; }
-@media (max-width: 700px) {
-  .pila3d .pisoLamina { width: 112px; height: 72px; margin: -9px 0; }
-  .pila3d .cuentaPiso { gap: 10px; }
-  .pila3d .cuentaPiso small { white-space: nowrap; }
-}
+/* Rodillo de pisos tipo tragamonedas (rodillo-pisos.mjs): tres pisos a la vista y el del centro en la ventana. */
+.rodilloPisos { position: relative; height: 228px; margin: 8px 0 14px; overflow: hidden; perspective: 600px; touch-action: none; user-select: none; cursor: grab; }
+.rodilloVentana { position: absolute; left: 0; right: 0; top: 76px; height: 76px; border-top: 2px solid var(--g-marca, #1b2a56); border-bottom: 2px solid var(--g-marca, #1b2a56); pointer-events: none; }
+.rodilloPiso { position: absolute; left: 0; right: 0; top: 76px; height: 76px; display: flex; align-items: center; gap: 12px; padding: 0 4px; cursor: pointer; transform-origin: center; }
+.rodilloPiso .pisoLamina { position: relative; flex: none; width: 112px; height: 72px; pointer-events: none; }
+.rodilloPiso .pisoLamina img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.rodilloPiso .pisoAzul { opacity: 0; transition: opacity .18s ease-out; }
+.rodilloPiso.alCentro .pisoAzul { opacity: 1; }
+.rodilloPiso > span:not(.pisoLamina) { flex: 1; min-width: 0; }
+.rodilloPiso b { display: block; font-size: 15px; }
+.rodilloPiso small { display: block; font-size: 12px; color: var(--g-texto2, #262626); white-space: nowrap; }
+.rodilloPiso.alCentro b { font-size: 18px; color: var(--g-azul, #0f5499); }
+.rodilloPiso:not(.alCentro) small, .rodilloPiso:not(.alCentro) .rodilloGuardar { display: none; }
+.rodilloGuardar { flex: none; display: grid; justify-items: center; gap: 0; min-width: 44px; min-height: 44px; padding: 2px 6px; border: 1px solid var(--g-marca, #1b2a56); background: #fff; font-size: 18px; line-height: 1; }
+.rodilloGuardar small { font-size: 10px; }
+.rodilloPiso .pisoLamina.sinImagen img { display: none; }
+.rodilloPiso .pisoLamina.sinImagen::after { content: attr(data-numero); position: absolute; inset: 16px 34px; display: grid; place-items: center; border: 1px solid var(--g-marca, #1b2a56); font-size: 16px; font-weight: 800; }
+.rodilloPiso:focus-visible { outline: 2px solid var(--g-cian, #29a8df); outline-offset: -2px; }
+.rodilloPisos.tomado { cursor: grabbing; }
+.rodilloAbierto { color: var(--g-azul, #0f5499) !important; font-weight: 700; }
