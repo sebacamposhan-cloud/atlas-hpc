@@ -5,7 +5,7 @@ import {readMarkings,saveMarking} from './marking-store.mjs';
 import {exigirFirma,firmante} from './firma.mjs';
 import {loadVendor} from './web-store.mjs';
 import {esImpermeabilizacion,IMP_STATES,nuevoAvanceIMP,registrarAvanceIMP,ultimoAvanceIMP,impPath} from './impermeabilizacion-model.mjs';
-import {nivel} from './level.mjs';
+import {nivel,prefijo,MARCA,obra} from './level.mjs';
 // Lámina IMP de este piso (pisos.js, marca «imp»; el −1 usa 's01'): rutas, rótulos y nivel PMA salen de ahí.
 const IMP=nivel.imp||'s01',COD=IMP.toUpperCase(),PISO=String(nivel.nombre||'Nivel −1').toUpperCase(),PMA_NIVEL='A-'+COD;
 
@@ -112,7 +112,7 @@ export async function createImpermeabilizacion({esc,toast,download,redraw,detail
     }
     root.querySelector('#impCutDate').onchange=e=>{if(dirty()){e.target.value=cut;toast('Guarda o descarta los cambios antes de consultar otra fecha.');return;}cut=e.target.value;redraw();renderDetail(root,selected);};
     root.querySelector('#impCurrent').onclick=()=>{if(dirty()){toast('Guarda o descarta los cambios antes de consultar otra fecha.');return;}cut='';redraw();renderDetail(root,selected);};
-    root.querySelector('#impBackup').onclick=()=>{if(!doc())return toast('Todavía no hay avance registrado.');download(new Blob([JSON.stringify({format:'atlas-markings-v1',documents:[doc()]},null,2)],{type:'application/json'}),'Atlas_IMP_'+COD+'_avance.json');};
+    root.querySelector('#impBackup').onclick=()=>{if(!doc())return toast('Todavía no hay avance registrado.');download(new Blob([JSON.stringify({format:'atlas-markings-v1',documents:[doc()]},null,2)],{type:'application/json'}),prefijo+'IMP_'+COD+'_avance.json');};
     // Keep only direct-choice controls in the main sheet. The former long form is an optional section.
     if(room){const more=document.createElement('details');more.id='impMoreOptions';const summary=document.createElement('summary');summary.textContent='Opciones del recinto';more.append(summary);const start=root.querySelector('#impProgressForm');let node=start;while(node){const next=node.nextSibling;more.append(node);node=next;}root.append(more);}
     root.querySelectorAll('#impProgressForm,#impArtifactsForm').forEach(f=>{f.querySelectorAll('[type=submit],[type=reset]').forEach(b=>b.remove());f.onsubmit=e=>e.preventDefault();quickChoices(f);});
@@ -139,9 +139,9 @@ export async function createImpermeabilizacion({esc,toast,download,redraw,detail
         for(const e of rows){const s=artifactLayer?{color:REPORT_COLORS[e.state==='terminado'?'complete':e.state==='parcial'?'partial':'zero']}:IMP_STATES[e.state],path=new Path2D(impPath(e.parts));g.fillStyle=s.color;g.globalAlpha=.36;g.fill(path,'evenodd');g.globalAlpha=1;g.strokeStyle=s.color;g.lineWidth=1;g.stroke(path);}
 
         for(const m of marks){g.fillStyle='#0f5499';g.beginPath();g.arc(...m.point,7,0,Math.PI*2);g.fill();g.fillStyle='white';g.font='bold 8px sans-serif';g.textAlign='center';g.fillText(String(m.number),m.point[0],m.point[1]+3);}
-        const legend=document.createElement('canvas');legend.width=canvas.width;legend.height=canvas.height+220+groups.reduce((s,g)=>s+100+Math.max(1,g.rows.length)*38,0);if(legend.width*legend.height>16000000)throw Error('La tabla supera el tamaño de imagen admitido; exporta en PDF para incluir todas las filas.');const c=legend.getContext('2d');c.fillStyle='white';c.fillRect(0,0,legend.width,legend.height);c.drawImage(canvas,0,0);c.fillStyle='#183858';c.font='bold 26px sans-serif';c.fillText('ATLAS HPC · IMP '+COD+' · Avance '+(asOf||'actual'),25,canvas.height+35);c.font='22px sans-serif';c.fillText('Colores de avance superpuestos; el PDF original conserva su alcance documental.',25,canvas.height+70);exportStates.forEach((s,i)=>{const x=25+i*430;c.fillStyle=s.color;c.fillRect(x,canvas.height+105,22,22);c.fillStyle='#183858';c.fillText(s.name,x+30,canvas.height+125);});
+        const legend=document.createElement('canvas');legend.width=canvas.width;legend.height=canvas.height+220+groups.reduce((s,g)=>s+100+Math.max(1,g.rows.length)*38,0);if(legend.width*legend.height>16000000)throw Error('La tabla supera el tamaño de imagen admitido; exporta en PDF para incluir todas las filas.');const c=legend.getContext('2d');c.fillStyle='white';c.fillRect(0,0,legend.width,legend.height);c.drawImage(canvas,0,0);c.fillStyle='#183858';c.font='bold 26px sans-serif';c.fillText(MARCA+' · '+obra.nombre+' · IMP '+COD+' · Avance '+(asOf||'actual'),25,canvas.height+35);c.font='22px sans-serif';c.fillText('Colores de avance superpuestos; el PDF original conserva su alcance documental.',25,canvas.height+70);exportStates.forEach((s,i)=>{const x=25+i*430;c.fillStyle=s.color;c.fillRect(x,canvas.height+105,22,22);c.fillStyle='#183858';c.fillText(s.name,x+30,canvas.height+125);});
         let y=canvas.height+190;for(const group of groups){c.fillStyle=REPORT_COLORS[group.status];c.fillText('N° '+group.number+' · '+group.code+' · '+group.name,25,y);y+=36;c.fillStyle='#183858';c.fillText('Artefacto | Instalados / previstos | No instalados | Sin verificar',25,y);y+=38;for(const row of group.rows){c.fillStyle=REPORT_COLORS[row.status];c.fillText(row.code+' · '+row.name+' | '+row.installed+'/'+row.total+' | '+row.absent+' | '+row.unknown,25,y);y+=38;}if(!group.rows.length){c.fillText('Sin artefactos indicados en PMA '+COD,25,y);y+=38;}y+=26;}
-        const blob=await new Promise((resolve,reject)=>legend.toBlob(b=>b?resolve(b):reject(Error('No se pudo generar la imagen.')),'image/png'));download(blob,'Atlas_IMP_'+COD+'_avance.png');return;
+        const blob=await new Promise((resolve,reject)=>legend.toBlob(b=>b?resolve(b):reject(Error('No se pudo generar la imagen.')),'image/png'));download(blob,prefijo+'IMP_'+COD+'_avance.png');return;
       }
       await loadVendor('pdf');const {PDFDocument,StandardFonts,rgb}=PDFLib,pdf=await PDFDocument.create(),font=await pdf.embedFont(StandardFonts.Helvetica),bold=await pdf.embedFont(StandardFonts.HelveticaBold),extra=70+firstReportHeight,plan=pdf.addPage([1100,1640+extra]);plan.pushOperators(PDFLib.pushGraphicsState(),PDFLib.translate(0,extra));
       const response=await fetch(catalog.exportSource);if(!response.ok)throw Error('No se pudo abrir el PDF para exportar. Descarga el paquete del plano para usarlo sin conexión.');
@@ -150,7 +150,7 @@ export async function createImpermeabilizacion({esc,toast,download,redraw,detail
       plan.drawPage(embedded,{x:0,y:60});
       for(const e of rows){const color=(artifactLayer?REPORT_COLORS[e.state==='terminado'?'complete':e.state==='parcial'?'partial':'zero']:IMP_STATES[e.state].color).match(/\w\w/g).map(x=>parseInt(x,16)/255);plan.drawSvgPath(impPath(e.parts),{x:0,y:1620,color:rgb(...color),opacity:.36,borderColor:rgb(...color),borderWidth:1});}
       const safe=s=>String(s).replace(/[^\x20-\xFF]/g,'-');
-      plan.drawText(safe('ATLAS HPC | Impermeabilización '+COD+' | Rev01 | Avance '+(asOf||'actual')+(artifactLayer?' | Artefactos':'')),{x:20,y:1625,size:12,font:bold});
+      plan.drawText(safe(MARCA+' | '+obra.nombre+' | Impermeabilización '+COD+' | Rev01 | Avance '+(asOf||'actual')+(artifactLayer?' | Artefactos':'')),{x:20,y:1625,size:12,font:bold});
       for(const m of marks){plan.drawCircle({x:m.point[0],y:1620-m.point[1],size:7,color:rgb(.06,.33,.6),borderColor:rgb(1,1,1),borderWidth:1});const t=String(m.number);plan.drawText(t,{x:m.point[0]-bold.widthOfTextAtSize(t,8)/2,y:1617-m.point[1],size:8,font:bold,color:rgb(1,1,1)});}
       exportStates.forEach((s,i)=>{const color=s.color.match(/\w\w/g).map(x=>parseInt(x,16)/255),x=20+i*215;plan.drawRectangle({x,y:30,width:10,height:10,color:rgb(...color)});plan.drawText(safe(s.name),{x:x+15,y:30,size:11,font});});
       plan.drawText('Capa de avance registrada en Atlas. Los colores originales del PDF no representan avance.',{x:20,y:9,size:10,font});
@@ -164,7 +164,7 @@ export async function createImpermeabilizacion({esc,toast,download,redraw,detail
         }
       };
       drawGroups(plan,reportPages[0],extra-20);for(const list of reportPages.slice(1)){const page=pdf.addPage([1100,900]);drawGroups(page,list,860);}
-      download(new Blob([await pdf.save()],{type:'application/pdf'}),'Atlas_IMP_'+COD+'_avance.pdf');toast('Plano con avance exportado.');
+      download(new Blob([await pdf.save()],{type:'application/pdf'}),prefijo+'IMP_'+COD+'_avance.pdf');toast('Plano con avance exportado.');
     }catch(e){toast('No se pudo exportar: '+e.message);}finally{busy=false;buttons.forEach(b=>b.disabled=false);}
   }
   window.addEventListener('atlas-markings-changed',async e=>{if(!isActive()||busy||e.detail?.origen!=='nube')return;if(dirty())return status('Llegaron cambios de otro equipo. Conserva tus notas; vuelve a abrir el registro antes de guardar.');try{await reload();redraw();detail();}catch(e){toast(e.message);}});

@@ -3,7 +3,7 @@
 // por etapa y la tabla de recintos. Con los recintos elegidos se arma una hoja de ruta en Proyectos o una actividad de
 // Last Planner. La fuente es la planilla de la oficina; lo marcado en terreno después de la carga manda (avance-model).
 // Abajo, «Datos»: cargar la planilla, devolverla con lo de terreno, respaldos y el detalle por ítem del itemizado.
-import {nivel} from './level.mjs';
+import {nivel,prefijo} from './level.mjs';
 import {registerLayer} from './layers.mjs';
 import {progressFloors} from './progress-scope.mjs';
 import {esEscritorio} from './dispositivo.mjs';
@@ -108,7 +108,7 @@ export async function renderAvancePartida(root, ctx) {
       try { const {devolverPlanilla} = await import('./planilla-avance-devolver.mjs'); const r = await devolverPlanilla(archivo, {planilla: c.planilla, reporte: c.reporte, nivel: nivel.id}); mensaje.textContent = r.mensaje; }
       catch (error) { mensaje.textContent = error.message; }
     };
-    $('#avanceExportar').onclick = async () => { try { const v = await exportarAvance(), url = URL.createObjectURL(new Blob([JSON.stringify(v, null, 2)], {type: 'application/json'})), a = document.createElement('a'); a.href = url; a.download = 'Atlas-avance-partidas-' + hoy() + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 10000); } catch (e) { mensaje.textContent = e.message; } };
+    $('#avanceExportar').onclick = async () => { try { const v = await exportarAvance(), url = URL.createObjectURL(new Blob([JSON.stringify(v, null, 2)], {type: 'application/json'})), a = document.createElement('a'); a.href = url; a.download = prefijo + 'avance-partidas-' + hoy() + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 10000); } catch (e) { mensaje.textContent = e.message; } };
     $('#avanceImportar').onchange = async e => { const f = e.target.files[0]; if (!f) return; try { if (f.size > 30 * 1024 * 1024) throw Error('Respaldo demasiado grande.'); await importarAvance(JSON.parse(await f.text())); c = await cargarAvance(true); dibujar(); $('#avanceMensaje').textContent = 'Respaldo importado.'; } catch (error) { mensaje.textContent = error.message; } };
     const itemizado = root.querySelector('.avanceItemizado');
     itemizado.addEventListener('toggle', () => { if (itemizado.open && !itemizado.dataset.listo) { itemizado.dataset.listo = '1'; renderAvanceControl($('#avanceItemizado'), ctx); } });

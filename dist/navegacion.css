@@ -179,8 +179,11 @@ body.ruedaPortada #ruedaCerrar { display: none; }
 .pisoEtiqueta.iluminado::before, .pisoEtiqueta.iluminado::after { background: var(--g-azul); }
 #floorExplorer #pisoContinuar, #moduloExplorer #moduloContinuar { flex: 1; min-width: 0; min-height: 58px; border-radius: 14px !important; box-shadow: 0 8px 20px rgba(15, 84, 153, .28) !important; font-size: 18px; font-weight: 800; }
 #floorExplorer #pisoContinuar:disabled, #moduloExplorer #moduloContinuar:disabled { background: #fff; color: var(--g-texto2); border-color: var(--g-regla); box-shadow: none !important; }
-#navLogo { display: none; height: 38px; width: auto; }
-body.floorHome #navLogo { display: block; }
+#navLogo { display: none; align-items: center; gap: 8px; height: 38px; }
+#navLogo img { display: block; height: 30px; width: auto; }
+#navLogo span { font-size: 22px; font-weight: 850; letter-spacing: .04em; line-height: 1; color: var(--g-marca); }
+body.floorHome #navLogo { display: flex; }
+body.floorHome #navLogo span { display: block; }
 body.floorHome header .project b, body.floorHome header .project span { display: none; }
 @media (min-width: 900px) { .pisosEscena { --placa: min(calc((100dvh - 300px) / 1.5), 560px); } .pisosLista { width: 110px; margin-left: 10px; } .pisoEtiqueta, .pisoEtiqueta:hover:not(:disabled) { width: 110px; font-size: 16px; } }
 

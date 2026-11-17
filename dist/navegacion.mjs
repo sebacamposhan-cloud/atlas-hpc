@@ -159,7 +159,7 @@ export function createNavegacion(ctx) {
     }
     if (!t) delete barra.dataset.tarjeta;
     barra.querySelectorAll('[data-funcion]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.funcion === funcion)));
-    const titulo = document.querySelector('header .project span');
+    const titulo = document.querySelector('header .project > span:last-child');
     if (titulo) titulo.textContent = tituloNavegacion(actual, funcion, modulo);
   }
   const recordar = () => guardarMemoria(memoria(), {tarjeta: actual, funcion: momentanea(funcion) ? null : funcion});

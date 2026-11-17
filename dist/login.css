@@ -108,3 +108,8 @@ form { display: grid; gap: 14px; }
   }
 }
 @media (prefers-reduced-motion: reduce) { .campo { transition: none; } }
+
+/* Marca de la plataforma: el símbolo de los tres triángulos (icons/atlas-marca.svg) y la palabra ATLAS con la letra de Atlas. */
+.marcaAtlas { display: grid; justify-items: center; gap: 6px; }
+.marcaAtlas img { display: block; width: 58%; height: auto; }
+.marcaAtlas span { font-size: clamp(44px, 9vw, 64px); font-weight: 850; letter-spacing: .04em; line-height: 1; color: #13285a; }

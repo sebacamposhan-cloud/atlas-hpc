@@ -1,4 +1,5 @@
 import {partsToFeature,featureToParts,validateParts} from './contour-geometry.mjs';
+import {prefijo} from './level.mjs';
 let loading;
 function loadEngine(){if(!loading)loading=(async()=>{
  for(const file of ['leaflet.css','geoman.css']){const link=document.createElement('link');link.rel='stylesheet';link.href='./vendor/contour/'+file;document.head.append(link);}
@@ -36,5 +37,5 @@ export async function openContourEditor(ctx){
    $('contourExport').disabled=false;$('contourStatus').textContent='Corrección local guardada con historial. Estado: pendiente de revisión técnica. Puedes exportarla para consolidación documental.';
   }catch(error){$('contourStatus').textContent=error.message;}finally{if(!closed)$('contourSave').disabled=false;}
  };
- $('contourExport').onclick=()=>{if(record)ctx.download(new Blob([JSON.stringify(record,null,2)],{type:'application/json'}),'Atlas_revision_'+r.code.replace(/[^\w.-]/g,'_')+'.json');};
+ $('contourExport').onclick=()=>{if(record)ctx.download(new Blob([JSON.stringify(record,null,2)],{type:'application/json'}),prefijo+'revision_'+r.code.replace(/[^\w.-]/g,'_')+'.json');};
 }

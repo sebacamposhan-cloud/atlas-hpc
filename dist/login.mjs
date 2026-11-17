@@ -53,7 +53,7 @@ function abrirCambio({usuario, actual = '', recordar = true, primerIngreso = fal
   document.querySelector('.bajada').textContent = primerIngreso
     ? 'Es tu primer ingreso. Reemplaza la contraseña temporal por una personal: solo tú la conocerás.'
     : 'Escribe tu contraseña actual y la nueva.';
-  document.title = 'Atlas HPC · ' + (primerIngreso ? 'Crea tu contraseña' : 'Cambiar contraseña');
+  document.title = 'ATLAS · ' + (primerIngreso ? 'Crea tu contraseña' : 'Cambiar contraseña');
   cambio.usuario.value = usuario; cambio.actual.value = actual; cambio.nueva.value = cambio.repetir.value = '';
   campoUsuario.hidden = campoActual.hidden = volver.hidden = primerIngreso;
   (primerIngreso ? cambio.nueva : usuario ? cambio.actual : cambio.usuario).focus();
