@@ -1,7 +1,10 @@
 import {distribution,categoryColor,categoryAppearance,layerNames,UNKNOWN} from './layers.mjs';
+import {hojaConAlturas} from './hoja-alturas.mjs';
 export function createPlanFilters(ctx){
  const root=document.getElementById('planFilters'),button=document.getElementById('planSettingsOpen'),esc=ctx.esc;
  let opened=false,categoryQuery='';
+ // Celular: el panel sube desde abajo con tres alturas y abre bajo (búsqueda y especialidad, con el plano a la vista).
+ const alturas=hojaConAlturas(root,{alturas:{baja:a=>a*.42,media:a=>a*.66,completa:a=>a},inicial:'baja',activa:()=>opened&&document.body.classList.contains('terreno')&&innerWidth<=700,alto:()=>innerHeight-54-64-16,alBajar:()=>close(),etiqueta:'Arrastra hacia arriba para ver más filtros o hacia abajo para cerrar'});
  const normalized=value=>String(value).normalize('NFD').replace(/\p{Diacritic}/gu,'').toLocaleLowerCase('es');
  const families=[['walls','Muros'],['PAV','Pavimentos'],['CIE','Cielos'],['avance','Avance de obra'],['observaciones','Observaciones en terreno'],['asepsis','Asepsia'],['paint','Pinturas'],['sector','Sectores'],['status','Estado de revisión']];
  const origin=a=>a.kind==='source'?'Leyenda ARQ-CIE':a.kind==='custom'?'Personalizado':'Paleta de consulta';
@@ -11,7 +14,7 @@ export function createPlanFilters(ctx){
  const textosPlano=[['layerCodes','Códigos de recinto'],['layerNames','Nombres de recinto']];
  function seccionPlano(){const capas=ctx.capas?.()||[];return `<h3 class="filterSeccion">Especialidad</h3><div class="filterTiposPlano">${tiposPlano().map(b=>`<button type="button" data-tipo-plano="${esc(b.dataset.planType)}" aria-pressed="${b.getAttribute('aria-pressed')}" ${b.disabled?'disabled':''}>${esc(b.firstChild.textContent)}</button>`).join('')}</div><h3 class="filterSeccion">Capas</h3><div class="filterCapas">${capas.map(c=>`<label class="check"><input type="checkbox" data-capa="${esc(c.id)}" ${c.visible?'checked':''}> ${esc(c.nombre)}</label>`).join('')}${textosPlano.map(([id,nombre])=>`<label class="check"><input type="checkbox" data-texto-plano="${id}" ${document.getElementById(id)?.checked?'checked':''}> ${nombre}</label>`).join('')}</div>${capas.length?'':'<small class="filterHelp">Este plano viene de PDF sin capas: mobiliario, ejes y relleno se podrán apagar cuando se carguen sus láminas DWG.</small>'}<h3 class="filterSeccion">Filtros</h3>`;}
  function close(focus=false){if(!opened)return;opened=false;root.hidden=true;document.body.classList.remove('filtersOpen');button.setAttribute('aria-expanded','false');if(focus)button.focus();ctx.resize();}
- function open(){if(ctx.editing())return ctx.toast('Guarda o cancela el contorno antes de abrir los filtros.');ctx.enter();opened=true;root.hidden=false;document.body.classList.add('filtersOpen');document.body.classList.add('hideRight','hideLeft');button.setAttribute('aria-expanded','true');render();ctx.resize();root.querySelector('#planFilterSearch').focus({preventScroll:true});}
+ function open(){if(ctx.editing())return ctx.toast('Guarda o cancela el contorno antes de abrir los filtros.');ctx.enter();opened=true;root.hidden=false;document.body.classList.add('filtersOpen');document.body.classList.add('hideRight','hideLeft');button.setAttribute('aria-expanded','true');render();alturas.fijar('baja');ctx.resize();root.querySelector('#planFilterSearch').focus({preventScroll:true});}
  function update(){if(!opened)return;root.querySelector('#planFilterCount').textContent=ctx.rows().length+' de '+ctx.all().length+' recintos';const input=root.querySelector('#planFilterSearch');if(document.activeElement!==input)input.value=ctx.query();}
  function render(){
   const focused=document.activeElement,focusId=root.contains(focused)?focused.id:null,focusKey=root.contains(focused)?focused.dataset.filter:null;

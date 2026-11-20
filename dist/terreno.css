@@ -30,7 +30,9 @@ body.entrandoTerreno #moduloExplorer, body.entrandoTerreno #floorExplorer { disp
 
 /* «Más» en el celular: hoja que sube desde abajo, con su asa y accesos en cuadrícula por grupo (navegacion.mjs). */
 body.terreno #hojaFuncion { border-radius: 16px 16px 0 0 !important; }
-body.terreno #hojaFuncion::before { content: ""; display: block; width: 40px; height: 4px; margin: 8px auto 0; border-radius: 2px; background: var(--g-regla, #8c8c8c); }
+/* El asa de arriba es la de hoja-alturas.mjs (en el celular); en una tablet vertical la hoja va a la derecha y no la lleva. */
+body.terreno #hojaFuncion > .asaHoja { display: none; }
+@media (max-width: 700px) { body.terreno #hojaFuncion > .asaHoja { display: flex; } }
 .hojaAccesos .accesos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 6px; }
 .acceso { display: flex; flex-direction: column; align-items: center; gap: 6px; min-height: 92px; padding: 8px 4px; border: 0; background: #fff; color: var(--g-texto, #000); white-space: normal; }
 .acceso:hover:not(:disabled) { background: #fff; }

@@ -32,6 +32,8 @@ import {combinarContornos} from './contornos-nube.mjs';
 import {startPan,panView,startPinch,pinchView} from './gestures.mjs';
 import './offline.mjs';
 import {conectarAsa,restaurarAnchos} from './panel-ajustable.mjs';
+import {hojaConAlturas} from './hoja-alturas.mjs';
+import {alCambiarDispositivo} from './dispositivo.mjs';
 'use strict';
 const $=id=>document.getElementById(id),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let spatial,spatialSnapshot,spatialScale;
@@ -72,14 +74,38 @@ const conEnter=pedidoEnter;pedidoEnter=false;if(filtered&&!ui?.filtersOpen()){co
 let pedidoEnter=false;addEventListener('atlas-buscar-enter',()=>{pedidoEnter=true;});
 function markResultActive(){for(const el of $('results').querySelectorAll('.active'))el.classList.remove('active');if(selected)$('results').querySelector('[data-id="'+selected.id+'"]')?.classList.add('active');}
 // abrir: false ilumina el recinto y lo centra sin abrir su menú; se abre al tocarlo.
-async function selectRoom(id,center=true,{abrir=true}={}){if(tareas?.marcando()){tareas.tocar(roomById.get(aliases.get(id)||id));return;}if(spatial?.active()){const r=roomById.get(aliases.get(id)||id);if(r)spatial.choose(r.id,{x:world(r).position[0],y:world(r).position[1]});return;}if(marking?.active()){const r=roomById.get(aliases.get(id)||id);if(r&&center)setView(bounds(r,100));return;}if(edit){toast('Guarda o cancela la edición de geometría antes de cambiar de recinto.');return;}selected=data.rooms.find(r=>r.id===id);if(!selected)return;nav?.cerrarRueda();nav?.cerrarHoja();ui?.closeFilters();isolation=false;previousView=null;if(selected.document_id!==doc.id){doc=data.documents.find(d=>d.id===selected.document_id);$('document').value=doc.id;}if(center)setView(bounds(selected,100));document.body.classList.add('hideLeft');if(abrir){document.body.classList.remove('hideRight');if(fichaCompleta())fichaAbiertaEn=performance.now();document.body.classList.remove('fichaMinima');}render();markResultActive();renderDetail();}
-const fichaCompleta=()=>matchMedia('(max-width:1023px), (pointer:coarse)').matches;
+async function selectRoom(id,center=true,{abrir=true}={}){if(tareas?.marcando()){tareas.tocar(roomById.get(aliases.get(id)||id));return;}if(spatial?.active()){const r=roomById.get(aliases.get(id)||id);if(r)spatial.choose(r.id,{x:world(r).position[0],y:world(r).position[1]});return;}if(marking?.active()){const r=roomById.get(aliases.get(id)||id);if(r&&center)setView(bounds(r,100));return;}if(edit){toast('Guarda o cancela la edición de geometría antes de cambiar de recinto.');return;}selected=data.rooms.find(r=>r.id===id);if(!selected)return;nav?.cerrarRueda();nav?.cerrarHoja();ui?.closeFilters();isolation=false;previousView=null;if(selected.document_id!==doc.id){doc=data.documents.find(d=>d.id===selected.document_id);$('document').value=doc.id;}document.body.classList.add('hideLeft');if(abrir){document.body.classList.remove('hideRight');if(fichaCompleta()){fichaAbiertaEn=performance.now();hojaFicha?.fijar('media');}document.body.classList.remove('fichaMinima');}if(center)setView(vistaEn(bounds(selected,100)));render();markResultActive();renderDetail();}
+// Terreno (celular y tablet vertical): la ficha sube desde abajo, a media pantalla con el plano arriba, y se arrastra a
+// pantalla completa. Escritorio y tablet horizontal: la ficha a media pantalla a la derecha (dispositivo.mjs).
+const fichaCompleta=()=>document.body.classList.contains('terreno');
+// Parte del plano que queda a la vista: sin la ficha (abajo en terreno, a la derecha en escritorio), su franja ni las hojas
+// de abajo. Un panel que tapa todo el plano no cuenta.
+function zonaVisible(){const svgR=$('svg').getBoundingClientRect();let l=svgR.left,t=svgR.top,r=svgR.right,b=svgR.bottom;
+ for(const el of [document.querySelector('aside.right'),$('fichaBarra'),$('markingPanel'),$('hojaFuncion'),$('planFilters')]){if(!el||!el.offsetWidth||getComputedStyle(el).display==='none'||getComputedStyle(el).visibility==='hidden')continue;const p=el.getBoundingClientRect();
+  const ancho=p.left<=l+24&&p.right>=r-24,alto=p.top<=t+24&&p.bottom>=b-24;if(ancho&&alto)continue;
+  if(ancho&&p.top>t&&p.top<b)b=Math.min(b,p.top);else if(alto&&p.left>l&&p.left<r)r=Math.min(r,p.left);}
+ return {svg:svgR,l,t,r,b};}
+// Vista que deja el cuadro del recinto al centro de la parte visible del plano (el plano usa viewBox con «meet»).
+function vistaEn(box){const z=zonaVisible(),W=z.svg.width,H=z.svg.height,w=z.r-z.l,h=z.b-z.t;if(!W||!H||w<80||h<80)return box;
+ const s=Math.min(w/box[2],h/box[3]),cx=box[0]+box[2]/2,cy=box[1]+box[3]/2,ox=z.l-z.svg.left+w/2,oy=z.t-z.svg.top+h/2;return [cx-ox/s,cy-oy/s,W/s,H/s];}
+// Si el recinto elegido quedó debajo de la ficha o de una hoja (al abrirla, arrastrarla o girar la tablet), se vuelve a centrar.
+function asegurarVisible(forzar=false){if(!selected||document.body.classList.contains('floorHome'))return;const halo=$('selectionHighlight')?.getBoundingClientRect(),z=zonaVisible();
+ const dentro=halo&&halo.width&&halo.left+halo.width/2>z.l+20&&halo.left+halo.width/2<z.r-20&&halo.top+halo.height/2>z.t+20&&halo.top+halo.height/2<z.b-20;if(forzar||!dentro)setView(vistaEn(bounds(selected,100)));}
+let encuadreEspera=0;const reencuadrar=(forzar=false)=>{clearTimeout(encuadreEspera);encuadreEspera=setTimeout(()=>requestAnimationFrame(()=>asegurarVisible(forzar)),200);};
+let hojaFicha=null;
+function prepararHojaFicha(){const aside=document.querySelector('aside.right');if(!aside||hojaFicha)return;
+ hojaFicha=hojaConAlturas(aside,{alturas:{media:a=>a*(innerWidth>=700?.5:.6),completa:a=>a},inicial:'media',activa:fichaCompleta,alBajar:()=>{minimizarFicha();reencuadrar();},etiqueta:'Ficha del recinto: arrastra hacia arriba para verla completa o hacia abajo para volver al plano'});
+ addEventListener('atlas-hoja-altura',()=>reencuadrar());
+ // Al girar la tablet cambia el modo (escritorio o terreno): la ficha toma su forma nueva y el recinto se vuelve a centrar.
+ alCambiarDispositivo(()=>{if(fichaCompleta()&&!document.body.classList.contains('hideRight'))hojaFicha.fijar(hojaFicha.actual()||'media');else if(!fichaCompleta())hojaFicha.soltar();reencuadrar(true);});
+ addEventListener('orientationchange',()=>reencuadrar(true));}
+prepararHojaFicha();
 // A pantalla completa, el mismo toque que eligió el recinto no debe pulsar lo que aparece bajo el dedo en la ficha.
 let fichaAbiertaEn=0;
 function minimizarFicha(){if(fichaCompleta()&&!document.body.classList.contains('hideRight'))document.body.classList.add('fichaMinima');}
 // «Ver en el plano» desde la ficha a pantalla completa: muestra el plano y deja la barra para volver a ese recinto.
 function verEnPlano(mostrar){const completa=fichaCompleta()&&!document.body.classList.contains('hideRight')&&selected;mostrar();if(completa)document.body.classList.add('fichaMinima');}
-function abrirDesdeBarra(){const id=recintoFicha;document.body.classList.remove('fichaMinima');if(id&&selected?.id!==id)selectRoom(id,false);else document.body.classList.remove('hideRight');}
+function abrirDesdeBarra(){const id=recintoFicha;document.body.classList.remove('fichaMinima');if(id&&selected?.id!==id)selectRoom(id,false);else{document.body.classList.remove('hideRight');hojaFicha?.fijar('media');}reencuadrar();}
 let recintoFicha=null;
 // Celular: el primer toque en el plano ilumina el recinto y deja abajo la franja con su nombre, código, avance y «Abrir
 // rombo»; el segundo toque (en el mismo recinto o en la franja) abre la ficha. Tocar fuera del recinto lo suelta.

@@ -84,7 +84,7 @@ Están tomadas para poder partir y falta revisarlas con la obra.
 - **El aviso es solo dentro de Atlas:** el número en Control de obra y la libreta.
 - **Hecha, y luego confirmar o devolver.** Quien recibe marca que terminó. La confirma o la devuelve con un motivo quien la asignó, o alguien más arriba en su cadena.
 - **Reasigna el jefe directo de quien falta.** La tarea pasa a otra persona que dependa de ese jefe y que trabaje en ese piso.
-- **Nivel 4 con su propia cuenta:** ve solo sus tareas y sus pisos.
+- **Nivel 4 con su propia cuenta:** ve solo sus tareas y sus pisos. Su perfil se pide primero al abrir Atlas (`/api/jerarquia/perfil`), antes que el resto de la sincronización: en un equipo nuevo, o si la sincronización de Last Planner no termina, la cuenta no ve todos los pisos mientras tanto.
 - **Sin perfil, todo como hoy:** sin libreta, con sus tarjetas y permisos de siempre.
 - **Tope de permisos de Last Planner por nivel.** Se cruza con los permisos de la cuenta, así que nunca da más de lo que la cuenta ya tenía. El nivel 4 queda con ejecución, asistencia, restricciones y evidencias.
 - **El avance marcado suma al avance real de Last Planner.** Por cada superficie se toma el mayor entre lo informado en Last Planner y lo marcado en las tareas, así no se cuenta dos veces. No cambia el PPC ni la verificación.

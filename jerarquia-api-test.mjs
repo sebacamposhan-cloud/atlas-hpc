@@ -45,9 +45,15 @@ try {
   nube.instalado = false;
   assert.deepEqual(await (await pedir(11, 'GET', '/api/jerarquia/metas')).json(), {instalado: false, perfil: null, personas: [], metas: []});
   assert.equal((await (await pedir(11, 'GET', '/api/lastplanner/session')).json()).permissions.length, C.PERMISSIONS.length); pruebas++;
+  assert.deepEqual(await (await pedir(11, 'GET', '/api/jerarquia/perfil')).json(), {instalado: false, perfil: null}); pruebas++;
   const m0 = J.crearMeta({asignadaA: id(11), titulo: 'Tarea sin SQL', piso: 'N01'}, actor(6), personas);
   assert.equal((await pedir(6, 'POST', '/api/jerarquia/metas', {id: crypto.randomUUID(), accion: 'asignar', meta: m0, expected: 0})).status, 503); pruebas++;
   nube.instalado = true;
+  // Perfil solo (se pide al abrir Atlas): el supervisor recibe su piso; una cuenta sin fila, null; sin sesión válida, 401.
+  const perfil11 = await (await pedir(11, 'GET', '/api/jerarquia/perfil')).json();
+  assert.equal(perfil11.instalado, true); assert.equal(perfil11.perfil.id, id(11)); assert.deepEqual(perfil11.perfil.pisos, ['N01']); assert.equal(perfil11.perfil.nivel, 4); pruebas++;
+  assert.deepEqual(await (await pedir(30, 'GET', '/api/jerarquia/perfil')).json(), {instalado: true, perfil: null}); pruebas++;
+  assert.equal((await pedir(99, 'GET', '/api/jerarquia/perfil')).status, 401); pruebas++;
 
   const datos = await (await pedir(6, 'GET', '/api/jerarquia/metas')).json();
   assert.equal(datos.instalado, true); assert.equal(datos.perfil.id, id(6)); assert.equal(datos.personas.length, 5); assert.deepEqual(datos.permisos, C.PERMISSIONS); pruebas++;

@@ -4,7 +4,7 @@
 import {abrirLP} from './lastplanner-store.mjs';
 import * as J from './jerarquia-model.mjs';
 import {canonical} from './lastplanner-cycle-model.mjs';
-import {sessionActor, perfilGuardado, PERFIL_KEY} from './lastplanner-session.mjs';
+import {sessionActor, perfilGuardado, perfilConocido, atlasSession, PERFIL_KEY} from './lastplanner-session.mjs';
 import {readWorkflow} from './lastplanner-cycle-store.mjs';
 
 const pedir = q => new Promise((resolve, reject) => { q.onsuccess = () => resolve(q.result); q.onerror = () => reject(q.error); });
@@ -21,6 +21,26 @@ async function escribir(cambios) {
 // Perfil de la última sincronización, también para la portada y la sesión (lastplanner-session.mjs), que leen sin esperar.
 export function recordarPerfil(id, perfil) { try { localStorage.setItem(PERFIL_KEY, JSON.stringify({id, perfil: perfil || null, at: new Date().toISOString()})); } catch {} }
 export function perfilActual() { const actor = sessionActor(); return actor ? perfilGuardado(actor.id) : null; }
+// Solo el perfil de la cuenta, antes que el resto de la sincronización: decide qué pisos y funciones ve. Sin esta
+// consulta el perfil llegaba al final de una pasada completa de Last Planner, y si esa pasada no terminaba (conflicto,
+// error o un equipo nuevo) un supervisor veía todos los pisos.
+// api(method, ruta): la de nube.mjs. Sin ella (al abrir, antes de iniciar la nube) se usa la sesión guardada.
+export async function bajarPerfil(api, {espera = 6000} = {}) {
+  const actor = sessionActor(); if (!actor) return null;
+  const pedir = api ? () => api('GET', '/api/jerarquia/perfil') : async () => {
+    const token = atlasSession()?.token; if (!token) return null;
+    const r = await fetch('/api/jerarquia/perfil', {cache: 'no-store', headers: {'X-Campo-Session': token}, signal: AbortSignal.timeout(espera)});
+    if (!r.ok) throw Object.assign(Error('perfil ' + r.status), {status: r.status});
+    return r.json();
+  };
+  let r;
+  try { r = await pedir(); } catch (error) { if (error.status === 404) return null; throw error; }
+  if (!r) return null;
+  const antes = perfilConocido(actor.id) ? canonical(perfilGuardado(actor.id)) : undefined;
+  recordarPerfil(actor.id, r.instalado && r.perfil && r.perfil.id === actor.id ? r.perfil : null);
+  if (canonical(perfilGuardado(actor.id)) !== antes) avisar('nube');
+  return perfilGuardado(actor.id);
+}
 
 export async function leerJerarquia() {
   const actor = sessionActor(), [personas, metas] = await Promise.all([leer('personas'), leer('metas')]);

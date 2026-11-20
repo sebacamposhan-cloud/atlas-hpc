@@ -59,6 +59,14 @@ export function createJerarquia(env, fetchImpl = fetch) {
         return {personas, metas, perfil: personas.find(x => x.id === actor.id && J.perfilActivo(x)) || null};
       };
 
+      // Solo el perfil de esta cuenta: liviano, se pide al abrir Atlas antes que el resto de la sincronización, porque
+      // decide qué pisos y funciones ve (un supervisor solo su piso).
+      if (url.pathname === '/api/jerarquia/perfil' && req.method === 'GET') {
+        const r = await call('/rest/v1/atlas_personas?select=' + CAMPOS + '&user_id=eq.' + (UUID.test(actor.id || '') ? actor.id : '00000000-0000-0000-0000-000000000000'));
+        if (!r.ok || !Array.isArray(r.data)) return send(200, {instalado: false, perfil: null});
+        const p = J.perfilDesdeFila(r.data[0]);
+        return send(200, {instalado: true, perfil: J.perfilActivo(p) ? p : null});
+      }
       if (url.pathname === '/api/jerarquia/metas' && req.method === 'GET') {
         const datos = await leer();
         if (!datos) return send(200, {instalado: false, perfil: null, personas: [], metas: []});

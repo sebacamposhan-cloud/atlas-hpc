@@ -1,6 +1,7 @@
 // Barra inferior, rueda de tarjetas de cada módulo y botones de función sobre el plano. La lógica vive en navegacion-model.mjs.
 import {TARJETAS, ICONOS, momentanea, tituloNavegacion, leerMemoria, guardarMemoria, aRetomar, tarjetasPara, cartasDelModulo, moduloDe, conPortada, consultaPiso, paraTerreno, opcionesMas, gruposMas, herramientasDelPiso, accesosMas} from './navegacion-model.mjs';
 import {alCambiarDispositivo} from './dispositivo.mjs';
+import {hojaConAlturas} from './hoja-alturas.mjs';
 import {createResumenPiso} from './resumen-piso.mjs';
 import {funcionesDe} from './jerarquia-model.mjs';
 import {crearPista, activarFlujos, rearmarFlujo} from './selector-flujo.mjs';
@@ -28,6 +29,11 @@ export function createNavegacion(ctx) {
   hoja.innerHTML = '<div class="hojaCabeza"><h2 id="hojaTitulo"></h2><button type="button" id="hojaCerrar" aria-label="Cerrar">×</button></div><div id="hojaCuerpo" class="hojaCuerpo"></div>';
   hoja.setAttribute('aria-labelledby', 'hojaTitulo');
   main.append(barra, hoja, rueda);
+  // Celular: la hoja sube desde abajo con tres alturas. «Más» abre baja (los accesos y el plano a la vista); una lista
+  // (recintos, tareas) abre a media pantalla. El asa la sube o la baja.
+  const alturasHoja = hojaConAlturas(hoja, {alturas: {baja: a => Math.max(a * .4, Math.min(320, a * .5)), media: a => a * .62, completa: a => a}, inicial: 'media',
+    activa: () => document.body.classList.contains('terreno') && innerWidth <= 700 && !hoja.hidden, alto: () => main.clientHeight || innerHeight,
+    alBajar: () => cerrarHoja(), etiqueta: 'Arrastra hacia arriba para ver más o hacia abajo para cerrar'});
   const resumen = createResumenPiso({esc, rooms: () => ctx.rooms?.() || [], tareas: ctx.tareas, abrirPanel: (panel, vista) => { cerrarRueda(); ui.abrirPanel(panel, vista); }, abrirTareas: id => abrirTareas(id)});
   // Franja de pisos: con varios pisos elegidos se ve uno a la vez y aquí se cambia. La página tiene cargado un solo piso:
   // Last Planner cambia sin recargar porque no depende del piso; lo demás recarga y vuelve a abrir lo que estaba abierto.
@@ -140,7 +146,7 @@ export function createNavegacion(ctx) {
     if (foco) $('bottomObra').focus();
   }
 
-  function abrirHoja(titulo) { hoja.classList.remove('hojaAccesos'); $('hojaTitulo').textContent = titulo; $('hojaCuerpo').innerHTML = '<p role="status">Cargando…</p>'; hoja.hidden = false; document.body.classList.add('hojaAbierta'); return $('hojaCuerpo'); }
+  function abrirHoja(titulo) { hoja.classList.remove('hojaAccesos'); $('hojaTitulo').textContent = titulo; $('hojaCuerpo').innerHTML = '<p role="status">Cargando…</p>'; hoja.hidden = false; document.body.classList.add('hojaAbierta'); alturasHoja.fijar('media'); return $('hojaCuerpo'); }
   function cerrarHoja() { if (hoja.hidden) return; hoja.hidden = true; document.body.classList.remove('hojaAbierta'); $('hojaCuerpo').replaceChildren(); }
   $('hojaCerrar').onclick = () => { cerrarHoja(); if (['tipos', 'criticos', 'mias', 'asignar', 'equipo'].includes(funcion)) { funcion = null; dibujarBarra(); } };
 
@@ -314,7 +320,7 @@ export function createNavegacion(ctx) {
   // «Más»: accesos en cuadrícula por grupo, al estilo de una billetera móvil. Cada acceso abre su función directo.
   function masTerreno() {
     const cuerpo = abrirHoja('Más');
-    hoja.classList.add('hojaAccesos');
+    hoja.classList.add('hojaAccesos'); alturasHoja.fijar('baja');
     const icono = a => a.icono && ICONOS[a.icono] ? ICONOS[a.icono] : `<svg viewBox="0 0 160 100" aria-hidden="true">${a.dibujo || ''}</svg>`;
     const grupos = accesosMas(lista);
     cuerpo.innerHTML = grupos.map((g, i) => `<h3 class="hojaGrupo">${esc(g.titulo)}</h3><div class="accesos">${g.accesos.map((a, j) => `<button type="button" class="acceso" data-g="${i}" data-a="${j}"><span class="accesoIcono">${icono(a)}</span><span class="accesoNombre">${esc(a.nombre)}</span></button>`).join('')}</div>`).join('');
