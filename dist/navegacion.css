@@ -73,6 +73,9 @@ body.ruedaAbierta #activeLegend, body.hojaAbierta #activeLegend { display: none;
 .planFilterBody .filterChips:empty { display: none; }
 @media (max-width: 700px) {
   #planFilters { top: auto; bottom: calc(var(--barra-obra) + 8px + env(safe-area-inset-bottom)); max-height: 66dvh; }
+  /* Con el asa (hoja-alturas.mjs) la altura la elige quien usa el celular: baja, media o completa. */
+  body.terreno #planFilters[data-altura] { height: var(--alto-hoja); max-height: none; transition: height .18s ease-out; }
+  body.terreno #planFilters.arrastrando { transition: none; }
   #protocolPanel { top: auto; }
 }
 
@@ -141,7 +144,12 @@ body.ruedaPortada #ruedaCerrar { display: none; }
 .hojaLista em { font-style: normal; font-weight: 800; color: var(--g-texto); }
 .hojaVacia { margin: 8px 0; }
 @media (max-width: 700px) {
-  #hojaFuncion { top: auto; left: 0; right: 0; bottom: 0; width: auto; max-width: none; height: 66%; border-width: 3px 0 0; }
+  #hojaFuncion { top: auto; left: 0; right: 0; bottom: 0; width: auto; max-width: none; height: var(--alto-hoja, 66%); border-width: 3px 0 0; transition: height .18s ease-out; }
+  #hojaFuncion.arrastrando { transition: none; }
+  /* Baja: accesos más compactos para que se vean los de Control y la primera fila de Plano. */
+  #hojaFuncion[data-altura="baja"] .acceso { min-height: 78px; gap: 4px; padding: 4px; }
+  #hojaFuncion[data-altura="baja"] .accesoIcono { width: 48px; height: 48px; }
+  #hojaFuncion[data-altura="baja"] .hojaGrupo { margin: 8px 0 2px; }
 }
 
 /* Portada: maquetas 3D reales de cada piso (scripts/pisos-3d.mjs), como en el diseño aprobado. Es la excepción al tema,

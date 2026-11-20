@@ -6,6 +6,7 @@ import {firmante, exigirFirma} from './firma.mjs';
 import {propositoHTML, conectarProposito, leerProposito} from './proyecto-datos.mjs';
 import {funcionesProyecto, botonAmpliar, conectarAmpliar} from './proyecto-funciones.mjs';
 import {nivel} from './level.mjs';
+import {hojaConAlturas} from './hoja-alturas.mjs';
 
 // Proyectos de marcado: se parte de un piso, se definen estados con leyenda (por ejemplo Pendiente / En ejecución / Terminado),
 // se pintan recintos tocándolos y se guardan cortes con fecha para comparar el avance (plano de cambios y vista lado a lado).
@@ -15,6 +16,22 @@ export function createMarking(ctx) {
   const panel = document.createElement('aside');
   panel.id = 'markingPanel'; panel.hidden = true; panel.setAttribute('aria-label', 'Recintos del proyecto');
   document.querySelector('main').append(panel);
+  // Celular: mientras se pinta, el proyecto es una barra mínima abajo (nombre, estado con que se pinta y «Listo») y el
+  // plano queda casi entero. Con el asa sube a media pantalla (lista, cortes, acciones) o a pantalla completa.
+  // Alto de la barra mínima: lo que muestra (asa, nombre y estados), medido con el panel en «baja».
+  const altoBarra = () => {
+    const antes = panel.dataset.altura; panel.dataset.altura = 'baja'; let h = 0;
+    for (const el of panel.children) { if (getComputedStyle(el).display === 'none' || getComputedStyle(el).position === 'fixed') continue; h += el.classList.contains('markingScroll') ? [...el.children].reduce((t, c) => t + (getComputedStyle(c).display === 'none' ? 0 : c.offsetHeight + parseFloat(getComputedStyle(c).marginTop) + parseFloat(getComputedStyle(c).marginBottom)), 0) : el.offsetHeight; }
+    if (antes) panel.dataset.altura = antes; else delete panel.dataset.altura;
+    return h + 10;
+  };
+  const alturas = hojaConAlturas(panel, {alturas: {baja: a => Math.min(a * .42, Math.max(120, altoBarra())), media: a => a * .5, completa: a => a}, inicial: 'baja',
+    activa: () => !panel.hidden && document.body.classList.contains('terreno') && innerWidth <= 700, alto: () => document.querySelector('main')?.clientHeight || innerHeight,
+    alBajar: () => alturas.fijar('baja'), etiqueta: 'Proyecto: arrastra hacia arriba para ver la lista, los cortes y las acciones',
+    alCambiar: (n, px) => { panel.classList.toggle('amplio', n === 'completa'); document.body.classList.toggle('markingAmplio', n === 'completa'); document.body.style.setProperty('--alto-proyecto', px + 'px'); requestAnimationFrame(ctx.resize); },
+    // Un levantamiento abre la ficha del recinto tocado en el panel: si estaba en la barra mínima, sube a media pantalla.
+    // En la barra mínima, al cambiar lo que muestra (por ejemplo, «Pintando con…») se vuelve a medir.
+    alContenido: p => { if (p.dataset.altura !== 'baja') return; if (p.querySelector('.levFicha')) alturas.fijar('media'); else alturas.fijar('baja'); }});
   const dialog = document.createElement('dialog');
   dialog.id = 'markingDialog'; dialog.setAttribute('aria-label', 'Proyectos de marcado'); document.body.append(dialog);
   const launch = document.createElement('button');
@@ -45,7 +62,7 @@ export function createMarking(ctx) {
   function close() {
     if (pending) {ctx.toast('Espera a que termine el guardado.'); return false;}
     active = null; comparando = null; panel.hidden = true; panel.classList.remove('amplio');
-    document.body.classList.remove('markingOpen', 'markingAmplio'); launch.setAttribute('aria-expanded', 'false'); redraw();
+    document.body.classList.remove('markingOpen', 'markingAmplio'); document.body.style.removeProperty('--alto-proyecto'); alturas.soltar(); launch.setAttribute('aria-expanded', 'false'); redraw();
     return true;
   }
   function open(doc) {
@@ -53,7 +70,7 @@ export function createMarking(ctx) {
     if (doc.level !== ctx.level) throw Error('El documento pertenece a otro piso.');
     ctx.enter(); active = upgradeMarking(doc); focused = null; error = ''; comparando = null; pincel = esLevantamiento(active) ? null : active.estados.at(-1).id;
     panel.hidden = false; document.body.classList.add('markingOpen', 'hideLeft', 'hideRight');
-    launch.setAttribute('aria-expanded', 'true'); dialog.close(); render(); redraw();
+    launch.setAttribute('aria-expanded', 'true'); dialog.close(); render(); alturas.fijar('baja'); redraw();
     if (esLevantamiento(active)) lev.abrir(active);
   }
   function status() {
@@ -146,6 +163,7 @@ export function createMarking(ctx) {
     status();
   }
   function showDialog(content) {
+    if (document.body.classList.contains('terreno')) document.body.classList.add('hideRight');
     dialog.innerHTML = `<button class="close" aria-label="Cerrar">×</button>${content}<p id="markingError" role="alert"></p>`;
     dialog.querySelector('.close').onclick = () => dialog.close();
     if (!dialog.open) dialog.showModal();

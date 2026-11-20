@@ -1,26 +1,38 @@
-/* Ficha del recinto (aside.right): media pantalla en computador (ancho en --detail, ajustable con el borde) y pantalla
-   completa en celulares y tablets, con «← Plano» para bajarla a una barra con el código y el nombre del recinto. */
+/* Ficha del recinto (aside.right): media pantalla a la derecha en computador y tablet horizontal (ancho en --detail,
+   ajustable con el borde). En terreno (celular y tablet vertical, body.terreno de dispositivo.mjs) sube desde abajo:
+   media pantalla con el recinto centrado en el plano de arriba, y con el asa se arrastra a pantalla completa o se baja a
+   la franja con el código y el nombre (hoja-alturas.mjs). «← Plano» también la baja a la franja. */
 #fichaPlano, #fichaBarra { display: none; }
 /* Editor de contornos: herramienta de computador (mouse y teclado), abre en otra pestaña con el piso activo. */
 .botonEnlace { display: inline-flex; align-items: center; border: 1px solid var(--g-marca, #1b2a56); padding: 6px 10px; font-size: 12px; font-weight: 600; color: var(--g-texto, #000); text-decoration: none; background: #fff; }
 @media (max-width: 1023px), (pointer: coarse) { #editorContornos { display: none; } }
-@media (max-width: 1023px), (pointer: coarse) {
-  body:not(.hideRight) .right { position: fixed; inset: 0; width: auto; max-width: none; height: auto; margin: 0; border: 0; border-radius: 0; box-shadow: none; z-index: 40; overflow: auto; overscroll-behavior: contain; transition: none; background: #fff; }
-  .right .resizeHandle { display: none; }
-  #fichaPlano { display: block; position: sticky; top: 0; z-index: 3; width: 100%; min-height: 50px; padding: 10px 60px 10px 16px; border: 0; border-bottom: 2px solid var(--g-marca, #1b2a56); border-radius: 0; background: #fff; text-align: left; font-size: 15px; font-weight: 700; color: var(--g-azul, #0f5499); }
-  .right #closeDetail { position: fixed; top: 5px; right: 8px; float: none; margin: 0; z-index: 4; width: 40px; height: 40px; font-size: 26px; background: #fff; }
-  #detail { padding: 14px 16px 32px; }
-  /* Ficha bajada: el plano a la vista y una barra para volver al recinto (también si «Ver en el plano» lo deseleccionó). */
-  body.fichaMinima .right { display: none !important; }
-  body.fichaMinima #fichaBarra { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; align-items: center; justify-content: space-between; gap: 10px; min-height: 52px; padding: 8px 16px calc(8px + env(safe-area-inset-bottom)); border: 0; border-top: 3px solid var(--g-marca, #1b2a56); border-radius: 0; background: #fff; color: #000; font-size: 14px; font-weight: 700; text-align: left; box-shadow: 0 -4px 16px #0000001a; }
-  #fichaBarra .fichaBarraDatos { display: flex; flex-direction: column; min-width: 0; }
-  #fichaBarra .fichaBarraDatos strong, #fichaBarra .fichaBarraDatos small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  #fichaBarra .fichaBarraDatos small { font-size: 12px; font-weight: 600; color: var(--g-texto, #262626); }
-  #fichaBarra .fichaBarraAbrir { flex: none; display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; background: var(--g-azul, #0f5499); color: #fff; font-size: 14px; font-weight: 800; white-space: nowrap; }
-  body[data-module]:not([data-module="map"]) #fichaBarra, body.floorHome #fichaBarra, .protocolOpen #fichaBarra, .markingOpen #fichaBarra { display: none !important; }
-  .obsDetailDrawer[open] { z-index: 45; }
-}
+
+/* Asa de las hojas que suben desde abajo (hoja-alturas.mjs): solo en terreno. */
+.asaHoja { display: none; }
+body.terreno .asaHoja { display: flex; position: sticky; top: 0; z-index: 5; flex: none; align-items: center; justify-content: center; width: 100%; height: 28px; min-height: 28px; margin: 0; padding: 0; border: 0; border-radius: 0; background: #fff; cursor: ns-resize; touch-action: none; }
+body.terreno .asaHoja span { display: block; width: 44px; height: 5px; border-radius: 3px !important; background: var(--g-regla, #8c8c8c); }
+body.terreno .asaHoja:focus-visible { outline: 2px solid var(--g-azul, #0f5499); outline-offset: -4px; }
+
+/* Terreno: la ficha como panel inferior. */
+body.terreno:not(.hideRight) .right { position: fixed; inset: auto 0 0 0; width: auto; max-width: none; height: var(--alto-hoja, 60dvh); max-height: 100dvh; margin: 0; border: 0; border-top: 3px solid var(--g-marca, #1b2a56); border-radius: 16px 16px 0 0 !important; z-index: 40; overflow: auto; overscroll-behavior: contain; transition: height .18s ease-out; background: #fff; }
+body.terreno .right[data-altura="completa"] { border-top: 0; border-radius: 0 !important; }
+body.terreno .right.arrastrando { transition: none; }
+@media (prefers-reduced-motion: reduce) { body.terreno .right { transition: none; } }
+body.terreno .right .resizeHandle { display: none; }
+body.terreno #fichaPlano { display: block; position: sticky; top: 28px; z-index: 3; width: 100%; min-height: 48px; padding: 8px 60px 8px 16px; border: 0; border-bottom: 2px solid var(--g-marca, #1b2a56); border-radius: 0; background: #fff; text-align: left; font-size: 15px; font-weight: 700; color: var(--g-azul, #0f5499); }
+body.terreno .right #closeDetail { position: sticky; top: 30px; float: right; margin: -46px 8px 0 0; z-index: 4; width: 44px; height: 44px; font-size: 26px; background: #fff; }
+body.terreno #detail { clear: both; padding: 14px 16px 32px; }
+
+/* Ficha bajada: el plano a la vista y una barra para volver al recinto (también si «Ver en el plano» lo deseleccionó). */
+body.terreno.fichaMinima .right { display: none !important; }
+body.terreno.fichaMinima #fichaBarra { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; align-items: center; justify-content: space-between; gap: 10px; min-height: 52px; padding: 8px 16px calc(8px + env(safe-area-inset-bottom)); border: 0; border-top: 3px solid var(--g-marca, #1b2a56); border-radius: 0; background: #fff; color: #000; font-size: 14px; font-weight: 700; text-align: left; box-shadow: 0 -4px 16px #0000001a; }
+body.terreno #fichaBarra .fichaBarraDatos { display: flex; flex-direction: column; min-width: 0; }
+body.terreno #fichaBarra .fichaBarraDatos strong, body.terreno #fichaBarra .fichaBarraDatos small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body.terreno #fichaBarra .fichaBarraDatos small { font-size: 12px; font-weight: 600; color: var(--g-texto, #262626); }
+body.terreno #fichaBarra .fichaBarraAbrir { flex: none; display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; background: var(--g-azul, #0f5499); color: #fff; font-size: 14px; font-weight: 800; white-space: nowrap; }
+body.terreno[data-module]:not([data-module="map"]) #fichaBarra, body.terreno.floorHome #fichaBarra, body.terreno.protocolOpen #fichaBarra, body.terreno.markingOpen #fichaBarra, body.terreno.hojaAbierta #fichaBarra, body.terreno.filtersOpen #fichaBarra { display: none !important; }
+body.terreno .obsDetailDrawer[open] { z-index: 45; }
 /* En el celular la barra queda sobre la navegación inferior. */
 @media (max-width: 700px) {
-  body.fichaMinima #fichaBarra { bottom: calc(64px + env(safe-area-inset-bottom)); padding-bottom: 8px; }
+  body.terreno.fichaMinima #fichaBarra { bottom: calc(64px + env(safe-area-inset-bottom)); padding-bottom: 8px; }
 }

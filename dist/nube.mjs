@@ -1,4 +1,5 @@
 import {syncLastPlanner} from './lastplanner-sync.mjs';
+import {bajarPerfil} from './jerarquia-store.mjs';
 // Nube: sincronización de proyectos, observaciones con fotos, avance por recinto y Last Planner entre equipos, con la cuenta personal con
 // que se entró a Atlas (login.html). Sin conexión todo sigue guardándose en este equipo; se sincroniza al volver la
 // señal, después de cada guardado y cada 3 minutos con la app abierta. No tiene botón: sus avisos salen como toast.
@@ -103,6 +104,8 @@ export function iniciarNube({toast = aviso} = {}) {
     try {
       await bloquear(async () => {
         await renovar();
+        // Primero el perfil (pisos y funciones de la cuenta); si falla, la sincronización sigue igual.
+        await bajarPerfil(api).catch(() => {});
         const sincronizar = async () => {const resultado=await motor(leerSesion().user.role),lp=await syncLastPlanner(api,leerSesion().user.role);if(lp.conflictos)throw error('Last Planner tiene conflictos con otro equipo. Los datos locales se conservan; descarga un respaldo antes de resolverlos.',409);if(lp.avisos?.length)toast('Mis tareas: '+lp.avisos.at(-1));return {...resultado,lastPlanner:lp};};
         try { return await sincronizar(); }
         catch (e) { if (e.status !== 401) throw e; await renovar(true); return sincronizar(); }

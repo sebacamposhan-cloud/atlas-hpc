@@ -4,6 +4,8 @@ export const SESSION_KEY='atlas-nube-sesion';
 // Perfil de la jerarquía de obra de la última sincronización (lo escribe jerarquia-store.mjs). Sin él, todo como antes.
 export const PERFIL_KEY='atlas-jerarquia-perfil';
 export function atlasSession(){try{return JSON.parse(localStorage.getItem(SESSION_KEY)||'null');}catch{return null;}}
+// La cuenta ya preguntó por su perfil (lo tenga o no). Mientras no, Atlas no sabe qué pisos le tocan.
+export function perfilConocido(id){try{const v=JSON.parse(localStorage.getItem(PERFIL_KEY)||'null');return !!v&&v.id===id;}catch{return false;}}
 export function perfilGuardado(id){try{const v=JSON.parse(localStorage.getItem(PERFIL_KEY)||'null');return v&&v.id===id&&perfilActivo(v.perfil)&&v.perfil.id===id?v.perfil:null;}catch{return null;}}
 export function sessionActor(){
  const session=atlasSession();if(!session?.token||!session.user?.username)return null;

@@ -154,7 +154,27 @@ body.markingOpen .toolbar, body.markingOpen main > footer { right: 332px; }
   .markingFooter small { display: none; }
   .markingFooter > span { font-size: 12px; }
   .markingFooter:has(> span:empty) { display: none; }
-  body.markingOpen #viewport { right: 0; bottom: min(46dvh, 100%); }
+  body.markingOpen #viewport { right: 0; bottom: var(--alto-proyecto, min(46dvh, 100%)); }
+  /* Alturas del panel en terreno (hoja-alturas.mjs). El asa reemplaza «Ampliar». */
+  body.terreno #markingPanel[data-altura] { height: var(--alto-hoja); transition: height .18s ease-out; }
+  body.terreno #markingPanel.arrastrando { transition: none; }
+  body.terreno #markingPanel[data-altura] .markingAmpliar { display: none !important; }
+  /* Barra mínima (baja): nombre del proyecto, «Listo» y el estado con que se pinta; el resto aparece al subirla. */
+  #markingPanel[data-altura="baja"] .markingHead { padding: 2px 12px 4px; }
+  #markingPanel[data-altura="baja"] .markingHead small { display: none; }
+  #markingPanel[data-altura="baja"] #closeMarking { font-size: 0; min-height: 44px; padding: 0 16px; border: 0; background: var(--g-azul, #0f5499); color: #fff; }
+  #markingPanel[data-altura="baja"] #closeMarking::after { content: "Listo"; font-size: 15px; font-weight: 800; }
+  #markingPanel[data-altura="baja"] :is(.markingInstruction, .markingFooter, .proyectoFunciones, #levPincelListo) { display: none !important; }
+  #markingPanel[data-altura="baja"] .markingScroll { overflow: hidden; padding-bottom: 0; }
+  #markingPanel[data-altura="baja"] .markingScroll > :not(.levPincel, .estadosTabla:has(.levPincelBoton)) { display: none !important; }
+  #markingPanel[data-altura="baja"] .levPincel { margin: 2px 0 6px; padding: 6px 8px; }
+  #markingPanel[data-altura="baja"] .estadosTabla { margin: 0; }
+  #markingPanel[data-altura="baja"] .estadosTabla tbody { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+  #markingPanel[data-altura="baja"] .estadosTabla tr { display: flex; flex: none; align-items: center; border: 1px solid var(--g-marca, #1b2a56); }
+  #markingPanel[data-altura="baja"] .estadosTabla td { border: 0; padding: 0 8px 0 0; font-size: 13px; }
+  #markingPanel[data-altura="baja"] .levPincelBoton { min-height: 44px; font-size: 13px; padding: 0 8px; white-space: nowrap; }
+  #markingPanel[data-altura="baja"] .pincel { flex-wrap: nowrap; overflow-x: auto; padding: 4px 12px 6px; gap: 6px; }
+  #markingPanel[data-altura="baja"] .pincel button { flex: none; min-height: 44px; font-size: 13px; padding: 0 12px; }
   body.markingOpen .toolbar { right: 10px; top: 52px; padding: 4px; }
   .markingOpen .toolbar button { min-height: 28px; height: 28px; padding: 3px; font-size: 10px; }
   .markingOpen .toolbar #planSettingsOpen, .markingOpen .toolbar #markingOpen { height: 32px; }
@@ -184,7 +204,7 @@ body.markingOpen #barraFunciones { visibility: hidden; }
 .markingHead .markingAmpliar { flex: none; min-height: 40px; padding: 0 12px; font-size: 13px; font-weight: 700; border: 1px solid var(--g-marca, #1b2a56); background: #fff; }
 @media (max-width: 700px) {
   .markingHead .markingAmpliar { display: inline-block; }
-  .proyectoFunciones { left: 6px; top: calc(var(--cabecera, 54px) + 8px); gap: 4px; max-height: calc(100dvh - var(--cabecera, 54px) - var(--barra-obra, 64px) - min(46dvh, 100%) - 16px); }
+  .proyectoFunciones { left: 6px; top: calc(var(--cabecera, 54px) + 8px); gap: 4px; max-height: calc(100dvh - var(--cabecera, 54px) - var(--barra-obra, 64px) - var(--alto-proyecto, min(46dvh, 100%)) - 16px); }
   /* En el celular el nombre va al lado del círculo: seis acciones caben sobre el plano, arriba del panel. */
   .proyectoFunciones { align-items: flex-start; }
   .proyectoFunciones .funcionFlotante, .proyectoFunciones .funcionFlotante:hover:not(:disabled) { flex-direction: row; width: auto; gap: 6px; }

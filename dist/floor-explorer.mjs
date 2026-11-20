@@ -147,7 +147,10 @@ window.addEventListener('hashchange',()=>{if(location.hash&&document.body.classL
 // Jerarquía de obra: un supervisor o capataz con pisos en su perfil solo abre sus pisos. Sin perfil, todos como hoy.
 async function limitarPisos(){
  try{
-  const [{sessionActor,perfilGuardado},{pisoVisible,puedeVariosPisos}]=await Promise.all([import('./lastplanner-session.mjs'),import('./jerarquia-model.mjs')]);
+  const [{sessionActor,perfilGuardado,perfilConocido},{pisoVisible,puedeVariosPisos}]=await Promise.all([import('./lastplanner-session.mjs'),import('./jerarquia-model.mjs')]);
+  // Cuenta que aún no sabe su perfil (equipo nuevo u otra persona en el mismo equipo): se pregunta antes de mostrar los
+  // pisos, para que un supervisor no vea los cinco mientras llega la sincronización.
+  {const a=sessionActor();if(a&&!perfilConocido(a.id)&&navigator.onLine)await import('./jerarquia-store.mjs').then(m=>m.bajarPerfil()).catch(()=>{});}
   const actor=sessionActor(),perfil=actor&&perfilGuardado(actor.id);
   for(const f of floors){if(!f.original)f.original=f.piso||null;f.piso=f.original&&pisoVisible(perfil,f.id)?f.original:null;}
   gallery.querySelectorAll('[data-floor]').forEach(b=>{b.disabled=!floors.find(f=>f.id===b.dataset.floor)?.piso;});
