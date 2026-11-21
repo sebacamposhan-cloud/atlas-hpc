@@ -82,8 +82,9 @@ async function mark(page, code) {
       for (const fy of [0.5, 0.2, 0.8, 0.35, 0.65]) {
         const world = { x: b.x + b.width * fx, y: b.y + b.height * fy },
           screen = new DOMPoint(world.x, world.y).matrixTransform(matrix);
+        const candidates = V.hitRoomCandidates(world);
         if (
-          V.hitRoom(world) === node.dataset.id &&
+          candidates.length === 1 && candidates[0] === node.dataset.id &&
           screen.x > rect.left + 5 &&
           screen.x < rect.right - 5 &&
           screen.y > rect.top + 5 &&
@@ -116,6 +117,24 @@ try {
           ?.textContent.includes('Selecciona en el plano'),
       );
       await mark(page, codes[0]);
+      if (width === 390) {
+        // Interior común de 8.1.7.1.7-1 y 8.1.7.1.6-1 en el nivel −1.
+        const screen = await page.evaluate(async () => {
+          const viewer = await import('./viewer.mjs');
+          const x = 3734.3277, y = 920.1838;
+          viewer.mapView([x - 150, y - 150, 300, 300]);
+          viewer.flushView();
+          const hit = new DOMPoint(x, y).matrixTransform(document.getElementById('svg').getScreenCTM());
+          return {x: hit.x, y: hit.y};
+        });
+        await page.touchscreen.tap(screen.x, screen.y);
+        const chooser = page.getByRole('dialog', {name: 'Elige un recinto'});
+        await chooser.waitFor();
+        await page.keyboard.press('Escape');
+        await chooser.waitFor({state: 'hidden'});
+        assert.ok(await page.locator('[data-pick-apply]').isVisible());
+        assert.equal(await page.locator('.lpSpatialRoomCard').count(), 1);
+      }
       await mark(page, codes[1]);
       await page.locator('[data-pick-mode=muros]').click();
       await mark(page, codes[0]);

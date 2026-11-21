@@ -1,3 +1,31 @@
 import {inside} from './engine.mjs';
-export function buildHitIndex(entries){const cells=new Map(),size=256;for(const entry of entries)for(const original of entry.rings){const ring={...original};const xs=ring.polygon.map(p=>p[0]),ys=ring.polygon.map(p=>p[1]);ring.box=[Math.min(...xs),Math.min(...ys),Math.max(...xs),Math.max(...ys)];for(let y=Math.floor(ring.box[1]/size);y<=Math.floor(ring.box[3]/size);y++)for(let x=Math.floor(ring.box[0]/size);x<=Math.floor(ring.box[2]/size);x++){const key=x+','+y;if(!cells.has(key))cells.set(key,[]);cells.get(key).push({id:entry.id,ring});}}
-return p=>{const list=cells.get(Math.floor(p.x/size)+','+Math.floor(p.y/size))||[];for(const {id,ring} of list){const [x,y,xx,yy]=ring.box;if(p.x<x||p.x>xx||p.y<y||p.y>yy)continue;if(inside([p.x,p.y],ring.polygon)&&!ring.holes.some(h=>inside([p.x,p.y],h)))return id;}return null;};}
+
+export function buildHitIndex(entries) {
+  const cells = new Map(), size = 256;
+  for (const {id, rings} of entries) {
+    for (const {polygon, holes} of rings) {
+      const xs = polygon.map(point => point[0]), ys = polygon.map(point => point[1]);
+      const box = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+      const entry = {id, polygon, holes, box};
+      for (let y = Math.floor(box[1] / size); y <= Math.floor(box[3] / size); y++) {
+        for (let x = Math.floor(box[0] / size); x <= Math.floor(box[2] / size); x++) {
+          const key = x + ',' + y;
+          if (!cells.has(key)) cells.set(key, []);
+          cells.get(key).push(entry);
+        }
+      }
+    }
+  }
+
+  function* matches({x, y}) {
+    const cell = cells.get(Math.floor(x / size) + ',' + Math.floor(y / size)) || [];
+    const point = [x, y];
+    for (const {id, polygon, holes, box: [left, top, right, bottom]} of cell) {
+      if (x < left || x > right || y < top || y > bottom) continue;
+      if (inside(point, polygon) && !holes.some(hole => inside(point, hole))) yield id;
+    }
+  }
+  const first = point => matches(point).next().value ?? null;
+  first.candidates = point => [...new Set(matches(point))];
+  return first;
+}
