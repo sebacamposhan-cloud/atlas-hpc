@@ -86,3 +86,5 @@ body.lpPicking #viewport{inset:var(--lp-picker-top,180px) 12px var(--lp-picker-b
 .lpProgramaTabla td small{display:block;color:#5b6670}.lpProgramaDetalle h4{margin:14px 0 4px}.lpProgramaDetalle input[type=date]{min-width:130px}
 .lpProgramaActs{margin:4px 0;padding-left:18px}.lpProgramaActs li{margin:4px 0}.lpPrograma .lpCycleActions label{display:flex;gap:6px;align-items:center}
 .lpProgramaFiltro{display:flex;gap:6px;align-items:center;font-size:13px;font-weight:600}
+
+.lpSpatialSelectionHead>[data-pick-remove-wall]{min-width:44px;min-height:44px;flex-shrink:0}
