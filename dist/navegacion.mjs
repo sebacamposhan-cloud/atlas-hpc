@@ -146,9 +146,12 @@ export function createNavegacion(ctx) {
     if (foco) $('bottomObra').focus();
   }
 
-  function abrirHoja(titulo) { hoja.classList.remove('hojaAccesos'); $('hojaTitulo').textContent = titulo; $('hojaCuerpo').innerHTML = '<p role="status">Cargando…</p>'; hoja.hidden = false; document.body.classList.add('hojaAbierta'); alturasHoja.fijar('media'); return $('hojaCuerpo'); }
-  function cerrarHoja() { if (hoja.hidden) return; hoja.hidden = true; document.body.classList.remove('hojaAbierta'); $('hojaCuerpo').replaceChildren(); }
-  $('hojaCerrar').onclick = () => { cerrarHoja(); if (['tipos', 'criticos', 'mias', 'asignar', 'equipo'].includes(funcion)) { funcion = null; dibujarBarra(); } };
+  function abrirHoja(titulo) { hoja.classList.remove('hojaAccesos', 'hojaPlanos'); hoja.removeAttribute('role'); $('hojaTitulo').textContent = titulo; $('hojaCuerpo').innerHTML = '<p role="status">Cargando…</p>'; hoja.hidden = false; document.body.classList.add('hojaAbierta'); alturasHoja.fijar('media'); return $('hojaCuerpo'); }
+  function cerrarHoja() { if (hoja.hidden) return; hoja.hidden = true; $('terrenoPlano')?.setAttribute('aria-expanded', 'false'); document.body.classList.remove('hojaAbierta'); $('hojaCuerpo').replaceChildren(); }
+  $('hojaCerrar').onclick = () => {
+    const selectorAbierto = hoja.classList.contains('hojaPlanos');
+    cerrarHoja();
+    if (selectorAbierto) $('terrenoPlano').focus({preventScroll:true}); if (['tipos', 'criticos', 'mias', 'asignar', 'equipo'].includes(funcion)) { funcion = null; dibujarBarra(); } };
 
   function dibujarBarra() {
     const t = buscarTarjeta(actual);
@@ -290,12 +293,12 @@ export function createNavegacion(ctx) {
   }
 
   $('bottomObra').onclick = () => { if (rueda.hidden) abrirRueda(); else if (!portada()) cerrarRueda(true); };
-  // Modo terreno (celular o tablet vertical): la barra de abajo tiene tres botones grandes. «Plano» cierra lo que esté
-  // abierto y deja el plano a la vista (el camino de vuelta, como «Inicio»), «Mis tareas» abre la libreta (o Last Planner,
+  // Modo terreno (celular o tablet vertical): el primer botón muestra el plano activo y abre el selector.
+  // «Mis tareas» abre la libreta (o Last Planner,
   // si la cuenta no tiene libreta) y «Más» sube los accesos de Control, Plano y Protocolos en cuadrícula. La búsqueda es
   // la de arriba. Avance y observaciones se hacen en el rombo del recinto. terreno.css esconde los botones de siempre.
   const PLANO = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>';
-  document.querySelector('.bottomNav')?.insertAdjacentHTML('beforeend', `<button type="button" class="terrenoBoton" id="terrenoPlano">${PLANO}<span class="terrenoNombre">Plano</span></button>`
+  document.querySelector('.bottomNav')?.insertAdjacentHTML('beforeend', `<button type="button" class="terrenoBoton" id="terrenoPlano" aria-haspopup="dialog" aria-controls="hojaFuncion" aria-expanded="false">${PLANO}<span class="terrenoNombre">Arquitectura</span><span class="terrenoFlecha" aria-hidden="true">▾</span></button>`
     + `<button type="button" class="terrenoBoton" id="terrenoTareas" hidden>${ICONOS.mias}<span class="terrenoNombre">Mis tareas</span></button>`
     + `<button type="button" class="terrenoBoton" id="terrenoMas" aria-haspopup="dialog">${ICONOS.mas}<span class="terrenoNombre">Más</span></button>`);
   function pintarTerreno() {
@@ -313,6 +316,53 @@ export function createNavegacion(ctx) {
     // La ficha del recinto, si estaba abierta, también se cierra.
     const ficha = $('closeDetail'); if (ficha && ficha.offsetParent) ficha.click();
   }
+  const botonesPlano = () => [...main.querySelectorAll('.planTypes [data-plan-type]')].filter(button =>
+    button.dataset.planType === 'architecture' || (button.dataset.planType === 'doors' ? buscarTarjeta('puertas') : buscarTarjeta('capas')));
+  const planoActivo = () => document.body.classList.contains('puertasOpen') ? 'doors' :
+    main.querySelector('.planTypes [aria-pressed=true]')?.dataset.planType || 'architecture';
+  function rotularPlanoTerreno() {
+    const nombre = botonesPlano().find(button => button.dataset.planType === planoActivo())?.textContent || 'Arquitectura';
+    const boton = $('terrenoPlano');
+    const etiqueta = boton.querySelector('.terrenoNombre');
+    if (etiqueta.textContent !== nombre) etiqueta.textContent = nombre;
+    boton.setAttribute('aria-label', nombre + ' · Cambiar plano');
+  }
+  function selectorPlanoTerreno() {
+    if (!hoja.hidden && hoja.classList.contains('hojaPlanos')) { cerrarHoja(); return; }
+    if (ctx.ocupado?.()) return;
+    const opciones = botonesPlano();
+    if (opciones.length < 2) { volverAlPlano(); return; }
+    cerrarRueda();
+    ui.closeFilters();
+    if (document.body.dataset.module !== 'map') volverAlPlano();
+    const ficha = $('closeDetail');
+    if (ficha?.offsetParent) ficha.click();
+    const cuerpo = abrirHoja('Cambiar plano');
+    hoja.classList.add('hojaPlanos');
+    hoja.setAttribute('role', 'dialog');
+    alturasHoja.fijar('baja');
+    $('terrenoPlano').setAttribute('aria-expanded', 'true');
+    cuerpo.innerHTML = `<p class="selectorPiso">Piso ${esc(nivel.corto)}</p><div class="selectorPlanos">${opciones.map(button =>
+      `<button type="button" data-elegir-plano="${button.dataset.planType}" aria-pressed="${button.dataset.planType === planoActivo()}">${esc(button.textContent)}</button>`).join('')}</div>`;
+    cuerpo.querySelectorAll('[data-elegir-plano]').forEach((button, i) => button.onclick = () => {
+      if (ctx.ocupado?.()) return;
+      const cambiar = opciones[i].dataset.planType !== planoActivo();
+      cerrarHoja();
+      if (cambiar) { ctx.prepararCambioPlano?.(); opciones[i].click(); }
+      $('terrenoPlano').focus({preventScroll: true});
+    });
+    cuerpo.querySelector('[aria-pressed=true]')?.focus({preventScroll: true});
+  }
+  hoja.addEventListener('keydown', event => {
+    if (event.key !== 'Escape' || !hoja.classList.contains('hojaPlanos')) return;
+    event.stopPropagation();
+    cerrarHoja();
+    $('terrenoPlano').focus({preventScroll: true});
+  });
+  const observarPlano = new MutationObserver(rotularPlanoTerreno);
+  observarPlano.observe(main.querySelector('.planTypes'), {attributes: true, subtree: true, attributeFilter: ['aria-pressed']});
+  observarPlano.observe(document.body, {attributes: true, attributeFilter: ['class']});
+  rotularPlanoTerreno();
   function tareasTerreno() {
     if (abrirTareas('mias')) return;
     if (buscarTarjeta('lastplanner')) elegirTarjeta('lastplanner');
@@ -333,7 +383,7 @@ export function createNavegacion(ctx) {
       elegirFuncion(a.funcion);
     });
   }
-  if ($('terrenoPlano')) { $('terrenoPlano').onclick = volverAlPlano; $('terrenoTareas').onclick = tareasTerreno; $('terrenoMas').onclick = masTerreno; }
+  if ($('terrenoPlano')) { $('terrenoPlano').onclick = selectorPlanoTerreno; $('terrenoTareas').onclick = tareasTerreno; $('terrenoMas').onclick = masTerreno; }
   construirRueda(); rotular(); dibujarFranja(); pintarTerreno();
   activarFlujos();
   // Al sincronizar puede llegar (o irse) el perfil: se rearma la rueda y se actualiza el contador.

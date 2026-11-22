@@ -113,3 +113,16 @@ body.floorHome header .cuentaAvatar { display: none; }
 .rodilloPiso:focus-visible { outline: 2px solid var(--g-cian, #29a8df); outline-offset: -2px; }
 .rodilloPisos.tomado { cursor: grabbing; }
 .rodilloAbierto { color: var(--g-azul, #0f5499) !important; font-weight: 700; }
+
+body.terreno #terrenoPlano { display: grid; grid-template: auto auto / minmax(0,max-content) auto; justify-content: center; gap: 2px 4px; }
+#terrenoPlano svg { grid-column: 1 / -1; justify-self: center; }
+#terrenoPlano .terrenoNombre { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#terrenoPlano .terrenoFlecha { font-size: 12px; }
+body.terreno #hojaFuncion.hojaPlanos { left: 0; right: 0; width: auto; max-width: none; visibility: visible; }
+.hojaPlanos .hojaCabeza { border-bottom: 0; }
+.hojaPlanos .hojaCuerpo { padding-top: 0; }
+.selectorPiso { margin: 0 0 8px; }
+.selectorPlanos { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+.selectorPlanos button { min-height: 44px; padding: 5px 4px; font-size: 13px; font-weight: 700; white-space: normal; overflow-wrap: anywhere; }
+.selectorPlanos button[aria-pressed=true] { color: #fff; background: var(--g-azul); }
+.selectorPlanos button[aria-pressed=true]::after { content: " ✓"; }

@@ -60,7 +60,19 @@ try {
       page.on('pageerror', error => errors.push(error.message));
       await open(page, 'N-1');
       const drawing = page.waitForResponse(response => /\/cie-s01-map\/overview(?:-mobile)?\.webp$/.test(response.url()) && response.ok());
-      await ceilings(page);
+      if (mobile) {
+        const selector = page.locator('#terrenoPlano');
+        await selector.click();
+        const sheet = page.getByRole('dialog', {name: 'Cambiar plano'});
+        await sheet.waitFor();
+        assert.equal(await sheet.getByRole('button', {name: 'Arquitectura'}).getAttribute('aria-pressed'), 'true');
+        assert.equal(await sheet.locator('[data-elegir-plano]').count(), 6);
+        await sheet.getByRole('button', {name: 'Cielos'}).click();
+        await sheet.waitFor({state:'hidden'});
+        await page.getByRole('button', {name: 'Cielos · Cambiar plano'}).waitFor();
+      } else {
+        await ceilings(page);
+      }
       const toolbar = page.locator('#ceilingMapTools');
       await toolbar.waitFor();
       await (await drawing).finished();
@@ -112,7 +124,15 @@ try {
       } else {
         await page.locator('#closeModal').click();
       }
-      await toolbar.getByRole('button', {name: 'Volver a Arquitectura'}).click();
+      if (mobile) {
+        await page.getByRole('button', {name: 'Cielos · Cambiar plano'}).click();
+        const sheet = page.getByRole('dialog', {name: 'Cambiar plano'});
+        assert.equal(await sheet.getByRole('button', {name: 'Cielos'}).getAttribute('aria-pressed'), 'true');
+        await sheet.getByRole('button', {name: 'Arquitectura'}).click();
+        await page.getByRole('button', {name: 'Arquitectura · Cambiar plano'}).waitFor();
+      } else {
+        await toolbar.getByRole('button', {name: 'Volver a Arquitectura'}).click();
+      }
       assert.ok(await toolbar.isHidden());
       assert.equal(await page.locator('#svg').getAttribute('aria-label'), 'Plano arquitectónico interactivo');
       assert.match(await page.locator('#background image').first().getAttribute('href'), /^map\/overview/);
@@ -121,6 +141,27 @@ try {
     } finally {
       await context.close();
     }
+  }
+  const context = await browser.newContext({viewport:{width:390,height:844}, isMobile:true, hasTouch:true, serviceWorkers:'block'});
+  try {
+    const page = await context.newPage();
+    await open(page, 'N02');
+    const selector = page.locator('#terrenoPlano');
+    const sheet = page.getByRole('dialog', {name:'Cambiar plano'});
+    await selector.click();
+    assert.equal(await sheet.getByRole('button', {name:'Pavimentos'}).count(), 0);
+    await sheet.getByRole('button', {name:'Muros'}).click();
+    await page.getByRole('button', {name:'Muros · Cambiar plano'}).waitFor();
+    await selector.click();
+    await sheet.getByRole('button', {name:'Puertas'}).click();
+    await page.getByRole('button', {name:'Puertas · Cambiar plano'}).waitFor();
+    await selector.click();
+    await sheet.getByRole('button', {name:'Arquitectura'}).click();
+    await page.getByRole('button', {name:'Arquitectura · Cambiar plano'}).waitFor();
+    assert.equal(await page.locator('body.puertasOpen').count(), 0);
+    console.log('Selector móvil N02: opciones del piso y cambio entre Muros, Puertas y Arquitectura');
+  } finally {
+    await context.close();
   }
 } finally {
   await browser.close();

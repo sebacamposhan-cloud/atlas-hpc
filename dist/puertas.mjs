@@ -203,8 +203,11 @@ export function createPuertas(ctx) {
   addEventListener('atlas-puertas-nuevo', () => crearProyecto());
   addEventListener('atlas-puertas-abrir', async e => { const doc = (await readMarkings()).find(d => d.id === e.detail?.id); if (doc) { proyecto = doc; await abrir(); } });
 
+  let solicitudPlano = 0;
   async function abrir() {
+    const solicitud = ++solicitudPlano;
     await cargar();
+    if (solicitud !== solicitudPlano) return;
     ctx.enter();
     activo = true; panel.hidden = false; document.body.classList.add('puertasOpen');
     pintar(); dibujar();
@@ -212,6 +215,7 @@ export function createPuertas(ctx) {
     ctx.resize?.();
   }
   function cerrar() {
+    solicitudPlano++;
     if (!activo) return;
     activo = false; elegida = null; soltarPincel(); panel.hidden = true; panel.replaceChildren();
     document.body.classList.remove('puertasOpen'); dibujar(); ctx.resize?.();
