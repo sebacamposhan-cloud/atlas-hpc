@@ -1,7 +1,7 @@
 import {withReviewObservations} from './review-observations.mjs';
+import {documentedLayerColors} from './documented-layer-colors.mjs';
 
 const roomLabel = /^[\dA-Z]+(?:\.[\dA-Z()−-]+){2,}-\d+[A-Z]?$/i;
-const ceilingCode = /^(?:20[1-9]|21[0-9])$/;
 const lightCode = /^L\d{1,2}$/;
 const height = /^NCT\s*(\d+[,.]\d+)\s*m\b/i;
 const unique = values => [...new Set(values)].sort((a, b) => a.localeCompare(b, 'es', {numeric: true}));
@@ -13,7 +13,7 @@ function roomFields(row, knownCodes) {
   // A crop with another room label is evidence to consult, not a reliable source of room attributes.
   const afterLabel = label >= 0 && !otherLabel ? lines.slice(label + 1) : [];
   const checked = !!row.verification;
-  const ceilings = unique(row.ceilingCodes || afterLabel.filter(line => ceilingCode.test(line)));
+  const ceilings = unique(row.ceilingCodes || afterLabel.filter(line => Object.hasOwn(documentedLayerColors, 'CIE|' + line)));
   const heights = unique(checked && row.nct ? [row.nct] : afterLabel.flatMap(line => line.match(height)?.[1] ?? []));
   const lights = unique(row.luminaires || afterLabel.filter(line => lightCode.test(line)));
   return {ceilings, heights, lights, checked, otherLabel};

@@ -108,8 +108,11 @@ try {
     await page.locator('[data-architecture-room]').first().click();
     assert.equal(await page.locator('#discipline').inputValue(), 'architecture');
     assert.equal(await page.locator('#detail .detailCode').innerText(), verified.code);
-    if (await page.locator('#closeDetail').isVisible()) await page.locator('#closeDetail').click();
     await page.locator('#globalSearch').fill('');
+    await page.waitForFunction(() => document.querySelectorAll('#results .result').length > 1);
+    // The mobile sheet ignores clicks for 500 ms after opening to prevent tap-through.
+    if (await page.locator('#closeDetail').isVisible()) await page.locator('#closeDetail').click({delay:500});
+    await page.locator('aside.right').waitFor({state:'hidden'});
     if(await page.locator('#isolate').isVisible())await page.locator('#isolate').click();
     await openCeilings(page);
     await page.waitForFunction(id => document.querySelector('[data-ceiling-observation][aria-pressed="true"]')?.dataset.ceilingObservation === id, verified.id);
