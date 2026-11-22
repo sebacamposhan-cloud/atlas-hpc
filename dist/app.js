@@ -9,6 +9,7 @@ import {iniciarCapaAvance} from './avance.mjs';
 import './cielos-lamina.mjs';
 import {loadCeilingSheets,renderCeilingRoom} from './cielos-unificados.mjs';
 import {ceilingS01Map} from './cie-s01-map.mjs';
+import {renderPlanLegend} from './plan-legend.mjs';
 import {createObservaciones,iniciarCapaObservaciones,cargarObservaciones} from './observaciones.mjs';
 import {createRombo,romboSVG} from './rombo.mjs';
 import {createLastPlanner,iniciarCapaLastPlanner} from './lastplanner.mjs';
@@ -143,28 +144,50 @@ function loadCeilings(){
   .catch(error=>{ceilingError=error.message;})
   .finally(()=>{ceilingPending=null;if(ceilingView){renderDetail();renderCeilingLegendLinks();}});
 }
-function setUnifiedCeilings(active,actions){
+let openCeilingOriginals;
+function rotularEspecialidad(type, name){
+ const tools=$('planViewTools');
+ if(tools.dataset.type===type)return;
+ tools.dataset.type=type;
+ tools.hidden=type==='architecture';
+ if(tools.hidden)return;
+ $('planViewName').textContent=name;
+ $('planViewLegend').onclick=()=>openPlanLegend(type,name);
+}
+
+function openPlanLegend(type,name){
+ const title=`<h2 id="planLegendTitle">Simbología general · ${esc(name)}</h2>`;
+ if(type==='ceilings'&&nivel.id==='N-1'){
+  modal(`<section class="ceilingLegendContent">${title}
+    <p>Tablas de cielos e iluminación de la lámina CIE-A-501.</p>
+    ${openCeilingOriginals?'<button id="ceilingOriginals" type="button">Láminas originales y registros</button>':''}
+    <ul id="ceilingDocumentList" class="ceilingDocumentList" hidden></ul>
+    <img src="cie-s01-simbologia.webp" alt="Tablas de simbología de cielos y luminarias de la lámina CIE-A-501, página 1" decoding="async">
+   </section>`,'planLegendTitle');
+  renderCeilingLegendLinks();
+  if(openCeilingOriginals)$('ceilingOriginals').onclick=()=>{$('modal').close();openCeilingOriginals();};
+  return;
+ }
+ const content=renderPlanLegend({type,pilotDoors:nivel.puertasPiloto,materials:data.materials,layerLegend:ui.resumenFiltro().leyenda,esc});
+ modal(`<section class="planLegendContent">${title}${content}</section>`,'planLegendTitle');
+}
+
+$('planViewExit').onclick=()=>{
+ if(edit||!disciplines.canLeave())return toast('Guarda o descarta los cambios antes de cambiar de plano.');
+ puertas?.cerrar();
+ document.querySelector('.planTypes [data-plan-type=architecture]').click();
+};
+
+function setUnifiedCeilings(active,originals){
  ceilingView=active;
+ openCeilingOriginals=originals;
  document.body.classList.toggle('cielosUnificados',active);
  setDrawingMap(active?ceilingS01Map:null);
- $('ceilingMapTools').hidden=!active;
  $('svg').setAttribute('aria-label',active?'Plano interactivo de Cielos del nivel −1':'Plano arquitectónico interactivo');
  $('fichaBarra').setAttribute('aria-label',active?'Abrir ficha de Cielos':'Abrir el rombo del recinto');
  $('fichaBarra').querySelector('.fichaBarraAbrir').textContent=active?'Ficha Cielos ▲':'Abrir rombo ▲';
  if(active){
   isolation=false;previousView=null;
-  $('ceilingExit').onclick=actions.exit;
-  $('ceilingLegend').onclick=()=>{
-   modal(`<section class="ceilingLegendContent">
-     <h2>Simbología general · Cielos</h2>
-     <p>Tablas de cielos e iluminación de la lámina CIE-A-501.</p>
-     <button id="ceilingOriginals" type="button">Láminas originales y registros</button>
-     <ul id="ceilingDocumentList" class="ceilingDocumentList" hidden></ul>
-     <img src="cie-s01-simbologia.webp" alt="Tablas de simbología de cielos y luminarias de la lámina CIE-A-501, página 1" decoding="async">
-   </section>`);
-   renderCeilingLegendLinks();
-   $('ceilingOriginals').onclick=()=>{$('modal').close();actions.originals();};
-  };
   loadCeilings();
  }
  render();renderDetail();
@@ -313,7 +336,7 @@ async function initialize(){
   protocolPlan ||= createProtocolPlan({esc,toast,setView,resize:updateTiles,enter:()=>{marking?.close();ui.closeFilters();ui.show('map');selected=null;isolation=false;render();},volver:()=>nav?.volverProtocolos()});
   // Plano de puertas (tarjeta Puertas de Plano y Proyecto tipo Puertas): vanos con su estado sobre el plano.
   puertas ||= createPuertas({esc,toast,setView,resize:updateTiles,level:nivel.id,levelName:nivel.nombre,download:downloadBlob,enter:()=>{marking?.close();protocolPlan?.cerrar();ui.closeFilters();ui.show('map');selected=null;isolation=false;document.body.classList.add('hideRight');render();}});
-  nav ||= createNavegacion({esc,toast,ui,rooms:()=>uniqueRooms(data.rooms),verProtocolos:datos=>protocolPlan.mostrar(datos),prepararCambioPlano:()=>{puertas?.cerrar();protocolPlan?.cerrar();marking?.close();},cerrarModos:()=>{disciplines?.switchMode('architecture');marking?.close();protocolPlan?.cerrar();puertas?.cerrar();ui?.closeFilters();},// Puertas: el plano de puertas del piso (puertas.json) o, en el −1, el catálogo piloto como tipo de plano.
+  nav ||= createNavegacion({esc,toast,ui,rotularEspecialidad,rooms:()=>uniqueRooms(data.rooms),verProtocolos:datos=>protocolPlan.mostrar(datos),prepararCambioPlano:()=>{puertas?.cerrar();protocolPlan?.cerrar();marking?.close();},cerrarModos:()=>{disciplines?.switchMode('architecture');marking?.close();protocolPlan?.cerrar();puertas?.cerrar();ui?.closeFilters();},// Puertas: el plano de puertas del piso (puertas.json) o, en el −1, el catálogo piloto como tipo de plano.
 abrirPuertas:()=>nivel.puertas?puertas?.abrir():(ui.show('map'),disciplines?.switchMode('doors')),abrirImpermeabilizacion:()=>{ui.show('map');disciplines?.switchMode('waterproofing');},escritorio:()=>matchMedia('(min-width:1024px) and (pointer:fine)').matches,ocupado:()=>{if(disciplines?.canLeave()===false){toast('Guarda o descarta los cambios del plano antes de continuar.');return true;}if(!edit&&!spatial?.active())return false;toast('Termina la edición en el plano antes de abrir las tarjetas.');return true;},perfil:()=>tareas?.perfil()||perfilActual(),tareas,lastplanner});
   if(!tareasEscucha){tareasEscucha=true;const actualizar=()=>tareas.recargar().then(()=>nav.alCambiarTareas()).catch(()=>{});window.addEventListener('atlas-jerarquia-changed',actualizar);window.addEventListener('atlas-session-changed',actualizar);actualizar();
    // «Asignar a mi equipo» en la ficha de una actividad de Last Planner abre la asignación con esa actividad y su frente.
