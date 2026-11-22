@@ -20,7 +20,8 @@ import {consultaPiso} from './navegacion-model.mjs';
 import {createTareas} from './jerarquia-ui.mjs';
 import {perfilActual} from './jerarquia-store.mjs';
 import {matchesLayers,tonoOscuro,OPACIDAD_FILTRO} from './layers.mjs';
-import {prepareViewer,footprint,footprintPath,hitRoom,updateFootprint,mapView,flushView,updateTiles,exportMapURL,mapa,overlays,showOverlay,capasDibujo,mostrarCapa} from './viewer.mjs';
+import {prepareViewer,footprint,footprintPath,hitRoomCandidates,updateFootprint,mapView,flushView,updateTiles,exportMapURL,mapa,overlays,showOverlay,capasDibujo,mostrarCapa} from './viewer.mjs';
+import {roomAliases} from './geometry-authority.mjs';
 import {nivel,archivo,pisos,datos,prefijo,MARCA,obra} from './level.mjs';
 import {asignarSectores,conCapaSectores} from './sectores-model.mjs';
 import {quitarObraComplementaria} from './obra-complementaria.mjs';
@@ -49,7 +50,13 @@ const ns='http://www.w3.org/2000/svg',palette=['#07848b','#bf8c38','#7d65b5','#c
 const toast=s=>{ $('toast').textContent=s;$('toast').style.display='block';clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('toast').style.display='none',5500);};
 async function api(url,options){const result=await localAPI(url,options);if(options?.method==='PATCH'){roomById.set(result.id,result);canonicalRooms=null;worldCache=new WeakMap();}return result;}
 function params(){return new URLSearchParams({q:$('search').value,asepsis:$('asepsis').value,material:$('material').value,pending:$('pending').checked,geometry:$('geometryOnly').checked});}
-function modal(html){$('modalBody').innerHTML=html;if(!$('modal').open)$('modal').showModal();}
+function modal(html,labelId){
+  const dialog=$('modal');
+  $('modalBody').innerHTML=html;
+  if(labelId)dialog.setAttribute('aria-labelledby',labelId);
+  else dialog.removeAttribute('aria-labelledby');
+  if(!dialog.open)dialog.showModal();
+}
 function fullView(){return atlas.scope.view.slice();}
 function world(r){if(worldCache.has(r))return worldCache.get(r);const t=atlas.tiles.find(t=>t.id===r.document_id),[x,y]=t.offset,shift=p=>[p[0]+x,p[1]+y],w={...r,position:shift(r.position),polygon:r.polygon?.map(shift),holes:r.holes?.map(h=>h.map(shift))};worldCache.set(r,w);return w;}
 function inScope(r){const p=world(r).position,[x,y,w,h]=atlas.scope.bounds;return p[0]>=x&&p[0]<=x+w&&p[1]>=y&&p[1]<=y+h;}
@@ -142,6 +149,29 @@ async function prepareExternalGeometry(){
 async function prepareGeometry(){const id=selected?.id;if(!id)return;try{await ensureDocumentGeometry(selected.document_id);worldCache=new WeakMap();if(selected?.id===id)startGeometry();}catch(e){toast(e.message);}}
 function reset(){if(edit){toast('Cancela o guarda el contorno antes de restablecer.');return;}disciplines?.clearSelection();querySerial++;ui?.clear();$('globalSearch').value='';$('search').value='';$('asepsis').value='';$('material').value='';$('pending').checked=false;$('geometryOnly').checked=false;$('colorBy').value='none';setMode();selected=null;filtered=false;isolation=false;previousView=null;results=uniqueRooms(data.rooms);document.body.classList.add('hideRight');document.body.classList.remove('fichaMinima');$('toast').style.display='none';nav?.alLimpiar();tareas?.limpiarPlano();protocolPlan?.cerrar();setView(fullView());$('detail').innerHTML='<div class="intro"><span class="largeIcon">⌖</span><h2>Listo para una<br>nueva consulta.</h2><p>Selecciona un recinto en el plano o busca su código.</p></div>';listResults();render();}
 function point(e){const p=new DOMPoint(e.clientX,e.clientY);return p.matrixTransform($('svg').getScreenCTM().inverse());}
+function elegirEnPlano(p,diamondId){
+  if(!diamondId&&!spatial?.active()&&puertas?.tocar(p))return;
+  if(spatial?.active()&&spatial.isDrawing()){
+    spatial.choose(null,p);
+    return;
+  }
+  const candidates=diamondId?[diamondId]:hitRoomCandidates(p);
+  const elegir=id=>{
+    if(spatial?.active())spatial.choose(id,p);
+    else if(id&&marking?.active())marking.choose(roomById.get(aliases.get(id)||id));
+    else if(id)tocarRecinto(id);
+    else if(!marking?.active())soltarRecinto();
+  };
+  if(candidates.length<=1){elegir(candidates[0]);return;}
+  const rooms=candidates.map(id=>roomById.get(id)).sort((a,b)=>a.code.localeCompare(b.code,'es',{numeric:true}));
+  modal(`<h2 id="roomHitTitle">Elige un recinto</h2><p>El punto coincide con varios contornos.</p>
+    <div class="roomHitChoices">${rooms.map((room,index)=>`<button type="button" data-room-hit="${index}"><strong>${esc(room.code)}</strong> · ${esc(room.name)}${rooms.some(other=>other!==room&&other.code===room.code)?` <small>· ${esc(data.documents.find(doc=>doc.id===room.document_id)?.code||room.document_id)}</small>`:''}</button>`).join('')}</div>`,'roomHitTitle');
+  const dialog=$('modal');
+  $('modalBody').querySelectorAll('[data-room-hit]').forEach(button=>button.onclick=()=>{
+    dialog.close();
+    elegir(rooms[Number(button.dataset.roomHit)].id);
+  });
+}
 function zoom(f,c){const p=c||{x:view[0]+view[2]/2,y:view[1]+view[3]/2};const w=Math.min(atlas.width*2,Math.max(40,view[2]*f)),ratio=w/view[2];setView([p.x+(view[0]-p.x)*ratio,p.y+(view[1]-p.y)*ratio,w,view[3]*ratio]);}
 $('svg').addEventListener('wheel',e=>{e.preventDefault();zoom(e.deltaY>0?1.15:.87,point(e));},{passive:false});
 function beginPinch(){flushView();const pts=[...pointers.values()];pinch=startPinch(view,$('svg').getScreenCTM(),pts[0],pts[1]);drag=null;}
@@ -168,7 +198,7 @@ $('svg').addEventListener('pointerup',e=>{
  if(!drag)return;const d=drag;drag=null;$('svg').classList.remove('dragging');
  if(!d.moved){
   if(edit){if(d.vertex===null){const p=point(e);rememberGeometry();edit.points.push([+p.x.toFixed(2),+p.y.toFixed(2)]);renderEdit();}}
-  else{const p=point(e);if(!d.diamondId&&!spatial?.active()&&puertas?.tocar(p))return;const id=d.diamondId||hitRoom(p);if(spatial?.active())spatial.choose(id,p);else if(id){if(marking?.active())marking.choose(roomById.get(aliases.get(id)||id));else tocarRecinto(id);}else if(!id&&!spatial?.active()&&!marking?.active())soltarRecinto();}
+  else elegirEnPlano(point(e),d.diamondId);
  }else loadDetail();
 });
 $('svg').addEventListener('keydown',e=>{const id=e.target.dataset.diamondId;if(id&&(e.key==='Enter'||e.key===' ')){e.preventDefault();if(marking?.active())marking.choose(roomById.get(aliases.get(id)||id));else selectRoom(id,false);}});
@@ -177,7 +207,19 @@ function startGeometry(){undoGeometry=[];redoGeometry=[];const w=world(selected)
 function renderEdit(){if(!edit){$('editLayer').innerHTML='';return;}if($('undoGeometry')){$('undoGeometry').disabled=!undoGeometry.length;$('redoGeometry').disabled=!redoGeometry.length;}const rad=Math.max(1.5,view[2]/180);$('editLayer').innerHTML=`<polygon points="${edit.points.map(p=>p.join(',')).join(' ')}" fill="#ffa500" fill-opacity=".18" stroke="#b37413" stroke-width="1" vector-effect="non-scaling-stroke" pointer-events="none"/>`+edit.points.map((p,i)=>`<circle data-vertex="${i}" cx="${p[0]}" cy="${p[1]}" r="${rad}" fill="white" stroke="#b37413" stroke-width="1" vector-effect="non-scaling-stroke" style="cursor:move"/>`).join('');if($('pointCount'))$('pointCount').textContent=edit.points.length+' vértices · '+edit.holes.length+' islas interiores';}
 function editInfo(geometry=false){const r=selected;modal(`<h2>${geometry?'Guardar geometría':'Revisión documental'}</h2><p>${esc(r.code)} · ${esc(r.name)}</p><form id="editForm"><div class="editorGrid"><div><label>Código técnico</label><input name="code" required value="${esc(r.code)}"></div><div><label>Nombre oficial</label><input name="name" required value="${esc(r.name)}"></div><div><label>Estado</label><select name="status">${['Pendiente de revisión','Validado','Con observaciones','Sin información'].map(s=>`<option ${r.status===s?'selected':''}>${s}</option>`).join('')}</select></div><div><label>Responsable</label><input name="responsible" required placeholder="Nombre de quien revisa"></div>${r.finishes.map(f=>`<div><label>${f.field} · código del rombo</label><input name="finish_${f.field}" value="${esc(f.code)}" required></div>`).join('')}${r.diamond_bbox&&data.documents.find(d=>d.id===r.document_id)?.kind!=='dwg'?`<div><label>Región del rombo [x0, y0, x1, y1]</label><input name="diamond_bbox" required value="${esc(JSON.stringify(r.diamond_bbox))}"></div>`:''}<div><label>Motivo / evidencia de la corrección</label><textarea name="reason" required placeholder="Indica la verificación realizada"></textarea></div></div><label class="check"><input name="review_confirmed" type="checkbox"> He cotejado código, nombre, contorno, rombo y leyenda con el PDF.</label><p class="muted">Validar exige un contorno y descripciones documentadas. Se conserva el valor anterior en el historial.</p><button class="primary" type="submit">Guardar cambios</button></form>`);$('editForm').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.target);let b={version:r.version,code:f.get('code'),name:f.get('name'),status:f.get('status'),responsible:f.get('responsible'),reason:f.get('reason'),review_confirmed:f.has('review_confirmed'),finishes:r.finishes.map(v=>({...v,code:f.get('finish_'+v.field)}))};try{b.diamond_bbox=f.has('diamond_bbox')?JSON.parse(f.get('diamond_bbox')):r.diamond_bbox;if(geometry){const [ox,oy]=atlas.tiles.find(t=>t.id===r.document_id).offset;const local=p=>[p[0]-ox,p[1]-oy];b.polygon=edit.points.map(local);b.holes=edit.holes.map(h=>h.map(local));}const saved=await api('/api/rooms/'+r.id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});data.rooms[data.rooms.findIndex(x=>x.id===r.id)]=saved;selected=saved;updateFootprint(saved);edit=null;$('modal').close();renderDetail();await runSearch();render();toast('Cambios guardados en este navegador con historial.');}catch(err){toast(err.message);}};}
 async function showHistory(){try{const r=await api('/api/rooms/'+selected.id);modal(`<h2>Historial · ${esc(r.code)}</h2>${r.history.length?'<button id="revertLast">Revertir última corrección</button>':''}${r.history.length?r.history.map(h=>`<article><h3>${esc(h.responsible)} · ${esc(new Date(h.at).toLocaleString())}</h3><p>${esc(h.reason)}</p><details><summary>Valores anteriores y nuevos</summary><pre style="white-space:pre-wrap;font-size:10px">${esc(JSON.stringify({anterior:JSON.parse(h.before_json),nuevo:JSON.parse(h.after_json)},null,2))}</pre></details></article>`).join(''):'<p>No hay correcciones registradas.</p>'}`);if($('revertLast'))$('revertLast').onclick=()=>revertLast(r);}catch(e){toast(e.message);}}
-$('closeModal').onclick=()=>$('modal').close();$('modal').addEventListener('click',e=>{if(e.target===$('modal'))$('modal').close();});$('navToggle').onclick=()=>{ui?.show('map');document.body.classList.remove('hideLeft');};$('detailToggle').onclick=()=>document.body.classList.toggle('hideRight');$('dashboard').onclick=()=>ui?.show('dashboard');
+const appDialog=$('modal');
+let pressedInAppDialog=false;
+$('closeModal').onclick=()=>appDialog.close();
+document.addEventListener('pointerdown',e=>{pressedInAppDialog=appDialog.contains(e.target);},true);
+appDialog.addEventListener('click',e=>{
+  // A compatibility click from the original map tap can land on a newly opened option.
+  if(appDialog.getAttribute('aria-labelledby')==='roomHitTitle'&&e.detail>0&&!pressedInAppDialog){
+    e.preventDefault();
+    e.stopImmediatePropagation();
+  }
+},true);
+appDialog.addEventListener('click',e=>{if(e.target===appDialog)appDialog.close();});
+$('navToggle').onclick=()=>{ui?.show('map');document.body.classList.remove('hideLeft');};$('detailToggle').onclick=()=>document.body.classList.toggle('hideRight');$('dashboard').onclick=()=>ui?.show('dashboard');
 $('document').onchange=()=>{if(edit){$('document').value=doc.id;toast('Guarda o cancela el contorno antes de cambiar de lámina.');return;}selected=null;isolation=false;changeDoc($('document').value);$('detail').innerHTML='<div class="intro"><h2>Selecciona un recinto.</h2></div>';listResults();};
 $('search').oninput=()=>{clearTimeout(searchTimer);searchTimer=setTimeout(runSearch,160);};$('search').onkeydown=e=>{if(e.key==='Enter'){clearTimeout(searchTimer);runSearch();}};$('clearSearch').onclick=()=>{$('search').value='';runSearch();};['material','pending','geometryOnly'].forEach(id=>$(id).onchange=runSearch);$('asepsis').onchange=()=>{if($('asepsis').value)ui?.apply('asepsis',$('asepsis').value);else{ui?.clear();runSearch();}};['layerOriginal','layerPolygons','layerMarkers','layerCodes','layerNames','colorBy'].forEach(id=>$(id).onchange=()=>{setMode();render();});
 $('results').onclick=e=>{const b=e.target.closest('[data-id]');if(b)selectRoom(b.dataset.id);};if($('editorContornos'))$('editorContornos').href='editor-contornos/editor.html?nivel='+encodeURIComponent(nivel.id);$('fit').onclick=()=>setView(fullView());$('zoomIn').onclick=()=>zoom(.7);$('zoomOut').onclick=()=>zoom(1.4);$('reset').onclick=reset;$('isolate').onclick=()=>{if(!selected)return;if(!isolation)previousView=view.slice();isolation=true;setView(bounds(selected,20));render();};$('back').onclick=()=>{isolation=false;if(previousView)setView(previousView);render();};$('backResults').onclick=()=>{selected=null;isolation=false;setView(fullView());$('detail').innerHTML='<div class="intro"><h2>Resultados de la consulta.</h2><p>Selecciona otro recinto para ver su ficha.</p></div>';render();listResults();};$('fullscreen').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else $('viewport').requestFullscreen().catch(()=>toast('Pantalla completa no disponible.'));};$('excel').onclick=()=>excel(results);$('exportPlan').onclick=()=>modal('<h2>Exportar vista del plano</h2><p>Incluye los filtros y colores actuales sobre el plano completo.</p><div class="actions"><button id="exportPDF">PDF con leyenda</button><button id="exportPNG">Imagen PNG</button></div>')||bindExport();$('original').onclick=()=>modal(`<h2>Documentos originales</h2><p>${data.documents.length} láminas componen este plano.</p>`+data.documents.map(d=>d.kind==='dwg'?`<p>Lámina ${esc(d.code.split('-').at(-1))} · ${esc(d.metadata.source_original_name)}<br><small>DWG original · SHA256 ${esc(d.sha256||'pendiente')}</small></p>`:`<p><a href="/source/${d.filename}" target="_blank" rel="noopener">Lámina ${esc(d.code.split('-').at(-1))} · ${esc(d.metadata.source_original_name)}</a></p>`).join('')+[...new Set(data.documents.filter(d=>d.kind==='dwg').map(d=>d.filename).filter(Boolean))].map(f=>`<p><a href="/source/${encodeURIComponent(f)}" target="_blank" rel="noopener">Planta de arquitectura en PDF ↗</a></p>`).join(''));$('legend').onclick=()=>modal(doc.legend===null?`<h2>Simbología · ${esc(nivel.nombre)}</h2><p>Códigos de la monografía usados en este piso.</p><table class="finishes"><tbody>${data.materials.filter(m=>data.rooms.some(r=>r.finishes.some(f=>f.code===m.code))).map(m=>`<tr><td>${esc(m.code)}</td><td>${esc(m.description)}</td><td>${esc(m.category)}</td></tr>`).join('')}</tbody></table>`:`<h2>Leyenda original · Lámina ${esc(doc.code)}</h2><img style="width:100%;max-width:750px" src="/assets/${doc.id}/legend.png" alt="Leyenda original de terminaciones">`);
@@ -191,8 +233,7 @@ async function initialize(){
   // Los edificios complementarios (anexo del −1 y lámina A-510 del piso 1, obra-complementaria.mjs) no entran en Atlas.
   data=quitarObraComplementaria(state,nivel.id,runtime.atlas);atlas=runtime.atlas;roomById=new Map(data.rooms.map(r=>[r.id,r]));canonicalRooms=null;worldCache=new WeakMap();aliases=new Map();
   await sectorizar(datos('ejes.json'),runtime);
-  const placed=new Map();
-  for(const r of [...data.rooms].sort((a,b)=>Number(b.version>1&&b.geometry_method==='Edición manual en navegador')-Number(a.version>1&&a.geometry_method==='Edición manual en navegador')||(b.status==='Validado')-(a.status==='Validado')||Number(b.has_polygon||!!b.polygon)-Number(a.has_polygon||!!a.polygon))){const w=world(r),key=r.code+'|'+r.name,candidates=placed.get(key)||[],same=candidates.find(v=>Math.hypot(v.position[0]-w.position[0],v.position[1]-w.position[1])<5);if(same)aliases.set(r.id,same.id);else{candidates.push(w);placed.set(key,candidates);}}
+  aliases=roomAliases(data.rooms,r=>world(r).position);
   mountAtlas();setMode();if(!data.documents.length)throw Error('No se pudieron cargar los planos.');
   $('document').innerHTML=data.documents.map(d=>`<option value="${d.id}">Lámina ${esc(d.code.split('-').at(-1))} · ${esc(d.revision)}</option>`).join('');
   $('material').innerHTML='<option value="">Todos los materiales</option>'+data.materials.map(m=>`<option value="${esc(m.code)}">${esc(m.code+' · '+m.description)}</option>`).join('');
@@ -334,7 +375,7 @@ async function loadSpatialFloor(levelId){
  try{const grid=await fetch(prefix+'ejes.json');spatialScale=grid.ok?await grid.json():null;}catch{spatialScale=null;}
  data=quitarObraComplementaria(next,levelId,runtime.atlas);atlas=runtime.atlas;roomById=new Map(data.rooms.map(r=>[r.id,r]));aliases=new Map();canonicalRooms=null;worldCache=new WeakMap();
  asignarSectores(data.rooms,world,spatialScale);worldCache=new WeakMap();conCapaSectores(runtime.map,atlas.scope,spatialScale);
- const placed=new Map();for(const r of [...data.rooms].sort((a,b)=>Number(b.version>1&&b.geometry_method==='Edición manual en navegador')-Number(a.version>1&&a.geometry_method==='Edición manual en navegador')||(b.status==='Validado')-(a.status==='Validado')||Number(b.has_polygon||!!b.polygon)-Number(a.has_polygon||!!a.polygon))){const w=world(r),key=r.code+'|'+r.name,candidates=placed.get(key)||[],same=candidates.find(v=>Math.hypot(v.position[0]-w.position[0],v.position[1]-w.position[1])<5);if(same)aliases.set(r.id,same.id);else{candidates.push(w);placed.set(key,candidates);}}
+ aliases=roomAliases(data.rooms,r=>world(r).position);
  doc=data.documents[0];results=uniqueRooms(data.rooms);selected=null;mountAtlas();await prepareViewer(atlas,results,aliases,runtime);setView(fullView());render();
 }
 async function restoreSpatial(){
