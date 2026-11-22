@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 const code=fs.readFileSync('dist/offline.mjs','utf8');
 function page({saved=true,online=false,failFirst=false,secure=true,waiting=false,installing=false,bloquear=false}={}){
   const nodes=new Map(),windowEvents={},documentEvents={},calls={get:0,register:0,update:0,status:0,activate:0};
-  const get=id=>{if(!nodes.has(id))nodes.set(id,{classList:{toggle(){}},addEventListener(){},showModal(){this.open=true;},close(){this.open=false;}});return nodes.get(id);};
+  const get=id=>{if(!nodes.has(id))nodes.set(id,{classList:{toggle(){}},setAttribute(){},addEventListener(){},showModal(){this.open=true;},close(){this.open=false;}});return nodes.get(id);};
   const state={plan:{ready:saved,count:saved?800:16,total:800,bytes:23600000},documents:{ready:false,count:0,total:80,bytes:29900000},downloading:null};
   const changes=[];const worker={state:'installing',addEventListener(name,fn){changes.push(fn);}};
   const control={bloquear};const registration={waiting:waiting?{postMessage(){calls.activate++;}}:null,installing:installing?worker:null,active:{postMessage(message,ports){calls.status++;ports[0].postMessage(structuredClone(state));}},addEventListener(){},update(){calls.update++;return new Promise(()=>{});}};
@@ -14,13 +14,15 @@ function page({saved=true,online=false,failFirst=false,secure=true,waiting=false
     addEventListener(){},
   }};
   class Channel {constructor(){this.port1={close(){}};this.port2={postMessage:data=>queueMicrotask(()=>this.port1.onmessage?.({data}))};}}
-  vm.runInNewContext(code,{document:{getElementById:get,hidden:false,addEventListener:(name,fn)=>documentEvents[name]=fn},window:{isSecureContext:secure,caches:{},addEventListener:(name,fn)=>windowEvents[name]=fn,dispatchEvent:()=>!control.bloquear},Event:class{constructor(type){this.type=type;}},navigator,MessageChannel:Channel,setTimeout,clearTimeout,setInterval,clearInterval,location:{reload(){}}});
+  vm.runInNewContext(code,{document:{getElementById:get,hidden:false,addEventListener:(name,fn)=>documentEvents[name]=fn},window:{isSecureContext:secure,caches:{},addEventListener:(name,fn)=>windowEvents[name]=fn,dispatchEvent:()=>!control.bloquear},Event:class{constructor(type){this.type=type;}},navigator,fetch:async()=>({ok:true,json:async()=>({status:'ok'})}),AbortController,MessageChannel:Channel,setTimeout,clearTimeout,setInterval,clearInterval,location:{reload(){}}});
   return {get,calls,navigator,windowEvents,documentEvents,registration,worker,changes,control};
 }
 const cached=page();await cached.windowEvents['atlas-ready']();
 assert.equal(cached.calls.register,0,'reopening saved Atlas must not register through the network');
 assert.equal(cached.calls.update,0,'offline opening must not attempt an update');
-assert(cached.get('offlineStatus').textContent.includes('Listo'));
+assert(cached.get('offlineStatus').textContent.includes('guardada'));
+assert.equal(cached.get('connectionLabel').textContent,'Sin señal');
+assert.equal(cached.get('offlineLabel').textContent,'Base lista');
 assert(cached.get('offlineSave').disabled);
 await cached.get('offlineOpen').onclick();assert(cached.get('offlineDialog').open);assert.equal(cached.calls.get,1);
 cached.get('offlineDialog').close();
