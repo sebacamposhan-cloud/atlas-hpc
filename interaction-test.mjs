@@ -18,21 +18,32 @@ assert.deepEqual(panView(continued,{x:180,y:150}),[230,270,500,400],'lifting one
 // Exercise the actual tile renderer with a minimal SVG adapter. In particular,
 // offscreen removals must not skip items in a live children collection.
 class Element {
-  constructor(){this.attrs={};this.dataset={};this.children=[];this.events={};}
+  constructor(){this.attrs={};this.dataset={};this.children=[];this.events={};this.style={};}
   setAttribute(k,v){this.attrs[k]=String(v);}
+  getAttribute(k){return this.attrs[k]??null;}
+  removeAttribute(k){delete this.attrs[k];}
   append(el){el.parent=this;this.children.push(el);}
   replaceChildren(){for(const el of this.children)el.parent=null;this.children=[];}
   remove(){if(this.parent){const p=this.parent;p.children.splice(p.children.indexOf(this),1);this.parent=null;}}
   addEventListener(k,v){this.events[k]=v;}
 }
 const svg=new Element(),background=new Element(),detailImage=new Element(),events={};
-svg.getBoundingClientRect=()=>({left:0,top:0,right:800,bottom:600});
+svg.getBoundingClientRect=()=>({left:0,top:0,right:800,bottom:600,width:800,height:600});
 svg.getScreenCTM=()=>{
   const [x,y,w,h]=svg.attrs.viewBox.split(' ').map(Number),a=Math.min(800/w,600/h),e=(800-w*a)/2-x*a,f=(600-h*a)/2-y*a;
   return {a,d:a,e,f,inverse:()=>({a:1/a,d:1/a,e:-e/a,f:-f/a})};
 };
-globalThis.document={getElementById:id=>({svg,background,detailImage}[id]),createElementNS:()=>new Element()};
-globalThis.window={addEventListener:(name,fn)=>events[name]=fn};
+const elements={svg,background,detailImage};
+detailImage.after=el=>{elements[el.id]=el;};
+globalThis.document={
+  getElementById:id=>elements[id],
+  createElementNS:()=>new Element(),
+  body:{classList:new Set()},
+  addEventListener:(name,fn)=>events[name]=fn,
+};
+document.body.classList.contains=document.body.classList.has.bind(document.body.classList);
+globalThis.getComputedStyle=()=>({visibility:'visible'});
+globalThis.window={matchMedia:()=>({matches:false,addEventListener(){}}),addEventListener:(name,fn)=>events[name]=fn,dispatchEvent:event=>events[event.type]?.(event)};
 globalThis.devicePixelRatio=1;
 globalThis.DOMPoint=class {constructor(x,y){this.x=x;this.y=y;}matrixTransform(m){return{x:this.x*m.a+m.e,y:this.y*m.d+m.f};}};
 let frames=new Map(),nextFrame=0;
@@ -42,15 +53,16 @@ const {prepareViewer,mapView,updateTiles}=await import('./dist/viewer.mjs');
 const map=JSON.parse(fs.readFileSync('dist/map/index.json'));
 await prepareViewer({tiles:[]},[],new Map(),{map,selection:{rooms:[]}});
 const [ox,oy]=map.origin;
+const baseTiles=detailImage.children[0];
 for(let i=0;i<12;i++){
   const col=(i*3)%5,row=(i*2)%8;
   mapView([ox+col*768,oy+row*768,800,600]);updateTiles();
-  assert.deepEqual(detailImage.children.map(e=>e.dataset.tile).sort(),[`1_${col}_${row}`,`1_${col+1}_${row}`].sort(),'only the two visible tiles remain');
-  const before=detailImage.children.slice();updateTiles();assert.deepEqual(detailImage.children,before,'unchanged views reuse existing images');
+  assert.deepEqual(baseTiles.children.map(e=>e.dataset.tile).sort(),[`1_${col}_${row}`,`1_${col+1}_${row}`].sort(),'only the two visible tiles remain');
+  const before=baseTiles.children.slice();updateTiles();assert.deepEqual(baseTiles.children,before,'unchanged views reuse existing images');
 }
-const broken=detailImage.children[0];broken.events.error();assert.equal(detailImage.children.length,1);
-events.online();assert.equal(detailImage.children.length,2,'failed images retry after connectivity returns');
+const broken=baseTiles.children[0];broken.events.error();assert.equal(baseTiles.children.length,1);
+events.online();assert.equal(baseTiles.children.length,2,'failed images retry after connectivity returns');
 for(let i=0;i<50;i++)mapView([ox+i,oy,800,600]);
 assert.equal(frames.size,1,'multiple movement events coalesce into one display frame');
-mapView([ox,oy,8000,6000]);updateTiles();assert.equal(detailImage.children.length,0);assert.equal(frames.size,0);
+mapView([ox,oy,8000,6000]);updateTiles();assert.equal(baseTiles.children.length,0);assert.equal(frames.size,0);
 console.log('Gesture anchoring, pinch/pan continuity, frame coalescing, tile cleanup and connection recovery: passed');

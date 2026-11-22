@@ -30,8 +30,15 @@ const pila=[...floors].reverse();let elegidos=[];
 // Cantidad de pisos para el alto de la pila: con muchos, la portada se desplaza hasta el piso elegido (navegacion.css).
 gallery.style.setProperty('--n',String(pila.length));
 const orden=floors.map(f=>f.id),disponible=id=>floors.some(f=>f.id===id&&f.piso);
-function mostrar(nombre){vista=nombre;seccionModulos.hidden=nombre!=='modulos';gallery.hidden=nombre!=='pisos';if(nombre==='modulos')pistaModulos.acomodar(lugarModulo(modulo));else{$('floorModulo').textContent=moduloDe(modulo).titulo;pisos.redibujar();if(pila.length>5)gallery.querySelector(`.pisoCapa[data-floor="${elegidos[0]}"]`)?.scrollIntoView?.({block:'center'});}}
-$('floorGrid').innerHTML=pila.map(({id,numero,piso},i)=>`<button type="button" class="pisoCapa" data-floor="${id}" style="--i:${i}" aria-label="Piso ${numero}" aria-pressed="false" ${piso?'':'disabled'}>${piso?`<img class="pisoBlanco" src="pisos3d/${id.toLowerCase()}-blanco.png" alt="" width="760" height="490" decoding="async"><img class="pisoAzul" src="pisos3d/${id.toLowerCase()}-azul.png" alt="" width="760" height="490" decoding="async">`:''}</button>`).join('');
+function mostrarGaleria(visible){
+ gallery.hidden=!visible;
+ for(const image of gallery.querySelectorAll('img[data-src]')){
+  if(visible&&!image.hasAttribute('src'))image.src=image.dataset.src;
+  else if(!visible)image.removeAttribute('src');
+ }
+}
+function mostrar(nombre){vista=nombre;seccionModulos.hidden=nombre!=='modulos';mostrarGaleria(nombre==='pisos');if(nombre==='modulos')pistaModulos.acomodar(lugarModulo(modulo));else{$('floorModulo').textContent=moduloDe(modulo).titulo;pisos.redibujar();if(pila.length>5)gallery.querySelector(`.pisoCapa[data-floor="${elegidos[0]}"]`)?.scrollIntoView?.({block:'center'});}}
+$('floorGrid').innerHTML=pila.map(({id,numero,piso},i)=>`<button type="button" class="pisoCapa" data-floor="${id}" style="--i:${i}" aria-label="Piso ${numero}" aria-pressed="false" ${piso?'':'disabled'}>${piso?`<img class="pisoBlanco" data-src="pisos3d/${id.toLowerCase()}-blanco.png" alt="" width="760" height="490" decoding="async"><img class="pisoAzul" data-src="pisos3d/${id.toLowerCase()}-azul.png" alt="" width="760" height="490" decoding="async">`:''}</button>`).join('');
 $('floorLista').innerHTML=pila.map(({id,numero,piso},i)=>`<button type="button" class="pisoEtiqueta" data-floor="${id}" style="--i:${i}" aria-pressed="false" ${piso?'':'disabled'}>Piso ${numero}</button>`).join('');
 // Azul: el piso bajo el cursor o, sin cursor encima, los elegidos. Cada elegido lleva ✓ y «Continuar» los abre.
 let bajoCursor=null,puedeVarios=false;
@@ -67,7 +74,7 @@ etiquetas.forEach((b,i)=>{b.addEventListener('pointerenter',e=>{if(e.pointerType
 const safeToLeave=()=>window.dispatchEvent(new Event('atlas-before-floor-change',{cancelable:true}));
 function state(home){
  document.body.classList.toggle('floorHome',home);$('floorHomeButton').hidden=home;
- if(home)mostrar(vista);else{seccionModulos.hidden=true;gallery.hidden=true;}
+ if(home)mostrar(vista);else{seccionModulos.hidden=true;mostrarGaleria(false);}
  $('moduloVolver').hidden=!ready||!moduloAbierto;
  $('globalSearch').disabled=home||!ready;$('navToggle').disabled=home||!ready;
  $('bottomObra').disabled=home||!ready;$('bottomModulos').disabled=home||!ready;
@@ -183,7 +190,7 @@ function pintarCuenta(){
  hojaCuenta.innerHTML=`<div class="hojaAsa" aria-hidden="true"></div>
   <div class="cuentaCabeza"><span class="cuentaAvatar grande" aria-hidden="true">${escapar(iniciales(u))}</span><div><b>${escapar(nombreDe(u).replace(/@.*/,'')||MARCA)}</b><small>${escapar(u?.username||'Sin sesión en este equipo')}</small></div><button type="button" class="close" data-cerrar aria-label="Cerrar">×</button></div>
   <h3 class="hojaGrupo">${lista.length>1?'Tus pisos':'Tu piso'}</h3>
-  <div class="rodilloPisos" role="listbox" aria-label="Tus pisos"><div class="rodilloVentana" aria-hidden="true"></div>${[...lista].reverse().map(f=>`<div class="rodilloPiso" role="option" data-piso="${f.id}" aria-current="${f.id===active.id}"><span class="pisoLamina" data-numero="${escapar(f.numero)}" aria-hidden="true"><img class="pisoBlanco" src="pisos3d/${f.id.toLowerCase()}-blanco.png" alt="" width="760" height="490" decoding="async"><img class="pisoAzul" src="pisos3d/${f.id.toLowerCase()}-azul.png" alt="" width="760" height="490" decoding="async"></span><span><b>Piso ${escapar(f.numero)}</b>${f.id===active.id?'<small class="rodilloAbierto">Abierto ahora</small>':''}<small data-estado>${escapar(estadoPiso(f))}</small></span><span class="rodilloAccion" data-accion>${guardarHTML(f)}</span></div>`).join('')}</div>
+  <div class="rodilloPisos" role="listbox" aria-label="Tus pisos"><div class="rodilloVentana" aria-hidden="true"></div>${[...lista].reverse().map(f=>`<div class="rodilloPiso" role="option" data-piso="${f.id}" aria-current="${f.id===active.id}"><span class="pisoLamina" data-numero="${escapar(f.numero)}" aria-hidden="true"><img class="pisoBlanco" data-src="pisos3d/${f.id.toLowerCase()}-blanco.png" alt="" width="760" height="490" decoding="async"><img class="pisoAzul" data-src="pisos3d/${f.id.toLowerCase()}-azul.png" alt="" width="760" height="490" decoding="async"></span><span><b>Piso ${escapar(f.numero)}</b>${f.id===active.id?'<small class="rodilloAbierto">Abierto ahora</small>':''}<small data-estado>${escapar(estadoPiso(f))}</small></span><span class="rodilloAccion" data-accion>${guardarHTML(f)}</span></div>`).join('')}</div>
   <div class="cuentaFilas"><button type="button" class="cuentaFila" data-offline><span aria-hidden="true">⤓</span>Sin conexión y actualizaciones</button>${$('logoutButton')?'<button type="button" class="cuentaFila salir" data-salir><span aria-hidden="true">⇥</span>Cerrar sesión</button>':''}</div>`;
  hojaCuenta.querySelector('[data-cerrar]').onclick=()=>hojaCuenta.close();
  // Los pisos van apilados en 3D, el más alto arriba, con su lámina azul al pasar el cursor o si está abierto. Tocar uno lo

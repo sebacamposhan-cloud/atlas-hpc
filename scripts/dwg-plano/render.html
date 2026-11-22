@@ -118,6 +118,11 @@ if (q.has('x')) {
     const ctx = c.getContext('2d'); if (capa === 'base') { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height); }
     dibujar(ctx, capa, OX, OY, marco.width, marco.height, .3);
     await save(capa === 'base' ? 'overview.webp' : capa + '/overview.webp', c, 'image/webp', .8);
+    const mobile = document.createElement('canvas'), ratio = Math.min(1, 1024 / Math.max(c.width, c.height));
+    mobile.width = Math.round(c.width * ratio); mobile.height = Math.round(c.height * ratio);
+    mobile.getContext('2d').drawImage(c, 0, 0, mobile.width, mobile.height);
+    await save(capa === 'base' ? 'overview-mobile.webp' : capa + '/overview-mobile.webp', mobile, 'image/webp', .82);
+
   }
   await save('export.jpg', compuesto(OX, OY, marco.width, marco.height, .5), 'image/jpeg', .85);
   // Imagen del rombo de cada recinto para su ficha (dist/<nivel>/rombos/<código>.png): el dibujo base recortado al rombo.

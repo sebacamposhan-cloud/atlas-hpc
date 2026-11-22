@@ -28,3 +28,22 @@ Usa las coordenadas del plano del toque y un catálogo de contornos Atlas con `r
 ## Quitar un tramo en Last Planner
 
 En el selector existente, al trabajar en modo Muros, la acción «Quitar tramo» retira el último tramo seleccionado del recinto activo. El contador y el plano se actualizan, y «Confirmar ubicación» aplica el conjunto al formulario. Esto permite probar las acciones contextuales sobre la geometría que ya usa ATLAS.
+
+## Buscar casos en los datos de un piso
+
+Para revisar el registro de las láminas desde el DWG, ejecuta el diagnóstico sobre el catálogo de rótulos. El ejemplo usa una alerta de 2 cm para el cotejo, sin establecer una tolerancia constructiva.
+
+```sh
+/tmp/atlas-opencv/bin/python scripts/check-sheet-alignment.py data/n03/laminas.json --dwg-catalog --tolerance 2
+```
+
+El informe agrupa coincidencias por par de láminas. Usa códigos de recinto que aparecen una sola vez dentro de cada lámina. Un recinto largo puede llevar el mismo rótulo en distintos puntos, así que contrasta cualquier alerta con cruces de ejes o vértices de muros. Si hay menos de tres referencias no colineales, el informe conserva las distancias y deja vacío el ajuste candidato. El catálogo no contiene evidencia del calce de las teselas renderizadas.
+
+Para detectar solapes en un piso completo, pasa el `runtime.json` publicado. El comando resuelve las geometrías de selección y las correcciones distribuidas de ese piso. El informe incluye pares de partes con intersección de área positiva, un punto reproducible, partes inválidas y errores de comparación. El área está en unidades cuadradas del plano. Un solape puede incluir superficies auxiliares o diferencias numéricas pequeñas y requiere revisión antes de editar.
+
+```sh
+node scripts/check-contour-hit.mjs dist/n02/runtime.json --scan /tmp/atlas-jsts
+node scripts/check-contour-hit.mjs dist/n02/runtime.json 2197.15 1704.1 /tmp/atlas-jsts
+```
+
+En el punto del ejemplo coinciden los contornos de `8.2.3.2.4-1` y `CT.F.2-4`. El visor activo usa sus datos efectivos, incluidas las correcciones personales o de Nube que tenga cargadas. Cuando hay varios candidatos, muestra «Elige un recinto» y espera la elección antes de abrir, marcar o asignar. Se puede cancelar y continuar en el mismo plano.

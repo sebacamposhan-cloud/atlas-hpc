@@ -73,6 +73,6 @@ export function createSpatialSelector(ctx){
  async function finish(value){if(!running||busy)return;busy=true;try{await ctx.restore();}finally{running=false;busy=false;layout.disconnect();controls.hidden=true;document.body.classList.remove('lpPicking');document.body.style.removeProperty('--lp-picker-top');document.body.style.removeProperty('--lp-picker-bottom');layer.innerHTML='';const done=resolver;resolver=null;done(value);}}
  async function select(value={}){if(running)throw Error('Termina la selección en curso.');const result=new Promise(resolve=>{resolver=resolve;});options=value;selectionExpanded=false;selected=clone(value.scopes||[]);currentLevel=value.level||nivel.id;focused=null;mode=value.mode||'recinto';drawing=null;running=true;busy=true;document.body.classList.add('lpPicking');controls.hidden=false;render();try{await ctx.enter();await ctx.loadFloor(currentLevel);axesGrid=await loadAxesGrid(currentLevel).catch(()=>null);selected=selected.map(s=>({...s,ejes:scopeAxes(s,axesGrid?.grid,{...axesGrid?.reference,nivel:currentLevel})}));busy=false;render();}catch(error){busy=false;await finish(null);throw error;}return result;}
  new MutationObserver(paint).observe(document.getElementById('svg'),{attributes:true,attributeFilter:['viewBox','transform','style']});
- window.addEventListener('keydown',event=>{if(running&&event.key==='Escape'){event.preventDefault();finish(null);}});
- return {select,choose,active:()=>running,render:paint};
+ window.addEventListener('keydown',event=>{if(running&&event.key==='Escape'&&!document.getElementById('modal')?.open){event.preventDefault();finish(null);}});
+ return {select,choose,active:()=>running,isDrawing:()=>!!drawing,render:paint};
 }
