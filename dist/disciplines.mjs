@@ -8,7 +8,7 @@ import {associateCode,ceilingMaterials,searchObservations} from './discipline-mo
 import {startPan,panView,startPinch,pinchView} from './gestures.mjs';
 import {uid,dimensions,dimensionNames,technicalStates,records,persist,backupWork,restoreWork,protocolCounts} from './construction-store.mjs';
 import {exigirFirma} from './firma.mjs';
-export function createDisciplines(ctx){const main=document.querySelector('main'),esc=ctx.esc;let imp;let mode='architecture',bundle,doc,chosen,selectedCode,v,draw=null,gesture={},moved=false,zones=[],events=[],protocols=[],colorDimension='structure';let modeRequest=0;const remembered=new Map();const pointers=new Map(),ns='http://www.w3.org/2000/svg';
+export function createDisciplines(ctx){const main=document.querySelector('main'),esc=ctx.esc;let imp;let mode='architecture',bundle,doc,chosen,selectedCode,v,draw=null,gesture={},moved=false,zones=[],events=[],protocols=[],colorDimension='structure';let modeRequest=0,unified=false;const remembered=new Map();const pointers=new Map(),ns='http://www.w3.org/2000/svg';
  for(const eventName of ['atlas-before-floor-change','atlas-before-update'])window.addEventListener(eventName,event=>{if(draw!==null||panel.querySelector('form[data-dirty]')||imp?.busy()){event.preventDefault();ctx.toast('Guarda o cancela los cambios de la especialidad antes de continuar.');}});
  const bar=document.createElement('div');bar.className='disciplineBar';bar.innerHTML='<label for="discipline">Especialidad</label><select id="discipline"><option value="architecture">Arquitectura</option>'+(nivel.especialidades?'<option value="floors">Pavimentos</option><option value="ceilings">Cielos</option>':'')+(nivel.imp?'<option value="waterproofing">Impermeabilización</option>':'')+'</select><span id="disciplineStatus"></span>';bar.querySelector('#disciplineStatus').textContent=ctx.level||nivel.nombre;const typeNav=document.createElement('nav');typeNav.className='planTypes';typeNav.setAttribute('aria-label','Tipo de plano');
  // Tipos de plano según los datos del piso (pisos.js): Cielos y Pavimentos con sus láminas, Puertas con su plano o el
@@ -21,13 +21,31 @@ export function createDisciplines(ctx){const main=document.querySelector('main')
  main.prepend(bar);const panel=document.createElement('section');panel.id='disciplinePanel';panel.hidden=true;panel.addEventListener('input',markDirty);panel.addEventListener('change',markDirty);main.append(panel);const $=id=>panel.querySelector('#'+id),name=()=>mode==='waterproofing'?'Impermeabilización':mode==='ceilings'?'Cielos':'Pavimentos',docs=()=>bundle.documents.filter(d=>d.specialty===mode),observations=()=>mode==='waterproofing'?(imp?.catalog.rooms||[]):bundle.observations.filter(r=>r.specialty===mode),dims=()=>mode==='ceilings'?['structure','closure','finish','mep','inspection']:['floor','inspection'];
  function markDirty(event){const form=event.target.closest('form');if(!form)return;form.dataset.dirty='true';if(['impProgressForm','impArtifactsForm'].includes(form.id))return;if(form.querySelector('[data-discard]'))return;const discard=document.createElement('button');discard.type='button';discard.dataset.discard='';discard.textContent='Descartar cambios';discard.onclick=()=>{form.reset();delete form.dataset.dirty;discard.remove();};form.append(discard);}
  async function reloadRecords(){[zones,events,protocols]=await Promise.all([records('zones'),records('events'),records('protocols')]);}
- async function switchMode(next,architectureId){
+ async function switchMode(next,architectureId,originalSheets=false){
   if(panel.querySelector('form[data-dirty]')||imp?.busy()){ctx.toast('Guarda o descarta los cambios antes de cambiar de plano.');return;}
   document.body.classList.remove('impFullscreen');
   if(next==='waterproofing'&&!nivel.imp){ctx.toast('Este piso todavía no tiene su lámina IMP.');return;}
   if(ctx.editing()){document.getElementById('discipline').value=mode;return ctx.toast('Guarda o cancela el contorno antes de cambiar.');}
   typeNav.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.planType===next?'true':'false'));
   const request=++modeRequest;
+  if(next==='ceilings'&&nivel.id==='N-1'&&!originalSheets){
+   if(chosen)remembered.set(mode,chosen.id);
+   chosen=null;draw=null;pointers.clear();gesture={};
+   mode='architecture';unified=true;
+   main.dataset.discipline=mode;panel.hidden=true;panel.replaceChildren();
+   document.getElementById('discipline').value='ceilings';
+   document.getElementById('disciplineStatus').textContent='Cielos · plano unificado';
+   ctx.enterSpecialty();
+   ctx.showLayer?.(null);
+   ctx.setUnifiedCeilings(true,{
+    exit:()=>switchMode('architecture'),
+    originals:()=>switchMode('ceilings',undefined,true),
+   });
+   return;
+  }
+  const fromUnified=unified;
+  if(fromUnified){unified=false;ctx.setUnifiedCeilings(false);}
+
   if(mode==='architecture')selectedCode=ctx.selected()?.code||selectedCode;
   if(chosen)remembered.set(mode,chosen.id);
   chosen=null;draw=null;pointers.clear();gesture={};mode=next;
@@ -35,7 +53,7 @@ export function createDisciplines(ctx){const main=document.querySelector('main')
   main.dataset.discipline=mode;panel.hidden=mode==='architecture';
   document.getElementById('discipline').value=mode;
   document.getElementById('disciplineStatus').textContent=mode==='architecture'?(ctx.level||nivel.nombre)+' · Arquitectura':name()+' · coordenadas propias';
-  if(mode==='architecture'){ctx.returnArchitecture(selectedCode,architectureId);return;}
+  if(mode==='architecture'){if(!fromUnified||architectureId)ctx.returnArchitecture(selectedCode,architectureId);return;}
   if(mode==='doors'){document.getElementById('disciplineStatus').textContent='Puertas · '+nivel.nombre;try{await renderDoors(panel,esc);}catch(error){panel.textContent=error.message;}return;}
   panel.innerHTML='<p>Cargando documentos…</p>';
   try{
@@ -48,9 +66,10 @@ export function createDisciplines(ctx){const main=document.querySelector('main')
    if(!doc)throw Error('No hay láminas disponibles para esta especialidad.');
    colorDimension=dims()[0];shell();fit();if(chosen)choose(chosen);else detail();
    const q=document.getElementById('globalSearch').value;if(q){$('specialtySearch').value=q;search(q);}
-  }catch(e){if(request!==modeRequest)return;panel.innerHTML='<p role="alert"></p><button id="retrySpecialty">Reintentar carga</button>';panel.querySelector('p').textContent=e.message;$('retrySpecialty').onclick=()=>switchMode(mode);}
+  }catch(e){if(request!==modeRequest)return;panel.innerHTML='<p role="alert"></p><button id="retrySpecialty">Reintentar carga</button>';panel.querySelector('p').textContent=e.message;$('retrySpecialty').onclick=()=>switchMode(next,architectureId,originalSheets);}
  }
- function shell(){panel.innerHTML=`<div class="disciplineTools"><select id="specialtySheet" aria-label="Lámina de especialidad">${docs().map(d=>`<option value="${d.id}" ${d.id===doc.id?'selected':''}>${esc(d.id.toUpperCase())} · ${esc(d.revision)}</option>`).join('')}</select><input id="specialtySearch" aria-label="Buscar en especialidad" placeholder="Código o nombre de recinto"><button id="specialtyFit" title="Ajustar lámina">⌖</button><button id="specialtyIn" aria-label="Acercar">＋</button><button id="specialtyOut" aria-label="Alejar">−</button><button id="specialtyFicha">Ficha</button><select id="progressLayer" aria-label="Colorear avance">${dims().map(k=>`<option value="${k}">${dimensionNames[k]}</option>`).join('')}</select></div><div id="specialtyResults" hidden></div><div class="specialtyCanvas"><svg id="specialtySVG" role="img" aria-label="Plano de ${name()}"><g id="specialtyImages"></g><g id="specialtyZones"></g><g id="specialtyMarks"></g></svg><span id="specialtyLegend"></span></div><aside id="specialtyDetail"></aside>`;
+ function shell(){panel.innerHTML=`<div class="disciplineTools">${mode==='ceilings'&&nivel.id==='N-1'?'<button type="button" data-ceilings-unified>Volver a plano unificado</button>':''}<select id="specialtySheet" aria-label="Lámina de especialidad">${docs().map(d=>`<option value="${d.id}" ${d.id===doc.id?'selected':''}>${esc(d.id.toUpperCase())} · ${esc(d.revision)}</option>`).join('')}</select><input id="specialtySearch" aria-label="Buscar en especialidad" placeholder="Código o nombre de recinto"><button id="specialtyFit" title="Ajustar lámina">⌖</button><button id="specialtyIn" aria-label="Acercar">＋</button><button id="specialtyOut" aria-label="Alejar">−</button><button id="specialtyFicha">Ficha</button><select id="progressLayer" aria-label="Colorear avance">${dims().map(k=>`<option value="${k}">${dimensionNames[k]}</option>`).join('')}</select></div><div id="specialtyResults" hidden></div><div class="specialtyCanvas"><svg id="specialtySVG" role="img" aria-label="Plano de ${name()}"><g id="specialtyImages"></g><g id="specialtyZones"></g><g id="specialtyMarks"></g></svg><span id="specialtyLegend"></span></div><aside id="specialtyDetail"></aside>`;
+ panel.querySelector('[data-ceilings-unified]')?.addEventListener('click',()=>switchMode('ceilings'));
  $('specialtySheet').onchange=e=>{doc=docs().find(d=>d.id===e.target.value);const matches=observations().filter(r=>r.code===selectedCode&&r.sheetId===doc.id);chosen=null;draw=null;pointers.clear();gesture={};if(matches.length===1)choose(matches[0]);else{fit();detail();}};$('specialtyFit').onclick=fit;$('specialtyIn').onclick=()=>zoom(.7);$('specialtyOut').onclick=()=>zoom(1.4);$('specialtyFicha').onclick=()=>{panel.classList.toggle('fichaClosed');render();};$('progressLayer').onchange=e=>{colorDimension=e.target.value;render();};$('specialtySearch').oninput=e=>search(e.target.value);$('specialtyResults').onclick=e=>{const b=e.target.closest('[data-code]');if(!b)return;const r=observations().find(r=>r.id===b.dataset.observation);if(r)choose(r);else{selectedCode=b.dataset.code;chosen=null;ctx.syncCode(selectedCode);detail();}$('specialtyResults').hidden=true;};
  if(mode==='waterproofing'){panel.querySelector('.disciplineTools').dataset.sinFlujo='';imp.mountTools(panel.querySelector('.disciplineTools'));}
  const svg=$('specialtySVG');svg.onwheel=e=>{e.preventDefault();zoom(e.deltaY>0?1.15:.87,local(e));};svg.onpointerdown=e=>{svg.setPointerCapture(e.pointerId);pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});moved=false;gesture=pointers.size===2?{pinch:startPinch(v,svg.getScreenCTM(),...[...pointers.values()])}:{pan:startPan(v,svg.getScreenCTM(),{x:e.clientX,y:e.clientY}),start:[e.clientX,e.clientY]};};svg.onpointermove=e=>{if(!pointers.has(e.pointerId))return;pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(gesture.pinch&&pointers.size===2){moved=true;set(pinchView(gesture.pinch,...[...pointers.values()],doc.width*3));}else if(gesture.pan&&Math.hypot(e.clientX-gesture.start[0],e.clientY-gesture.start[1])>4){moved=true;set(panView(gesture.pan,{x:e.clientX,y:e.clientY}));}};svg.onpointerup=async e=>{const click=!moved&&pointers.size===1,p=local(e);pointers.delete(e.pointerId);gesture={};if(!click)return;if(draw){draw.push([p.x,p.y]);render();return;}const z=visibleZones().filter(z=>z.parts?containsPoint(z.parts,[p.x,p.y]):inside([p.x,p.y],z.points)).sort((a,b)=>Number(b.code===selectedCode)-Number(a.code===selectedCode))[0];if(z){if(panel.querySelector('form[data-dirty]'))return ctx.toast('Guarda o descarta los cambios antes de seleccionar otro recinto.');selectedCode=z.roomCode||z.code;chosen=observations().find(r=>r.id===(z.observationId||z.id))||null;ctx.syncCode(selectedCode);if(mode==='waterproofing'){imp.requestDetail();await imp.numberRoom(chosen);}render();detail();return;}const r=observations().filter(r=>r.sheetId===doc.id).find(r=>Math.abs(r.position[0]-p.x)<30&&Math.abs(r.position[1]-p.y)<12);if(r)choose(r);};svg.onpointercancel=()=>{pointers.clear();gesture={};};}

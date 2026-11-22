@@ -36,3 +36,20 @@ body.terreno .obsDetailDrawer[open] { z-index: 45; }
 @media (max-width: 700px) {
   body.terreno.fichaMinima #fichaBarra { bottom: calc(64px + env(safe-area-inset-bottom)); padding-bottom: 8px; }
 }
+
+#ceilingMapTools{
+  position:absolute;z-index:8;left:10px;top:10px;display:flex;align-items:center;
+  max-width:calc(100% - 80px);gap:6px;padding:4px 6px;border:1px solid var(--g-marca,#1b2a56);
+  background:#fff;color:var(--g-marca,#1b2a56);flex-wrap:wrap;
+}
+#ceilingMapTools[hidden]{display:none}
+#ceilingMapTools button{min-height:44px;padding:4px 8px}
+.ceilingRoom .ceilingSource{border-top:1px solid var(--g-regla,#8c8c8c);padding:10px 0;margin-top:8px}
+.ceilingSource h3{margin:0 0 2px}
+.ceilingSource dl{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);gap:6px 10px}
+.ceilingSource dt{font-weight:700}
+.ceilingSource dd{margin:0;overflow-wrap:anywhere}
+.ceilingLegendContent img{display:block;width:100%;height:auto;max-width:700px;margin-top:12px}
+.ceilingLegendContent button{min-height:44px}
+.ceilingDocumentList{display:flex;flex-wrap:wrap;gap:8px 14px;list-style:none;padding:0}
+.ceilingDocumentList[hidden]{display:none}

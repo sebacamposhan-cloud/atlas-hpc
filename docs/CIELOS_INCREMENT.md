@@ -1,5 +1,17 @@
 # Cielos: navegación documental por recinto
 
+## Vista unificada S01
+
+En **Piso −1 → Filtros y capas → Cielos** se abre la vista continua sobre el plano y los contornos existentes de Arquitectura. En terreno, **Filtros y capas** se abre desde **Más**. El sombreado indica recintos con referencias de Cielos. Busca por código o nombre o toca un recinto para abrir su ficha. Cada lectura tiene el enlace a su lámina y página. Las lecturas automáticas se identifican como pendientes de revisión. Si el recorte contiene varios códigos o el código corresponde a varios recintos, la ficha presenta la fuente para revisar la atribución. Los códigos de luminaria en el recorte son referencias documentales, sin conteo de unidades.
+
+**Simbología** abre las tablas generales de la lámina CIE-A-501, página 1. El botón **Láminas originales y registros** abre el visor anterior por hoja, incluidas sus zonas y registros guardados. En esa vista, **Volver a plano unificado** devuelve al plano continuo.
+
+Se cotejaron los siete PDF entregados, A-502 a A-508, con las fuentes existentes. Son idénticos byte por byte. Se conserva A-501 como fuente adicional de S01. La vista cruza las observaciones por código, conserva separadas las lecturas de cada fuente y reutiliza la geometría de Arquitectura para seleccionar. Los PDF quedan disponibles para revisar los límites y la disposición original de cada cielo. El recorte de simbología usa la caja rotada de la lámina A-501 `[3678, 23, 3928, 1014]` en unidades PDF, rasterizada con PyMuPDF.
+
+Pruebas de la vista unificada: `node discipline-model-test.mjs` y `PLAYWRIGHT_MODULE=<ruta-a-playwright-core/index.mjs> node cielos-unificados-browser-test.mjs`. El recorrido usa el visor real, selecciona un recinto cotejado y verifica la simbología separada. Las fichas usan recursos del paquete base offline y la simbología está incluida en el paquete del piso −1. Los PDF originales siguen siendo una descarga opcional.
+
+## Visor histórico por lámina
+
 Actualización posterior: `REENGINEERING_AUDIT.md` documenta 75 candidatos CIE recuperados y nuevas reglas de trazabilidad/autoridad geométrica. Se mantienen las 329 observaciones base descritas a continuación; el visor consulta además esos candidatos pendientes.
 
 Sobre la implementación existente de Atlas HPC 3.0, este incremento completa la consulta entre Arquitectura, las ocho láminas ARQ-CIE y Pavimentos. No genera recintos ni atributos nuevos.

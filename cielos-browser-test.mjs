@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
-import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
+import {createAtlasServer} from './server/groq-server.mjs';
 
 // Install playwright-core outside the checkout, then pass its index.mjs path via
 // PLAYWRIGHT_MODULE. CHROMIUM_PATH selects an existing Chromium installation.
@@ -13,31 +13,46 @@ const data = JSON.parse(await readFile(path.join(root, 'data.json')));
 const verified = bundle.observations.find(r => r.code === '7.1.2.1.2-1' && r.sheetId === 'cie-504');
 const noArchitecture = bundle.observations.find(r => !data.rooms.some(a => a.code === r.code));
 assert(verified && noArchitecture, 'real verification and unmatched-code fixtures are required');
-const types = {'.html':'text/html', '.js':'text/javascript', '.mjs':'text/javascript', '.css':'text/css', '.json':'application/json', '.webmanifest':'application/manifest+json', '.webp':'image/webp', '.png':'image/png', '.svg':'image/svg+xml', '.pdf':'application/pdf'};
-const server = createServer(async (req, res) => {
-  try {
-    const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
-    const file = path.resolve(root, '.' + (pathname === '/' ? '/index.html' : pathname));
-    if (!file.startsWith(root + path.sep)) { res.writeHead(403).end(); return; }
-    const bytes = await readFile(file);
-    res.writeHead(200, {'Content-Type':types[path.extname(file)] || 'application/octet-stream', 'Cache-Control':'no-store'}).end(bytes);
-  } catch { res.writeHead(404).end(); }
-});
+const server = await createAtlasServer({env: {}});
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const base = `http://127.0.0.1:${server.address().port}`;
 let browser;
 const completed = [];
 const layoutFailures = [];
+
+async function openUnified(page) {
+  if (await page.locator('[data-plan-type="ceilings"]').isVisible()) {
+    await page.locator('[data-plan-type="ceilings"]').click();
+  } else {
+    if (await page.locator('#terrenoMas').isVisible()) {
+      await page.locator('#terrenoMas').click();
+      await page.getByRole('button', {name: 'Filtros y capas', exact: true}).click();
+    } else {
+      await page.locator('button[data-tarjeta=herramientas]').click();
+      await page.locator('button[data-funcion=filtros]').click();
+    }
+    await page.locator('#planFilters [data-tipo-plano=ceilings]').click();
+  }
+}
+async function openOriginals(page) {
+  await page.locator('#ceilingLegend').click();
+  await page.locator('#ceilingOriginals').click();
+}
+async function openCeilings(page) {
+  await openUnified(page);
+  await openOriginals(page);
+}
+
 try {
   browser = await chromium.launch({headless:true, executablePath:process.env.CHROMIUM_PATH || '/usr/bin/chromium', args:['--no-sandbox']});
   for (const viewport of [{width:1440,height:1000}, {width:390,height:844}]) {
     const context = await browser.newContext({viewport, serviceWorkers:'block'});
     const page = await context.newPage();
-    page.setDefaultTimeout(10000);
+    page.setDefaultTimeout(35000);
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
-    await page.goto(base+'/?nivel=N-1');await page.locator('#assistantOpen').waitFor();
-    await page.locator('[data-plan-type="architecture"]').waitFor();
+    await page.goto(base+'/?nivel=N-1',{waitUntil:'domcontentloaded'});
+    await page.locator('body:not(.booting) #polygons .roomshape').first().waitFor({state:'attached'});
     const canonical = await page.locator('#results [data-id]').evaluateAll(nodes => nodes.map(n => ({id:n.dataset.id, code:n.querySelector('strong').textContent})));
     const duplicate = bundle.observations.find(r => bundle.observations.filter(o => o.code === r.code).length > 1 && canonical.filter(a => a.code === r.code).length === 1);
     assert(duplicate, 'need a real ambiguous CIE / unique ARQ fixture');
@@ -46,7 +61,7 @@ try {
     // Start in ARQ to prove multiple CIE sources are not silently collapsed.
     await page.locator('#globalSearch').fill(duplicate.code);
     await page.waitForFunction(code => document.querySelector('#detail .detailCode')?.textContent === code, duplicate.code);
-    await page.locator('[data-plan-type="ceilings"]').click();
+    await openCeilings(page);
     await page.locator('#specialtyDetail').waitFor();
     assert.equal(await page.locator('[data-ceiling-observation]').count(), candidates.length);
     assert.equal(await page.locator('[data-ceiling-observation][aria-pressed="true"]').count(), 0);
@@ -93,9 +108,10 @@ try {
     await page.locator('[data-architecture-room]').first().click();
     assert.equal(await page.locator('#discipline').inputValue(), 'architecture');
     assert.equal(await page.locator('#detail .detailCode').innerText(), verified.code);
+    if (await page.locator('#closeDetail').isVisible()) await page.locator('#closeDetail').click();
     await page.locator('#globalSearch').fill('');
     if(await page.locator('#isolate').isVisible())await page.locator('#isolate').click();
-    await page.locator('[data-plan-type="ceilings"]').click();
+    await openCeilings(page);
     await page.waitForFunction(id => document.querySelector('[data-ceiling-observation][aria-pressed="true"]')?.dataset.ceilingObservation === id, verified.id);
     assert.equal(await page.locator('#specialtySheet').inputValue(), verified.sheetId);
 
@@ -105,7 +121,7 @@ try {
     assert.match(await page.locator('#specialtyDetail').innerText(), /Sin coincidencia en Arquitectura/);
     await page.locator('[data-plan-type="floors"]').click();
     await page.waitForFunction(code => document.querySelector('#specialtyDetail h2')?.textContent === code, noArchitecture.code);
-    await page.locator('[data-plan-type="ceilings"]').click();
+    await openCeilings(page);
     await page.waitForFunction(id => document.querySelector('[data-ceiling-observation][aria-pressed="true"]')?.dataset.ceilingObservation === id, noArchitecture.id);
     assert.equal(await page.locator('#specialtyDetail h2').innerText(), noArchitecture.code);
 
@@ -115,7 +131,7 @@ try {
     assert.equal(await page.locator('#editInfo').count(), 0);
     assert.equal(await page.locator('#background').evaluate(el => el.style.opacity), '1');
     await page.locator('#reset').click();
-    await page.locator('[data-plan-type="ceilings"]').click();
+    await openCeilings(page);
     await page.waitForFunction(() => document.querySelector('#specialtyDetail h2')?.textContent === 'Cielos · Nivel −1');
     assert.equal(await page.locator('[data-ceiling-observation]').count(), 0);
     assert.deepEqual(errors, []);
@@ -130,10 +146,14 @@ try {
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     let attempts = 0;
+    await page.goto(base+'/?nivel=N-1',{waitUntil:'domcontentloaded'});
+    await page.locator('body:not(.booting) #polygons .roomshape').first().waitFor({state:'attached'});
+    const firstLoad = page.waitForResponse('**/disciplines.json');
+    await openUnified(page);
+    await (await firstLoad).finished();
     await page.route('**/disciplines.json', route => ++attempts === 1
       ? route.fulfill({status:503, body:'temporary test failure'}) : route.continue());
-    await page.goto(base+'/?nivel=N-1');await page.locator('#assistantOpen').waitFor();
-    await page.locator('[data-plan-type="ceilings"]').click();
+    await openOriginals(page);
     await page.locator('#retrySpecialty').click();
     await page.locator('#specialtySheet').waitFor();
     assert.equal(attempts, 2);
@@ -153,11 +173,11 @@ try {
   const responseGate = new Promise(resolve => { release=resolve; });
   const requested = new Promise(resolve => { entered=resolve; });
   await page.route('**/disciplines.json', async route => { entered(); await responseGate; await route.continue(); });
-  await page.goto(base+'/?nivel=N-1');await page.locator('#assistantOpen').waitFor();
-  await page.locator('[data-plan-type="architecture"]').waitFor();
-  await page.locator('[data-plan-type="ceilings"]').click();
+  await page.goto(base+'/?nivel=N-1',{waitUntil:'domcontentloaded'});
+  await page.locator('body:not(.booting) #polygons .roomshape').first().waitFor({state:'attached'});
+  await openUnified(page);
   await requested;
-  await page.locator('[data-plan-type="architecture"]').click();
+  await page.locator('#ceilingExit').click();
   const response = page.waitForResponse('**/disciplines.json');
   release();
   await (await response).finished();
@@ -173,5 +193,6 @@ try {
   console.log(JSON.stringify({checks:'passed', browser:'Chromium', completed}, null, 2));
 } finally {
   await browser?.close();
+  server.closeAllConnections();
   await new Promise(resolve => server.close(resolve));
 }

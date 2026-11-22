@@ -7,6 +7,7 @@ import {createPuertas} from './puertas.mjs';
 import {markingItems} from './marking-model.mjs';
 import {iniciarCapaAvance} from './avance.mjs';
 import './cielos-lamina.mjs';
+import {loadCeilingSheets,renderCeilingRoom} from './cielos-unificados.mjs';
 import {createObservaciones,iniciarCapaObservaciones,cargarObservaciones} from './observaciones.mjs';
 import {createRombo,romboSVG} from './rombo.mjs';
 import {createLastPlanner,iniciarCapaLastPlanner} from './lastplanner.mjs';
@@ -61,7 +62,8 @@ function loadDetail(){updateTiles();}
 function path(r){const ring=p=>'M'+p.map(v=>v.join(',')).join('L')+'Z';return ring(r.polygon)+(r.holes||[]).map(ring).join('');}
 function group(r){const by=$('colorBy').value;if(by==='asepsis')return r.asepsis.join(' / ')||'Sin clasificación documentada';if(by==='status')return r.status;if(by==='walls')return [...new Set(r.finishes.filter(f=>f.field.startsWith('M')).map(f=>f.code))].join(' / ');if(by==='PAV'||by==='CIE')return r.finishes.find(f=>f.field===by)?.code||'Sin información';return 'Recintos';}
 function color(){return '#49575d';}
-function render(){if(!data||!doc)return;const rooms=uniqueRooms(data.rooms),ids=new Set(results.map(r=>r.id));let shapes=[],labels=[];for(const r of rooms){const active=selected?.id===r.id,match=ids.has(r.id),dim=(isolation&&!active)||(filtered&&!match);const appearance=marking?.active()?null:ui?.appearance(r),fill=appearance?.fill;
+const ceilingAppearance={fill:'#07848b',opacity:.18,blend:'multiply'};
+function render(){if(!data||!doc)return;const rooms=uniqueRooms(data.rooms),ids=new Set(results.map(r=>r.id));let shapes=[],labels=[];for(const r of rooms){const active=selected?.id===r.id,match=ids.has(r.id),dim=(isolation&&!active)||(filtered&&!match);const appearance=marking?.active()?null:roomAppearance(r),fill=appearance?.fill;
  // Con un filtro, lo que no cumple queda lavado en gris claro y lo filtrado se pinta fuerte con borde de su tono.
  const lavar=filtered&&!match&&!isolation&&!marking?.active(),borde=!dim&&fill?appearance.borde:null;{const d=footprintPath(r.id);if(d)shapes.push(`<path class="roomshape${borde?' fuerte':''}" data-geometry-quality="${esc(footprint(r.id)?.quality)}" data-id="${esc(r.id)}" d="${d}" fill="${lavar?'#fff':fill||'#425158'}" fill-opacity="${lavar?.62:!dim&&fill?appearance.opacity:!marking?.active()&&!dim&&filtered?.16:0}" stroke="${borde||'#111'}" stroke-opacity="${borde?1:dim?.2:.6}" style="mix-blend-mode:${lavar?'normal':appearance?.blend||'normal'}" fill-rule="evenodd"><title>${esc(r.code+' · '+r.name)}</title></path>`);}if(!dim&&($('layerCodes').checked||$('layerNames').checked)){const w=world(r);labels.push(`<text class="roomLabel" x="${w.position[0]}" y="${w.position[1]-14}" text-anchor="middle">${esc(($('layerCodes').checked?r.code:'')+($('layerNames').checked?' '+r.name:''))}</text>`);}}
 if(showDiamonds&&!edit)for(const r of rooms){const box=diamondBox(r,atlas);if(box)labels.push(`<rect class="diamondHit" data-diamond-id="${esc(r.id)}" x="${box[0]}" y="${box[1]}" width="${box[2]}" height="${box[3]}" tabindex="0" role="button" aria-label="Abrir rombo ${esc(r.code)}"><title>Rombo ${esc(r.code)} · selección documental, no contorno</title></rect>`);}
@@ -110,7 +112,7 @@ let recintoFicha=null;
 // Celular: el primer toque en el plano ilumina el recinto y deja abajo la franja con su nombre, código, avance y «Abrir
 // rombo»; el segundo toque (en el mismo recinto o en la franja) abre la ficha. Tocar fuera del recinto lo suelta.
 // En escritorio la ficha se abre al primer clic, a media pantalla, como antes.
-function tocarRecinto(id){if(!fichaCompleta()){selectRoom(id,false);return;}if(selected?.id===id&&document.body.classList.contains('fichaMinima')){abrirDesdeBarra();return;}selectRoom(id,false);if(selected?.id===id){recintoFicha=id;document.body.classList.add('fichaMinima');}}
+function tocarRecinto(id){if(ceilingView){selectRoom(id,false);reencuadrar();return;}if(!fichaCompleta()){selectRoom(id,false);return;}if(selected?.id===id&&document.body.classList.contains('fichaMinima')){abrirDesdeBarra();return;}selectRoom(id,false);if(selected?.id===id){recintoFicha=id;document.body.classList.add('fichaMinima');}}
 function soltarRecinto(){if(!fichaCompleta()||!document.body.classList.contains('fichaMinima')||!selected)return;document.body.classList.remove('fichaMinima');document.body.classList.add('hideRight');selected=null;recintoFicha=null;render();}
 // Rombo de la ficha con su panel de avance (bajo el nombre) y el bloque de protocolos previos.
 function fichaRombo(r){if($('romboEvidence'))romboAvance?.ficha($('romboEvidence'),r,{alGuardar:()=>render(),panel:$('avanceRecinto'),previos:$('protocolosPrevios')});}
@@ -120,7 +122,55 @@ function clearArchitectureSelection(code){
   $('detail').innerHTML=`<div class="intro"><h2>Sin recinto seleccionado</h2><p>${code?'El código '+esc(code)+' requiere seleccionar una correspondencia en Arquitectura.':'Selecciona un recinto en el plano o busca su código.'}</p></div>`;
   document.body.classList.add('hideRight');
 }
-function renderDetail(){const r=selected;if(!r)return;const source=data.documents.find(d=>d.id===r.document_id);$('detail').innerHTML=`<h2 class="detailName">${esc(r.name)}</h2><p class="detailCode">${esc(r.code)}</p><section class="romboAvance"><div id="romboEvidence"></div></section><section id="avanceRecinto" class="avanceRecinto" aria-label="Avance del recinto" hidden></section><section class="obsRoom" aria-label="Observaciones del recinto"><div id="obsRoomEvidence"></div></section><section id="protocolosPrevios" class="protocolosPrevios" hidden></section><details class="protRecinto" ${protocolosAbiertos?'open':''}><summary>Protocolos abiertos</summary><div id="protocolRoomEvidence"></div></details>`;$('fichaBarraTexto').textContent=r.code;$('fichaBarraNombre').textContent=r.name;recintoFicha=r.id;
+let ceilingView=false,ceilingCatalog,ceilingPending,ceilingError='';
+function roomAppearance(room){
+ if(!ceilingView)return ui?.appearance(room);
+ return ceilingCatalog?.byCode.has(room.code)?ceilingAppearance:null;
+}
+function renderCeilingLegendLinks(){
+ const list=$('ceilingDocumentList');
+ if(!list)return;
+ list.innerHTML=(ceilingCatalog?.documents||[]).map(doc=>`<li><a href="source/${esc(doc.filename)}#page=${esc(doc.page)}" target="_blank" rel="noopener">${esc(doc.id.toUpperCase())} · ${esc(doc.revision)}</a></li>`).join('');
+ list.hidden=!list.childElementCount;
+}
+function loadCeilings(){
+ if(ceilingPending||ceilingCatalog)return;
+ ceilingError='';
+ ceilingPending=loadCeilingSheets(uniqueRooms(data.rooms)).then(catalog=>{ceilingCatalog=catalog;})
+  .catch(error=>{ceilingError=error.message;})
+  .finally(()=>{ceilingPending=null;if(ceilingView){render();renderDetail();renderCeilingLegendLinks();}});
+}
+function setUnifiedCeilings(active,actions){
+ ceilingView=active;
+ $('ceilingMapTools').hidden=!active;
+ $('svg').setAttribute('aria-label',active?'Plano interactivo de Cielos del nivel −1':'Plano arquitectónico interactivo');
+ $('fichaBarra').setAttribute('aria-label',active?'Abrir ficha de Cielos':'Abrir el rombo del recinto');
+ $('fichaBarra').querySelector('.fichaBarraAbrir').textContent=active?'Ficha Cielos ▲':'Abrir rombo ▲';
+ if(active){
+  $('ceilingExit').onclick=actions.exit;
+  $('ceilingLegend').onclick=()=>{
+   modal(`<section class="ceilingLegendContent">
+     <h2>Simbología general · Cielos</h2>
+     <p>El sombreado del plano indica recintos con referencias de Cielos. La tabla de símbolos proviene de la lámina CIE-A-501.</p>
+     <button id="ceilingOriginals" type="button">Láminas originales y registros</button>
+     <ul id="ceilingDocumentList" class="ceilingDocumentList" hidden></ul>
+     <img src="cie-s01-simbologia.webp" alt="Tablas de simbología de cielos y luminarias de la lámina CIE-A-501, página 1" decoding="async">
+   </section>`);
+   renderCeilingLegendLinks();
+   $('ceilingOriginals').onclick=()=>{$('modal').close();actions.originals();};
+  };
+  loadCeilings();
+ }
+ render();renderDetail();
+}
+function renderDetail(){const r=selected;if(!r)return;if(ceilingView){
+ $('detail').innerHTML=renderCeilingRoom({room:r,catalog:ceilingCatalog,loading:!!ceilingPending,error:ceilingError,
+  ambiguous:uniqueRooms(data.rooms).some(room=>room.id!==r.id&&room.code===r.code),
+  material:code=>data.materials.find(item=>item.code===code),esc});
+ $('detail').querySelector('[data-retry-ceilings]')?.addEventListener('click',()=>{loadCeilings();renderDetail();});
+ $('fichaBarraTexto').textContent=r.code;$('fichaBarraNombre').textContent=r.name;recintoFicha=r.id;
+ return;
+}const source=data.documents.find(d=>d.id===r.document_id);$('detail').innerHTML=`<h2 class="detailName">${esc(r.name)}</h2><p class="detailCode">${esc(r.code)}</p><section class="romboAvance"><div id="romboEvidence"></div></section><section id="avanceRecinto" class="avanceRecinto" aria-label="Avance del recinto" hidden></section><section class="obsRoom" aria-label="Observaciones del recinto"><div id="obsRoomEvidence"></div></section><section id="protocolosPrevios" class="protocolosPrevios" hidden></section><details class="protRecinto" ${protocolosAbiertos?'open':''}><summary>Protocolos abiertos</summary><div id="protocolRoomEvidence"></div></details>`;$('fichaBarraTexto').textContent=r.code;$('fichaBarraNombre').textContent=r.name;recintoFicha=r.id;
 fichaRombo(r);if($('obsRoomEvidence'))observaciones?.ficha($('obsRoomEvidence'),r);const protSection=$('detail').querySelector('.protRecinto'),verProtRecinto=()=>protocolosRecinto?.ficha($('protocolRoomEvidence'),r,protSection.querySelector('summary'));protSection?.addEventListener('toggle',()=>{if(!protSection.isConnected)return;protocolosAbiertos=protSection.open;if(protSection.open)verProtRecinto();});if(protSection?.open)verProtRecinto();
 
 }
@@ -216,7 +266,7 @@ async function initialize(){
   if(!assistant){createAssistant({selected:()=>selected});assistant=true;}
   // Catálogo de rombos original del nivel −1 (recortes de las láminas PDF). En pisos importados desde DWG el rombo va dibujado en el plano y en la ficha.
   if(!diamondCatalog&&data.documents.some(d=>d.kind!=='dwg')&&data.rooms.some(r=>r.diamond_bbox)){createDiamondCatalog({esc,loadImage:r=>diamondURL(r,data.documents),data:()=>data,inScope,editing:()=>!!edit,toast,showing:()=>showDiamonds,toggle:()=>{disciplines.switchMode('architecture');ui.show('map');showDiamonds=!showDiamonds;render();},openRoom:id=>{disciplines.switchMode('architecture');ui.show('map');selectRoom(id);}});diamondCatalog=true;}
-  disciplines ||= createDisciplines({esc,specialties:nivel.especialidades,level:nivel.nombre,abrirPuertas:()=>{ui.show('map');puertas?.abrir();},showLayer:type=>ui?.setLayer(type),editing:()=>!!edit,selected:()=>selected,enterSpecialty:()=>{marking?.close();querySerial++;clearTimeout(searchTimer);document.body.classList.add('hideRight','hideLeft');},toast,download:downloadBlob,rooms:()=>uniqueRooms(data.rooms),material:code=>data.materials.find(m=>m.code===code),returnArchitecture:(code,id)=>{const matches=uniqueRooms(data.rooms).filter(r=>r.code===code),target=id?matches.find(r=>r.id===id):matches.length===1?matches[0]:null;if(target){selectRoom(target.id);}else{clearArchitectureSelection(code);if(code)toast(matches.length?'Varias coincidencias en Arquitectura: selecciona el recinto.':'Sin correspondencia en Arquitectura para '+code);}},syncCode:code=>{const matches=uniqueRooms(data.rooms).filter(r=>r.code===code);selected=matches.length===1?matches[0]:null;if(selected)selectRoom(selected.id,false);else{clearArchitectureSelection(code);}document.body.classList.add('hideRight');}});
+  disciplines ||= createDisciplines({esc,specialties:nivel.especialidades,level:nivel.nombre,setUnifiedCeilings,abrirPuertas:()=>{ui.show('map');puertas?.abrir();},showLayer:type=>ui?.setLayer(type),editing:()=>!!edit,selected:()=>selected,enterSpecialty:()=>{marking?.close();querySerial++;clearTimeout(searchTimer);document.body.classList.add('hideRight','hideLeft');},toast,download:downloadBlob,rooms:()=>uniqueRooms(data.rooms),material:code=>data.materials.find(m=>m.code===code),returnArchitecture:(code,id)=>{const matches=uniqueRooms(data.rooms).filter(r=>r.code===code),target=id?matches.find(r=>r.id===id):matches.length===1?matches[0]:null;if(target){selectRoom(target.id);}else{clearArchitectureSelection(code);if(code)toast(matches.length?'Varias coincidencias en Arquitectura: selecciona el recinto.':'Sin correspondencia en Arquitectura para '+code);}},syncCode:code=>{const matches=uniqueRooms(data.rooms).filter(r=>r.code===code);selected=matches.length===1?matches[0]:null;if(selected)selectRoom(selected.id,false);else{clearArchitectureSelection(code);}document.body.classList.add('hideRight');}});
   marking ||= createMarking({esc,abrirIMP:()=>{ui.show('map');disciplines?.switchMode('waterproofing');},level:nivel.id,levelName:nivel.nombre,rooms:()=>uniqueRooms(data.rooms),source:r=>data.documents.find(d=>d.id===r.document_id),editing:()=>!!edit,toast,download:downloadBlob,redraw:render,resize:updateTiles,enter:()=>{ui.closeFilters();ui.show('map');selected=null;isolation=false;},focus:r=>{if(r)setView(bounds(r,70));},export:(snapshot,comparacion)=>exportAtlas('pdf',snapshot,comparacion),fondo:()=>{const m=mapa();return {url:m.overview,export:m.export,origin:m.origin,width:m.width,height:m.height};},position:r=>world(r).position,path:footprintPath});
   markingOverlay ||= createMarkingOverlay({esc,active:()=>marking.active(),focused:()=>marking.focused(),items:()=>marking.items(),room:id=>uniqueRooms(data.rooms).find(r=>r.id===id),path:footprintPath,position:r=>world(r).position});
   // Protocolos de la matriz encuadrados por sus ejes en el plano, con su número; los anulados quedan en el panel derecho.
