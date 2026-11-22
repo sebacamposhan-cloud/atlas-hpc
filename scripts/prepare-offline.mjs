@@ -34,6 +34,7 @@ for(const name of walk('doors')) if(!['doors/catalog.json','doors/overview.webp'
 // Láminas de especialidad e IMP: van al paquete del piso que nombran (imp-n02, artefactos-n02…); las del −1 no lo dicen.
 const pisoDeLamina=name=>name.match(/(?:^|[-\/])(n\d\d)(?=[-\/.]|$)/)?.[1]||'n-1';
 for(const name of walk('disciplines')) add(name,pisoDeLamina(name));
+for(const name of walk('cie-s01-map')) add(name,'n-1');
 add('cie-s01-simbologia.webp','n-1');
 for(const name of walk('impermeabilizacion')) add(name,pisoDeLamina(name));
 for(const name of walk('geometry')) add(name,'n-1');

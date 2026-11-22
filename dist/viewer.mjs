@@ -6,7 +6,7 @@ const ns='http://www.w3.org/2000/svg';
 const mobilePlan=window.matchMedia('(max-width: 1023px), (pointer: coarse)');
 const MOBILE_TILES=24;
 const overviewImages=new Map(), missingMobileOverviews=new Set();
-let map,atlas,svg,tiles,requestedView,frame=0,tileTimer,geometry=new Map(),hit=()=>null;
+let map,architectureMap,drawingMap,atlas,svg,tiles,requestedView,frame=0,tileTimer,geometry=new Map(),hit=()=>null;
 const paths=new Map(),activeTiles=new Map();
 let currentRooms,currentAliases,currentSelection,currentContornos=[],contornosArchivo=null;
 // Un contorno guardado en la nube desde el editor (en este u otro equipo) redibuja el plano sin recargar.
@@ -18,10 +18,23 @@ try{capasVisibles=JSON.parse(localStorage.getItem(CLAVE_CAPAS)||'{}')||{};}catch
 const capaVisible=id=>capasVisibles[id]!==false;
 export async function prepareViewer(a,rooms,aliases,runtime){
  atlas=a;svg=document.getElementById('svg');
- const m=runtime.map,s=runtime.selection;map=m;paths.clear();clearTiles();
+ architectureMap=runtime.map;
+ const s=runtime.selection;paths.clear();
  currentRooms=new Map(rooms.map(r=>[r.id,r]));currentAliases=aliases;currentSelection=s;currentContornos=runtime.contornos||[];contornosArchivo=runtime.contornosArchivo||null;
  geometry=resolveFootprints(a,rooms,aliases,s,currentContornos);
  hit=buildHitIndex(geometry.values());
+ mountDrawing(drawingMap||architectureMap);
+ return {coverage:geometry.size,method:s.method};
+}
+export function setDrawingMap(drawing=null){
+ drawingMap=drawing;
+ const next=drawingMap||architectureMap;
+ if(!next||map===next)return;
+ mountDrawing(next);
+ updateTiles();
+}
+function mountDrawing(m){
+ map=m;clearTiles();
  const bg=document.getElementById('background');
  bg.replaceChildren();overviewImages.clear();
  for(const {id='',overview:url} of [m,...(m.capas||[])]){
@@ -31,9 +44,13 @@ export async function prepareViewer(a,rooms,aliases,runtime){
   if(id){image.dataset.capa=id;image.style.mixBlendMode='multiply';}
   const mobileUrl=url.replace(/overview\.webp$/,'overview-mobile.webp');
   image.addEventListener('error',()=>{
-   if(mobileUrl===url||image.getAttribute('href')!==mobileUrl)return;
-   missingMobileOverviews.add(mobileUrl);
-   image.setAttribute('href',url);
+   if(!image.isConnected)return;
+   if(mobileUrl!==url&&image.getAttribute('href')===mobileUrl){
+    missingMobileOverviews.add(mobileUrl);
+    image.setAttribute('href',url);
+   }else if(!id&&m===drawingMap){
+    window.dispatchEvent(new Event('atlas-teselas-faltan'));
+   }
   });
   overviewImages.set(id,{image,url,mobileUrl});
   bg.append(image);
@@ -47,7 +64,6 @@ export async function prepareViewer(a,rooms,aliases,runtime){
  tiles=document.getElementById('detailImage');tiles.replaceChildren();grupos=new Map();teselasCapa=new Map();
  const baseTiles=document.createElementNS(ns,'g');tiles.append(baseTiles);grupos.set('',baseTiles);
  for(const c of m.capas||[]){const g=document.createElementNS(ns,'g');g.dataset.capa=c.id;g.style.mixBlendMode='multiply';tiles.append(g);grupos.set(c.id,g);teselasCapa.set(c.id,new Set(Object.entries(c.teselas||{}).flatMap(([z,keys])=>keys.map(k=>z+'_'+k))));}
- return {coverage:geometry.size,method:s.method};
 }
 export function footprint(id){return geometry.get(id);}
 export function hitRoom(p){return hit(p);}

@@ -44,6 +44,9 @@ body.terreno .obsDetailDrawer[open] { z-index: 45; }
 }
 #ceilingMapTools[hidden]{display:none}
 #ceilingMapTools button{min-height:44px;padding:4px 8px}
+body.cielosUnificados #barraFunciones{display:none}
+body.cielosUnificados #polygons,body.cielosUnificados #labels{visibility:hidden}
+body.cielosUnificados #background,body.cielosUnificados #detailImage{display:block!important}
 .ceilingRoom .ceilingSource{border-top:1px solid var(--g-regla,#8c8c8c);padding:10px 0;margin-top:8px}
 .ceilingSource h3{margin:0 0 2px}
 .ceilingSource dl{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);gap:6px 10px}

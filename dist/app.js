@@ -8,6 +8,7 @@ import {markingItems} from './marking-model.mjs';
 import {iniciarCapaAvance} from './avance.mjs';
 import './cielos-lamina.mjs';
 import {loadCeilingSheets,renderCeilingRoom} from './cielos-unificados.mjs';
+import {ceilingS01Map} from './cie-s01-map.mjs';
 import {createObservaciones,iniciarCapaObservaciones,cargarObservaciones} from './observaciones.mjs';
 import {createRombo,romboSVG} from './rombo.mjs';
 import {createLastPlanner,iniciarCapaLastPlanner} from './lastplanner.mjs';
@@ -21,7 +22,7 @@ import {consultaPiso} from './navegacion-model.mjs';
 import {createTareas} from './jerarquia-ui.mjs';
 import {perfilActual} from './jerarquia-store.mjs';
 import {matchesLayers,tonoOscuro,OPACIDAD_FILTRO} from './layers.mjs';
-import {prepareViewer,footprint,footprintPath,hitRoomCandidates,updateFootprint,mapView,flushView,updateTiles,exportMapURL,mapa,overlays,showOverlay,capasDibujo,mostrarCapa} from './viewer.mjs';
+import {prepareViewer,setDrawingMap,footprint,footprintPath,hitRoomCandidates,updateFootprint,mapView,flushView,updateTiles,exportMapURL,mapa,overlays,showOverlay,capasDibujo,mostrarCapa} from './viewer.mjs';
 import {roomAliases} from './geometry-authority.mjs';
 import {nivel,archivo,pisos,datos,prefijo,MARCA,obra} from './level.mjs';
 import {asignarSectores,conCapaSectores} from './sectores-model.mjs';
@@ -69,8 +70,7 @@ function loadDetail(){updateTiles();}
 function path(r){const ring=p=>'M'+p.map(v=>v.join(',')).join('L')+'Z';return ring(r.polygon)+(r.holes||[]).map(ring).join('');}
 function group(r){const by=$('colorBy').value;if(by==='asepsis')return r.asepsis.join(' / ')||'Sin clasificación documentada';if(by==='status')return r.status;if(by==='walls')return [...new Set(r.finishes.filter(f=>f.field.startsWith('M')).map(f=>f.code))].join(' / ');if(by==='PAV'||by==='CIE')return r.finishes.find(f=>f.field===by)?.code||'Sin información';return 'Recintos';}
 function color(){return '#49575d';}
-const ceilingAppearance={fill:'#07848b',opacity:.18,blend:'multiply'};
-function render(){if(!data||!doc)return;const rooms=uniqueRooms(data.rooms),ids=new Set(results.map(r=>r.id));let shapes=[],labels=[];for(const r of rooms){const active=selected?.id===r.id,match=ids.has(r.id),dim=(isolation&&!active)||(filtered&&!match);const appearance=marking?.active()?null:roomAppearance(r),fill=appearance?.fill;
+function render(){if(!data||!doc)return;const rooms=uniqueRooms(data.rooms),ids=new Set(results.map(r=>r.id));let shapes=[],labels=[];for(const r of rooms){const active=selected?.id===r.id,match=ids.has(r.id),dim=(isolation&&!active)||(filtered&&!match);const appearance=ceilingView||marking?.active()?null:ui?.appearance(r),fill=appearance?.fill;
  // Con un filtro, lo que no cumple queda lavado en gris claro y lo filtrado se pinta fuerte con borde de su tono.
  const lavar=filtered&&!match&&!isolation&&!marking?.active(),borde=!dim&&fill?appearance.borde:null;{const d=footprintPath(r.id);if(d)shapes.push(`<path class="roomshape${borde?' fuerte':''}" data-geometry-quality="${esc(footprint(r.id)?.quality)}" data-id="${esc(r.id)}" d="${d}" fill="${lavar?'#fff':fill||'#425158'}" fill-opacity="${lavar?.62:!dim&&fill?appearance.opacity:!marking?.active()&&!dim&&filtered?.16:0}" stroke="${borde||'#111'}" stroke-opacity="${borde?1:dim?.2:.6}" style="mix-blend-mode:${lavar?'normal':appearance?.blend||'normal'}" fill-rule="evenodd"><title>${esc(r.code+' · '+r.name)}</title></path>`);}if(!dim&&($('layerCodes').checked||$('layerNames').checked)){const w=world(r);labels.push(`<text class="roomLabel" x="${w.position[0]}" y="${w.position[1]-14}" text-anchor="middle">${esc(($('layerCodes').checked?r.code:'')+($('layerNames').checked?' '+r.name:''))}</text>`);}}
 if(showDiamonds&&!edit)for(const r of rooms){const box=diamondBox(r,atlas);if(box)labels.push(`<rect class="diamondHit" data-diamond-id="${esc(r.id)}" x="${box[0]}" y="${box[1]}" width="${box[2]}" height="${box[3]}" tabindex="0" role="button" aria-label="Abrir rombo ${esc(r.code)}"><title>Rombo ${esc(r.code)} · selección documental, no contorno</title></rect>`);}
@@ -130,10 +130,6 @@ function clearArchitectureSelection(code){
   document.body.classList.add('hideRight');
 }
 let ceilingView=false,ceilingCatalog,ceilingPending,ceilingError='';
-function roomAppearance(room){
- if(!ceilingView)return ui?.appearance(room);
- return ceilingCatalog?.byCode.has(room.code)?ceilingAppearance:null;
-}
 function renderCeilingLegendLinks(){
  const list=$('ceilingDocumentList');
  if(!list)return;
@@ -145,20 +141,23 @@ function loadCeilings(){
  ceilingError='';
  ceilingPending=loadCeilingSheets(uniqueRooms(data.rooms)).then(catalog=>{ceilingCatalog=catalog;})
   .catch(error=>{ceilingError=error.message;})
-  .finally(()=>{ceilingPending=null;if(ceilingView){render();renderDetail();renderCeilingLegendLinks();}});
+  .finally(()=>{ceilingPending=null;if(ceilingView){renderDetail();renderCeilingLegendLinks();}});
 }
 function setUnifiedCeilings(active,actions){
  ceilingView=active;
+ document.body.classList.toggle('cielosUnificados',active);
+ setDrawingMap(active?ceilingS01Map:null);
  $('ceilingMapTools').hidden=!active;
  $('svg').setAttribute('aria-label',active?'Plano interactivo de Cielos del nivel −1':'Plano arquitectónico interactivo');
  $('fichaBarra').setAttribute('aria-label',active?'Abrir ficha de Cielos':'Abrir el rombo del recinto');
  $('fichaBarra').querySelector('.fichaBarraAbrir').textContent=active?'Ficha Cielos ▲':'Abrir rombo ▲';
  if(active){
+  isolation=false;previousView=null;
   $('ceilingExit').onclick=actions.exit;
   $('ceilingLegend').onclick=()=>{
    modal(`<section class="ceilingLegendContent">
      <h2>Simbología general · Cielos</h2>
-     <p>El sombreado del plano indica recintos con referencias de Cielos. La tabla de símbolos proviene de la lámina CIE-A-501.</p>
+     <p>Tablas de cielos e iluminación de la lámina CIE-A-501.</p>
      <button id="ceilingOriginals" type="button">Láminas originales y registros</button>
      <ul id="ceilingDocumentList" class="ceilingDocumentList" hidden></ul>
      <img src="cie-s01-simbologia.webp" alt="Tablas de simbología de cielos y luminarias de la lámina CIE-A-501, página 1" decoding="async">
