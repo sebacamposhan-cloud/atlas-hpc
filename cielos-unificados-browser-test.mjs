@@ -50,7 +50,8 @@ async function tapRoom(page, code, mobile) {
 try {
   for (const width of [320, 390, 1440]) {
     const mobile = width < 700;
-    const context = await browser.newContext({viewport: {width, height: 844}, isMobile: mobile, hasTouch: mobile, serviceWorkers: 'block'});
+    const context = await browser.newContext({viewport: {width, height: 844}, deviceScaleFactor: mobile ? 3 : 1,
+      isMobile: mobile, hasTouch: mobile, serviceWorkers: 'block'});
     try {
       const page = await context.newPage();
       page.setDefaultTimeout(35000);
@@ -58,12 +59,17 @@ try {
       page.on('request', request => { if (request.resourceType() === 'image') images.push(request.url()); });
       page.on('pageerror', error => errors.push(error.message));
       await open(page, 'N-1');
+      const drawing = page.waitForResponse(response => /\/cie-s01-map\/overview(?:-mobile)?\.webp$/.test(response.url()) && response.ok());
       await ceilings(page);
       const toolbar = page.locator('#ceilingMapTools');
       await toolbar.waitFor();
+      await (await drawing).finished();
       assert.equal(await page.locator('#specialtySheet').count(), 0);
       assert.equal(await page.locator('#disciplinePanel').isHidden(), true);
-      assert.match(await page.locator('#background image').first().getAttribute('href'), /^map\/overview/);
+      assert.equal(await page.locator('#background image').first().getAttribute('href'),
+        mobile ? 'cie-s01-map/overview-mobile.webp' : 'cie-s01-map/overview.webp');
+      assert.ok(await page.locator('#barraFunciones').isHidden());
+      assert.equal(await page.locator('#polygons').evaluate(el => getComputedStyle(el).visibility), 'hidden');
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
 
       await tapRoom(page, '7.1.2.1.2-1', mobile);
@@ -76,11 +82,22 @@ try {
       assert.match(await ficha.innerText(), /L19/);
       assert.equal(await ficha.getByRole('link', {name: /CIE-504/}).getAttribute('href'), 'source/cie-504.pdf#page=1');
       assert.equal(await page.locator('#selectionHighlight path').count(), 2);
-      assert.equal(await page.locator('#polygons .roomshape', {hasText: /^7\.1\.2\.1\.2-1 ·/}).getAttribute('fill-opacity'), '0.18');
+      await page.waitForFunction(() => document.querySelector('#detailImage image[href^="cie-s01-map/"]'));
+      const tiles = await page.locator('#detailImage image').evaluateAll(nodes => nodes.map(node => node.getAttribute('href')));
+      assert.ok(tiles.length && tiles.every(url => url.startsWith('cie-s01-map/')));
+      if (mobile) assert.ok(tiles.length <= 24);
       assert.ok(images.every(url => !new URL(url).pathname.startsWith('/disciplines/cie-')));
 
       // Closing the room sheet leaves the continuous plan open.
-      await page.locator('#closeDetail').click();
+      await page.locator('#closeDetail').click({delay:500});
+      await ficha.waitFor({state:'hidden'});
+      if (width === 390) {
+        await tapRoom(page, '2.1.4.1.5-1', mobile);
+        assert.match(await ficha.innerText(), /Servicio Higiénico Público/);
+        assert.equal(await ficha.getByRole('link', {name: /CIE-508/}).getAttribute('href'), 'source/cie-508.pdf#page=1');
+        await page.locator('#closeDetail').click({delay:500});
+        await ficha.waitFor({state:'hidden'});
+      }
       await toolbar.getByRole('button', {name: 'Simbología'}).click();
       const legend = page.locator('#modal .ceilingLegendContent');
       await legend.waitFor();
@@ -98,6 +115,7 @@ try {
       await toolbar.getByRole('button', {name: 'Volver a Arquitectura'}).click();
       assert.ok(await toolbar.isHidden());
       assert.equal(await page.locator('#svg').getAttribute('aria-label'), 'Plano arquitectónico interactivo');
+      assert.match(await page.locator('#background image').first().getAttribute('href'), /^map\/overview/);
       assert.deepEqual(errors, []);
       console.log('Cielos S01 unificado, ficha y simbología:', width, 'px');
     } finally {
