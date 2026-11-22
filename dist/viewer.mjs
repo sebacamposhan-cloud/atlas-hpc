@@ -51,6 +51,7 @@ export async function prepareViewer(a,rooms,aliases,runtime){
 }
 export function footprint(id){return geometry.get(id);}
 export function hitRoom(p){return hit(p);}
+export function hitRoomCandidates(p){return hit.candidates?.(p) ?? [];}
 export function updateFootprint(r){currentRooms.set(r.id,r);geometry=resolveFootprints(atlas,[...currentRooms.values()],currentAliases,currentSelection,currentContornos);paths.clear();hit=buildHitIndex(geometry.values());}
 export function footprintPath(id){if(paths.has(id))return paths.get(id);const e=geometry.get(id);if(!e)return '';const ring=pts=>'M'+pts.map(p=>p.join(',')).join('L')+'Z';const d=e.rings.map(p=>ring(p.polygon)+p.holes.map(ring).join('')).join('');paths.set(id,d);return d;}
 export function flushView(){if(frame){cancelAnimationFrame(frame);frame=0;}if(svg&&requestedView)svg.setAttribute('viewBox',requestedView.join(' '));}

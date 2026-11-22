@@ -1,4 +1,26 @@
 import {roomContourRepairs} from './room-contour-repairs.mjs';
+// Repeated labels with the same code, name and model position represent one selectable room.
+export function roomAliases(rooms, position) {
+  const aliases = new Map(), placed = new Map();
+  const manual = room => room.version > 1 && room.geometry_method === 'Edición manual en navegador';
+  const validated = room => room.status === 'Validado';
+  const polygon = room => !!(room.has_polygon || room.polygon);
+  const ordered = [...rooms].sort((a, b) =>
+    manual(b) - manual(a) || validated(b) - validated(a) || polygon(b) - polygon(a)
+  );
+  for (const room of ordered) {
+    const key = room.code + '|' + room.name;
+    const points = placed.get(key) || [];
+    const [x, y] = position(room);
+    const same = points.find(point => Math.hypot(point.x - x, point.y - y) < 5);
+    if (same) aliases.set(room.id, same.id);
+    else {
+      points.push({id: room.id, x, y});
+      placed.set(key, points);
+    }
+  }
+  return aliases;
+}
 // Original geometry is never rewritten. The same chosen rings drive hit testing and paint.
 // contornos: correcciones del editor interno (dist/<piso>/contornos.json, scripts/editor-contornos), en coordenadas del plano.
 // Mandan sobre las superficies auxiliares, los perímetros reparados y los contornos técnicos, incluso validados;
