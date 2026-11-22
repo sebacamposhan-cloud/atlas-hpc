@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {associateCode, ceilingMaterials, searchObservations} from './dist/discipline-model.mjs';
+import {indexCeilingSheets} from './dist/cielos-unificados.mjs';
 
 const read = name => JSON.parse(fs.readFileSync(new URL(`./dist/${name}.json`, import.meta.url)));
 const arq = read('data'), cie = read('disciplines');
@@ -54,5 +55,24 @@ assert.deepEqual(searchObservations(fixture, rooms, 'A-1').map(row => row.id), [
 assert.deepEqual(searchObservations(fixture, rooms, 'ATENCION PEDIATRICA').map(row => row.id), ['first', 'second']);
 assert.deepEqual(searchObservations(fixture, rooms, 'alternativo').map(row => row.id), ['first', 'second']);
 assert.deepEqual(searchObservations(fixture, rooms, 'tecnica').map(row => row.id), ['first']);
+const unified = indexCeilingSheets(cie, read('cie-review-observations'), arq.rooms);
+assert.equal(unified.documents.length, 8);
+const checked = unified.byCode.get(observation.code)[0];
+assert.deepEqual([checked.ceilings, checked.heights, checked.lights], [['213'], ['2,80'], ['L19']]);
+assert.equal(checked.checked, true);
+const automatic = unified.byCode.get('3.1.4.1.2-1').find(row => row.sheetId === 'cie-501');
+assert.deepEqual([automatic.ceilings, automatic.heights, automatic.lights], [['206'], ['3,00'], ['L8']]);
+assert.equal(automatic.checked, false);
+const legendCodes = {...automatic, rawText: `${automatic.code}\n200\n212\n220`};
+const legendIndex = indexCeilingSheets({...cie, observations: [legendCodes]}, {schema: 1, observations: []}, arq.rooms);
+assert.deepEqual(legendIndex.byCode.get(automatic.code)[0].ceilings, ['200', '220']);
+assert.ok(unified.byCode.get(duplicatedCode).length >= candidates.observations.length);
+const neighbor = unified.byCode.get('CT.F.(-1)-1').find(row => row.sheetId === 'cie-501');
+assert.equal(neighbor.associationStatus, 'unverified');
+const mixed = {...automatic, rawText: automatic.rawText + '\nCT.F.(-1)-1\nL99\n'};
+const mixedIndex = indexCeilingSheets({...cie, observations: [mixed]}, {schema: 1, observations: []}, arq.rooms);
+const mixedRecord = mixedIndex.byCode.get(mixed.code)[0];
+assert.equal(mixedRecord.otherLabel, true);
+assert.deepEqual([mixedRecord.ceilings, mixedRecord.heights, mixedRecord.lights], [[], [], []]);
 assert.equal(JSON.stringify([arq, cie]), before, 'Documentary data must remain unchanged');
 console.log('Discipline model: documented CIE attributes, all ambiguous matches, material provenance, accent-insensitive name/code search and stable exact-match ordering passed');
