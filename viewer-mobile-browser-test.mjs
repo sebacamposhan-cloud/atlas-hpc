@@ -35,12 +35,50 @@ async function draw(page, view) {
 try {
   const mobile = await browser.newContext({...readers.mobile, serviceWorkers: 'block'});
   const imageRequests = [], errors = [];
+  let health = 'online';
+  await mobile.route('**/healthz', route => {
+    if(health === 'captive') return route.fulfill({status: 200, contentType: 'text/html', body: '<p>Conecta tu red</p>'});
+    return route.fulfill({status: health === 'online' ? 200 : 503, json: {status: health === 'online' ? 'ok' : 'unavailable'}});
+  });
+
   mobile.on('request', request => {
     if (request.resourceType() === 'image') imageRequests.push(new URL(request.url()).pathname);
   });
   mobile.on('page', page => page.on('pageerror', error => errors.push(error.message)));
 
   const page = await open(mobile, 'N-1');
+  await page.waitForFunction(() => document.getElementById('connectionLabel').textContent === 'En línea');
+  const connection = page.locator('#offlineOpen');
+  assert.ok(await connection.isVisible());
+  await connection.click();
+  const panel = page.getByRole('dialog', {name: 'Conexión y planos guardados'});
+  assert.ok(await panel.isVisible());
+  const retry = panel.getByRole('button', {name: 'Reintentar conexión'});
+  health = 'unreachable';
+  await retry.click();
+  await page.waitForFunction(() => document.getElementById('connectionLabel').textContent === 'Sin respuesta');
+  assert.ok(await page.evaluate(() => navigator.onLine));
+  health = 'captive';
+  await retry.click();
+  await retry.waitFor();
+  await page.waitForFunction(() => !document.getElementById('connectionRetry').disabled);
+  assert.equal(await page.locator('#connectionLabel').textContent(), 'Sin respuesta');
+  health = 'online';
+  await retry.click();
+  await page.waitForFunction(() => document.getElementById('connectionLabel').textContent === 'En línea');
+  await panel.getByRole('button', {name: 'Cerrar modo sin conexión'}).click();
+  await page.setViewportSize({width: 320, height: 700});
+  assert.ok(await connection.isVisible());
+  assert.ok(await page.evaluate(() => {
+    const search = document.getElementById('globalSearch').getBoundingClientRect();
+    const status = document.getElementById('offlineOpen').getBoundingClientRect();
+    const label = document.getElementById('connectionLabel');
+    return search.width >= 55 && status.right <= window.innerWidth &&
+      getComputedStyle(label).display !== 'none' && label.scrollWidth <= label.clientWidth &&
+      document.documentElement.scrollWidth <= window.innerWidth;
+  }));
+  await page.setViewportSize(readers.mobile.viewport);
+
   await page.waitForFunction(() => document.querySelectorAll('#background image[href$="overview-mobile.webp"]').length === 4);
   await page.waitForLoadState('networkidle');
   assert.equal(imageRequests.filter(path => path.endsWith('overview-mobile.webp')).length, 4);
@@ -106,11 +144,15 @@ try {
   const saved = await open(offline, 'N-1');
   await saved.waitForFunction(() =>
     !!navigator.serviceWorker.controller &&
-    document.getElementById('offlineLabel')?.textContent === 'Disponible offline',
+    document.getElementById('offlineLabel')?.textContent === 'Plano listo',
   undefined, {timeout: 60000});
   await offline.setOffline(true);
   await saved.goto(url + '/?nivel=N-1&modulo=plano');
   await saved.waitForSelector('body:not(.booting) #svg .roomshape', {state: 'attached'});
+  await saved.waitForFunction(() =>
+    document.getElementById('connectionLabel').textContent === 'Sin señal' &&
+    document.getElementById('offlineLabel').textContent === 'Plano listo');
+
   const offlineAssets = await saved.locator('#background image[href$="overview-mobile.webp"]').evaluateAll(
     images => Promise.all(images.map(async image => {
       const check = new Image();
@@ -122,7 +164,7 @@ try {
   assert.equal(offlineAssets.length, 4);
   assert.ok(offlineAssets.every(width => width > 0 && width <= 1024));
   await offline.close();
-  console.log(engine + ': 5 pisos, máximo ' + Math.max(...peak) + ' teselas móviles, ocultación y regreso, originales en escritorio, reapertura offline');
+  console.log(engine + ': 5 pisos, máximo ' + Math.max(...peak) + ' teselas móviles, ocultación y regreso, originales en escritorio, estado de conexión y reapertura offline');
 } finally {
   await browser.close();
   server.closeAllConnections();

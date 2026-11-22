@@ -43,9 +43,29 @@ body.terreno #hojaFuncion > .asaHoja { display: none; }
 .accesoNombre { font-size: 13px; font-weight: 700; line-height: 1.2; text-align: center; }
 .acceso:active .accesoIcono { background: var(--g-azul, #0f5499); border-color: var(--g-azul, #0f5499); color: #fff; }
 
-/* Tu cuenta: iniciales y piso arriba a la izquierda; al tocarlos sube la hoja con tus pisos y Cerrar sesión. Por eso
-   salen de la cabecera el botón de descarga y el de cerrar sesión (siguen funcionando desde la hoja). */
-header #offlineOpen, header .logoutButton { display: none !important; }
+/* La cuenta conserva el acceso a los pisos y al cierre de sesión. La cabecera muestra la conexión. */
+header .logoutButton { display: none !important; }
+header #offlineOpen {
+  display: grid;
+  gap: 1px;
+  align-content: center;
+  flex: 0 0 auto;
+  min-width: 86px;
+  min-height: 44px;
+  padding: 3px 5px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+header #offlineOpen span, header #offlineOpen small { display: block; font-size: 11px; }
+@media (max-width: 360px) {
+  body > header { gap: 6px; }
+  header #offlineOpen { min-width: 74px; }
+}
+header #offlineOpen[data-connection=online] #connectionLabel { color: #176535; }
+header #offlineOpen[data-connection=offline] #connectionLabel,
+header #offlineOpen[data-connection=unreachable] #connectionLabel { color: #9b321d; }
+#connectionRetry { min-height: 44px; }
+#connectionStatus { margin-bottom: 8px; }
 body:not(.floorHome) header .project { display: grid !important; grid-template-columns: auto minmax(0, auto); column-gap: 8px; align-items: center; cursor: pointer; }
 body:not(.floorHome) header .project #navLogo { display: none; }
 body:not(.floorHome) header .project #navPiso::after { content: " ▾"; font-size: .8em; }

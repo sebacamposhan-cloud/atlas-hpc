@@ -5,6 +5,65 @@ let registration, registrationPromise, status, failure = '', progress, poll, upd
 // abierto (los módulos cancelan «atlas-before-update»); lo guardado en el equipo no se pierde al recargar.
 const AUTO = 'atlas-auto-update', AVISO = 'atlas-actualizada', AUSENCIA = 30 * 60000;
 let interactuo = false, ocultaDesde = 0;
+const CONEXION_ESPERA = 8000, CONEXION_REINTENTO = 30000;
+const labelsConexion = {
+  checking: ['Comprobando', 'Comprobando si Atlas responde…'],
+  online: ['En línea', 'Atlas responde.'],
+  offline: ['Sin señal', 'El navegador está sin conexión.'],
+  unreachable: ['Sin respuesta', 'Hay conexión de red, pero Atlas no responde. Reintenta cuando la señal se estabilice.'],
+};
+let conexion = 'checking', consultaConexion, ultimaConsulta = 0, reintentoConexion;
+
+function texto(id, mensaje) {
+  const el = $(id);
+  if (el.textContent !== mensaje) el.textContent = mensaje;
+}
+
+function pintarConexion() {
+  const estado = navigator.onLine ? conexion : 'offline';
+  const [label, mensaje] = labelsConexion[estado];
+  $('offlineOpen').setAttribute('data-connection', estado);
+  texto('connectionLabel', label);
+  texto('connectionStatus', mensaje);
+  $('offlineOpen').setAttribute('aria-label', label + ' · ' + $('offlineLabel').textContent + ' · Ver conexión y planos guardados');
+  $('connectionRetry').disabled = !navigator.onLine || !!consultaConexion;
+}
+
+function cancelarConexion() {
+  clearTimeout(reintentoConexion);
+  consultaConexion?.abort();
+  consultaConexion = undefined;
+}
+
+async function comprobarConexion(forzar = false) {
+  if (!navigator.onLine || document.hidden || consultaConexion) return;
+  if (!forzar && ultimaConsulta && Date.now() - ultimaConsulta < CONEXION_REINTENTO) return;
+
+  clearTimeout(reintentoConexion);
+  const consulta = new AbortController();
+  consultaConexion = consulta;
+  ultimaConsulta = Date.now();
+  const limite = setTimeout(() => consulta.abort(), CONEXION_ESPERA);
+  pintarConexion();
+  let nueva = 'unreachable';
+  try {
+    const respuesta = await fetch('/healthz', {signal: consulta.signal, cache: 'no-store', redirect: 'error'});
+    if (respuesta.ok && (await respuesta.json()).status === 'ok') nueva = 'online';
+  } catch {
+    // Un enlace Wi-Fi o celular no garantiza que el servidor sea alcanzable.
+  } finally {
+    clearTimeout(limite);
+  }
+  if (consultaConexion !== consulta) return;
+  consultaConexion = undefined;
+  conexion = nueva;
+  paint();
+  if (conexion === 'online') autoGuardar();
+  else if (navigator.onLine && !document.hidden) {
+    reintentoConexion = setTimeout(() => comprobarConexion(true), CONEXION_REINTENTO);
+  }
+}
+
 for (const tipo of ['pointerdown', 'keydown']) window.addEventListener(tipo, () => { interactuo = true; }, {capture: true, once: true, passive: true});
 function aplicarSola() {
   // Solo actualizaciones: en la primera visita no hay versión activa que reemplazar.
@@ -37,7 +96,7 @@ function autoGuardar() {
   clearTimeout(autoPendiente);
   // Espera unos segundos: primero se abre el plano, después se guarda en segundo plano.
   autoPendiente = setTimeout(() => {
-    if (!registration?.active || !navigator.onLine || ahorroDatos() || !status || status.downloading || !status.packs) return;
+    if (!registration?.active || !navigator.onLine || conexion !== 'online' || document.hidden || ahorroDatos() || !status || status.downloading || !status.packs) return;
     const faltan = pendientes(['plan', ...usados().filter(pack => pisos().some(p => p.pack === pack))]);
     if (faltan.length) { failure = ''; status.downloading = faltan[0]; paint(); request('DOWNLOAD', {packs: faltan}).catch(() => {}); }
   }, 3000);
@@ -64,10 +123,16 @@ function paintPisos() {
 function paint() {
   try { window.dispatchEvent?.(new Event('atlas-offline-estado')); } catch {}
   const online = navigator.onLine, busy = !!status?.downloading, ready = pisoListo(), actual = pisoAbierto ? pisoActual() : null;
-  $('offlineLabel').textContent = busy ? 'Guardando…' : !online ? 'Sin señal' : ready ? 'Disponible offline' : 'Sin guardar';
+  const guardandoActual = busy && (!actual || status.downloading === 'plan' || status.downloading === actual.pack);
+  texto('offlineLabel', ready ? (actual ? 'Plano listo' : 'Base lista')
+    : guardandoActual ? 'Guardando…' : status ? 'Sin copia' : 'Por verificar');
+  pintarConexion();
   $('offlineOpen').classList.toggle('ready', ready);
   $('offlineStatus').classList.toggle('ready', ready && !failure && !busy);
-  $('offlineStatus').textContent = failure || (busy ? 'Guardando '+nombrePack(status.downloading)+'… Puedes seguir usando Atlas.' : ready ? (actual ? actual.nombre+' está guardado: funciona sin señal.' : 'Listo para usar sin conexión.') : status ? (online ? (ahorroDatos() ? 'El ahorro de datos está activo: guarda tus pisos con los botones de abajo.' : 'Atlas guarda solo cada piso que abres, mientras tienes señal.') : (actual ? actual.nombre+' no está guardado en este equipo. Las fichas y la búsqueda funcionan; el plano se verá incompleto hasta que vuelva la señal.' : 'La descarga está incompleta. Conéctate para continuar.')) : 'Preparando el modo sin conexión…');
+  texto('offlineStatus', failure || (busy ? 'Guardando '+nombrePack(status.downloading)+'… Puedes seguir usando Atlas.'
+    : ready ? (actual ? actual.nombre+' está guardado en este equipo.' : 'La base de Atlas está guardada en este equipo.')
+    : status ? (actual ? actual.nombre+' aún no está completo para usarlo sin conexión.' : 'La base de Atlas aún no está guardada en este equipo.')
+    : 'Comprobando si hay una copia guardada en este equipo…'));
   const total = status?.packs ? Object.entries(status.packs).filter(([k]) => k !== 'documents').reduce((n, [, v]) => n + v.bytes - v.savedBytes, 0) : status?.plan.bytes || 0;
   $('offlineSave').disabled = !status || busy || todoListo() || !online;
   $('offlineSave').textContent = todoListo() ? 'Todos los pisos guardados' : (status?.plan.count > 20 && !status?.packs ? 'Continuar descarga' : 'Guardar todos los pisos')+(status ? ' · '+mb(total) : '');
@@ -139,8 +204,9 @@ async function download(pack) {
     await request('DOWNLOAD', Array.isArray(pack) || status.packs ? {packs} : {pack});
   } catch (error) { failure = error.message;await refresh().catch(() => {});paint(); }
 }
-const openOffline = async () => { $('offlineDialog').showModal();await setup();if (registration?.active) await refresh().catch(e => {failure=e.message;paint();}); };
+const openOffline = async () => { $('offlineDialog').showModal();comprobarConexion();await setup();if (registration?.active) await refresh().catch(e => {failure=e.message;paint();}); };
 $('offlineOpen').onclick = openOffline;
+$('connectionRetry').onclick = () => comprobarConexion(true);
 $('offlineClose').onclick = () => $('offlineDialog').close();
 $('offlineDialog').addEventListener('click', event => {if(event.target === $('offlineDialog')) $('offlineDialog').close();});
 $('offlineSave').onclick = () => download('plan');
@@ -163,16 +229,18 @@ if ('serviceWorker' in navigator) {
   });
   navigator.serviceWorker.addEventListener('controllerchange', () => {if(updating) location.reload();else refresh().catch(() => {});});
 }
-window.addEventListener('online', () => {paint();if(registration?.active){refresh().then(autoGuardar).catch(() => {});registration.update().catch(() => {});}});
-window.addEventListener('offline', paint);
+window.addEventListener('online', () => {conexion = 'checking';paint();comprobarConexion(true);if(registration?.active){refresh().then(autoGuardar).catch(() => {});registration.update().catch(() => {});}});
+window.addEventListener('offline', () => {cancelarConexion();conexion = 'checking';paint();});
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) { ocultaDesde = Date.now(); return; }
+  if (document.hidden) { ocultaDesde = Date.now(); cancelarConexion(); return; }
+  pintarConexion();
+  comprobarConexion(conexion !== 'online');
   if (registration?.active) refresh().then(autoGuardar).catch(() => {});
   if (ocultaDesde && Date.now() - ocultaDesde > AUSENCIA) aplicarSola();
   ocultaDesde = 0;
 });
 try { if (sessionStorage.getItem(AVISO)) { sessionStorage.removeItem(AVISO); const t = $('toast'); if (t) { t.textContent = 'Atlas se actualizó a la versión más reciente.'; t.style.display = 'block'; setTimeout(() => { t.style.display = 'none'; }, 4500); } } } catch {}
-window.addEventListener('atlas-ready', () => setup(), {once:true});
+window.addEventListener('atlas-ready', () => {comprobarConexion();return setup();}, {once:true});
 // Un piso abierto pasa a la lista de este equipo y se guarda solo.
 window.addEventListener('atlas-piso-visible', () => { const p = pisoActual(); pisoAbierto = true; if (p) recordar(p.pack); paint(); autoGuardar(); if (!navigator.onLine) { avisoPendiente = true; avisarFalta(); } });
 window.addEventListener('atlas-floor-home', () => { pisoAbierto = false; paint(); });
@@ -186,8 +254,8 @@ function avisarFalta() {
   t.textContent = (p ? p.nombre : 'Este piso') + ' no está guardado en este equipo. Con señal, Atlas lo guarda solo.';
   t.style.display = 'block'; setTimeout(() => { t.style.display = 'none'; }, 6000);
 }
-window.addEventListener('atlas-teselas-faltan', avisarFalta);
-window.addEventListener('atlas-shell-ready', () => setup(), {once:true});
+window.addEventListener('atlas-teselas-faltan', () => {avisarFalta();comprobarConexion();});
+window.addEventListener('atlas-shell-ready', () => {setup();comprobarConexion();}, {once:true});
 paint();
 // La hoja de tu cuenta (floor-explorer.mjs) muestra qué pisos están guardados y permite guardar uno.
 window.atlasSinConexion = {estado: () => status, guardar: pack => { recordar(pack); download(['plan', pack]); }};

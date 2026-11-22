@@ -44,7 +44,9 @@
 </div>
 <button id="floorHomeButton" hidden aria-label="Volver a los pisos">▦ <span>Pisos</span></button>
 <div class="globalSearchWrap"><input id="globalSearch" aria-label="Búsqueda global" placeholder="Buscar código, recinto o terminación…"><kbd>⌘ K</kbd></div><button id="dashboard">Dashboard</button>
-<button id="offlineOpen" class="offlineButton" aria-label="Modo sin conexión"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/></svg><span id="offlineLabel">Sin conexión</span></button>
+<button id="offlineOpen" type="button" class="offlineButton" aria-haspopup="dialog" aria-controls="offlineDialog">
+  <span id="connectionLabel">Comprobando</span><small id="offlineLabel">Por verificar</small>
+</button>
 <button id="detailToggle" title="Mostrar u ocultar ficha">Ficha</button>
 </header>
 <div class="workspace">
@@ -241,8 +243,9 @@ Ejes A–W · 1–12
 <dialog id="offlineDialog" aria-labelledby="offlineTitle">
   <button id="offlineClose" class="close" aria-label="Cerrar modo sin conexión">×</button>
   <div class="section-label">ATLAS EN TU DISPOSITIVO</div>
-  <h2 id="offlineTitle">Tu plano, incluso sin señal</h2>
-  <p>Con señal, Atlas guarda solo en este equipo cada piso que abres. Al llegar a un piso sin señal, el plano, la búsqueda y las fichas siguen funcionando.</p>
+  <h2 id="offlineTitle">Conexión y planos guardados</h2>
+  <p id="connectionStatus" role="status">Comprobando si Atlas responde…</p>
+  <button id="connectionRetry" type="button">Reintentar conexión</button>
   <div id="offlineStatus" class="offlineStatus" role="status" aria-live="polite">Comprobando almacenamiento…</div>
   <progress id="offlineProgress" max="100" value="0" hidden aria-label="Progreso de descarga"></progress>
   <p id="offlineProgressText" class="muted"></p>
@@ -260,7 +263,7 @@ Ejes A–W · 1–12
   </div>
   <details class="offlineHelp"><summary>Usarlo en iPhone o iPad</summary>
     <p>Abre este sitio en Safari. En Compartir, elige «Añadir a pantalla de inicio». Abre Atlas desde ese icono: los pisos que abras ahí se guardan solos.</p>
-    <p>Mantén Atlas abierto durante la descarga. Espera el mensaje «Listo para usar sin conexión» antes de desconectarte.</p>
+    <p>Mantén Atlas abierto durante la descarga. Espera que el piso figure como guardado antes de desconectarte.</p>
     <p>La copia y tus correcciones quedan en este navegador. Si borras sus datos, se pierden ambas. Respalda tus correcciones desde Filtros del plano → Colores y respaldo antes de borrarlos.</p>
   </details>
 </dialog>
