@@ -7,8 +7,8 @@ cerca del centro de sus recintos que del de cualquier otra lámina. Así no entr
 márgenes, y en los traslapes manda la lámina que dibuja esa zona.
 
 Uso: python scripts/cielos/generar-mapa-cie.py N02 <carpeta con cie-501.pdf…> <pos-n02.json>
-Escribe dist/n02/cie-map/ (teselas), dist/n02/cie-map.mjs (la malla) y dist/n02/cie-simbologia.webp (tablas de la
-primera lámina). Después se marca el piso en dist/pisos.js con «cielosUnificado».
+Escribe dist/n02/cie-map/ (teselas) y dist/n02/cie-map.mjs (la malla). Después se marca el piso en dist/pisos.js con
+«cielosUnificado».
 """
 import hashlib, json, math, sys
 from pathlib import Path
@@ -97,12 +97,6 @@ def generar(piso, carpeta, posiciones):
                   overview=f'{carpeta_salida}/overview.webp', export=f'{carpeta_salida}/export.webp', levels=levels)
     (REPO / 'dist' / piso.lower() / 'cie-map.mjs').write_text(
         '// Generado por scripts/cielos/generar-mapa-cie.py\nexport const mapaCielos = ' + json.dumps(layout, indent=2) + ';\n', encoding='utf8')
-    # Simbología: la parte alta de la carátula de la primera lámina (tablas de cielos y luminarias).
-    primera = hojas[0]
-    with pymupdf.open(primera['pdf']) as d:
-        r = d[0].rect
-        pix = d[0].get_pixmap(matrix=pymupdf.Matrix(1.6, 1.6), clip=pymupdf.Rect(r.width * CARATULA, 0, r.width, r.height * .5), alpha=False, annots=False)
-        Image.frombytes('RGB', (pix.width, pix.height), pix.samples).save(REPO / 'dist' / piso.lower() / 'cie-simbologia.webp', quality=88, method=4)
     print(f'Mapa CIE {piso}: {sum(l["columns"] * l["rows"] for l in levels)} teselas · origen {x0},{y0} · {width}×{height}', flush=True)
 
 

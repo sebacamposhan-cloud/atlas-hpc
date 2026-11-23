@@ -67,35 +67,29 @@ export async function loadCeilingSheets(rooms) {
 export function renderCeilingRoom({room, catalog, ambiguous, loading, error, material, esc}) {
   const records = catalog?.byCode.get(room.code) || [];
   const architecture = room.finishes?.find(finish => finish.field === 'CIE');
-  const fallback = architecture?.code && architecture.code !== '–'
-    ? `<p class="dataNote">Referencia de Arquitectura: ${esc(architecture.code)} · ${esc(architecture.description || 'Descripción pendiente')}.</p>`
-    : '';
-  const values = (items, format = item => item) => items.map(item => esc(format(item))).join(' · ') || 'Sin dato identificado';
+  const values = (items, format = item => item) => items.map(item => esc(format(item))).join(' · ') || 'Sin dato';
   const ceiling = code => {
     const description = material(code)?.description;
     return description ? code + ' · ' + description : code;
   };
-  const publicFields = records.map(row => {
-    const sheet = row.sheetId.toUpperCase();
-    return `<article class="ceilingSource">
-      <h3>${esc(sheet)} · ${esc(row.document.revision)}</h3>
-      <small>${row.checked ? 'Lectura cotejada en la lámina' : 'Lectura del rótulo · por revisar'}</small>
-      ${ambiguous || (row.otherLabel && !row.checked)
-        ? '<p>El código o el recorte tiene varias correspondencias. Consulta la fuente para atribuir sus datos.</p>'
-        : `<dl>
-          <dt>Tipo de cielo</dt><dd>${values(row.ceilings, ceiling)}</dd>
-          <dt>Altura (NCT)</dt><dd>${values(row.heights, value => value + ' m')}</dd>
-          ${row.lights.length || nivel.especialidades ? `<dt>${row.checked ? 'Luminarias identificadas' : 'Códigos de luminaria en el recorte'}</dt><dd>${values(row.lights)}</dd>` : ''}
-        </dl>`}
-      ${row.document.filename ? `<a href="source/${esc(row.document.filename)}#page=${esc(row.source.page)}" target="_blank" rel="noopener">Abrir lámina ${esc(sheet)} ↗</a>` : ''}
-    </article>`;
-  }).join('');
+  // Una sola ficha con lo que dice el recinto, sin la lámina, la revisión ni el enlace a la fuente (decidido 2026-11-22).
+  // Las lecturas dudosas (código repetido o recorte con otro rótulo sin cotejar) no entran.
+  const usables = ambiguous ? [] : records.filter(row => row.checked || !row.otherLabel);
+  const juntar = campo => [...new Set(usables.flatMap(row => row[campo]))].sort((a, b) => String(a).localeCompare(String(b), 'es', {numeric: true}));
+  const pma = architecture?.code && architecture.code !== '–' ? architecture.code : null;
+  const cielos = juntar('ceilings'), alturas = juntar('heights'), luces = juntar('lights');
+  const tipos = cielos.length ? cielos : pma ? [pma] : [];
+  const difiere = pma && cielos.length && !cielos.includes(pma);
+  const ficha = tipos.length || alturas.length ? `<dl>
+      <dt>Tipo de cielo</dt><dd>${values(tipos, ceiling)}</dd>
+      <dt>Altura (NCT)</dt><dd>${values(alturas, value => value + ' m')}</dd>
+      ${luces.length ? `<dt>Luminarias</dt><dd>${values(luces)}</dd>` : ''}
+    </dl>${difiere ? `<p class="dataNote">El PMA indica ${esc(ceiling(pma))}.</p>` : ''}` : '<p>Sin datos de Cielos para este recinto.</p>';
   return `<section class="ceilingRoom" aria-label="Ficha de Cielos">
     <small>CIELOS · ${esc(String(nivel.nombre).toUpperCase())}</small>
     <h2 class="detailName">${esc(room.name)}</h2><p class="detailCode">${esc(room.code)}</p>
     ${loading ? '<p role="status">Cargando fichas de Cielos…</p>' : error
       ? `<p role="alert">${esc(error)}</p><button type="button" data-retry-ceilings>Reintentar</button>`
-      : publicFields || '<p>Sin datos de Cielos asociados a este código.</p>'}
-    ${fallback}
+      : `<article class="ceilingSource">${ficha}</article>`}
   </section>`;
 }

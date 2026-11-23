@@ -61,3 +61,18 @@ Las láminas CIE de cada piso se componen en un solo plano con teselas, igual qu
 - `scripts/cielos/generar-mapa-cie.py` compone el plano y lo corta en teselas.
 
 La marca `cielosUnificado` de `pisos.js` dice qué mapa, qué simbología y qué lámina usa cada piso. En N01–N04 la ficha de Cielos muestra el tipo de cielo y el NCT de `cielos.json`. Los PDF fuente (`CIELOS.zip` de Planificación) no van en el repositorio; `scripts/cielos/alineacion-<piso>.json` guarda su huella SHA-256.
+
+## Filtros y capas, planos unificados y descarga (22-11-2026)
+
+- **Filtros y capas** tiene tres partes:
+  - **Plano:** se elige uno (Arquitectura, Cielos, Pavimentos, Compartimentación, Muros, Puertas, Impermeabilización). Si al piso le falta ese plano, aparece desactivado con el motivo.
+  - **Simbología:** una lista con casillas por categoría, con recintos y m² del piso. Al marcar categorías, esos recintos se pintan con su color, también sobre el plano unificado, y el resto queda atenuado.
+  - **Sobre el plano:** avance, observaciones, sectores, capas del dibujo y textos.
+- **Botón «Simbología»** de la barra del plano: abre esa lista. Ya no hay capturas de la tabla ni datos de la fuente (lámina, revisión, enlace).
+- **Planos unificados de una lámina por piso.** `scripts/planos/generar-plano.py` los alinea solos: escala y traslado con los códigos de recinto, y después afinado con los muros. En `pisos.js` se declaran con `planos: {comp, retornos}`.
+  - **Compartimentación** (SEG-EVA, fuego): en el −1, 1, 2, 3 y 4.
+  - **Pavimentos con retornos vinílicos:** en el 1, 2, 3 y 4. El −1 conserva sus láminas de Pavimentos.
+- **Descarga sin conexión:**
+  - El piso se guarda solo cuando hay Wi-Fi. En datos móviles, o en Safari (que no informa el tipo de red), se guarda a pedido desde «Tus pisos».
+  - Los planos de especialidad van en un paquete aparte (`planos-<piso>`) y cada tesela se guarda al verla.
+- **«Tus pisos»:** las láminas 3D vuelven a verse. Se cargan al abrir la hoja.

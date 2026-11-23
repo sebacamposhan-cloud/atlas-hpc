@@ -68,6 +68,17 @@ body.ruedaAbierta #activeLegend, body.hojaAbierta #activeLegend { display: none;
 .filterTiposPlano { display: flex; flex-wrap: wrap; gap: 0; }
 .filterTiposPlano button { flex: 1 1 auto; min-height: 44px; margin: 0 -1px -1px 0; font-size: 13px; padding: 4px 10px; }
 .filterCapas { display: grid; gap: 2px; }
+/* Filtros y capas (2026-11-22): Plano (uno a la vez; el que falta, desactivado con su motivo), Simbología con casillas y
+   Sobre el plano. */
+.filterPlanos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; }
+.filterPlanos button { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; min-height: 44px; margin: 0 -1px -1px 0; padding: 4px 10px; font-size: 13px; text-align: left; }
+.filterPlanos button[aria-checked="true"] { background: var(--g-azul); border-color: var(--g-azul); color: #fff; font-weight: 700; }
+.filterPlanos button:disabled { color: var(--g-texto2); background: #fff; }
+.filterPlanos button small { font-size: 11px; font-weight: 400; color: var(--g-texto2); }
+.filterSimbologia { margin-top: 4px; }
+.simbologiaNota { margin: 0 0 6px; font-size: 13px; color: var(--g-texto2); }
+.filterSimbologia[data-sin-datos] > :not(h3, .simbologiaNota) { display: none !important; }
+.categoryControl label b small { display: block; font-size: 11px; font-weight: 400; color: var(--g-texto2); text-align: right; }
 .filterCapas label { display: flex; align-items: center; gap: 8px; min-height: 40px; font-size: 13px; }
 .filterCapas input { width: 18px; height: 18px; flex: none; }
 .planFilterBody .filterChips:empty { display: none; }

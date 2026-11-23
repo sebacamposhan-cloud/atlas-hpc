@@ -27,14 +27,17 @@ for(const name of walk('protocols/registers'))add(name);
 // Las páginas de redirección n0x/index.html no se guardan (solo la portada es HTML).
 const fichasPiso=/^n\d\d\/(runtime|contornos|ejes|cielos)\.json$/;
 const carpetasPiso=[...fs.readFileSync(path.join(dist,'pisos.js'),'utf8').matchAll(/datos:\s*'([a-z0-9-]+)\/'/g)].map(m=>m[1]);
-for(const carpeta of carpetasPiso) for(const name of walk(carpeta)) if(!/\.(html|txt)$/.test(name)) add(name,fichasPiso.test(name)?'plan':carpeta,fichasPiso.test(name));
+// Planos de especialidad del piso (Cielos, Compartimentación, Retornos…: <piso>/<tipo>-map/): paquete aparte, «planos-<piso>»,
+// que no baja solo con el piso; cada tesela se guarda al verla (sw-runtime.js guarda lo que se usa).
+const planoEspecialidad=name=>/^(?:n\d\d\/)?[a-z0-9]+-map\//.test(name);
+for(const carpeta of carpetasPiso) for(const name of walk(carpeta)) if(!/\.(html|txt)$/.test(name)) add(name,fichasPiso.test(name)?'plan':planoEspecialidad(name)?'planos-'+carpeta:carpeta,fichasPiso.test(name));
 // Nivel −1: sus datos viven en la raíz (plano, láminas de especialidades, impermeabilización y geometría).
 for(const name of walk('map')) if(!['map/overview.webp','map/overview-mobile.webp'].includes(name)) add(name,'n-1');
 for(const name of walk('doors')) if(!['doors/catalog.json','doors/overview.webp'].includes(name)) add(name);
 // Láminas de especialidad e IMP: van al paquete del piso que nombran (imp-n02, artefactos-n02…); las del −1 no lo dicen.
 const pisoDeLamina=name=>name.match(/(?:^|[-\/])(n\d\d)(?=[-\/.]|$)/)?.[1]||'n-1';
 for(const name of walk('disciplines')) add(name,pisoDeLamina(name));
-for(const name of walk('cie-s01-map')) add(name,'n-1');
+for(const dir of fs.readdirSync(dist).filter(d=>/^[a-z0-9]+-[a-z0-9]+-map$|^[a-z0-9]+-map$/.test(d)&&fs.statSync(path.join(dist,d)).isDirectory())) for(const name of walk(dir)) add(name,'planos-n-1');
 add('cie-s01-simbologia.webp','n-1');
 for(const name of walk('impermeabilizacion')) add(name,pisoDeLamina(name));
 for(const name of walk('geometry')) add(name,'n-1');

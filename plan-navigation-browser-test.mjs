@@ -48,9 +48,10 @@ try {
 
     await choose('walls');
     await toolbar.getByText('Muros', {exact:true}).waitFor();
+    // Muros: la simbología es la lista con casillas de «Filtros y capas» (recintos y m² por tipo de muro).
     await legend.click();
-    await page.getByRole('dialog', {name:'Simbología general · Muros'}).locator('.planLegendItems li').first().waitFor();
-    await page.locator('#closeModal').click();
+    await page.locator('#planFilters [data-simbologia] .categoryControl').first().waitFor();
+    await page.locator('#closePlanFilters').click();
     await exit.click();
 
     await choose('waterproofing');
