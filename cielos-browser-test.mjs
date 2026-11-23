@@ -20,22 +20,22 @@ let browser;
 const completed = [];
 const layoutFailures = [];
 
-async function openUnified(page) {
-  if (await page.locator('[data-plan-type="ceilings"]').isVisible()) {
-    await page.locator('[data-plan-type="ceilings"]').click();
+async function elegirPlano(page, type) {
+  const direct = page.locator(`[data-plan-type="${type}"]`);
+  if (await page.locator('#terrenoPlano').isVisible()) {
+    await page.locator('#terrenoPlano').click();
+    await page.locator(`[data-elegir-plano="${type}"]`).click();
+  } else if (await direct.isVisible()) {
+    await direct.click();
   } else {
-    if (await page.locator('#terrenoMas').isVisible()) {
-      await page.locator('#terrenoMas').click();
-      await page.getByRole('button', {name: 'Filtros y capas', exact: true}).click();
-    } else {
-      await page.locator('button[data-tarjeta=herramientas]').click();
-      await page.locator('button[data-funcion=filtros]').click();
-    }
-    await page.locator('#planFilters [data-tipo-plano=ceilings]').click();
+    await page.locator('button[data-tarjeta=herramientas]').click();
+    await page.locator('button[data-funcion=filtros]').click();
+    await page.locator(`#planFilters [data-tipo-plano="${type}"]`).click();
   }
 }
+const openUnified = page => elegirPlano(page, 'ceilings');
 async function openOriginals(page) {
-  await page.locator('#ceilingLegend').click();
+  await page.locator('#planViewLegend').click();
   await page.locator('#ceilingOriginals').click();
 }
 async function openCeilings(page) {
@@ -122,14 +122,14 @@ try {
     await page.locator('#specialtySearch').fill(noArchitecture.code);
     await page.locator(`#specialtyResults [data-observation="${noArchitecture.id}"]`).click();
     assert.match(await page.locator('#specialtyDetail').innerText(), /Sin coincidencia en Arquitectura/);
-    await page.locator('[data-plan-type="floors"]').click();
+    await elegirPlano(page, 'floors');
     await page.waitForFunction(code => document.querySelector('#specialtyDetail h2')?.textContent === code, noArchitecture.code);
     await openCeilings(page);
     await page.waitForFunction(id => document.querySelector('[data-ceiling-observation][aria-pressed="true"]')?.dataset.ceilingObservation === id, noArchitecture.id);
     assert.equal(await page.locator('#specialtyDetail h2').innerText(), noArchitecture.code);
 
     // Clearing an unmatched ARQ association must also remove the old card/actions.
-    await page.locator('[data-plan-type="architecture"]').click();
+    await page.locator('#planViewExit').click();
     assert.match(await page.locator('#detail').textContent(), /Sin recinto seleccionado/);
     assert.equal(await page.locator('#editInfo').count(), 0);
     assert.equal(await page.locator('#background').evaluate(el => el.style.opacity), '1');
@@ -180,7 +180,7 @@ try {
   await page.locator('body:not(.booting) #polygons .roomshape').first().waitFor({state:'attached'});
   await openUnified(page);
   await requested;
-  await page.locator('#ceilingExit').click();
+  await page.locator('#planViewExit').click();
   const response = page.waitForResponse('**/disciplines.json');
   release();
   await (await response).finished();

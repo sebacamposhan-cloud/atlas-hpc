@@ -73,7 +73,7 @@ try {
       } else {
         await ceilings(page);
       }
-      const toolbar = page.locator('#ceilingMapTools');
+      const toolbar = page.locator('#planViewTools');
       await toolbar.waitFor();
       await (await drawing).finished();
       assert.equal(await page.locator('#specialtySheet').count(), 0);

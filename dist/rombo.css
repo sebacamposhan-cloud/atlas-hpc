@@ -69,6 +69,28 @@
 .curvaDato small { display: block; margin-bottom: 2px; color: #262626; }
 .curvaTabla table { width: 100%; font-size: 12px; }
 
+/* Curvas RMP (rmp-ui.mjs, escritorio): cuatro tarjetas; sin pesos del RMP se ven desactivadas con el motivo. */
+.rmpAcciones { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.rmpMotivo { margin: 8px 0 12px; font-size: 13px; color: #262626; }
+.rmpGrilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; margin-top: 10px; }
+.rmpTarjeta { display: grid; align-content: start; gap: 8px; min-width: 0; padding: 12px 14px; border: 1px solid var(--g-marca, #1b2a56); background: #fff; }
+.rmpTarjeta h4 { margin: 0; font-size: 15px; color: #000; }
+.rmpTarjeta h4 small { font-weight: 400; font-size: 12px; color: #262626; }
+@media (min-width: 1100px) { .rmpTarjeta.rmpAncha { grid-column: 1 / -1; } }
+.rmpDesactivada .rmpTarjeta { min-height: 140px; border-style: dashed; color: #595959; }
+.rmpDesactivada .rmpTarjeta p { margin: auto 0; font-size: 13px; }
+.rmpTarjeta svg text { font: 400 11px "Google Sans Flex", "Segoe UI", sans-serif; fill: #262626; font-variant-numeric: tabular-nums; }
+.rmpCifra { margin: 0; font-size: 13px; color: #262626; }
+.rmpCifra b { display: block; font-size: 34px; line-height: 1.1; color: #000; }
+.rmpMedidor { display: block; height: 12px; border: 1px solid var(--g-marca, #1b2a56); background: #fff; }
+.rmpMedidor i { display: block; height: 100%; background: var(--g-azul, #0f5499); }
+.rmpPie { margin: 0; font-size: 12px; color: #262626; }
+.rmpPie b { color: #000; }
+.curvaLeyenda i.proyeccion { border-top: 2px dotted var(--g-azul, #0f5499); }
+.curvaLeyenda i.barraPlan, .curvaLeyenda i.barraReal { width: 12px; height: 12px; border: 0; background: var(--g-cian, #29a8df); }
+.curvaLeyenda i.barraReal { background: var(--g-azul, #0f5499); }
+.rmpTabla { margin-top: 10px; font-size: 13px; }
+
 /* Partidas de la terminación elegida: m² ejecutados y pendientes (sin montos) y sus dos filas, ejecución y revisión, que
    se guardan al tocarlas. Arriba, los protocolos previos que piden liberadas. */
 .romboVerCodigo, .romboVerCodigo:hover:not(:disabled) { display: inline; background: transparent; border: 0; outline: 0; padding: 0; min-height: 0; color: var(--g-azul, #0f5499); text-decoration: underline; text-underline-offset: 3px; font-size: 12px; font-weight: 700; cursor: pointer; text-align: left; }

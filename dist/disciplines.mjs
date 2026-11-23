@@ -9,26 +9,41 @@ import {startPan,panView,startPinch,pinchView} from './gestures.mjs';
 import {uid,dimensions,dimensionNames,technicalStates,records,persist,backupWork,restoreWork,protocolCounts} from './construction-store.mjs';
 import {exigirFirma} from './firma.mjs';
 export function createDisciplines(ctx){const main=document.querySelector('main'),esc=ctx.esc;let imp;let mode='architecture',bundle,doc,chosen,selectedCode,v,draw=null,gesture={},moved=false,zones=[],events=[],protocols=[],colorDimension='structure';let modeRequest=0,unified=false;const remembered=new Map();const pointers=new Map(),ns='http://www.w3.org/2000/svg';
- for(const eventName of ['atlas-before-floor-change','atlas-before-update'])window.addEventListener(eventName,event=>{if(draw!==null||panel.querySelector('form[data-dirty]')||imp?.busy()){event.preventDefault();ctx.toast('Guarda o cancela los cambios de la especialidad antes de continuar.');}});
+ for(const eventName of ['atlas-before-floor-change','atlas-before-update'])window.addEventListener(eventName,event=>{if(!canLeave()){event.preventDefault();ctx.toast('Guarda o cancela los cambios de la especialidad antes de continuar.');}});
  const bar=document.createElement('div');bar.className='disciplineBar';bar.innerHTML='<label for="discipline">Especialidad</label><select id="discipline"><option value="architecture">Arquitectura</option>'+(nivel.especialidades?'<option value="floors">Pavimentos</option><option value="ceilings">Cielos</option>':'')+(nivel.imp?'<option value="waterproofing">Impermeabilización</option>':'')+'</select><span id="disciplineStatus"></span>';bar.querySelector('#disciplineStatus').textContent=ctx.level||nivel.nombre;const typeNav=document.createElement('nav');typeNav.className='planTypes';typeNav.setAttribute('aria-label','Tipo de plano');
  // Tipos de plano según los datos del piso (pisos.js): Cielos y Pavimentos con sus láminas, Puertas con su plano o el
  // catálogo piloto, Impermeabilización con su lámina IMP. Un piso sin esos datos no muestra botones desactivados.
  typeNav.innerHTML=[['architecture','Arquitectura'],...(nivel.especialidades?[['ceilings','Cielos'],['floors','Pavimentos']]:nivel.cielos?[['ceilings','Cielos']]:[]),['walls','Muros'],...(nivel.puertas||nivel.puertasPiloto?[['doors','Puertas']]:[]),...(nivel.imp?[['waterproofing','Impermeabilización']]:[])].map(([key,label])=>`<button type="button" data-plan-type="${key}" aria-pressed="${key==='architecture'}">${label}</button>`).join('');
  bar.dataset.sinFlujo='';typeNav.dataset.sinFlujo='';bar.prepend(typeNav);bar.querySelector('label').hidden=true;bar.querySelector('#discipline').hidden=true;bar.querySelector('#discipline').setAttribute('aria-hidden','true');
- typeNav.querySelectorAll('button').forEach(button=>button.onclick=async()=>{if(button.dataset.planType==='doors'&&!nivel.puertasPiloto){ctx.abrirPuertas?.();return;}
- // Cielos sin láminas PDF propias (N01–N04): la lámina CIE leída se pinta sobre Arquitectura (cielos-lamina.mjs).
- if(button.dataset.planType==='ceilings'&&!nivel.especialidades){if(ctx.editing())return ctx.toast('Guarda o cancela el contorno antes de cambiar.');await switchMode('architecture');ctx.showLayer?.('cielosLamina');bar.querySelector('#disciplineStatus').textContent='Cielos · lámina CIE sobre Arquitectura';typeNav.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b===button?'true':'false'));return;}if(ctx.editing())return ctx.toast('Guarda o cancela el contorno antes de cambiar.');if(panel.querySelector('form[data-dirty]')||imp?.busy())return ctx.toast('Guarda o descarta los cambios antes de cambiar de plano.');const next=button.dataset.planType,request=modeRequest+1;await switchMode(next==='walls'?'architecture':next);if(request!==modeRequest)return;if(next==='walls'){ctx.showLayer?.('walls');bar.querySelector('#disciplineStatus').textContent='Muros · terminaciones sobre Arquitectura';}else if(next==='architecture')ctx.showLayer?.(null);typeNav.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b===button?'true':'false'));});
+ const markPlan=type=>typeNav.querySelectorAll('button').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.planType===type)));
+ typeNav.querySelectorAll('button').forEach(button=>button.onclick=async()=>{
+  if(ctx.editing())return ctx.toast('Guarda o cancela el contorno antes de cambiar.');
+  if(!canLeave())return ctx.toast('Guarda o descarta los cambios antes de cambiar de plano.');
+  const next=button.dataset.planType;
+  if(next==='doors'&&!nivel.puertasPiloto){ctx.abrirPuertas?.();return;}
+  // En pisos superiores Cielos es una capa de consulta sobre Arquitectura.
+  // Con plano unificado de Cielos (pisos.js, «cielosUnificado») Cielos abre ese plano; si no, en pisos superiores es una capa.
+  const layer=next==='walls'?'walls':next==='ceilings'&&!nivel.especialidades&&!nivel.cielosUnificado?'cielosLamina':null;
+  const request=modeRequest+1;
+  await switchMode(layer?'architecture':next);
+  if(request!==modeRequest)return;
+  if(layer||next==='architecture')ctx.showLayer?.(layer);
+  if(layer)bar.querySelector('#disciplineStatus').textContent=next==='walls'
+   ? 'Muros · terminaciones sobre Arquitectura' : 'Cielos · lámina CIE sobre Arquitectura';
+  markPlan(next);
+ });
  main.prepend(bar);const panel=document.createElement('section');panel.id='disciplinePanel';panel.hidden=true;panel.addEventListener('input',markDirty);panel.addEventListener('change',markDirty);main.append(panel);const $=id=>panel.querySelector('#'+id),name=()=>mode==='waterproofing'?'Impermeabilización':mode==='ceilings'?'Cielos':'Pavimentos',docs=()=>bundle.documents.filter(d=>d.specialty===mode),observations=()=>mode==='waterproofing'?(imp?.catalog.rooms||[]):bundle.observations.filter(r=>r.specialty===mode),dims=()=>mode==='ceilings'?['structure','closure','finish','mep','inspection']:['floor','inspection'];
+ function canLeave(){return draw===null&&!panel.querySelector('form[data-dirty]')&&!imp?.busy();}
  function markDirty(event){const form=event.target.closest('form');if(!form)return;form.dataset.dirty='true';if(['impProgressForm','impArtifactsForm'].includes(form.id))return;if(form.querySelector('[data-discard]'))return;const discard=document.createElement('button');discard.type='button';discard.dataset.discard='';discard.textContent='Descartar cambios';discard.onclick=()=>{form.reset();delete form.dataset.dirty;discard.remove();};form.append(discard);}
  async function reloadRecords(){[zones,events,protocols]=await Promise.all([records('zones'),records('events'),records('protocols')]);}
  async function switchMode(next,architectureId,originalSheets=false){
-  if(panel.querySelector('form[data-dirty]')||imp?.busy()){ctx.toast('Guarda o descarta los cambios antes de cambiar de plano.');return;}
+  if(!canLeave()){ctx.toast('Guarda o descarta los cambios antes de cambiar de plano.');return;}
   document.body.classList.remove('impFullscreen');
   if(next==='waterproofing'&&!nivel.imp){ctx.toast('Este piso todavía no tiene su lámina IMP.');return;}
   if(ctx.editing()){document.getElementById('discipline').value=mode;return ctx.toast('Guarda o cancela el contorno antes de cambiar.');}
-  typeNav.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.planType===next?'true':'false'));
+  markPlan(next);
   const request=++modeRequest;
-  if(next==='ceilings'&&nivel.id==='N-1'&&!originalSheets){
+  if(next==='ceilings'&&nivel.cielosUnificado&&!originalSheets){
    if(chosen)remembered.set(mode,chosen.id);
    chosen=null;draw=null;pointers.clear();gesture={};
    mode='architecture';unified=true;
@@ -37,10 +52,8 @@ export function createDisciplines(ctx){const main=document.querySelector('main')
    document.getElementById('disciplineStatus').textContent='Cielos · plano unificado';
    ctx.enterSpecialty();
    ctx.showLayer?.(null);
-   ctx.setUnifiedCeilings(true,{
-    exit:()=>switchMode('architecture'),
-    originals:()=>switchMode('ceilings',undefined,true),
-   });
+   // Láminas originales una por una: solo donde están sus fichas (disciplines.json, hoy el −1).
+   ctx.setUnifiedCeilings(true,nivel.especialidades?()=>switchMode('ceilings',undefined,true):null);
    return;
   }
   const fromUnified=unified;
@@ -54,7 +67,11 @@ export function createDisciplines(ctx){const main=document.querySelector('main')
   document.getElementById('discipline').value=mode;
   document.getElementById('disciplineStatus').textContent=mode==='architecture'?(ctx.level||nivel.nombre)+' · Arquitectura':name()+' · coordenadas propias';
   if(mode==='architecture'){if(!fromUnified||architectureId)ctx.returnArchitecture(selectedCode,architectureId);return;}
-  if(mode==='doors'){document.getElementById('disciplineStatus').textContent='Puertas · '+nivel.nombre;try{await renderDoors(panel,esc);}catch(error){panel.textContent=error.message;}return;}
+  if(mode==='doors'){
+   document.getElementById('disciplineStatus').textContent='Puertas · '+nivel.nombre;
+   try{await renderDoors(panel,esc,()=>request===modeRequest);}catch(error){if(request===modeRequest)panel.textContent=error.message;}
+   return;
+  }
   panel.innerHTML='<p>Cargando documentos…</p>';
   try{
    if(!bundle){const responses=await Promise.all([fetch(datos('disciplines.json')),fetch('cie-review-observations.json')]);if(responses.some(res=>!res.ok))throw Error('Documentos no disponibles');const [base,review]=await Promise.all(responses.map(res=>res.json()));const loaded=withReviewObservations(base,review);if(request!==modeRequest)return;bundle=loaded;}
@@ -68,7 +85,7 @@ export function createDisciplines(ctx){const main=document.querySelector('main')
    const q=document.getElementById('globalSearch').value;if(q){$('specialtySearch').value=q;search(q);}
   }catch(e){if(request!==modeRequest)return;panel.innerHTML='<p role="alert"></p><button id="retrySpecialty">Reintentar carga</button>';panel.querySelector('p').textContent=e.message;$('retrySpecialty').onclick=()=>switchMode(next,architectureId,originalSheets);}
  }
- function shell(){panel.innerHTML=`<div class="disciplineTools">${mode==='ceilings'&&nivel.id==='N-1'?'<button type="button" data-ceilings-unified>Volver a plano unificado</button>':''}<select id="specialtySheet" aria-label="Lámina de especialidad">${docs().map(d=>`<option value="${d.id}" ${d.id===doc.id?'selected':''}>${esc(d.id.toUpperCase())} · ${esc(d.revision)}</option>`).join('')}</select><input id="specialtySearch" aria-label="Buscar en especialidad" placeholder="Código o nombre de recinto"><button id="specialtyFit" title="Ajustar lámina">⌖</button><button id="specialtyIn" aria-label="Acercar">＋</button><button id="specialtyOut" aria-label="Alejar">−</button><button id="specialtyFicha">Ficha</button><select id="progressLayer" aria-label="Colorear avance">${dims().map(k=>`<option value="${k}">${dimensionNames[k]}</option>`).join('')}</select></div><div id="specialtyResults" hidden></div><div class="specialtyCanvas"><svg id="specialtySVG" role="img" aria-label="Plano de ${name()}"><g id="specialtyImages"></g><g id="specialtyZones"></g><g id="specialtyMarks"></g></svg><span id="specialtyLegend"></span></div><aside id="specialtyDetail"></aside>`;
+ function shell(){panel.innerHTML=`<div class="disciplineTools">${mode==='ceilings'&&nivel.cielosUnificado?'<button type="button" data-ceilings-unified>Volver a plano unificado</button>':''}<select id="specialtySheet" aria-label="Lámina de especialidad">${docs().map(d=>`<option value="${d.id}" ${d.id===doc.id?'selected':''}>${esc(d.id.toUpperCase())} · ${esc(d.revision)}</option>`).join('')}</select><input id="specialtySearch" aria-label="Buscar en especialidad" placeholder="Código o nombre de recinto"><button id="specialtyFit" title="Ajustar lámina">⌖</button><button id="specialtyIn" aria-label="Acercar">＋</button><button id="specialtyOut" aria-label="Alejar">−</button><button id="specialtyFicha">Ficha</button><select id="progressLayer" aria-label="Colorear avance">${dims().map(k=>`<option value="${k}">${dimensionNames[k]}</option>`).join('')}</select></div><div id="specialtyResults" hidden></div><div class="specialtyCanvas"><svg id="specialtySVG" role="img" aria-label="Plano de ${name()}"><g id="specialtyImages"></g><g id="specialtyZones"></g><g id="specialtyMarks"></g></svg><span id="specialtyLegend"></span></div><aside id="specialtyDetail"></aside>`;
  panel.querySelector('[data-ceilings-unified]')?.addEventListener('click',()=>switchMode('ceilings'));
  $('specialtySheet').onchange=e=>{doc=docs().find(d=>d.id===e.target.value);const matches=observations().filter(r=>r.code===selectedCode&&r.sheetId===doc.id);chosen=null;draw=null;pointers.clear();gesture={};if(matches.length===1)choose(matches[0]);else{fit();detail();}};$('specialtyFit').onclick=fit;$('specialtyIn').onclick=()=>zoom(.7);$('specialtyOut').onclick=()=>zoom(1.4);$('specialtyFicha').onclick=()=>{panel.classList.toggle('fichaClosed');render();};$('progressLayer').onchange=e=>{colorDimension=e.target.value;render();};$('specialtySearch').oninput=e=>search(e.target.value);$('specialtyResults').onclick=e=>{const b=e.target.closest('[data-code]');if(!b)return;const r=observations().find(r=>r.id===b.dataset.observation);if(r)choose(r);else{selectedCode=b.dataset.code;chosen=null;ctx.syncCode(selectedCode);detail();}$('specialtyResults').hidden=true;};
  if(mode==='waterproofing'){panel.querySelector('.disciplineTools').dataset.sinFlujo='';imp.mountTools(panel.querySelector('.disciplineTools'));}
@@ -98,5 +115,5 @@ export function createDisciplines(ctx){const main=document.querySelector('main')
  root.querySelectorAll('[data-zone]').forEach(form=>{const change=()=>{form.elements.state.innerHTML=dimensions[form.elements.dimension.value].map(s=>`<option>${s}</option>`).join('');const e=latest(form.dataset.zone,form.elements.dimension.value);if(e)form.elements.state.value=e.state;};form.elements.dimension.onchange=change;change();form.onsubmit=e=>{e.preventDefault();saveAction(()=>persist('events',{...Object.fromEntries(new FormData(form)),responsible:exigirFirma(),id:uid(),level:nivel.id,zoneId:form.dataset.zone,at:new Date().toISOString()}));};});$('protocolForm').onsubmit=e=>{e.preventDefault();saveAction(async()=>{const f=Object.fromEntries(new FormData(e.target)),number=f.number.trim(),specialty=f.specialty.trim(),old=protocols.find(p=>p.level===nivel.id&&p.number===number&&p.specialty===specialty);await persist('protocols',{...f,number,specialty,responsible:exigirFirma(),level:nivel.id,id:old?.id||uid(),elements:[...new Set([...(old?.elements||[]),code])],at:new Date().toISOString()});});};$('backupWork').onclick=()=>saveAction(async()=>ctx.download(new Blob([JSON.stringify(await backupWork(),null,2)],{type:'application/json'}),prefijo+'obra_respaldo.json'));$('restoreWork').onchange=e=>saveAction(async()=>{const skipped=await restoreWork(JSON.parse(await e.target.files[0].text()));ctx.toast('Respaldo incorporado; '+skipped+' registros existentes conservados.');});}
  new ResizeObserver(()=>{if(mode!=='architecture'&&mode!=='doors')render();}).observe(panel);
  window.addEventListener('atlas-work-changed',()=>{reloadRecords().then(()=>{if(mode!=='architecture'&&$('specialtyDetail')){render();detail();}}).catch(e=>ctx.toast(e.message));});
- document.getElementById('discipline').onchange=e=>switchMode(e.target.value);document.getElementById('globalSearch').addEventListener('input',e=>{if(mode!=='architecture'){e.stopImmediatePropagation();if($('specialtySearch')){$('specialtySearch').value=e.target.value;search(e.target.value);}}},true);document.getElementById('globalSearch').addEventListener('keydown',e=>{if(mode!=='architecture'&&e.key==='Enter'){e.stopImmediatePropagation();}},true);return {switchMode,canLeave:()=>!panel.querySelector('form[data-dirty]')&&!imp?.busy(),clearSelection:()=>{selectedCode=undefined;chosen=null;remembered.clear();if(mode!=='architecture'&&$('specialtyDetail')){render();detail();}}};
+ document.getElementById('discipline').onchange=e=>switchMode(e.target.value);document.getElementById('globalSearch').addEventListener('input',e=>{if(mode!=='architecture'){e.stopImmediatePropagation();if($('specialtySearch')){$('specialtySearch').value=e.target.value;search(e.target.value);}}},true);document.getElementById('globalSearch').addEventListener('keydown',e=>{if(mode!=='architecture'&&e.key==='Enter'){e.stopImmediatePropagation();}},true);return {switchMode,canLeave,clearSelection:()=>{selectedCode=undefined;chosen=null;remembered.clear();if(mode!=='architecture'&&$('specialtyDetail')){render();detail();}}};
 }

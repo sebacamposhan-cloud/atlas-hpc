@@ -4,7 +4,7 @@ import {ART_STATES,ultimoArtefacto,registrarArtefactos} from './artefactos-model
 import {readMarkings,saveMarking} from './marking-store.mjs';
 import {exigirFirma,firmante} from './firma.mjs';
 import {loadVendor} from './web-store.mjs';
-import {esImpermeabilizacion,IMP_STATES,nuevoAvanceIMP,registrarAvanceIMP,ultimoAvanceIMP,impPath} from './impermeabilizacion-model.mjs';
+import {esImpermeabilizacion,IMP_STATES,IMP_ARTIFACT_COLORS,nuevoAvanceIMP,registrarAvanceIMP,ultimoAvanceIMP,impPath} from './impermeabilizacion-model.mjs';
 import {nivel,prefijo,MARCA,obra} from './level.mjs';
 // Lámina IMP de este piso (pisos.js, marca «imp»; el −1 usa 's01'): rutas, rótulos y nivel PMA salen de ahí.
 const IMP=nivel.imp||'s01',COD=IMP.toUpperCase(),PISO=String(nivel.nombre||'Nivel −1').toUpperCase(),PMA_NIVEL='A-'+COD;
@@ -75,7 +75,6 @@ export async function createImpermeabilizacion({esc,toast,download,redraw,detail
     });
   }
   function mountTools(tools){
-    document.body.classList.add('impFullscreen');
     tools.querySelector('#progressLayer').hidden=true;
     tools.insertAdjacentHTML('beforeend',`<select id="impProject" aria-label="Registro de avance IMP">${options()}</select><button id="impNewProject" type="button">Nuevo proyecto</button><button id="impClearSelection" type="button">Limpiar selección</button><select id="impPaintLayer" aria-label="Capa de avance"><option value="imp">Impermeabilización</option><option value="artifacts">Instalación de artefactos</option></select><button id="impExportPDF" type="button">Exportar PDF</button><button id="impExportPNG" type="button">PNG</button>`);
     tools.querySelector('#impNewProject').onclick=newProject;tools.querySelector('#impClearSelection').onclick=()=>removeSelection();for(const id of ['impNewProject','impClearSelection'])tools.querySelector('#'+id).disabled=!editable();
@@ -84,7 +83,10 @@ export async function createImpermeabilizacion({esc,toast,download,redraw,detail
     for(const format of ['PDF','PNG'])tools.querySelector('#impExport'+format).onclick=()=>exportPlan(format.toLowerCase());
     const extra=document.createElement('div');extra.className='impExtraTools';extra.hidden=true;for(const id of ['specialtySheet','progressLayer','impProject','impNewProject','impClearSelection','impPaintLayer','impExportPDF','impExportPNG','specialtyIn','specialtyOut'])extra.append(tools.querySelector('#'+id));tools.append(extra);
     const menu=document.createElement('button');menu.id='impToolsToggle';menu.type='button';menu.textContent='Herramientas';menu.setAttribute('aria-expanded','false');menu.onclick=()=>{extra.hidden=!extra.hidden;menu.setAttribute('aria-expanded',String(!extra.hidden));};tools.prepend(menu);
-    const full=document.createElement('button');full.id='impFullscreenToggle';full.type='button';full.textContent='Volver';full.setAttribute('aria-label','Salir de pantalla completa');full.onclick=()=>{document.body.classList.toggle('impFullscreen');full.textContent=document.body.classList.contains('impFullscreen')?'Volver':'Pantalla completa';};tools.prepend(full);const caption=document.createElement('small');caption.id='impProjectCaption';caption.className='impProjectCaption';tools.append(caption);
+    const full=document.createElement('button');full.id='impFullscreenToggle';full.type='button';
+    const rotularPantalla=()=>{const activa=document.body.classList.contains('impFullscreen');full.textContent=activa?'Vista normal':'Pantalla completa';full.setAttribute('aria-pressed',String(activa));};
+    full.onclick=()=>{document.body.classList.toggle('impFullscreen');rotularPantalla();};
+    rotularPantalla();tools.prepend(full);const caption=document.createElement('small');caption.id='impProjectCaption';caption.className='impProjectCaption';tools.append(caption);
     tools.querySelector('#specialtyFicha').onclick=()=>{if(!selected)return toast('Toca un recinto para abrir sus opciones.');detail();roomDialog?.showModal();};
 
   }

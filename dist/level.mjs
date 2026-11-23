@@ -1,5 +1,5 @@
 // Piso activo. La lista de pisos vive en pisos.js; fuera del navegador (pruebas) se usa el nivel −1.
-const porDefecto = {id: 'N-1', nombre: 'Nivel −1', corto: '−1', datos: '', especialidades: true, imp: 's01', puertasPiloto: true};
+const porDefecto = {id: 'N-1', nombre: 'Nivel −1', corto: '−1', datos: '', especialidades: true, imp: 's01', puertasPiloto: true, pav: 's01', cielosUnificado: {mapa: 'cie-s01-map.mjs', simbologia: 'cie-s01-simbologia.webp', lamina: 'CIE-A-501'}};
 export const nivel = globalThis.ATLAS_PISO || porDefecto;
 export const pisos = globalThis.ATLAS_PISOS || [porDefecto];
 export const datos = archivo => './' + nivel.datos + archivo;

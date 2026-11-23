@@ -321,7 +321,9 @@ export function createNavegacion(ctx) {
   const planoActivo = () => document.body.classList.contains('puertasOpen') ? 'doors' :
     main.querySelector('.planTypes [aria-pressed=true]')?.dataset.planType || 'architecture';
   function rotularPlanoTerreno() {
-    const nombre = botonesPlano().find(button => button.dataset.planType === planoActivo())?.textContent || 'Arquitectura';
+    const tipo = planoActivo();
+    const nombre = botonesPlano().find(button => button.dataset.planType === tipo)?.textContent || 'Arquitectura';
+    ctx.rotularEspecialidad?.(tipo, nombre);
     const boton = $('terrenoPlano');
     const etiqueta = boton.querySelector('.terrenoNombre');
     if (etiqueta.textContent !== nombre) etiqueta.textContent = nombre;

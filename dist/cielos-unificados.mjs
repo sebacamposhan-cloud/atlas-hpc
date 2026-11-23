@@ -1,5 +1,6 @@
 import {withReviewObservations} from './review-observations.mjs';
 import {documentedLayerColors} from './documented-layer-colors.mjs';
+import {nivel, datos} from './level.mjs';
 
 const roomLabel = /^[\dA-Z]+(?:\.[\dA-Z()−-]+){2,}-\d+[A-Z]?$/i;
 const lightCode = /^L\d{1,2}$/;
@@ -37,7 +38,23 @@ export function indexCeilingSheets(base, review, rooms = []) {
   return {byCode, documents};
 }
 
+// Pisos sin las fichas del −1 (disciplines.json): tipo de cielo y NCT por recinto leídos de sus láminas CIE (cielos.json,
+// scripts/cielos/extraer-cie.mjs), con la lámina de donde salen.
+export function indexCielosLamina(d) {
+  const documents = (d?.laminas || []).map(l => ({id: 'cie-' + String(l.lamina).toLowerCase(), revision: (String(l.archivo).match(/Rev\d+/i) || ['—'])[0], filename: null, page: 1}));
+  const porLamina = new Map(documents.map(doc => [doc.id.replace(/^cie-/, '').toUpperCase(), doc]));
+  const byCode = new Map(Object.entries(d?.recintos || {}).map(([code, r]) => [code, (r.laminas?.length ? r.laminas : ['—']).map((l, i) => ({
+    id: code + '-' + i, code, sheetId: 'cie-' + String(l).toLowerCase(), document: porLamina.get(String(l).toUpperCase()) || {revision: '—', filename: null}, source: {page: 1},
+    ceilings: r.cielos || [], heights: (r.nct || []).map(v => Number(v).toFixed(2).replace('.', ',')), lights: [], checked: true, otherLabel: false}))]));
+  return {byCode, documents};
+}
+
 export async function loadCeilingSheets(rooms) {
+  if (!nivel.especialidades) {
+    const r = await fetch(datos('cielos.json'));
+    if (!r.ok) throw new Error('Falta la lectura de las láminas CIE de ' + nivel.nombre + '.');
+    return indexCielosLamina(await r.json());
+  }
   async function read(path) {
     const response = await fetch(path);
     if (!response.ok) throw new Error('No se pudieron cargar las fichas de Cielos. Reintenta o guarda el piso con conexión.');
@@ -68,13 +85,13 @@ export function renderCeilingRoom({room, catalog, ambiguous, loading, error, mat
         : `<dl>
           <dt>Tipo de cielo</dt><dd>${values(row.ceilings, ceiling)}</dd>
           <dt>Altura (NCT)</dt><dd>${values(row.heights, value => value + ' m')}</dd>
-          <dt>${row.checked ? 'Luminarias identificadas' : 'Códigos de luminaria en el recorte'}</dt><dd>${values(row.lights)}</dd>
+          ${row.lights.length || nivel.especialidades ? `<dt>${row.checked ? 'Luminarias identificadas' : 'Códigos de luminaria en el recorte'}</dt><dd>${values(row.lights)}</dd>` : ''}
         </dl>`}
-      <a href="source/${esc(row.document.filename)}#page=${esc(row.source.page)}" target="_blank" rel="noopener">Abrir lámina ${esc(sheet)} ↗</a>
+      ${row.document.filename ? `<a href="source/${esc(row.document.filename)}#page=${esc(row.source.page)}" target="_blank" rel="noopener">Abrir lámina ${esc(sheet)} ↗</a>` : ''}
     </article>`;
   }).join('');
   return `<section class="ceilingRoom" aria-label="Ficha de Cielos">
-    <small>CIELOS · NIVEL −1</small>
+    <small>CIELOS · ${esc(String(nivel.nombre).toUpperCase())}</small>
     <h2 class="detailName">${esc(room.name)}</h2><p class="detailCode">${esc(room.code)}</p>
     ${loading ? '<p role="status">Cargando fichas de Cielos…</p>' : error
       ? `<p role="alert">${esc(error)}</p><button type="button" data-retry-ceilings>Reintentar</button>`

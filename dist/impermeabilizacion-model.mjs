@@ -9,6 +9,11 @@ export const IMP_STATES = {
   terminado: {name:'Terminado', color:'#198253'},
   observado: {name:'Observado', color:'#bc4242'},
 };
+export const IMP_ARTIFACT_COLORS = {
+  installed: {name:'Todos instalados', color:'#198253'},
+  partial: {name:'Instalación parcial', color:'#c58618'},
+  none: {name:'Ninguno registrado como instalado', color:'#bc4242'},
+};
 const text = (s,n) => typeof s === 'string' && !!s.trim() && s.length <= n;
 export function validarImpermeabilizacion(d) {
   validarArtefactos(d?.artifactHistory);validateRoomMarks(d?.roomMarks);
