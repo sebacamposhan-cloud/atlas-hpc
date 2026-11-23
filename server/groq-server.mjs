@@ -10,7 +10,7 @@ import {createGroq} from './groq.mjs';
 import {decodePma,matchPma,pmaDifferences,pmaReview} from '../dist/pma-model.mjs';
 import {decodeRuntime} from '../dist/runtime-loader.mjs';
 // Fichas de los pisos adicionales (formato runtime), para que el asistente reconozca sus recintos.
-const otherLevels=['n01/runtime.json','n02/runtime.json','n03/runtime.json','n04/runtime.json'];
+const otherLevels=['n01/runtime.json','n02/runtime.json','n03/runtime.json','n04/runtime.json','n07/runtime.json','n08/runtime.json'];
 const root=fileURLToPath(new URL('../dist/',import.meta.url));
 // Sin sesión solo se entrega el inicio de sesión y lo que necesita para mostrarse y entrar.
 const PUBLICAS=new Set(['/healthz','/login','/login.html','/login.css','/login.mjs','/manifest.webmanifest','/api/campo/login','/api/campo/refresh','/api/campo/logout','/api/campo/clave']);

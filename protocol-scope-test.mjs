@@ -15,15 +15,15 @@ for(const type of catalog.types){
  const expected=new Map();for(const row of rows){const group=catalog.specialties.find(s=>s.variants.includes(row.specialty)||!row.specialty?.trim()&&s.name==='Sin especialidad documentada');assert(group);const key=JSON.stringify([row.level?.trim()||'',row.state?.trim()||'Sin estado documentado',group.id]);expected.set(key,(expected.get(key)||0)+1);}
  assert.deepEqual(new Map(type.facets.map(([level,state,id,n])=>[JSON.stringify([level,state,id]),n])),expected, type.code+' facets preserve full row correlations');
 }
-const totals={'N-1':[2736,324,27,120],N01:[2260,259,29,134],N02:[1496,265,44,117],N03:[1405,218,15,101],N04:[1251,207,18,62]};
+const totals={'N-1':[2736,324,27,120],N01:[2260,259,29,134],N02:[1496,265,44,117],N03:[1405,218,15,101],N04:[1251,207,18,62],N07:[1137,231,0,70],N08:[854,202,1,82]};
 for(const floor of Object.keys(protocolFloors)){
  const rows=scopedProtocolRows(all,floor),scope=scopeProtocolCatalog(catalog,floor,'ABIERTO'),opened=selectMatrixRows(rows,{state:'ABIERTO'});
  assert.equal(scope.total,rows.length);assert.equal(scope.matching,opened.length);assert.equal(scope.shared,opened.filter(r=>sharedProtocol(r.level)).length);
  assert.deepEqual([scope.total,scope.matching,scope.shared,analyzeCritical(rows,catalog,{asOf:'2026-10-27'}).critical.length],totals[floor]);
  assert.equal(scope.specialties.reduce((n,s)=>n+s.count,0),scope.matching);
  for(const type of scope.types)assert.equal(type.visibleCount,opened.filter(r=>r.typeId===type.id).length);
- assert(rows.every(r=>!['N05','N06','N07','N08','',null].includes(r.level)));
+ assert(rows.every(r=>!['N05','N06','N07','N08','',null].filter(l=>l!==protocolFloors[floor].code).includes(r.level?.trim?.()??r.level)));
  for(const state of ['','CERRADO','CLOSED_ALL','PENDING_CLOSURE','NULO'])assert.equal(scopeProtocolCatalog(catalog,floor,state).matching,selectMatrixRows(rows,{state}).length);
 }
 assert.equal(all.length,20233);
-console.log('Protocol floor scope: five floors, exact/shared references without inferred ranges, all catalog facet counts reconciled to 20,233 rows, state counts, specialty/type filtering and critical totals passed');
+console.log('Protocol floor scope: seven floors, exact/shared references without inferred ranges, all catalog facet counts reconciled to 20,233 rows, state counts, specialty/type filtering and critical totals passed');

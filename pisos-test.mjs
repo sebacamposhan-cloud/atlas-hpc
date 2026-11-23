@@ -11,7 +11,7 @@ vm.runInNewContext(fs.readFileSync('dist/pisos.js', 'utf8'), sandbox);
 const pisos = sandbox.window.ATLAS_PISOS;
 assert(pisos.length >= 2, 'pisos.js debe declarar al menos dos pisos');
 assert.equal(sandbox.window.ATLAS_PISO.id, pisos[0].id, 'el nivel por defecto se conserva para enlaces anteriores');
-assert.deepEqual(Array.from(sandbox.window.ATLAS_TARJETAS,t=>t.id),['N-1','N01','N02','N03','N04']);
+assert.deepEqual(Array.from(sandbox.window.ATLAS_TARJETAS,t=>t.id),['N-1','N01','N02','N03','N04','N07','N08']);
 assert.equal(sandbox.window.ATLAS_TARJETAS.filter(t=>t.piso).length,pisos.length,'las tarjetas disponibles coinciden con los datos cargados');
 const index = fs.readFileSync('dist/index.html', 'utf8');
 assert(index.includes('id="floorExplorer"') && index.includes('src="pisos.js"'), 'index.html debe cargar el explorador visual');

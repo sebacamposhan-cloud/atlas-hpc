@@ -13,10 +13,10 @@ import {aAtlas} from '../dwg-plano/marco.mjs';
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const esNumero = id => /^A\d/.test(id), delEdificio = id => /^A/.test(id);
 // s01 es el nivel −1: sus láminas DWG van en el marco de su plano (data/s01/marco.json) y su grilla en dist/ejes.json.
-const NIVELES = ['n01', 'n02', 'n03', 'n04', 's01'], destino = nivel => nivel === 's01' ? 'dist/ejes.json' : `dist/${nivel}/ejes.json`;
+const NIVELES = ['n01', 'n02', 'n03', 'n04', 'n07', 'n08', 's01'], destino = nivel => nivel === 's01' ? 'dist/ejes.json' : `dist/${nivel}/ejes.json`;
 const propios = Object.fromEntries(NIVELES.map(n => [n, new Map(grillaDeNivel(leerCapaEjes(repo, n)).filter(e => !e.id.includes('#') && delEdificio(e.id)).map(e => [e.id, e]))]));
 const completa = new Map(), origen = new Map();
-for (const nivel of ['n01', 'n03', 's01', 'n02', 'n04']) for (const [id, e] of propios[nivel]) if (!completa.has(id)) { completa.set(id, e); origen.set(id, nivel); }
+for (const nivel of ['n01', 'n03', 's01', 'n02', 'n04', 'n07', 'n08']) for (const [id, e] of propios[nivel]) if (!completa.has(id)) { completa.set(id, e); origen.set(id, nivel); }
 const ejes = [...completa.values()].sort((a, b) => a.id.localeCompare(b.id, 'es', {numeric: true}));
 const mediana = v => { const s = [...v].sort((a, b) => a - b), m = s.length >> 1; return !s.length ? 0 : s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 const medio = e => [(e.a[0] + e.b[0]) / 2, (e.a[1] + e.b[1]) / 2];
@@ -37,6 +37,9 @@ for (const nivel of NIVELES) {
     ejes: ejes.map(e => { const propio = propios[nivel].get(e.id), c = propio && medio(propio);
       const linea = !propio ? [correr(e.a), correr(e.b)] : esNumero(e.id) ? [[c[0], e.a[1] + dy], [c[0], e.b[1] + dy]] : [[e.a[0] + dx, c[1]], [e.b[0] + dx, c[1]]];
       return {id: e.id, tipo: esNumero(e.id) ? 'numero' : 'letra', a: aAtlas(marco, linea[0]), b: aAtlas(marco, linea[1]), lamina: propio ? nivel : origen.get(e.id)}; })};
+  // Regla de sectores propia del piso (dist/sectores-model.mjs): ejes donde parten los sectores 2 y 3.
+  const reglaSectores = path.join(repo, 'data', nivel, 'sectores.json');
+  if (fs.existsSync(reglaSectores)) { const {sector1, sector3, fuente} = JSON.parse(fs.readFileSync(reglaSectores, 'utf8')); salida.sectores = {sector1, sector3, fuente}; }
   fs.writeFileSync(path.join(repo, destino(nivel)), JSON.stringify(salida) + '\n');
   resumen[nivel] = {...salida.ajuste, ejesPropios: salida.ajuste.ejesPropios.length};
 }
