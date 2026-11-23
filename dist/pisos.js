@@ -20,10 +20,10 @@
   'use strict';
   var PISOS = [
     {id: 'N-1', nombre: 'Nivel −1', corto: '−1', datos: '', especialidades: true, imp: 's01', puertasPiloto: true, pav: 's01', cielosUnificado: {mapa: 'cie-s01-map.mjs', lamina: 'CIE-A-501'}, planos: {comp: 'comp-map.mjs'}},
-    {id: 'N01', nombre: 'Nivel 1', corto: '1', datos: 'n01/', especialidades: false, cielos: true, cielosUnificado: {mapa: 'n01/cie-map.mjs', lamina: 'CIE-A-501'}, planos: {comp: 'n01/comp-map.mjs', retornos: 'n01/retornos-map.mjs'}},
-    {id: 'N02', nombre: 'Nivel 2', corto: '2', datos: 'n02/', especialidades: false, cielos: true, puertas: true, cielosUnificado: {mapa: 'n02/cie-map.mjs', lamina: 'CIE-A-501'}, planos: {comp: 'n02/comp-map.mjs', retornos: 'n02/retornos-map.mjs'}},
-    {id: 'N03', nombre: 'Nivel 3', corto: '3', datos: 'n03/', especialidades: false, cielos: true, cielosUnificado: {mapa: 'n03/cie-map.mjs', lamina: 'CIE-A-502'}, planos: {comp: 'n03/comp-map.mjs', retornos: 'n03/retornos-map.mjs'}},
-    {id: 'N04', nombre: 'Nivel 4', corto: '4', datos: 'n04/', especialidades: false, cielos: true, cielosUnificado: {mapa: 'n04/cie-map.mjs', lamina: 'CIE-A-501'}, planos: {comp: 'n04/comp-map.mjs', retornos: 'n04/retornos-map.mjs'}}
+    {id: 'N01', nombre: 'Nivel 1', corto: '1', datos: 'n01/', especialidades: false, cielos: true, cielosUnificado: {mapa: 'n01/cie-map.mjs', lamina: 'CIE-A-501'}, planos: {comp: 'n01/comp-map.mjs', retornos: 'n01/retornos.json'}},
+    {id: 'N02', nombre: 'Nivel 2', corto: '2', datos: 'n02/', especialidades: false, cielos: true, puertas: true, cielosUnificado: {mapa: 'n02/cie-map.mjs', lamina: 'CIE-A-501'}, planos: {comp: 'n02/comp-map.mjs', retornos: 'n02/retornos.json'}},
+    {id: 'N03', nombre: 'Nivel 3', corto: '3', datos: 'n03/', especialidades: false, cielos: true, cielosUnificado: {mapa: 'n03/cie-map.mjs', lamina: 'CIE-A-502'}, planos: {comp: 'n03/comp-map.mjs', retornos: 'n03/retornos.json'}},
+    {id: 'N04', nombre: 'Nivel 4', corto: '4', datos: 'n04/', especialidades: false, cielos: true, cielosUnificado: {mapa: 'n04/cie-map.mjs', lamina: 'CIE-A-501'}, planos: {comp: 'n04/comp-map.mjs', retornos: 'n04/retornos.json'}}
   ];
   var pedido = new URLSearchParams(location.search).get('nivel');
   var actual = PISOS.find(function (piso) { return piso.id === pedido; }) || PISOS[0];

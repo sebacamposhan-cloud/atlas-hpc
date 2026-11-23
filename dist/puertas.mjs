@@ -1,9 +1,8 @@
 // Plano de puertas de un piso: cada puerta del plano de avance se dibuja en su lugar con el color de su estado y su número
 // de vano (Sacyr y los subcontratos ubican los vanos por ese número). Tocar una puerta abre su ficha: modelo, llave, vano,
 // ancho, código de partida, contratista (Teisa, Protego, Grupsa o Retec) y estado.
-// Con un proyecto abierto, el pincel marca muchas puertas seguidas: se elige un estado y se tocan las puertas en el plano.
-// Funciona solo, como un plano propio (tarjeta «Puertas» del módulo Plano, en consulta: lo que dice el plano), y con un
-// Proyecto tipo Puertas abierto se marca el estado en terreno, se guarda y se sincroniza como cualquier proyecto.
+// Siempre se marca en terreno (rework 2026-11-23): una barra corta con el pincel y el buscador; el proyecto de puertas del
+// piso se abre solo y se crea al marcar la primera puerta. Estados y contratistas van en «Simbología»; el Excel, en Proyectos.
 // Datos: dist/<piso>/puertas.json (scripts/puertas/importar-dwg.mjs). Modelo: puertas-model.mjs.
 import {datos} from './level.mjs';
 import * as P from './puertas-model.mjs';
@@ -80,58 +79,67 @@ export function createPuertas(ctx) {
   function ficha(p) {
     const estado = P.estadoDe(p, proyecto), cambio = P.cambioDe(p, proyecto), dato = (n, v) => v ? `<div><dt>${n}</dt><dd>${esc(v)}</dd></div>` : '';
     return `<section class="puertaFicha" aria-label="Puerta ${esc(p.llave || p.id)}">
-      <p class="puertaTitulo"><b>${esc(p.modelo || 'Modelo sin rótulo')}</b>${p.vano ? `<span class="puertaVano">Vano ${esc(p.vano)}</span>` : ''}</p>
+      <p class="puertaTitulo"><b>${esc(p.llave || p.modelo || 'Puerta sin rótulo')}</b>${p.vano ? `<span class="puertaVano">Vano ${esc(p.vano)}</span>` : ''}<button type="button" class="puertaCerrarFicha" data-puertas-soltar aria-label="Cerrar ficha">×</button></p>
       <p class="puertaEstado">${chip(estado)}${cambio ? `<small>Marcado el ${esc(fecha(cambio.at))} por ${esc(cambio.autor)}</small>` : '<small>Según el plano de avance</small>'}</p>
-      <dl class="puertaDatos">${dato('Llave', p.llave)}${dato('Modelo', p.modelo)}${dato('Ancho', p.ancho)}${dato('Código de partida', p.partida)}${dato('Contratista', P.contratistaDe(p) || 'Sin contratista')}${dato('En el plano', P.ESTADOS[p.estado].nombre)}</dl>
+      <div class="puertaOpciones" role="group" aria-label="Estado de la puerta">${P.opcionesDe(p).map(e => `<button type="button" data-puerta-estado="${e}" aria-pressed="${estado === e}" style="--c:${P.ESTADOS[e].color}">${esc(P.ESTADOS[e].nombre)}</button>`).join('')}</div>
+      <dl class="puertaDatos">${dato('Modelo', p.modelo)}${dato('Ancho', p.ancho)}${dato('Contratista', P.contratistaDe(p) || 'Sin contratista')}${dato('Código de partida', p.partida)}${dato('En el plano', P.ESTADOS[p.estado].nombre)}</dl>
       ${p.revisar?.length ? `<p class="puertaRevisar"><b>Revisar:</b> ${p.revisar.map(esc).join('; ')}.</p>` : ''}
-      ${proyecto ? `<div class="puertaOpciones" role="group" aria-label="Estado de la puerta">${P.opcionesDe(p).map(e => `<button type="button" data-puerta-estado="${e}" aria-pressed="${estado === e}" style="--c:${P.ESTADOS[e].color}">${esc(P.ESTADOS[e].nombre)}</button>`).join('')}</div>`
-        : '<p class="puertaNota">Para marcar el estado en terreno, abre o crea un proyecto de puertas.</p>'}
       ${descripcionModelo(p)}
     </section>`;
   }
+  // Barra corta sobre el plano: el pincel y el buscador. Tocar una puerta abre su ficha encima de la barra. Siempre se
+  // marca en terreno: el proyecto de puertas del piso se abre solo y, si no existe, se crea al marcar la primera puerta.
   function pintar() {
     if (!activo) return;
-    if (!catalogo) { panel.innerHTML = `<div class="puertasCabeza"><h2>Puertas</h2><button type="button" data-puertas-cerrar aria-label="Cerrar">×</button></div><p class="puertaNota">Este piso aún no tiene plano de avance de puertas. Cuando llegue su DWG se importa con scripts/puertas/importar-dwg.mjs.</p>`; panel.querySelector('[data-puertas-cerrar]').onclick = cerrar; return; }
-    const lista = visibles().sort(P.ordenLista), n = P.contar(catalogo.puertas, proyecto), p = elegida && puertaDe(elegida);
-    const filas = lista.slice(0, 120).map(q => `<li><button type="button" data-puerta="${esc(q.id)}" aria-current="${q.id === elegida}"><i style="background:${P.ESTADOS[P.estadoDe(q, proyecto)].color}"></i><span><b>${q.vano ? 'Vano ' + esc(q.vano) + ' · ' : ''}${esc(q.modelo || 'Sin modelo')}</b><small>${esc(q.llave || 'Sin llave')}${q.contratista ? ' · ' + esc(q.contratista) : ''} · ${esc(P.ESTADOS[P.estadoDe(q, proyecto)].nombre)}</small></span></button></li>`).join('');
-    panel.innerHTML = `<div class="puertasCabeza"><h2>Puertas · ${esc(ctx.levelName)}</h2><button type="button" data-puertas-cerrar aria-label="Cerrar">×</button></div>
-      <p class="puertaFuente">Plano de avance «${esc(catalogo.fuente.archivo)}» al ${esc(fecha(catalogo.fuente.modificado))} · ${catalogo.puertas.length} puertas</p>
-      <div class="puertaProyecto">${proyecto ? `<p><b>Proyecto: ${esc(proyecto.name)}</b><small>${guardando ? 'Guardando…' : 'Los cambios se guardan en este equipo y se sincronizan.'}</small></p><button type="button" data-puertas-excel>Excel</button><button type="button" data-puertas-consulta>Solo consulta</button>`
-        : `<p><b>Consulta del plano</b><small>Estados tal como vienen en el plano de avance.</small></p><button type="button" class="primary" data-puertas-proyecto>Marcar en terreno</button><button type="button" data-puertas-excel>Excel</button>`}</div>
-      <div class="scrollPuertas">
-      ${proyecto ? pincelHTML() : ''}
-      ${p && !pincel ? ficha(p) : ''}
-      <div class="puertaLeyenda">${P.ORDEN.filter(e => n[e]).map(e => `<label><input type="checkbox" data-puertas-estado="${e}" ${ocultos.has(e) ? '' : 'checked'}><i style="background:${P.ESTADOS[e].color}"></i>${esc(P.ESTADOS[e].nombre)} <b>${n[e]}</b></label>`).join('')}</div>
-      <div class="puertaContratistas" role="group" aria-label="Contratista">${[['', 'Todas'], ...Object.keys(P.CONTRATISTAS).map(c => [c, c]), [P.SIN_CONTRATISTA, 'Sin contratista']].map(([v, t]) => `<button type="button" data-puertas-contratista="${v}" aria-pressed="${contratista === v}">${t}</button>`).join('')}</div>
-      <input type="search" class="puertasBuscar" data-puertas-buscar placeholder="Buscar vano, llave o modelo…" value="${esc(busqueda)}" autocomplete="off" aria-label="Buscar puertas">
-      <p class="puertaNota">${lista.length} ${lista.length === 1 ? 'puerta' : 'puertas'}${lista.length > 120 ? ' · se muestran las primeras 120: busca para acotar' : ''}</p>
-      <ul class="puertasLista">${filas}</ul></div>`;
-    panel.querySelector('[data-puertas-cerrar]').onclick = cerrar;
-    panel.querySelector('[data-puertas-proyecto]')?.addEventListener('click', proyectoDelPiso);
-    panel.querySelector('[data-puertas-consulta]')?.addEventListener('click', () => { proyecto = null; soltarPincel(); pintar(); dibujar(); });
+    if (!catalogo) { panel.innerHTML = `<div class="puertasBarra"><p class="puertaNota">Este piso aún no tiene plano de avance de puertas.</p></div>`; return; }
+    const lista = visibles(), p = elegida && puertaDe(elegida), q = busqueda.trim();
+    const hallazgos = q ? [...lista].sort(P.ordenLista).slice(0, 8) : [];
+    const scroll = panel.querySelector('.puertaFichaScroll')?.scrollTop || 0;
+    panel.innerHTML = `${p && !pincel ? `<div class="puertaFichaScroll">${ficha(p)}</div>` : ''}
+      <div class="puertasBarra">
+        ${p && !pincel ? '' : pincelHTML()}
+        <div class="puertasBuscarFila"><input type="search" class="puertasBuscar" data-puertas-buscar placeholder="Buscar llave, vano o modelo…" value="${esc(busqueda)}" autocomplete="off" aria-label="Buscar puertas"><span class="puertasCuenta" role="status">${guardando ? 'Guardando…' : `${lista.length} de ${catalogo.puertas.length}`}</span></div>
+        ${hallazgos.length ? `<ul class="puertasLista">${hallazgos.map(x => `<li><button type="button" data-puerta="${esc(x.id)}"><i style="background:${P.ESTADOS[P.estadoDe(x, proyecto)].color}"></i><span><b>${esc(x.llave || x.modelo || 'Sin rótulo')}</b><small>${x.vano ? 'Vano ' + esc(x.vano) + ' · ' : ''}${esc(x.modelo || 'Sin modelo')}${P.contratistaDe(x) ? ' · ' + esc(P.contratistaDe(x)) : ''}</small></span></button></li>`).join('')}</ul>` : ''}
+      </div>`;
+    const fichaScroll = panel.querySelector('.puertaFichaScroll'); if (fichaScroll) fichaScroll.scrollTop = scroll;
     panel.querySelectorAll('[data-puertas-pincel]').forEach(b => b.onclick = () => { const e = b.dataset.puertasPincel; pincel = pincel === e ? null : e; pintadas = []; pintar(); dibujar(); });
     panel.querySelector('[data-puertas-deshacer]')?.addEventListener('click', deshacer);
     panel.querySelector('[data-puertas-listo]')?.addEventListener('click', () => { soltarPincel(); pintar(); dibujar(); });
-    panel.querySelector('[data-puertas-excel]').onclick = excel;
-    panel.querySelectorAll('[data-puertas-estado]').forEach(i => i.onchange = () => { if (i.checked) ocultos.delete(i.dataset.puertasEstado); else ocultos.add(i.dataset.puertasEstado); pintar(); dibujar(); });
-    panel.querySelectorAll('[data-puertas-contratista]').forEach(b => b.onclick = () => { contratista = b.dataset.puertasContratista; pintar(); dibujar(); });
+    panel.querySelector('[data-puertas-soltar]')?.addEventListener('click', () => { elegida = null; pintar(); dibujar(); });
     const buscar = panel.querySelector('[data-puertas-buscar]');
-    buscar.oninput = () => { busqueda = buscar.value; const pos = buscar.selectionStart; pintar(); dibujar(); const b = panel.querySelector('[data-puertas-buscar]'); b.focus(); b.setSelectionRange(pos, pos); };
-    panel.querySelectorAll('[data-puerta]').forEach(b => b.onclick = () => { if (pincel) { const q = puertaDe(b.dataset.puerta); if (q) pintarPuerta(q); } else elegir(b.dataset.puerta, true); });
+    buscar.oninput = () => { busqueda = buscar.value; const pos = buscar.selectionStart; pintar(); dibujar(); pintarSimbologia(); const b = panel.querySelector('[data-puertas-buscar]'); b.focus(); b.setSelectionRange(pos, pos); };
+    panel.querySelectorAll('[data-puerta]').forEach(b => b.onclick = () => { const id = b.dataset.puerta; busqueda = ''; if (pincel) { const x = puertaDe(id); if (x) pintarPuerta(x); pintar(); dibujar(); } else elegir(id, true); });
     panel.querySelectorAll('[data-puerta-estado]').forEach(b => b.onclick = () => marcar(b.dataset.puertaEstado));
   }
+  // Simbología de Puertas (botón «Simbología» del plano): estados con casillas y contratistas. Antes vivía en el panel.
+  const simbologia = document.createElement('section');
+  simbologia.id = 'puertasSimbologia'; simbologia.hidden = true; simbologia.setAttribute('aria-label', 'Simbología de puertas');
+  document.querySelector('main').append(simbologia);
+  function pintarSimbologia() {
+    if (simbologia.hidden || !catalogo) return;
+    const n = P.contar(catalogo.puertas, proyecto);
+    simbologia.innerHTML = `<div class="puertasSimbCabeza"><b>Puertas · ${esc(ctx.levelName)}</b><button type="button" data-simb-cerrar aria-label="Cerrar simbología">×</button></div>
+      <div class="puertaLeyenda">${P.ORDEN.filter(e => n[e]).map(e => `<label><input type="checkbox" data-puertas-estado="${e}" ${ocultos.has(e) ? '' : 'checked'}><i style="background:${P.ESTADOS[e].color}"></i>${esc(P.ESTADOS[e].nombre)} <b>${n[e]}</b></label>`).join('')}</div>
+      <div class="puertaContratistas" role="group" aria-label="Contratista">${[['', 'Todas'], ...Object.keys(P.CONTRATISTAS).map(c => [c, c]), [P.SIN_CONTRATISTA, 'Sin contratista']].map(([v, t]) => `<button type="button" data-puertas-contratista="${v}" aria-pressed="${contratista === v}">${t}</button>`).join('')}</div>
+      <p class="puertaNota">${proyecto ? `Proyecto «${esc(proyecto.name)}» · se sincroniza con tu sesión.` : 'Estados del plano de avance; al marcar la primera puerta se crea el proyecto del piso.'} Excel: en Proyectos.</p>`;
+    simbologia.querySelector('[data-simb-cerrar]').onclick = () => { simbologia.hidden = true; };
+    simbologia.querySelectorAll('[data-puertas-estado]').forEach(i => i.onchange = () => { if (i.checked) ocultos.delete(i.dataset.puertasEstado); else ocultos.add(i.dataset.puertasEstado); pintar(); dibujar(); });
+    simbologia.querySelectorAll('[data-puertas-contratista]').forEach(b => b.onclick = () => { contratista = b.dataset.puertasContratista; pintar(); dibujar(); pintarSimbologia(); });
+  }
+  function alternarSimbologia() { if (!activo) return; simbologia.hidden = !simbologia.hidden; pintarSimbologia(); }
   // ---------- Pincel ----------
   // Fila con los estados para pintar y, si hay uno elegido, el aviso con Deshacer y Listo. La ficha se oculta mientras tanto.
   function pincelHTML() {
     const nombre = pincel && P.ESTADOS[pincel].nombre;
-    return `<div class="puertaPincel" role="group" aria-label="Pincel"><span>Pincel</span>${PINCEL.map(e => `<button type="button" data-puertas-pincel="${e}" aria-pressed="${pincel === e}" style="--c:${P.ESTADOS[e].color}">${esc(P.ESTADOS[e].nombre)}</button>`).join('')}</div>
-      ${pincel ? `<div class="puertaPincelActivo" role="status"><p><b>Pintando «${esc(nombre)}»</b><small>Toca las puertas en el plano o en la lista. ${pintadas.length} ${pintadas.length === 1 ? 'puerta pintada' : 'puertas pintadas'}.${pincel === 'revisar' ? ' «Revisar» solo aplica a puertas de Teisa.' : ''}</small></p><button type="button" data-puertas-deshacer ${pintadas.length ? '' : 'disabled'}>Deshacer</button><button type="button" class="primary" data-puertas-listo>Listo</button></div>` : ''}`;
+    return `${pincel ? `<div class="puertaPincelActivo" role="status"><p><b>Pintando «${esc(nombre)}»</b><small>Toca las puertas en el plano. ${pintadas.length} ${pintadas.length === 1 ? 'pintada' : 'pintadas'}.${pincel === 'revisar' ? ' «Revisar» es solo de Teisa.' : ''}</small></p><button type="button" data-puertas-deshacer ${pintadas.length ? '' : 'disabled'}>Deshacer</button><button type="button" class="primary" data-puertas-listo>Listo</button></div>` : ''}
+      <div class="puertaPincel" role="group" aria-label="Pincel"><span>Pincel</span>${PINCEL.map(e => `<button type="button" data-puertas-pincel="${e}" aria-pressed="${pincel === e}" style="--c:${P.ESTADOS[e].color}">${esc(P.ESTADOS[e].nombre)}</button>`).join('')}</div>`;
   }
   function soltarPincel() { pincel = null; pintadas = []; }
   const nombrePuerta = p => p.vano ? 'Vano ' + p.vano : p.llave || p.modelo || 'La puerta';
-  function pintarPuerta(p) {
-    if (!proyecto || !pincel) return;
+  async function pintarPuerta(p) {
+    if (!pincel) return;
     if (!P.opcionesDe(p).includes(pincel)) { ctx.toast(`${nombrePuerta(p)} no admite «${P.ESTADOS[pincel].nombre}»: es de ${P.contratistaDe(p) || 'sin contratista'}.`); return; }
+    if (!(await asegurarProyecto())) return;
     if (P.estadoDe(p, proyecto) === pincel && P.cambioDe(p, proyecto)) return;
     const estado = pincel;
     elegida = p.id;
@@ -144,7 +152,7 @@ export function createPuertas(ctx) {
   // Guarda en orden: cada cambio se aplica sobre la última versión guardada del proyecto.
   function guardar(cambio) {
     if (!proyecto) return;
-    if (!firmante()) { pedirSesion('Inicia sesión en Atlas para marcar puertas.'); return; }
+    if (!firmante()) { pedirSesion('Inicia sesión en ATLAS para marcar puertas.'); return; }
     guardando++; pintar(); dibujar();
     cola = cola.then(async () => {
       try {
@@ -152,61 +160,67 @@ export function createPuertas(ctx) {
         await saveMarking(siguiente, proyecto.version);
         proyecto = siguiente;
       } catch (e) { ctx.toast('Cambio no guardado. ' + e.message); }
-      finally { guardando--; pintar(); dibujar(); }
+      finally { guardando--; pintar(); dibujar(); pintarSimbologia(); }
     });
   }
   function elegir(id, centrar) {
     elegida = id; pintar(); dibujar();
     const p = puertaDe(id);
-    if (centrar && p && !p.fuera) ctx.setView([p.x - 260, p.y - 200, 520, 400]);
-    panel.querySelector('.scrollPuertas')?.scrollTo({top: 0});
+    // La puerta queda arriba de la pantalla: abajo están la ficha y la barra.
+    if (centrar && p && !p.fuera) ctx.setView([p.x - 260, p.y - 110, 520, 400]);
   }
 
   // ---------- Proyecto ----------
   async function proyectosDelPiso() { return (await readMarkings()).filter(d => P.esPuertas(d) && d.level === ctx.level && !d.eliminado).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)); }
-  // «Marcar en terreno»: abre el proyecto de puertas del piso o, si no hay, crea uno con lo que dice el plano.
-  async function proyectoDelPiso() {
-    const existente = (await proyectosDelPiso())[0];
-    if (existente) { proyecto = existente; pintar(); dibujar(); return; }
-    await crearProyecto();
+  // El proyecto de puertas del piso: el más reciente; si no hay, se crea con lo que dice el plano al marcar la primera puerta.
+  let creando = null;
+  async function asegurarProyecto() {
+    if (proyecto) return true;
+    if (!firmante()) { pedirSesion('Inicia sesión en ATLAS para marcar puertas.'); return false; }
+    return (creando ||= (async () => {
+      try {
+        proyecto = (await proyectosDelPiso())[0] || null;
+        if (proyecto) return true;
+        await cargar();
+        if (!catalogo) { ctx.toast('Este piso aún no tiene plano de avance de puertas.'); return false; }
+        const doc = P.nuevoProyectoPuertas({name: 'Puertas · ' + ctx.levelName, author: firmante(), purpose: 'Avance de instalación de puertas sobre el plano «' + catalogo.fuente.archivo + '».'}, catalogo, ctx.level, crypto.randomUUID());
+        await saveMarking(doc, 0);
+        proyecto = doc;
+        return true;
+      } catch (e) { ctx.toast(e.message); return false; }
+      finally { creando = null; }
+    })());
   }
-  async function crearProyecto() {
-    await cargar();
-    if (!catalogo) { ctx.toast('Este piso aún no tiene plano de avance de puertas.'); return; }
-    const autor = firmante();
-    if (!autor) { pedirSesion('Inicia sesión en Atlas para crear el proyecto de puertas.'); return; }
-    try {
-      const doc = P.nuevoProyectoPuertas({name: 'Puertas · ' + ctx.levelName, author: autor, purpose: 'Avance de instalación de puertas sobre el plano «' + catalogo.fuente.archivo + '».'}, catalogo, ctx.level, crypto.randomUUID());
-      await saveMarking(doc, 0);
-      proyecto = doc; if (!activo) await abrir(); else { pintar(); dibujar(); }
-      ctx.toast('Proyecto de puertas creado. Toca una puerta para marcar su estado.');
-    } catch (e) { ctx.toast(e.message); }
-  }
-  function marcar(estado) {
-    const p = puertaDe(elegida); if (!p || !proyecto) return;
+  async function marcar(estado) {
+    const p = puertaDe(elegida); if (!p) return;
+    if (!(await asegurarProyecto())) return;
     guardar(doc => P.marcarPuerta(doc, p, estado, {autor: firmante()}));
   }
-  async function excel() {
+  // Excel del proyecto de puertas: se pide desde Proyectos (marking.mjs, «atlas-puertas-excel»).
+  async function excel(doc) {
     try {
+      await cargar(); if (!catalogo) throw Error('Este piso aún no tiene plano de avance de puertas.');
       await loadVendor('xlsx'); const X = window.XLSX;
-      const ws = X.utils.aoa_to_sheet([P.ENCABEZADOS, ...P.filasExcel(catalogo, proyecto)]), wb = X.utils.book_new();
+      const ws = X.utils.aoa_to_sheet([P.ENCABEZADOS, ...P.filasExcel(catalogo, doc)]), wb = X.utils.book_new();
       X.utils.book_append_sheet(wb, ws, 'Puertas');
-      ctx.download(new Blob([X.write(wb, {bookType: 'xlsx', type: 'array'})], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), (proyecto?.name || 'Puertas ' + ctx.levelName).replace(/[\\/:*?"<>|]+/g, '-') + '.xlsx');
+      ctx.download(new Blob([X.write(wb, {bookType: 'xlsx', type: 'array'})], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), (doc?.name || 'Puertas ' + ctx.levelName).replace(/[\\/:*?"<>|]+/g, '-') + '.xlsx');
     } catch (e) { ctx.toast(e.message); }
   }
   // Si la nube trae otra versión del proyecto abierto, se muestra esa.
   addEventListener('atlas-markings-changed', async e => {
     if (!proyecto || e.detail?.origen !== 'nube' || (e.detail.id && e.detail.id !== proyecto.id)) return;
     const nuevo = (await readMarkings()).find(d => d.id === proyecto.id);
-    if (nuevo && !nuevo.eliminado) { proyecto = nuevo; pintar(); dibujar(); }
+    if (nuevo && !nuevo.eliminado) { proyecto = nuevo; pintar(); dibujar(); pintarSimbologia(); }
   });
-  addEventListener('atlas-puertas-nuevo', () => crearProyecto());
+  addEventListener('atlas-puertas-nuevo', async () => { if (await asegurarProyecto()) { if (!activo) await abrir(); else { pintar(); dibujar(); } ctx.toast('Proyecto de puertas listo. Toca una puerta para marcar su estado.'); } });
   addEventListener('atlas-puertas-abrir', async e => { const doc = (await readMarkings()).find(d => d.id === e.detail?.id); if (doc) { proyecto = doc; await abrir(); } });
+  addEventListener('atlas-puertas-excel', async e => { const doc = (await readMarkings()).find(d => d.id === e.detail?.id); if (doc) excel(doc); });
 
   let solicitudPlano = 0;
   async function abrir() {
     const solicitud = ++solicitudPlano;
     await cargar();
+    if (!proyecto) proyecto = (await proyectosDelPiso().catch(() => []))[0] || null;
     if (solicitud !== solicitudPlano) return;
     ctx.enter();
     activo = true; panel.hidden = false; document.body.classList.add('puertasOpen');
@@ -217,9 +231,9 @@ export function createPuertas(ctx) {
   function cerrar() {
     solicitudPlano++;
     if (!activo) return;
-    activo = false; elegida = null; soltarPincel(); panel.hidden = true; panel.replaceChildren();
+    activo = false; elegida = null; busqueda = ''; soltarPincel(); panel.hidden = true; panel.replaceChildren(); simbologia.hidden = true;
     document.body.classList.remove('puertasOpen'); dibujar(); ctx.resize?.();
   }
   addEventListener('atlas-floor-home', cerrar);
-  return {abrir, cerrar, tocar, activo: () => activo, hayPlano: async () => !!(await cargar())};
+  return {abrir, cerrar, tocar, simbologia: alternarSimbologia, activo: () => activo, hayPlano: async () => !!(await cargar())};
 }

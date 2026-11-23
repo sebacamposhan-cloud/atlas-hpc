@@ -95,3 +95,11 @@ Sale de la «Planilla vanos de puertas», lámina HPC-ARQ-FDI-224 Rev03 del 26 d
 - `dist/puertas.css`
 - `dist/n02/puertas.json`
 - Pruebas: `puertas-avance-test.mjs`, en `render.yaml`.
+
+## Rework 2026-11-23: solo marcar en terreno
+
+- No hay modo «Solo consulta». Al abrir Puertas se carga el proyecto de puertas del piso; si no existe, se crea al marcar la primera puerta (pide sesión).
+- Sin panel a la derecha: una barra corta abajo, sobre el plano, con el pincel (No instalada, Instalada, Revisar) y el buscador de llave, vano o modelo.
+- Tocar una puerta abre su ficha encima de la barra, con los botones de estado.
+- Los estados con casillas y el filtro por contratista están en el botón «Simbología» del plano.
+- El Excel del proyecto se baja desde Proyectos (botón «Excel» en la fila del proyecto de puertas).

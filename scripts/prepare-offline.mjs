@@ -25,7 +25,7 @@ for(const name of walk('protocols/registers'))add(name);
 // Las fichas de todos los pisos (runtime.json, contornos y ejes, unos 200 KB cada uno) van en la base, así la búsqueda
 // y las fichas se abren siempre, aunque el plano de ese piso no esté guardado. La lista de pisos sale de pisos.js.
 // Las páginas de redirección n0x/index.html no se guardan (solo la portada es HTML).
-const fichasPiso=/^n\d\d\/(runtime|contornos|ejes|cielos)\.json$/;
+const fichasPiso=/^n\d\d\/(runtime|contornos|ejes|cielos|retornos)\.json$/;
 const carpetasPiso=[...fs.readFileSync(path.join(dist,'pisos.js'),'utf8').matchAll(/datos:\s*'([a-z0-9-]+)\/'/g)].map(m=>m[1]);
 // Planos de especialidad del piso (Cielos, Compartimentación, Retornos…: <piso>/<tipo>-map/): paquete aparte, «planos-<piso>»,
 // que no baja solo con el piso; cada tesela se guarda al verla (sw-runtime.js guarda lo que se usa).
