@@ -192,7 +192,7 @@ function pintarCuenta(){
   <h3 class="hojaGrupo">${lista.length>1?'Tus pisos':'Tu piso'}</h3>
   <div class="rodilloPisos" role="listbox" aria-label="Tus pisos"><div class="rodilloVentana" aria-hidden="true"></div>${[...lista].reverse().map(f=>`<div class="rodilloPiso" role="option" data-piso="${f.id}" aria-current="${f.id===active.id}"><span class="pisoLamina" data-numero="${escapar(f.numero)}" aria-hidden="true"><img class="pisoBlanco" data-src="pisos3d/${f.id.toLowerCase()}-blanco.png" alt="" width="760" height="490" decoding="async"><img class="pisoAzul" data-src="pisos3d/${f.id.toLowerCase()}-azul.png" alt="" width="760" height="490" decoding="async"></span><span><b>Piso ${escapar(f.numero)}</b>${f.id===active.id?'<small class="rodilloAbierto">Abierto ahora</small>':''}<small data-estado>${escapar(estadoPiso(f))}</small></span><span class="rodilloAccion" data-accion>${guardarHTML(f)}</span></div>`).join('')}</div>
   <div class="cuentaFilas"><button type="button" class="cuentaFila" data-offline><span aria-hidden="true">⤓</span>Sin conexión y actualizaciones</button>${$('logoutButton')?'<button type="button" class="cuentaFila salir" data-salir><span aria-hidden="true">⇥</span>Cerrar sesión</button>':''}</div>`;
- hojaCuenta.querySelector('[data-cerrar]').onclick=()=>hojaCuenta.close();
+ hojaCuenta.querySelector('[data-cerrar]').onclick=()=>hojaCuenta.close();if(hojaCuenta.open)laminasCuenta(true);
  // Los pisos van apilados en 3D, el más alto arriba, con su lámina azul al pasar el cursor o si está abierto. Tocar uno lo
  // abre directo. Si falta la imagen de un piso, se ve su número.
  hojaCuenta.querySelectorAll('.pisoLamina img').forEach(img=>img.addEventListener('error',()=>img.parentElement.classList.add('sinImagen'),{once:true}));
@@ -223,6 +223,10 @@ function abrirCuenta(){if(document.body.classList.contains('floorHome'))return;h
 cabeceraPiso?.addEventListener('click',abrirCuenta);
 cabeceraPiso?.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();abrirCuenta();}});
 hojaCuenta.addEventListener('click',e=>{if(e.target===hojaCuenta)hojaCuenta.close();});
+// Las láminas 3D de «Tus pisos» van con carga diferida (data-src, como la pila de la portada): se piden al abrir la hoja y se
+// sueltan al cerrarla, para no ocupar memoria en el celular. Sin esto la hoja quedaba con los pisos en blanco.
+function laminasCuenta(abierta){for(const image of hojaCuenta.querySelectorAll('img[data-src]')){if(abierta&&!image.hasAttribute('src'))image.src=image.dataset.src;else if(!abierta)image.removeAttribute('src');}}
+hojaCuenta.addEventListener('close',()=>laminasCuenta(false));
 window.addEventListener('atlas-session-changed',pintarCuenta);
 for(const nombre of ['atlas-offline-estado','online','offline'])window.addEventListener(nombre,actualizarEstados);
 window.addEventListener('atlas-floor-home',()=>{if(hojaCuenta.open)hojaCuenta.close();});

@@ -91,12 +91,16 @@ const listo = pack => paquete(pack) ? paquete(pack).ready : !!status?.plan?.read
 const pisoListo = () => { const p = pisoActual(); return !!status && listo('plan') && (!p || !pisoAbierto || listo(p.pack)); };
 const todoListo = () => !!status && listo('plan') && pisos().every(p => listo(p.pack));
 const ahorroDatos = () => !!navigator.connection?.saveData;
+// Guardar el piso solo es automático con Wi-Fi (o cable). Con datos móviles, o si el navegador no dice la red (Safari en
+// iPhone), se guarda a pedido desde «Tus pisos»: bajar ~20 MB en segundo plano saturaba la señal y la memoria del celular
+// (decidido 2026-11-22). Lo que se abre se guarda igual al usarlo.
+const enWifi = () => ['wifi', 'ethernet'].includes(navigator.connection?.type);
 function pendientes(lista) { return lista.filter((p, i) => lista.indexOf(p) === i && !listo(p)); }
 function autoGuardar() {
   clearTimeout(autoPendiente);
   // Espera unos segundos: primero se abre el plano, después se guarda en segundo plano.
   autoPendiente = setTimeout(() => {
-    if (!registration?.active || !navigator.onLine || conexion !== 'online' || document.hidden || ahorroDatos() || !status || status.downloading || !status.packs) return;
+    if (!registration?.active || !navigator.onLine || conexion !== 'online' || document.hidden || ahorroDatos() || !enWifi() || !status || status.downloading || !status.packs) return;
     const faltan = pendientes(['plan', ...usados().filter(pack => pisos().some(p => p.pack === pack))]);
     if (faltan.length) { failure = ''; status.downloading = faltan[0]; paint(); request('DOWNLOAD', {packs: faltan}).catch(() => {}); }
   }, 3000);

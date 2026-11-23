@@ -6,7 +6,7 @@ import {nivel, datos} from './level.mjs';
 import {registerLayer, categoryColor} from './layers.mjs';
 
 let cache = null;
-export const SIN_LAMINA = 'Sin dato en la lámina';
+export const SIN_LAMINA = 'Sin dato de cielo';
 export const cieloDe = code => cache?.recintos?.[String(code ?? '').trim()] || null;
 export const textoNct = v => 'NCT ' + Number(v).toLocaleString('es-CL', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' m';
 // Línea para el rombo: «Lámina CIE A-503: cielo 209 · NCT 2,80 m».
@@ -23,7 +23,7 @@ function colorNct(k) {
   return TONOS[Math.max(0, Math.min(TONOS.length - 1, Math.round((v - 2.5) / 0.3)))];
 }
 if (nivel.cielos) {
-  registerLayer('cielosLamina', {nombre: 'Cielos según lámina CIE', categories: r => cieloDe(r.code)?.cielos?.length ? cieloDe(r.code).cielos : [SIN_LAMINA],
+  registerLayer('cielosLamina', {nombre: 'Tipo de cielo', categories: r => cieloDe(r.code)?.cielos?.length ? cieloDe(r.code).cielos : [SIN_LAMINA],
     color: k => k === SIN_LAMINA ? '#e9ecef' : categoryColor('CIE', k), opacity: .45});
   registerLayer('nct', {nombre: 'Altura de cielo (NCT)', categories: r => cieloDe(r.code)?.nct?.length ? cieloDe(r.code).nct.map(textoNct) : [SIN_LAMINA], color: colorNct, opacity: .5});
   fetch(datos('cielos.json')).then(r => r.ok ? r.json() : null).then(d => { cache = d; window.dispatchEvent(new Event('atlas-cielos-lamina')); }).catch(() => {});

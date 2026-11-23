@@ -30,13 +30,13 @@ async function elegirPlano(page, type) {
   } else {
     await page.locator('button[data-tarjeta=herramientas]').click();
     await page.locator('button[data-funcion=filtros]').click();
-    await page.locator(`#planFilters [data-tipo-plano="${type}"]`).click();
+    await page.locator(`#planFilters [data-plano="${type}"]`).click();
   }
 }
 const openUnified = page => elegirPlano(page, 'ceilings');
 async function openOriginals(page) {
   await page.locator('#planViewLegend').click();
-  await page.locator('#ceilingOriginals').click();
+  await page.locator('#cielosOriginales').click();
 }
 async function openCeilings(page) {
   await openUnified(page);

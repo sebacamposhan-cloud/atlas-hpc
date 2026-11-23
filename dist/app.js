@@ -73,7 +73,7 @@ function loadDetail(){updateTiles();}
 function path(r){const ring=p=>'M'+p.map(v=>v.join(',')).join('L')+'Z';return ring(r.polygon)+(r.holes||[]).map(ring).join('');}
 function group(r){const by=$('colorBy').value;if(by==='asepsis')return r.asepsis.join(' / ')||'Sin clasificación documentada';if(by==='status')return r.status;if(by==='walls')return [...new Set(r.finishes.filter(f=>f.field.startsWith('M')).map(f=>f.code))].join(' / ');if(by==='PAV'||by==='CIE')return r.finishes.find(f=>f.field===by)?.code||'Sin información';return 'Recintos';}
 function color(){return '#49575d';}
-function render(){if(!data||!doc)return;const rooms=uniqueRooms(data.rooms),ids=new Set(results.map(r=>r.id));let shapes=[],labels=[];for(const r of rooms){const active=selected?.id===r.id,match=ids.has(r.id),dim=(isolation&&!active)||(filtered&&!match);const appearance=ceilingView||marking?.active()?null:ui?.appearance(r),fill=appearance?.fill;
+function render(){if(!data||!doc)return;document.body.classList.toggle('conSimbologia',conSimbologia());const rooms=uniqueRooms(data.rooms),ids=new Set(results.map(r=>r.id));let shapes=[],labels=[];for(const r of rooms){const active=selected?.id===r.id,match=ids.has(r.id),dim=(isolation&&!active)||(filtered&&!match);const appearance=(ceilingView&&!conSimbologia())||marking?.active()?null:ui?.appearance(r),fill=appearance?.fill;
  // Con un filtro, lo que no cumple queda lavado en gris claro y lo filtrado se pinta fuerte con borde de su tono.
  const lavar=filtered&&!match&&!isolation&&!marking?.active(),borde=!dim&&fill?appearance.borde:null;{const d=footprintPath(r.id);if(d)shapes.push(`<path class="roomshape${borde?' fuerte':''}" data-geometry-quality="${esc(footprint(r.id)?.quality)}" data-id="${esc(r.id)}" d="${d}" fill="${lavar?'#fff':fill||'#425158'}" fill-opacity="${lavar?.62:!dim&&fill?appearance.opacity:!marking?.active()&&!dim&&filtered?.16:0}" stroke="${borde||'#111'}" stroke-opacity="${borde?1:dim?.2:.6}" style="mix-blend-mode:${lavar?'normal':appearance?.blend||'normal'}" fill-rule="evenodd"><title>${esc(r.code+' · '+r.name)}</title></path>`);}if(!dim&&($('layerCodes').checked||$('layerNames').checked)){const w=world(r);labels.push(`<text class="roomLabel" x="${w.position[0]}" y="${w.position[1]-14}" text-anchor="middle">${esc(($('layerCodes').checked?r.code:'')+($('layerNames').checked?' '+r.name:''))}</text>`);}}
 if(showDiamonds&&!edit)for(const r of rooms){const box=diamondBox(r,atlas);if(box)labels.push(`<rect class="diamondHit" data-diamond-id="${esc(r.id)}" x="${box[0]}" y="${box[1]}" width="${box[2]}" height="${box[3]}" tabindex="0" role="button" aria-label="Abrir rombo ${esc(r.code)}"><title>Rombo ${esc(r.code)} · selección documental, no contorno</title></rect>`);}
@@ -133,18 +133,12 @@ function clearArchitectureSelection(code){
   document.body.classList.add('hideRight');
 }
 let ceilingView=false,ceilingCatalog,ceilingPending,ceilingError='';
-function renderCeilingLegendLinks(){
- const list=$('ceilingDocumentList');
- if(!list)return;
- list.innerHTML=(ceilingCatalog?.documents||[]).map(doc=>`<li><a href="source/${esc(doc.filename)}#page=${esc(doc.page)}" target="_blank" rel="noopener">${esc(doc.id.toUpperCase())} · ${esc(doc.revision)}</a></li>`).join('');
- list.hidden=!list.childElementCount;
-}
 function loadCeilings(){
  if(ceilingPending||ceilingCatalog)return;
  ceilingError='';
  ceilingPending=loadCeilingSheets(uniqueRooms(data.rooms)).then(catalog=>{ceilingCatalog=catalog;})
   .catch(error=>{ceilingError=error.message;})
-  .finally(()=>{ceilingPending=null;if(ceilingView){renderDetail();renderCeilingLegendLinks();}});
+  .finally(()=>{ceilingPending=null;if(ceilingView)renderDetail();});
 }
 let openCeilingOriginals;
 function rotularEspecialidad(type, name){
@@ -157,20 +151,15 @@ function rotularEspecialidad(type, name){
  $('planViewLegend').onclick=()=>openPlanLegend(type,name);
 }
 
+// Simbología: en los planos con datos por recinto (Arquitectura, Cielos, Pavimentos, Muros) es la lista interactiva con
+// casillas de «Filtros y capas» (decidido 2026-11-22: la captura de la tabla no sirve). El resto, su leyenda de estados.
 function openPlanLegend(type,name){
+ // Pavimentos del −1 son láminas propias (otras coordenadas): su leyenda de códigos sigue como ventana.
+ if(['architecture','ceilings','walls'].includes(type)||(type==='floors'&&!nivel.especialidades)){ui?.openFilters?.({simbologia:true});return;}
+ openPlanLegendModal(type,name);
+}
+function openPlanLegendModal(type,name){
  const title=`<h2 id="planLegendTitle">Simbología general · ${esc(name)}</h2>`;
- const cu=nivel.cielosUnificado;
- if(type==='ceilings'&&cu){
-  modal(`<section class="ceilingLegendContent">${title}
-    <p>Tablas de cielos e iluminación de la lámina ${esc(cu.lamina||'CIE')}.</p>
-    ${openCeilingOriginals?'<button id="ceilingOriginals" type="button">Láminas originales y registros</button>':''}
-    <ul id="ceilingDocumentList" class="ceilingDocumentList" hidden></ul>
-    ${cu.simbologia?`<img src="${esc(cu.simbologia)}" alt="Tablas de simbología de cielos y luminarias de la lámina ${esc(cu.lamina||'CIE')}, página 1" decoding="async">`:`<p>Falta la imagen de simbología de Cielos de ${esc(nivel.nombre)}.</p>`}
-   </section>`,'planLegendTitle');
-  renderCeilingLegendLinks();
-  if(openCeilingOriginals)$('ceilingOriginals').onclick=()=>{$('modal').close();openCeilingOriginals();};
-  return;
- }
  const content=renderPlanLegend({type,pilotDoors:nivel.puertasPiloto,imp:nivel.imp,pav:nivel.pav,piso:nivel.nombre,materials:data.materials,layerLegend:ui.resumenFiltro().leyenda,esc});
  modal(`<section class="planLegendContent">${title}${content}</section>`,'planLegendTitle');
 }
@@ -181,6 +170,21 @@ $('planViewExit').onclick=()=>{
  document.querySelector('.planTypes [data-plan-type=architecture]').click();
 };
 
+// Planos unificados de una lámina por piso (pisos.js, «planos»): Compartimentación (fire) y Pavimentos con retornos
+// vinílicos (floors en pisos sin láminas de Pavimentos). Se ven como Cielos: el dibujo de la lámina sobre el plano, los
+// contornos invisibles pero tocables, y la ficha normal del recinto. La malla se pide al abrirlo (paquete «planos-…»).
+let planoUnificado=null;const mallasPlano={};
+async function setUnifiedPlan(tipo){
+ const ruta=tipo==='fire'?nivel.planos?.comp:tipo==='floors'?nivel.planos?.retornos:null;
+ if(!ruta){if(planoUnificado){planoUnificado=null;document.body.classList.remove('cielosUnificados','planoUnificado');setDrawingMap(null);render();}return;}
+ let malla=mallasPlano[ruta];
+ if(!malla){try{malla=mallasPlano[ruta]=Object.values(await import('./'+ruta)).find(v=>v&&v.tilePath)||null;}catch{malla=null;}}
+ if(!malla){toast('No se pudo abrir este plano. Intenta de nuevo con conexión.');return;}
+ planoUnificado=tipo;isolation=false;previousView=null;
+ document.body.classList.add('cielosUnificados','planoUnificado');setDrawingMap(malla);render();
+}
+// Con casillas marcadas en la simbología, los recintos se pintan sobre el plano unificado y el resto queda atenuado.
+const conSimbologia=()=>!!(ui?.filters&&Object.values(ui.filters()||{}).some(v=>v?.length));
 function setUnifiedCeilings(active,originals){
  ceilingView=active;
  openCeilingOriginals=originals;
@@ -329,11 +333,11 @@ async function initialize(){
   lastplanner ||= createLastPlanner({esc,toast,extraDetalle:a=>tareas?.resumenActividad(a)||'',spatial:options=>spatial.select(options),onPlan:(activity,referencePoints=[])=>{if(activity&&activity.level!==nivel.id){if(window.dispatchEvent(new Event('atlas-before-floor-change',{cancelable:true})))location.assign((globalThis.ATLAS_RAIZ||'/')+consultaPiso({nivel:activity.level,modulo:window.ATLAS_MODULO,pisos:window.ATLAS_PISOS_ELEGIDOS})+'#lastplanner='+encodeURIComponent(activity.id));return;}ui.closeFilters();ui.setLayer('lastplanner');const points=[...(activity?.alcances.flatMap(s=>s.geometry?.points||[])||[]),...referencePoints];if(points.length){const xs=points.map(p=>p[0]),ys=points.map(p=>p[1]);setView([Math.min(...xs)-70,Math.min(...ys)-70,Math.max(...xs)-Math.min(...xs)+140,Math.max(...ys)-Math.min(...ys)+140]);}},plannerVisible:()=>ui?.enabled()&&ui?.layer?.()==='lastplanner',footprint,source:r=>data.documents.find(d=>d.id===r.document_id),rooms:()=>uniqueRooms(data.rooms),download:downloadBlob,fondo:()=>{const m=mapa();return {url:m.overview,export:m.export,origin:m.origin,width:m.width,height:m.height};},position:r=>world(r).position,path:footprintPath});
   if(!lpCapa){lpCapa=true;iniciarCapaLastPlanner(()=>render());}
   protocolosRecinto ||= createProtocolosRecinto({esc,footprint,verProtocolos:datos=>verEnPlano(()=>protocolPlan?.mostrar(datos))});
-  ui ||= createWorkspace({esc,exportarFiltro,observaciones,lastplanner,rooms:()=>uniqueRooms(data.rooms),results:()=>results,data:()=>data,selected:()=>selected,editing:()=>!!edit,architecture:()=>disciplines?.switchMode('architecture'),resize:()=>requestAnimationFrame(updateTiles),toast,modal,hasGeometry:id=>!!footprint(id),footprint,abrirRueda:()=>nav?.abrirRueda(),tituloModulo:()=>nav?.tituloModulo(),nombrePiso:()=>nav?.nombrePiso(),conPlano:()=>!nav||nav.modulo()==='plano',capas:capasDibujo,mostrarCapa,redraw:render,refresh:runSearch,search:()=>{clearTimeout(searchTimer);searchTimer=setTimeout(runSearch,160);},reset,select:selectRoom,excel,download:downloadBlob,scope:()=>atlas.scope,verProtocolos:datos=>protocolPlan?.mostrar(datos)});
+  ui ||= createWorkspace({esc,exportarFiltro,originalesCielos:()=>ceilingView?openCeilingOriginals:null,observaciones,lastplanner,rooms:()=>uniqueRooms(data.rooms),results:()=>results,data:()=>data,selected:()=>selected,editing:()=>!!edit,architecture:()=>disciplines?.salirDeLamina?.(),resize:()=>requestAnimationFrame(updateTiles),toast,modal,hasGeometry:id=>!!footprint(id),footprint,abrirRueda:()=>nav?.abrirRueda(),tituloModulo:()=>nav?.tituloModulo(),nombrePiso:()=>nav?.nombrePiso(),conPlano:()=>!nav||nav.modulo()==='plano',capas:capasDibujo,mostrarCapa,redraw:render,refresh:runSearch,search:()=>{clearTimeout(searchTimer);searchTimer=setTimeout(runSearch,160);},reset,select:selectRoom,excel,download:downloadBlob,scope:()=>atlas.scope,verProtocolos:datos=>protocolPlan?.mostrar(datos)});
   if(!assistant){createAssistant({selected:()=>selected});assistant=true;}
   // Catálogo de rombos original del nivel −1 (recortes de las láminas PDF). En pisos importados desde DWG el rombo va dibujado en el plano y en la ficha.
   if(!diamondCatalog&&data.documents.some(d=>d.kind!=='dwg')&&data.rooms.some(r=>r.diamond_bbox)){createDiamondCatalog({esc,loadImage:r=>diamondURL(r,data.documents),data:()=>data,inScope,editing:()=>!!edit,toast,showing:()=>showDiamonds,toggle:()=>{disciplines.switchMode('architecture');ui.show('map');showDiamonds=!showDiamonds;render();},openRoom:id=>{disciplines.switchMode('architecture');ui.show('map');selectRoom(id);}});diamondCatalog=true;}
-  disciplines ||= createDisciplines({esc,specialties:nivel.especialidades,level:nivel.nombre,setUnifiedCeilings,abrirPuertas:()=>{disciplines.switchMode('architecture');ui.show('map');puertas?.abrir();},showLayer:type=>ui?.setLayer(type),editing:()=>!!edit,selected:()=>selected,enterSpecialty:()=>{marking?.close();querySerial++;clearTimeout(searchTimer);document.body.classList.add('hideRight','hideLeft');},toast,download:downloadBlob,rooms:()=>uniqueRooms(data.rooms),material:code=>data.materials.find(m=>m.code===code),returnArchitecture:(code,id)=>{const matches=uniqueRooms(data.rooms).filter(r=>r.code===code),target=id?matches.find(r=>r.id===id):matches.length===1?matches[0]:null;if(target){selectRoom(target.id);}else{clearArchitectureSelection(code);if(code)toast(matches.length?'Varias coincidencias en Arquitectura: selecciona el recinto.':'Sin correspondencia en Arquitectura para '+code);}},syncCode:code=>{const matches=uniqueRooms(data.rooms).filter(r=>r.code===code);selected=matches.length===1?matches[0]:null;if(selected)selectRoom(selected.id,false);else{clearArchitectureSelection(code);}document.body.classList.add('hideRight');}});
+  disciplines ||= createDisciplines({esc,specialties:nivel.especialidades,level:nivel.nombre,setUnifiedCeilings,setUnifiedPlan,abrirPuertas:()=>{disciplines.switchMode('architecture');ui.show('map');puertas?.abrir();},showLayer:type=>ui?.setLayer(type),editing:()=>!!edit,selected:()=>selected,enterSpecialty:()=>{marking?.close();querySerial++;clearTimeout(searchTimer);document.body.classList.add('hideRight','hideLeft');},toast,download:downloadBlob,rooms:()=>uniqueRooms(data.rooms),material:code=>data.materials.find(m=>m.code===code),returnArchitecture:(code,id)=>{const matches=uniqueRooms(data.rooms).filter(r=>r.code===code),target=id?matches.find(r=>r.id===id):matches.length===1?matches[0]:null;if(target){selectRoom(target.id);}else{clearArchitectureSelection(code);if(code)toast(matches.length?'Varias coincidencias en Arquitectura: selecciona el recinto.':'Sin correspondencia en Arquitectura para '+code);}},syncCode:code=>{const matches=uniqueRooms(data.rooms).filter(r=>r.code===code);selected=matches.length===1?matches[0]:null;if(selected)selectRoom(selected.id,false);else{clearArchitectureSelection(code);}document.body.classList.add('hideRight');}});
   marking ||= createMarking({esc,abrirIMP:()=>{ui.show('map');disciplines?.switchMode('waterproofing');},level:nivel.id,levelName:nivel.nombre,rooms:()=>uniqueRooms(data.rooms),source:r=>data.documents.find(d=>d.id===r.document_id),editing:()=>!!edit,toast,download:downloadBlob,redraw:render,resize:updateTiles,enter:()=>{ui.closeFilters();ui.show('map');selected=null;isolation=false;},focus:r=>{if(r)setView(bounds(r,70));},export:(snapshot,comparacion)=>exportAtlas('pdf',snapshot,comparacion),fondo:()=>{const m=mapa();return {url:m.overview,export:m.export,origin:m.origin,width:m.width,height:m.height};},position:r=>world(r).position,path:footprintPath});
   markingOverlay ||= createMarkingOverlay({esc,active:()=>marking.active(),focused:()=>marking.focused(),items:()=>marking.items(),room:id=>uniqueRooms(data.rooms).find(r=>r.id===id),path:footprintPath,position:r=>world(r).position});
   // Protocolos de la matriz encuadrados por sus ejes en el plano, con su número; los anulados quedan en el panel derecho.

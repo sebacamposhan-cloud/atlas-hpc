@@ -1,0 +1,20 @@
+{
+ "tipo": "comp",
+ "piso": "N-1",
+ "archivo": "comp-s01.pdf",
+ "sha256": "32956fc07c6930da8b9a9c2bf71d1c004195248255ce76a17691cf28bd45c4ff",
+ "escala": 3.9987961277059996,
+ "giro": 0.004352064539760511,
+ "desplazamiento": [
+  672.8,
+  -645.571
+ ],
+ "codigos": 230,
+ "codigosAjustan": 207,
+ "correccionMuros": [
+  8.0,
+  4.0
+ ],
+ "nitidez": 5.02,
+ "metodo": "códigos de recinto (similitud RANSAC) + correlación con el plano de arquitectura (generar-plano.py)"
+}

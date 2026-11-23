@@ -1,0 +1,20 @@
+{
+ "tipo": "retornos",
+ "piso": "N01",
+ "archivo": "retornos-n01.pdf",
+ "sha256": "93cc04264230520ff113d034c9188544480152f76f25c15e7ea85206bf73c067",
+ "escala": 5.2926574246014235,
+ "giro": 0.021370661784429586,
+ "desplazamiento": [
+  -1880.129,
+  -319.347
+ ],
+ "codigos": 359,
+ "codigosAjustan": 299,
+ "correccionMuros": [
+  8.0,
+  4.0
+ ],
+ "nitidez": 3.7,
+ "metodo": "códigos de recinto (similitud RANSAC) + correlación con el plano de arquitectura (generar-plano.py)"
+}

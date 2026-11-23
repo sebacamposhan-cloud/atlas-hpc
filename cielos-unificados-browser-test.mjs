@@ -23,7 +23,7 @@ async function ceilings(page) {
     await page.locator('button[data-tarjeta=herramientas]').click();
     await page.locator('button[data-funcion=filtros]').click();
   }
-  await page.locator('#planFilters [data-tipo-plano=ceilings]').click();
+  await page.locator('#planFilters [data-plano=ceilings]').click();
 }
 async function tapRoom(page, code, mobile) {
   const point = await page.evaluate(async code => {
@@ -66,7 +66,8 @@ try {
         const sheet = page.getByRole('dialog', {name: 'Cambiar plano'});
         await sheet.waitFor();
         assert.equal(await sheet.getByRole('button', {name: 'Arquitectura'}).getAttribute('aria-pressed'), 'true');
-        assert.equal(await sheet.locator('[data-elegir-plano]').count(), 6);
+        // Arquitectura, Cielos, Pavimentos, Compartimentación, Muros, Puertas e IMP.
+        assert.equal(await sheet.locator('[data-elegir-plano]').count(), 7);
         await sheet.getByRole('button', {name: 'Cielos'}).click();
         await sheet.waitFor({state:'hidden'});
         await page.getByRole('button', {name: 'Cielos · Cambiar plano'}).waitFor();
@@ -87,12 +88,14 @@ try {
       await tapRoom(page, '7.1.2.1.2-1', mobile);
       const ficha = page.getByRole('region', {name: 'Ficha de Cielos'});
       await ficha.waitFor();
-      await ficha.getByText('Lectura cotejada en la lámina').waitFor();
+      // Sin la fuente (lámina, revisión ni enlace): solo lo que dice el recinto.
+      await ficha.getByText('Tipo de cielo').waitFor();
+      assert.doesNotMatch(await ficha.innerText(), /Lectura cotejada|CIE-50|Rev0/);
+      assert.equal(await ficha.getByRole('link').count(), 0);
       assert.match(await ficha.innerText(), /Box Consulta Médica/);
       assert.match(await ficha.innerText(), /213/);
       assert.match(await ficha.innerText(), /2,80 m/);
       assert.match(await ficha.innerText(), /L19/);
-      assert.equal(await ficha.getByRole('link', {name: /CIE-504/}).getAttribute('href'), 'source/cie-504.pdf#page=1');
       assert.equal(await page.locator('#selectionHighlight path').count(), 2);
       await page.waitForFunction(() => document.querySelector('#detailImage image[href^="cie-s01-map/"]'));
       const tiles = await page.locator('#detailImage image').evaluateAll(nodes => nodes.map(node => node.getAttribute('href')));
@@ -106,15 +109,14 @@ try {
       if (width === 390) {
         await tapRoom(page, '2.1.4.1.5-1', mobile);
         assert.match(await ficha.innerText(), /Servicio Higiénico Público/);
-        assert.equal(await ficha.getByRole('link', {name: /CIE-508/}).getAttribute('href'), 'source/cie-508.pdf#page=1');
         await page.locator('#closeDetail').click({delay:500});
         await ficha.waitFor({state:'hidden'});
       }
+      // Simbología interactiva (Filtros y capas): tipos de cielo con casillas, sin la captura de la tabla.
       await toolbar.getByRole('button', {name: 'Simbología'}).click();
-      const legend = page.locator('#modal .ceilingLegendContent');
-      await legend.waitFor();
-      assert.equal(await legend.locator('.ceilingDocumentList a').count(), 8);
-      await legend.locator('img').evaluate(image => image.decode());
+      const legend = page.locator('#planFilters [data-simbologia]');
+      await legend.locator('.categoryControl').first().waitFor();
+      assert.equal(await page.locator('#planFilters img').count(), 0);
       if (width === 390) {
         await legend.getByRole('button', {name: 'Láminas originales y registros'}).click();
         await page.locator('#specialtySheet').waitFor();
@@ -122,7 +124,7 @@ try {
         await page.locator('[data-ceilings-unified]').click();
         await toolbar.waitFor();
       } else {
-        await page.locator('#closeModal').click();
+        await page.locator('#closePlanFilters').click();
       }
       if (mobile) {
         await page.getByRole('button', {name: 'Cielos · Cambiar plano'}).click();
@@ -149,7 +151,9 @@ try {
     const selector = page.locator('#terrenoPlano');
     const sheet = page.getByRole('dialog', {name:'Cambiar plano'});
     await selector.click();
-    assert.equal(await sheet.getByRole('button', {name:'Pavimentos'}).count(), 0);
+    // N02: Pavimentos (retornos vinílicos) y Compartimentación son planos unificados del piso.
+    assert.equal(await sheet.getByRole('button', {name:'Pavimentos'}).count(), 1);
+    assert.equal(await sheet.getByRole('button', {name:'Compartimentación'}).count(), 1);
     await sheet.getByRole('button', {name:'Muros'}).click();
     await page.getByRole('button', {name:'Muros · Cambiar plano'}).waitFor();
     await selector.click();

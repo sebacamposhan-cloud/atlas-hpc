@@ -46,6 +46,8 @@ body.terreno .obsDetailDrawer[open] { z-index: 45; }
 #planViewTools button{min-height:44px;padding:4px 8px}
 main:has(#planViewTools:not([hidden])) #barraFunciones{display:none}
 body.cielosUnificados #polygons,body.cielosUnificados #labels{visibility:hidden}
+/* Con casillas marcadas en la simbología, los recintos se pintan sobre el plano unificado (los demás, atenuados). */
+body.cielosUnificados.conSimbologia #polygons{visibility:visible}
 body.cielosUnificados #background,body.cielosUnificados #detailImage{display:block!important}
 .ceilingRoom .ceilingSource{border-top:1px solid var(--g-regla,#8c8c8c);padding:10px 0;margin-top:8px}
 .ceilingSource h3{margin:0 0 2px}

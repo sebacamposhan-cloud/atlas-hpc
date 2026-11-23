@@ -141,6 +141,8 @@ try {
   await desktop.close();
 
   const offline = await browser.newContext(readers.mobile);
+  // El piso se guarda solo con Wi-Fi (offline.mjs): este celular dice estar en Wi-Fi.
+  await offline.addInitScript(() => Object.defineProperty(navigator, 'connection', {configurable: true, value: {type: 'wifi', saveData: false, addEventListener() {}, removeEventListener() {}}}));
   const saved = await open(offline, 'N-1');
   await saved.waitForFunction(() =>
     !!navigator.serviceWorker.controller &&
