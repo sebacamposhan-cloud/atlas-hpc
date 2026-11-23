@@ -1,7 +1,7 @@
-export const progressFloors={'N-1':'A-S01',N01:'A-N01',N02:'A-N02',N03:'A-N03',N04:'A-N04'};
+export const progressFloors={'N-1':'A-S01',N01:'A-N01',N02:'A-N02',N03:'A-N03',N04:'A-N04',N07:'A-N07',N08:'A-N08'};
 export function progressFloor(value){
  const key=String(value??'').trim().toUpperCase().replace(/\s/g,'').replace('−','-');
- return ({'-1':'N-1','N-1':'N-1','S01':'N-1','A-S01':'N-1','1':'N01',N1:'N01',N01:'N01','A-N01':'N01','2':'N02',N2:'N02',N02:'N02','A-N02':'N02','3':'N03',N3:'N03',N03:'N03','A-N03':'N03','4':'N04',N4:'N04',N04:'N04','A-N04':'N04'})[key]||null;
+ return ({'-1':'N-1','N-1':'N-1','S01':'N-1','A-S01':'N-1','1':'N01',N1:'N01',N01:'N01','A-N01':'N01','2':'N02',N2:'N02',N02:'N02','A-N02':'N02','3':'N03',N3:'N03',N03:'N03','A-N03':'N03','4':'N04',N4:'N04',N04:'N04','A-N04':'N04','7':'N07',N7:'N07',N07:'N07','A-N07':'N07','8':'N08',N8:'N08',N08:'N08','A-N08':'N08'})[key]||null;
 }
 export function progressRooms(rooms,level){
  if(!progressFloors[level])return [];

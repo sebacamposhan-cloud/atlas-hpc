@@ -7,7 +7,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..'), salida = path.join(repo, 'dist/editor-contornos/barreras');
 fs.mkdirSync(salida, {recursive: true});
-for (const nivel of ['s01', 'n01', 'n02', 'n03', 'n04']) {
+for (const nivel of ['s01', 'n01', 'n02', 'n03', 'n04', 'n07', 'n08']) {
   const origen = path.join(repo, 'data', nivel, 'barreras.json');
   if (!fs.existsSync(origen)) { console.log(nivel, 'sin barreras.json: se conserva la publicación anterior'); continue; }
   const marco = JSON.parse(fs.readFileSync(path.join(repo, 'data', nivel, 'marco.json'), 'utf8')), vistos = new Set(), tramos = [];

@@ -8,6 +8,9 @@
 // (342,9 de 464,9 unidades, unos 6,05 m bajo el AD). En el piso 2 esta línea reproduce exactamente las láminas.
 // Cada recinto se ubica por su rótulo, en coordenadas del plano (las de dist/<piso>/ejes.json): un recinto partido por
 // la línea de corte queda en la lámina donde se rotuló, igual que en el plano.
+// Un piso con otra planta puede traer su propia regla en ejes.json (campo «sectores», que copia scripts/ejes/generar.mjs desde
+// data/<piso>/sectores.json): el sector 2 parte en el eje «sector1» y el sector 3 en el eje «sector3». Así se cortan las
+// torres N07 y N08 por alas, según la sectorización de terreno del N08 (ejes AG y AK).
 // Sin DOM: lo prueba sectores-test.mjs.
 export const SECTORES = ['1', '2', '3'];
 export const nombreSector = s => s ? 'Sector ' + s : 'Sin sector';
@@ -24,8 +27,10 @@ export function cortesSectores(ejes) {
   const sobre = p => (p[0] - aa.a[0]) * normal[0] + (p[1] - aa.a[1]) * normal[1];
   if (sobre(aw.a) < sobre(aa.a)) normal = [-normal[0], -normal[1]];
   const medir = p => (p[0] - aa.a[0]) * normal[0] + (p[1] - aa.a[1]) * normal[1];
+  const propia = ejes.sectores, c1 = propia && buscar(propia.sector1), c3 = propia && buscar(propia.sector3);
+  if (propia && c1 && c3 && medir(c1.a) < medir(c3.a)) return {medir, normal, origen: aa.a, sector1: medir(c1.a), sector3: medir(c3.a), regla: {sector1: c1.id, sector3: c3.id, fuente: propia.fuente || ''}};
   const enAD = medir(ad.a), enAE = medir(ae.a);
-  return {medir, normal, origen: aa.a, sector1: enAD + TRAMO_SECTOR_1 * (enAE - enAD), sector3: medir(aj.a)};
+  return {medir, normal, origen: aa.a, sector1: enAD + TRAMO_SECTOR_1 * (enAE - enAD), sector3: medir(aj.a), regla: null};
 }
 
 export function sectorObra(punto, cortes) {
@@ -54,7 +59,9 @@ export function svgSectores({origen = [0, 0], ancho, alto, limites, ejes}) {
   // Tamaños proporcionales al ancho del edificio, para que se lean con el piso completo en pantalla. El texto lleva un
   // borde blanco (paint-order) para leerse sobre el dibujo, sin rellenos de color.
   const c1 = altura(cortes.sector1), c3 = altura(cortes.sector3), letra = (x1 - x0) / 26, linea = (x1 - x0) / 220;
-  const franjas = [['1', y0, c1, 'hasta la línea de las láminas A-501 y A-505 del piso 2 (entre AD y AE)'], ['2', c1, c3, 'entre el sector 1 y el eje AJ'], ['3', c3, y1, 'desde el eje AJ hacia el AW']]
+  const g = cortes.regla, notas = g ? ['hasta el eje ' + g.sector1, 'entre los ejes ' + g.sector1 + ' y ' + g.sector3, 'desde el eje ' + g.sector3]
+    : ['hasta la línea de las láminas A-501 y A-505 del piso 2 (entre AD y AE)', 'entre el sector 1 y el eje AJ', 'desde el eje AJ hacia el AW'];
+  const franjas = [['1', y0, c1, notas[0]], ['2', c1, c3, notas[1]], ['3', c3, y1, notas[2]]]
     .map(([s, a, b, nota]) => [s, Math.max(a, y0), Math.min(b, y1), nota]).filter(([, a, b]) => b - a > 1);
   return marco + franjas.map(([s, a, b, nota]) =>
     `<rect x="${r(x0)}" y="${r(a)}" width="${r(x1 - x0)}" height="${r(b - a)}" fill="none" stroke="#1f3b73" stroke-width="${r(linea)}" stroke-dasharray="${r(linea * 6)} ${r(linea * 3)}"/>` +

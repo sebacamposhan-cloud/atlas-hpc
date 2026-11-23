@@ -2,7 +2,7 @@
 import {errorPartes, enPartes, areaM2} from './geometria.mjs';
 export const FORMATO = 'atlas-contornos-v1';
 // datos: carpeta del piso en dist/ (como en pisos.js); dwg: carpeta de data/ con barreras.json y marco.json.
-export const NIVELES = {'N-1': {datos: '', dwg: 's01', nombre: 'Nivel −1'}, N01: {datos: 'n01/', dwg: 'n01', nombre: 'Nivel 1'}, N02: {datos: 'n02/', dwg: 'n02', nombre: 'Nivel 2'}, N03: {datos: 'n03/', dwg: 'n03', nombre: 'Nivel 3'}, N04: {datos: 'n04/', dwg: 'n04', nombre: 'Nivel 4'}};
+export const NIVELES = {'N-1': {datos: '', dwg: 's01', nombre: 'Nivel −1'}, N01: {datos: 'n01/', dwg: 'n01', nombre: 'Nivel 1'}, N02: {datos: 'n02/', dwg: 'n02', nombre: 'Nivel 2'}, N03: {datos: 'n03/', dwg: 'n03', nombre: 'Nivel 3'}, N04: {datos: 'n04/', dwg: 'n04', nombre: 'Nivel 4'}, N07: {datos: 'n07/', dwg: 'n07', nombre: 'Nivel 7'}, N08: {datos: 'n08/', dwg: 'n08', nombre: 'Nivel 8'}};
 export const vacio = nivel => ({format: FORMATO, nivel, unidad: '1 unidad del plano = 1,7639 cm', recintos: []});
 
 const r2 = v => Math.round(v * 100) / 100;

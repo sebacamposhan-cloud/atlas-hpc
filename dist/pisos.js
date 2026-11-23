@@ -23,7 +23,9 @@
     {id: 'N01', nombre: 'Nivel 1', corto: '1', datos: 'n01/', especialidades: false, cielos: true, cielosUnificado: {mapa: 'n01/cie-map.mjs', lamina: 'CIE-A-501'}, planos: {comp: 'n01/comp-map.mjs', retornos: 'n01/retornos.json'}},
     {id: 'N02', nombre: 'Nivel 2', corto: '2', datos: 'n02/', especialidades: false, cielos: true, puertas: true, cielosUnificado: {mapa: 'n02/cie-map.mjs', lamina: 'CIE-A-501'}, planos: {comp: 'n02/comp-map.mjs', retornos: 'n02/retornos.json'}},
     {id: 'N03', nombre: 'Nivel 3', corto: '3', datos: 'n03/', especialidades: false, cielos: true, cielosUnificado: {mapa: 'n03/cie-map.mjs', lamina: 'CIE-A-502'}, planos: {comp: 'n03/comp-map.mjs', retornos: 'n03/retornos.json'}},
-    {id: 'N04', nombre: 'Nivel 4', corto: '4', datos: 'n04/', especialidades: false, cielos: true, cielosUnificado: {mapa: 'n04/cie-map.mjs', lamina: 'CIE-A-501'}, planos: {comp: 'n04/comp-map.mjs', retornos: 'n04/retornos.json'}}
+    {id: 'N04', nombre: 'Nivel 4', corto: '4', datos: 'n04/', especialidades: false, cielos: true, cielosUnificado: {mapa: 'n04/cie-map.mjs', lamina: 'CIE-A-501'}, planos: {comp: 'n04/comp-map.mjs', retornos: 'n04/retornos.json'}},
+    {id: 'N07', nombre: 'Nivel 7', corto: '7', datos: 'n07/', especialidades: false},
+    {id: 'N08', nombre: 'Nivel 8', corto: '8', datos: 'n08/', especialidades: false}
   ];
   var pedido = new URLSearchParams(location.search).get('nivel');
   var actual = PISOS.find(function (piso) { return piso.id === pedido; }) || PISOS[0];
@@ -31,9 +33,9 @@
   var raiz = document.currentScript.src.replace(/pisos\.js(?:[?#].*)?$/, '');
   window.ATLAS_PISOS = PISOS;
   window.ATLAS_RAIZ = raiz;
-  window.ATLAS_TARJETAS = ['N-1','N01','N02','N03','N04'].map(function(id,index){
+  window.ATLAS_TARJETAS = ['N-1','N01','N02','N03','N04','N07','N08'].map(function(id,index){
     var piso=PISOS.find(function(p){return p.id===id;});
-    return {id:id,numero:['−1','1','2','3','4'][index],piso:piso||null};
+    return {id:id,numero:['−1','1','2','3','4','7','8'][index],piso:piso||null};
   });
   window.ATLAS_PISO = actual;
 })();

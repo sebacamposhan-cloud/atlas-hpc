@@ -7,7 +7,7 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 
 const [entrada, salida] = process.argv.slice(2);
-const PISOS = ['N-1', 'N01', 'N02', 'N03', 'N04'];
+const PISOS = ['N-1', 'N01', 'N02', 'N03', 'N04', 'N07', 'N08'];
 // Tamaños en píxeles sobremuestreados (la imagen final queda a la mitad).
 const PLACA = {ancho: 840, alto: 1080, margen: 26, radio: 38}, GIRO = -48 * Math.PI / 180, APLASTE = .56;
 const LOSA = 36, MURO = 40, GRUESO_MURO = 2.1, GRUESO_BORDE = 8, CIERRE = 3;

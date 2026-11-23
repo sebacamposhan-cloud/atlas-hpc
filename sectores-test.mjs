@@ -23,6 +23,15 @@ assert.equal(sectorObra([5, -5000], alReves), '3');
 assert.equal(cortesSectores(null), null);
 assert.equal(cortesSectores({ejes: ejes.ejes.filter(e => e.id !== 'AD')}), null);
 assert.equal(sectorObra([1, 1], null), '');
+// Regla propia de un piso (ejes.json «sectores»): las torres N07 y N08 se cortan por alas en los ejes AG y AK.
+const torre = {...ejes, ejes: [...ejes.ejes, eje('AG', 3000), eje('AK', 5000)], sectores: {sector1: 'AG', sector3: 'AK', fuente: 'prueba'}};
+const cortesTorre = cortesSectores(torre);
+assert.deepEqual([sectorObra([1, 2999], cortesTorre), sectorObra([1, 3000], cortesTorre), sectorObra([1, 4999], cortesTorre), sectorObra([1, 5000], cortesTorre)], ['1', '2', '2', '3']);
+assert.deepEqual(cortesTorre.regla, {sector1: 'AG', sector3: 'AK', fuente: 'prueba'});
+assert.ok(svgSectores({origen: [0, 0], ancho: 6000, alto: 8000, limites: [100, 200, 5800, 7700], ejes: torre}).includes('entre los ejes AG y AK'));
+// Una regla propia con ejes que no existen o al revés no se aplica: queda la regla general.
+assert.equal(cortesSectores({...torre, sectores: {sector1: 'AK', sector3: 'AG'}}).regla, null);
+assert.equal(cortesSectores({...ejes, sectores: {sector1: 'ZZ', sector3: 'AK'}}).regla, null);
 assert.equal(nombreSector('2'), 'Sector 2');
 assert.equal(nombreSector(''), 'Sin sector');
 
@@ -35,10 +44,16 @@ function piso(carpeta) {
   return {runtime, grilla, rooms: asignarSectores(runtime.data.rooms, alPlano, grilla)};
 }
 const cuenta = (rooms, s) => rooms.filter(r => r.sector === s).length;
-for (const carpeta of ['', 'n01/', 'n02/', 'n03/']) {
+for (const carpeta of ['', 'n01/', 'n02/', 'n03/', 'n07/', 'n08/']) {
   const {rooms} = piso(carpeta);
   assert.ok(rooms.every(r => ['1', '2', '3'].includes(r.sector)), (carpeta || 's01') + ': solo tres sectores');
   for (const s of ['1', '2', '3']) assert.ok(cuenta(rooms, s) > 30, (carpeta || 's01') + ': sector ' + s);
+}
+// Torres N07 y N08: regla propia por alas (ejes AG y AK), con un tercio de los recintos en cada sector.
+for (const carpeta of ['n07/', 'n08/']) {
+  const {rooms, grilla} = piso(carpeta);
+  assert.deepEqual([grilla.sectores?.sector1, grilla.sectores?.sector3], ['AG', 'AK'], carpeta + ': regla propia');
+  for (const s of ['1', '2', '3']) assert.ok(cuenta(rooms, s) > 60, carpeta + ': sector ' + s + ' por ala');
 }
 // En el piso 2 la regla por ejes coincide recinto a recinto con las láminas: 501 y 505 son exactamente el sector 1.
 const n02 = piso('n02/').rooms, porLamina = r => /-a50[15]$/.test(r.document_id);
@@ -55,7 +70,7 @@ assert.ok(svg.includes('y="' + Math.round(linea1 * 10) / 10 + '"') && svg.includ
 assert.equal((svg.match(/<rect/g) || []).length, 3);
 assert.ok(svgSectores({origen: [10, 20], ancho: 50, alto: 60, limites: null, ejes}).includes('viewBox="10 20 50 60"'));
 // En todos los pisos: la app agrega la capa al cargar el piso, con el marco de su plano y sus ejes.
-for (const carpeta of ['', 'n01/', 'n02/', 'n03/']) {
+for (const carpeta of ['', 'n01/', 'n02/', 'n03/', 'n04/', 'n07/', 'n08/']) {
   const {runtime, grilla} = piso(carpeta), mapa = structuredClone(runtime.map);
   conCapaSectores(mapa, runtime.atlas.scope, grilla);
   const capas = mapa.overlays.filter(o => o.id === 'sectores');

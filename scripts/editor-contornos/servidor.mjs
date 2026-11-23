@@ -41,7 +41,7 @@ http.createServer(async (req, res) => {
     if (req.method !== 'GET') return enviar(res, 405, {errores: ['Método no permitido.']});
     if (url.pathname === '/') { res.writeHead(302, {Location: '/editor-contornos/editor.html'}); return res.end(); }
     if (url.pathname === '/editor-contornos/modo.json') return enviar(res, 200, {local: true});
-    const l = url.pathname.match(/^\/editor-contornos\/barreras\/(s01|n01|n02|n03|n04)\.json$/), local = l && lineas(l[1]);
+    const l = url.pathname.match(/^\/editor-contornos\/barreras\/(s01|n01|n02|n03|n04|n07|n08)\.json$/), local = l && lineas(l[1]);
     if (local) return enviar(res, 200, local);
     const archivo = path.resolve(dist, '.' + decodeURIComponent(url.pathname));
     if (!dentro(dist, archivo)) return enviar(res, 403, {errores: ['Ruta no permitida.']});

@@ -1,6 +1,6 @@
 # Plano por capas, rombos y contornos desde las láminas DWG
 
-Dibuja el plano de un nivel directamente desde sus láminas DWG de arquitectura 1:50, sin PDF. Se usa para los niveles 1, 2, 3 y 4, y para el −1 (`s01`), que se dibuja en el marco de su plano anterior: ver `scripts/s01-plano/LEEME.md`.
+Dibuja el plano de un nivel directamente desde sus láminas DWG de arquitectura 1:50, sin PDF. Se usa para los niveles 1 a 4, 7 y 8, y para el −1 (`s01`), que se dibuja en el marco de su plano anterior: ver `scripts/s01-plano/LEEME.md`.
 
 Fuentes, fuera del repo: carpetas «Planos N01» a «Planos N04» (N04: Rev01) con las láminas `HPC-ARQ-PLA-N0x-A-5xx`.
 
@@ -106,3 +106,22 @@ Cargado el 2026-11-15 desde las 8 láminas `HPC-ARQ-PLA-N04-A-501` a `A-508` (Re
 Además de `pisos.js`, el piso se agrega en `pma-model.mjs`, `progress-scope.mjs`, `protocol-scope.mjs`, `planilla-avance-model.mjs`,
 `levantamiento-model.mjs`, `levantamiento.mjs`, `editor-contornos/archivo.mjs`, `server/groq-server.mjs` y los scripts de
 mosaicos, ejes, líneas del editor, maqueta 3D (`dist/pisos3d/n04-*.png`), alcance de avance y manifiesto sin conexión.
+
+## Niveles 7 y 8 (N07, N08)
+
+Cargados el 2026-11-23 desde las 6 láminas `HPC-ARQ-PLA-N0x-A-501` a `A-506` (Rev01_V1) de cada piso, con los mismos pasos que el N04.
+Son pisos de torre: tres alas unidas por un núcleo.
+
+| Piso | Recintos (todos en el PMA) | Con contorno | Superficie auxiliar | Imágenes de rombo |
+|---|---|---|---|---|
+| N07 | 211 (`A-N07`) | 187 | 24 | 211 |
+| N08 | 212 (`A-N08`) | 186 | 26 | 212 |
+
+- **Fuente.** Las láminas sueltas de «Planos N07.zip» y «Planos N08.zip». Los DWG «N07 - Nivel 7» y «N08 - Nivel 8» de terreno
+  traen las mismas láminas unidas en un archivo (con los rombos explotados y capas de avance de sobrelosa), con los mismos códigos de recinto.
+- **Sectores.** Se cortan por alas, según la sectorización de terreno del N08 (`HPC-ARQ-PLA-N08_Subdivision.dwg`, capa «SubDivision ARQ»
+  sobre la planta A-201 de los niveles 7 y 8): el sector 2 parte en el eje AG y el 3 en el eje AK. La regla va en `data/n0x/sectores.json`;
+  `scripts/ejes/generar.mjs` la copia a `dist/n0x/ejes.json` y `dist/sectores-model.mjs` la usa en vez de la regla general del piso 2.
+  El N07 usa la del N08 porque tiene la misma planta.
+- **Sin fuente todavía:** Cielos (láminas CIE), Compartimentación y Pavimentos con retornos. En el piso aparecen desactivados.
+- La maqueta 3D (`dist/pisos3d/n07-*.png`, `n08-*.png`) se armó con los contornos de `dist/n0x/geometry/` (mismo resultado que el N04 desde el plano).
