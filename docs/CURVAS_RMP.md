@@ -6,7 +6,7 @@ Decidido el 20 y el 22 de noviembre de 2026. Todo funciona en los pisos cargados
 
 Son los mismos gráficos del Reporte Mensual de Progreso, calculados con los pesos de Planificación. Así, si el RMP dice 68 %, ATLAS dice 68 %.
 
-- **Curva S:** plan, real y proyección. La proyección sigue el ritmo real de los últimos 3 meses, hasta 100 % o un máximo de 36 meses.
+- **Curva S:** plan, real y proyección. Si la planilla trae la hoja «Reprogramación», la proyección parte del último real y recorre lo que le falta a la reprogramación en la misma proporción, de modo que llega a 100 % cuando la reprogramación termina. Sin esa hoja, sigue el ritmo real de los últimos 3 meses, hasta 100 % o un máximo de 36 meses.
 - **Eficiencia:** real ÷ plan de cada mes. El valor 1,00 significa que la obra va al día.
 - **Plan vs real de los últimos 4 meses:** el avance de cada mes, no el acumulado.
 - **Cumplimiento de programación:** real acumulado ÷ plan acumulado, con su desviación.
@@ -15,6 +15,22 @@ Son los mismos gráficos del Reporte Mensual de Progreso, calculados con los pes
 
 - **Pesos:** partida EETT, nombre, peso % y si ATLAS la mide (Sí/No). Si los pesos no suman 100 %, ATLAS los lleva a 100 % en la misma proporción y lo avisa.
 - **Avance mensual:** mes (aaaa-mm), partida EETT, plan acumulado % y real acumulado %.
+- **Reprogramación** (opcional): mes (aaaa-mm) y acumulado % de toda la obra según la reprogramación vigente.
+
+### Planilla armada desde el programa costeado (23-11-2026)
+
+Mientras Planificación no entregue la planilla, se arma con `scripts/rmp/planilla-rmp.py`:
+
+```
+python -P scripts/rmp/planilla-rmp.py "Programa obra.xml" privado/pesos-RMP-desde-programa.xlsx RMP-jul.pdf RMP-sep.pdf …
+```
+
+- **Pesos y plan:** el programa de obra trae el costo de cada tarea (cantidad real × P.U. del itemizado HPC-5-GEN-GEN-PRE-01-RevE; Texto1 es el ítem del formulario N°11). La línea base 1 es la original (fin 23-11-26) y es el plan del RMP: ponderada por costo, lineal entre inicio y fin, con corte a fin de mes, queda a menos de 0,45 puntos del RMP entre abril y septiembre de 2026 (sep-26: 99,26 % contra 99,31 %). El APU no hace falta: su P.U. ya es el del itemizado.
+- **Capítulos:** los de la tabla «% avances reales» del RMP, con Terminaciones abierta en 6.1–6.10. ATLAS mide 6.1 a 6.4 (pavimentos, revestimientos de muros, cielos y pinturas). Los preliminares de los Anexos 1 y 2 terminaron en 2023 y van al 100 %.
+- **Real:** la tabla por capítulo de cada RMP (sus cuatro columnas son el mes del informe y los tres anteriores). Artefactos (7) y Obras complementarias (8) no vienen en esa tabla: llevan el % que cuadra el total con la portada del RMP, y la hoja «Notas» lo dice. Así el real es el mismo del RMP (sep-26: 68,78 %).
+- **Reprogramación:** la línea base 0 del mismo programa (fin 30-07-27).
+- **Solo porcentajes:** la planilla no lleva montos. Va en `privado/` y se carga en la Nube; no se sube al repositorio.
+- **Cada mes:** con el RMP nuevo se vuelve a correr el script con todos los PDF y se carga la planilla otra vez. Los meses sin RMP repiten el último real informado; en el mes actual, las partidas 6.1–6.4 toman el avance de ATLAS si es mayor.
 
 **Real.** En el mes actual, las partidas que ATLAS mide toman el avance de terreno de los pisos cargados: m² ejecutados sobre m² totales del PMA, con los mismos registros del rombo. Si ese avance es menor que lo último que informó Planificación, queda lo informado, porque un acumulado no retrocede. Los meses cerrados y las partidas que ATLAS no mide usan el % de Planificación.
 

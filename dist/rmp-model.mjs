@@ -4,14 +4,18 @@
 // - Lo que ATLAS mide en terreno (terminaciones) entra con el avance de ATLAS en el mes actual; lo que no mide
 //   (estructura, instalaciones…) y los meses cerrados, con el % de Planificación (hoja «Avance mensual»).
 // - Sin planilla cargada, los gráficos aparecen desactivados con el motivo.
+// - Proyección (decidido 2026-11-23): si la planilla trae la hoja «Reprogramación» (curva acumulada de la obra según la
+//   reprogramación vigente), la proyección parte del último real y sigue la forma de esa curva hasta su término; si no,
+//   el ritmo real de los últimos 3 meses.
 // Cuatro gráficos: curva S plan/real con proyección, eficiencia (real/plan), plan vs real de los últimos 4 meses y
 // cumplimiento de la programación. Todo acumulado en % de la obra.
 import {avanceTarea} from './programa-obra-model.mjs';
 
 export const SCHEMA = 1, ID = 'rmp-pesos';
-export const HOJA_PESOS = 'Pesos', HOJA_MESES = 'Avance mensual';
+export const HOJA_PESOS = 'Pesos', HOJA_MESES = 'Avance mensual', HOJA_REPROG = 'Reprogramación';
 export const COLUMNAS_PESOS = ['Partida EETT', 'Nombre', 'Peso %', 'Mide ATLAS (Sí/No)'];
 export const COLUMNAS_MESES = ['Mes (aaaa-mm)', 'Partida EETT', 'Plan acumulado %', 'Real acumulado %'];
+export const COLUMNAS_REPROG = ['Mes (aaaa-mm)', 'Acumulado %'];
 const MES = /^\d{4}-(0[1-9]|1[0-2])$/, CODIGO = /^\d+(\.\d+)*$/;
 const falla = m => { throw Error(m); };
 const limpio = v => String(v ?? '').trim();
@@ -29,18 +33,20 @@ export function mesDe(v) {
 export const mesSiguiente = mes => { const [a, m] = mes.split('-').map(Number); return m === 12 ? `${a + 1}-01` : `${a}-${String(m + 1).padStart(2, '0')}`; };
 export const mesDeFecha = iso => String(iso).slice(0, 7);
 
-// Plantilla para Planificación: dos hojas con un ejemplo que se borra.
+// Plantilla para Planificación: tres hojas con un ejemplo que se borra («Reprogramación» es opcional).
 export function plantillaRMP() {
   return {
     [HOJA_PESOS]: [COLUMNAS_PESOS, ['5.1', 'Tabiquería (ejemplo, borrar)', 4.5, 'Sí'], ['2.1', 'Hormigón armado (ejemplo, borrar)', 18, 'No']],
     [HOJA_MESES]: [COLUMNAS_MESES, ['2026-10', '2.1', 98, 97], ['2026-10', '5.1', 60, 41]],
+    [HOJA_REPROG]: [COLUMNAS_REPROG, ['2026-10', 68.5], ['2026-11', 71]],
   };
 }
 
 // hojas: {nombre: filas (arreglo de arreglos)}. Devuelve el registro para la Nube (sin cargada/por) y los avisos.
 export function leerPesosRMP(hojas) {
-  const buscar = nombre => Object.entries(hojas || {}).find(([k]) => limpio(k).toLowerCase() === nombre.toLowerCase())?.[1];
-  const pesos = buscar(HOJA_PESOS), meses = buscar(HOJA_MESES), avisos = [];
+  const sinTilde = t => limpio(t).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const buscar = nombre => Object.entries(hojas || {}).find(([k]) => sinTilde(k) === sinTilde(nombre))?.[1];
+  const pesos = buscar(HOJA_PESOS), meses = buscar(HOJA_MESES), reprog = buscar(HOJA_REPROG), avisos = [];
   if (!pesos) falla(`Falta la hoja «${HOJA_PESOS}». Descarga la plantilla de ATLAS y completa sus dos hojas.`);
   const partidas = [], vistos = new Set();
   pesos.slice(1).forEach((f, i) => {
@@ -65,12 +71,26 @@ export function leerPesosRMP(hojas) {
     (porMes[mes] ||= {})[codigo] = {plan, real};
   });
   if (!meses) avisos.push(`No viene la hoja «${HOJA_MESES}»: sin el plan mensual de Planificación no hay curva programada.`);
-  return {registro: validarRMP({schema: SCHEMA, partidas, meses: porMes}), avisos};
+  const registro = {schema: SCHEMA, partidas, meses: porMes};
+  if (reprog) {
+    const r = {};
+    reprog.slice(1).forEach((f, i) => {
+      const mes = mesDe(f[0]), v = numero(f[1]); if (!mes && v === null) return;
+      const fila = i + 2;
+      if (!mes || !MES.test(mes)) falla(`Hoja «${HOJA_REPROG}», fila ${fila}: el mes va como aaaa-mm (por ejemplo 2026-10).`);
+      if (!(v >= 0 && v <= 100)) falla(`Hoja «${HOJA_REPROG}», fila ${fila}: el acumulado va de 0 a 100 %.`);
+      r[mes] = v;
+    });
+    if (Object.keys(r).length) registro.reprogramacion = r;
+  }
+  return {registro: validarRMP(registro), avisos};
 }
 export function validarRMP(d) {
   if (!d || d.schema !== SCHEMA || !Array.isArray(d.partidas) || !d.partidas.length || typeof d.meses !== 'object' || Array.isArray(d.meses)) falla('Pesos del RMP inválidos.');
   for (const p of d.partidas) if (!CODIGO.test(p.codigo) || !(p.peso >= 0 && p.peso <= 100) || typeof p.mideAtlas !== 'boolean') falla('Partida del RMP inválida.');
   for (const [mes, fila] of Object.entries(d.meses)) if (!MES.test(mes) || typeof fila !== 'object') falla('Mes del RMP inválido.');
+  if (d.reprogramacion != null && (typeof d.reprogramacion !== 'object' || Array.isArray(d.reprogramacion)
+    || Object.entries(d.reprogramacion).some(([mes, v]) => !MES.test(mes) || !(v >= 0 && v <= 100)))) falla('Reprogramación del RMP inválida.');
   return d;
 }
 
@@ -111,17 +131,33 @@ export function curvasRMP(rmp, {hoy, atlas = new Map()} = {}) {
     return {mes, plan: conPlan ? redondo(plan) : null, real: mes <= mesHoy && conReal ? redondo(real) : null};
   });
   const conReal = puntos.filter(p => p.real != null), actual = conReal.at(-1) || null;
-  // Proyección: el ritmo real de los últimos 3 meses, desde el último real hasta 100 %.
-  const proyeccion = [];
-  if (conReal.length >= 2) {
+  // Proyección: con la reprogramación, si viene; si no, el ritmo real de los últimos 3 meses, desde el último real hasta 100 %.
+  const proyeccion = proyeccionReprogramada(rmp.reprogramacion, actual);
+  let fuenteProyeccion = proyeccion.length ? 'reprogramacion' : null;
+  if (!proyeccion.length && conReal.length >= 2) {
     const tramo = conReal.slice(-4), ritmo = (tramo.at(-1).real - tramo[0].real) / (tramo.length - 1);
-    if (ritmo > .05) { let v = actual.real, m = actual.mes; proyeccion.push({mes: m, valor: v}); for (let i = 0; i < MESES_PROYECCION && v < 100; i++) { m = mesSiguiente(m); v = Math.min(100, v + ritmo); proyeccion.push({mes: m, valor: redondo(v)}); } }
+    if (ritmo > .05) { fuenteProyeccion = 'ritmo'; let v = actual.real, m = actual.mes; proyeccion.push({mes: m, valor: v}); for (let i = 0; i < MESES_PROYECCION && v < 100; i++) { m = mesSiguiente(m); v = Math.min(100, v + ritmo); proyeccion.push({mes: m, valor: redondo(v)}); } }
   }
   const eficiencia = puntos.filter(p => p.real != null && p.plan > 0).map(p => ({mes: p.mes, valor: Math.round(100 * p.real / p.plan) / 100}));
   // Plan vs real de cada mes (avance del mes, no acumulado) en los últimos 4 meses con real.
   const ultimos = conReal.slice(-4).map(p => { const i = puntos.indexOf(p), previo = puntos[i - 1]; return {mes: p.mes, plan: redondo((p.plan ?? 0) - (previo?.plan ?? 0)), real: redondo(p.real - (previo?.real ?? 0))}; });
   const cumplimiento = actual && actual.plan > 0 ? Math.min(1, actual.real / actual.plan) : null;
-  return {puntos, proyeccion, eficiencia, ultimos, cumplimiento, desviacion: cumplimiento == null ? null : 1 - cumplimiento, mesHoy, actual, conAtlas};
+  return {puntos, proyeccion, fuenteProyeccion, eficiencia, ultimos, cumplimiento, desviacion: cumplimiento == null ? null : 1 - cumplimiento, mesHoy, actual, conAtlas};
+}
+// Proyección con la reprogramación R (mes → acumulado %): parte del último real r del mes a y recorre lo que le falta a la
+// reprogramación en la misma proporción, así llega a 100 % cuando la reprogramación termina:
+// p(m) = r + (R(m) − R(a)) · (100 − r) / (100 − R(a)). Vacía si no hay reprogramación o ya terminó a ese mes.
+export function proyeccionReprogramada(R, actual) {
+  if (!R || !actual || actual.real == null || actual.real >= 100) return [];
+  const meses = Object.keys(R).sort(), previos = meses.filter(m => m <= actual.mes), futuros = meses.filter(m => m > actual.mes);
+  const Ra = previos.length ? R[previos.at(-1)] : 0, r = actual.real;
+  if (!(Ra < 100) || !futuros.length) return [];
+  const salida = [{mes: actual.mes, valor: r}];
+  for (const m of futuros) {
+    const v = Math.min(100, r + (Math.max(R[m], Ra) - Ra) * (100 - r) / (100 - Ra));
+    salida.push({mes: m, valor: redondo(v)}); if (v >= 100) break;
+  }
+  return salida;
 }
 export const MESES_PROYECCION = 36; // la proyección se dibuja hasta 3 años después del último real (o hasta 100 %)
 const redondo = v => Math.round(v * 100) / 100;

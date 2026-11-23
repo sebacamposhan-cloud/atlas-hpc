@@ -43,6 +43,19 @@ assert.deepEqual(c.eficiencia.map(e => e.valor), [.94, .91, .86, .92]); pruebas+
 assert.deepEqual(c.ultimos.map(u => [u.mes, u.plan, u.real]), [['2026-08', 54, 51], ['2026-09', 13, 9.8], ['2026-10', 14, 9.2], ['2026-11', 8, 12]]); pruebas++;
 // Proyección desde el último real hasta 100 %, con el ritmo de los últimos meses.
 assert.equal(c.proyeccion[0].mes, '2026-11'); assert.equal(c.proyeccion.at(-1).valor, 100); assert.ok(c.proyeccion.length > 2); pruebas++;
+assert.equal(c.fuenteProyeccion, 'ritmo'); pruebas++;
+// Hoja «Reprogramación» (opcional, con o sin tilde): la proyección parte del real de noviembre (82) y recorre lo que le
+// falta a la reprogramación (80 en nov) en la misma proporción: dic 90 → 82 + 10·18/20 = 91; ene 100 → 100, y termina.
+const conReprog = R.leerPesosRMP({...hojas, Reprogramacion: [R.COLUMNAS_REPROG, ['2026-10', 70], ['2026-11', 80], ['2026-12', 90], ['2027-01', 100], ['2027-02', 100]]}).registro;
+assert.deepEqual(conReprog.reprogramacion, {'2026-10': 70, '2026-11': 80, '2026-12': 90, '2027-01': 100, '2027-02': 100}); pruebas++;
+const cr = R.curvasRMP(conReprog, {hoy: '2026-11-22', atlas: new Map([['5.1', 70], ['6.2', 40]])});
+assert.equal(cr.fuenteProyeccion, 'reprogramacion');
+assert.deepEqual(cr.proyeccion, [{mes: '2026-11', valor: 82}, {mes: '2026-12', valor: 91}, {mes: '2027-01', valor: 100}]); pruebas++;
+assert.deepEqual(cr.puntos, c.puntos, 'la reprogramación no cambia plan ni real'); pruebas++;
+// Reprogramación ya terminada al mes del último real: vuelve al ritmo.
+assert.equal(R.proyeccionReprogramada({'2026-10': 100, '2026-12': 100}, {mes: '2026-11', real: 82}).length, 0); pruebas++;
+assert.throws(() => R.leerPesosRMP({...hojas, 'Reprogramación': [R.COLUMNAS_REPROG, ['2026-10', 140]]}), /Reprogramación», fila 2: el acumulado va de 0 a 100/); pruebas++;
+assert.deepEqual(R.plantillaRMP()[R.HOJA_REPROG][0], R.COLUMNAS_REPROG); pruebas++;
 // ATLAS por debajo de lo ya informado (aún no se marca todo en terreno): el acumulado no retrocede.
 const bajo = R.curvasRMP(registro, {hoy: '2026-11-22', atlas: new Map([['5.1', 0], ['6.2', 40]])});
 assert.equal(bajo.puntos[3].real, 0.6 * 95 + 0.3 * 40 + 0.1 * 40); assert.equal(bajo.conAtlas, 1); pruebas++;
@@ -56,4 +69,4 @@ const piso = (codigo, cantidad, pct) => ({tipo: 'partida', id: codigo + '.1', ca
 const a = R.avanceAtlas(['5.1', '7.1'], [[piso('5.1', 100, 50)], [piso('5.1', 300, 100)], []]);
 assert.equal(a.get('5.1'), 87.5); assert.equal(a.has('7.1'), false); pruebas++;
 
-console.log(`Curvas RMP: ${pruebas} comprobaciones aprobadas (planilla, errores, curva S, ATLAS en el mes actual, eficiencia, 4 meses, cumplimiento, proyección).`);
+console.log(`Curvas RMP: ${pruebas} comprobaciones aprobadas (planilla, errores, curva S, ATLAS en el mes actual, eficiencia, 4 meses, cumplimiento, proyección con ritmo y con reprogramación).`);
