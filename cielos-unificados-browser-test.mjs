@@ -151,7 +151,7 @@ try {
     const selector = page.locator('#terrenoPlano');
     const sheet = page.getByRole('dialog', {name:'Cambiar plano'});
     await selector.click();
-    // N02: Pavimentos (retornos vinílicos) y Compartimentación son planos unificados del piso.
+    // N02: Pavimentos (terminaciones sobre Arquitectura, con sus retornos) y Compartimentación (plano unificado).
     assert.equal(await sheet.getByRole('button', {name:'Pavimentos'}).count(), 1);
     assert.equal(await sheet.getByRole('button', {name:'Compartimentación'}).count(), 1);
     await sheet.getByRole('button', {name:'Muros'}).click();

@@ -83,6 +83,11 @@ assert.deepEqual(P.restaurarPuerta(pintado, protego.id, antiguo.filas[protego.id
 assert.deepEqual(P.restaurarPuerta(pintado, protego.id, null).filas, {});
 const panel = fs.readFileSync('dist/puertas.mjs', 'utf8');
 assert.ok(panel.includes('data-puertas-pincel') && panel.includes('data-puertas-deshacer') && panel.includes('data-puertas-listo') && panel.includes('if (pincel) pintarPuerta(cerca.p)'));
+// Rework 2026-11-23: solo «marcar en terreno» (sin «Solo consulta»), barra corta con pincel y buscador, ficha al tocar,
+// estados y contratistas en «Simbología», el proyecto se crea al marcar la primera puerta y el Excel sale de Proyectos.
+assert.ok(!panel.includes('Solo consulta') && !panel.includes('data-puertas-consulta') && !panel.includes('Marcar en terreno</button>'));
+assert.ok(panel.includes('puertasBarra') && panel.includes('data-puertas-buscar') && panel.includes('async function asegurarProyecto()') && panel.includes('simbologia: alternarSimbologia'));
+assert.ok(fs.readFileSync('dist/marking.mjs', 'utf8').includes('data-excel-puertas') && panel.includes("addEventListener('atlas-puertas-excel'"));
 assert.throws(() => P.marcarPuerta(doc, teisa, 'instalada', {autor: ''}), /Inicia sesión/);
 assert.throws(() => validateMarking({...doc, filas: {x: {estado: 'sin_registro', at: doc.createdAt, autor: 'a'}}}), /no se puede marcar/);
 assert.throws(() => validateMarking({...doc, fuente: {archivo: 'x', sha256: 'no'}}), /Fuente/);

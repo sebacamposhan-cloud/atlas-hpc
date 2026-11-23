@@ -1,18 +1,30 @@
 /* Plano de puertas (puertas.mjs): panel a la derecha en escritorio y hoja abajo en el celular. Blanco, texto negro,
    marino de estructura; los colores de estado son los del plano de avance (verde instalada, rojo no instalada,
    magenta pletinas). */
-#puertasPanel { position: absolute; top: 0; right: 0; bottom: 0; width: 380px; z-index: 13; display: flex; flex-direction: column; overflow: hidden; background: #fff; border-left: 2px solid var(--g-marca, #1b2a56); color: #000; font-size: 14px; }
+/* Rework 2026-11-23: sin columna a la derecha. Una barra corta flotando abajo, sobre el plano (pincel y buscador); la
+   ficha de la puerta tocada aparece encima de la barra. La simbología (estados y contratistas) es una caja aparte. */
+#puertasPanel { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); width: min(560px, calc(100% - 24px)); max-height: calc(100% - 96px); z-index: 13; display: flex; flex-direction: column; overflow: hidden; background: #fff; border: 2px solid var(--g-marca, #1b2a56); color: #000; font-size: 14px; }
 #puertasPanel[hidden] { display: none; }
-body.puertasOpen #viewport { right: 380px; }
-body.puertasOpen .toolbar { right: 392px; }
 .puertasOpen .right, .puertasOpen .left, .puertasOpen #activeLegend, .puertasOpen #fichaBarra { display: none !important; }
-body.escritorio:not(.floorHome) #puertasPanel { width: var(--detail); }
-body.escritorio.puertasOpen:not(.floorHome) #viewport { right: var(--detail) !important; }
-body.escritorio.puertasOpen:not(.floorHome) .toolbar { right: calc(var(--detail) + 12px) !important; }
+body.puertasOpen #viewport { right: 0; }
+.puertasBarra { display: grid; gap: 6px; padding: 8px 10px; }
+.puertaFichaScroll { flex: 1 1 auto; min-height: 0; max-height: 55vh; overflow-y: auto; padding: 0 12px; border-bottom: 2px solid var(--g-marca, #1b2a56); }
+.puertasBuscarFila { display: flex; align-items: center; gap: 8px; }
+.puertasBuscarFila .puertasBuscar { flex: 1; margin: 0; }
+.puertasCuenta { flex: none; font-size: 13px; font-weight: 700; color: #262626; }
+.puertasBarra .puertasLista { max-height: 34dvh; overflow-y: auto; border-top: 1px solid #d9d9d9; }
+.puertaCerrarFicha { margin-left: auto; min-width: 40px; min-height: 40px; border: 0; background: #fff; color: #000; font-size: 22px; }
+#puertasSimbologia { position: absolute; top: 80px; left: 10px; z-index: 14; width: 300px; max-width: calc(100% - 20px); max-height: calc(100% - 200px); overflow-y: auto; padding: 8px 12px; background: #fff; border: 2px solid var(--g-marca, #1b2a56); color: #000; font-size: 14px; }
+#puertasSimbologia[hidden] { display: none; }
+.puertasSimbCabeza { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.puertasSimbCabeza button { min-width: 40px; min-height: 40px; border: 0; background: #fff; font-size: 22px; }
 @media (max-width: 700px), (pointer: coarse) and (max-width: 1023px) {
-  #puertasPanel { top: auto; left: 0; width: auto; height: min(58dvh, 520px); border-left: 0; border-top: 3px solid var(--g-marca, #1b2a56); }
-  body.puertasOpen #viewport { right: 0; bottom: min(58dvh, 520px); }
-  body.puertasOpen .toolbar { right: 10px; }
+  #puertasPanel { left: 6px; right: 6px; bottom: 6px; width: auto; transform: none; max-height: calc(100% - 80px); }
+  .puertaFichaScroll { max-height: 40dvh; }
+  .puertaFicha { margin: 6px 0; padding: 8px 10px; }
+  .puertaTitulo b { font-size: 19px; }
+  .puertaPincel span { display: none; }
+  #puertasSimbologia { left: 6px; right: 6px; width: auto; max-height: 50dvh; }
 }
 .puertasCabeza { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 14px 6px; border-bottom: 2px solid var(--g-marca, #1b2a56); }
 .puertasCabeza h2 { margin: 0; font-size: 18px; }

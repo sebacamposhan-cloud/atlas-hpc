@@ -13,7 +13,7 @@ export function createDisciplines(ctx){const main=document.querySelector('main')
  const bar=document.createElement('div');bar.className='disciplineBar';bar.innerHTML='<label for="discipline">Especialidad</label><select id="discipline"><option value="architecture">Arquitectura</option>'+(nivel.especialidades?'<option value="floors">Pavimentos</option><option value="ceilings">Cielos</option>':'')+(nivel.imp?'<option value="waterproofing">Impermeabilización</option>':'')+'</select><span id="disciplineStatus"></span>';bar.querySelector('#disciplineStatus').textContent=ctx.level||nivel.nombre;const typeNav=document.createElement('nav');typeNav.className='planTypes';typeNav.setAttribute('aria-label','Tipo de plano');
  // Tipos de plano según los datos del piso (pisos.js): Cielos y Pavimentos con sus láminas, Puertas con su plano o el
  // catálogo piloto, Impermeabilización con su lámina IMP. Un piso sin esos datos no muestra botones desactivados.
- // Planos unificados por piso (pisos.js, «planos»): Pavimentos con los retornos vinílicos y Compartimentación (fuego).
+ // Planos por piso (pisos.js, «planos»): Compartimentación (fuego) unificada y, en Pavimentos, los recintos con retorno.
  typeNav.innerHTML=[['architecture','Arquitectura'],...(nivel.especialidades?[['ceilings','Cielos'],['floors','Pavimentos']]:[...(nivel.cielos||nivel.cielosUnificado?[['ceilings','Cielos']]:[]),...(nivel.planos?.retornos?[['floors','Pavimentos']]:[])]),...(nivel.planos?.comp?[['fire','Compartimentación']]:[]),['walls','Muros'],...(nivel.puertas||nivel.puertasPiloto?[['doors','Puertas']]:[]),...(nivel.imp?[['waterproofing','Impermeabilización']]:[])].map(([key,label])=>`<button type="button" data-plan-type="${key}" aria-pressed="${key==='architecture'}">${label}</button>`).join('');
  bar.dataset.sinFlujo='';typeNav.dataset.sinFlujo='';bar.prepend(typeNav);bar.querySelector('label').hidden=true;bar.querySelector('#discipline').hidden=true;bar.querySelector('#discipline').setAttribute('aria-hidden','true');
  const markPlan=type=>typeNav.querySelectorAll('button').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.planType===type)));
@@ -22,22 +22,24 @@ export function createDisciplines(ctx){const main=document.querySelector('main')
   if(!canLeave())return ctx.toast('Guarda o descarta los cambios antes de cambiar de plano.');
   const next=button.dataset.planType;
   if(next==='doors'&&!nivel.puertasPiloto){ctx.abrirPuertas?.();return;}
-  // Compartimentación y, en pisos sin láminas de Pavimentos, los retornos vinílicos: un plano unificado sobre Arquitectura.
-  if(next==='fire'||(next==='floors'&&!nivel.especialidades)){
+  // Compartimentación: un plano unificado sobre Arquitectura.
+  if(next==='fire'){
    const request=modeRequest+1;await switchMode('architecture');if(request!==modeRequest)return;
    ctx.showLayer?.(null);ctx.setUnifiedPlan?.(next);markPlan(next);
-   bar.querySelector('#disciplineStatus').textContent=(next==='fire'?'Compartimentación':'Pavimentos · retornos vinílicos')+' · plano unificado';
+   bar.querySelector('#disciplineStatus').textContent='Compartimentación · plano unificado';
    return;
   }
   // En pisos superiores Cielos es una capa de consulta sobre Arquitectura.
   // Con plano unificado de Cielos (pisos.js, «cielosUnificado») Cielos abre ese plano; si no, en pisos superiores es una capa.
-  const layer=next==='walls'?'walls':next==='ceilings'&&!nivel.especialidades&&!nivel.cielosUnificado?'cielosLamina':null;
+  // Pavimentos en pisos sin láminas propias: todos los recintos pintados por pavimento sobre Arquitectura; los retornos
+  // se encienden con su casilla en la simbología.
+  const layer=next==='walls'?'walls':next==='floors'&&!nivel.especialidades?'PAV':next==='ceilings'&&!nivel.especialidades&&!nivel.cielosUnificado?'cielosLamina':null;
   const request=modeRequest+1;
   await switchMode(layer?'architecture':next);
   if(request!==modeRequest)return;
   if(layer||next==='architecture')ctx.showLayer?.(layer);
   if(layer)bar.querySelector('#disciplineStatus').textContent=next==='walls'
-   ? 'Muros · terminaciones sobre Arquitectura' : 'Cielos · lámina CIE sobre Arquitectura';
+   ? 'Muros · terminaciones sobre Arquitectura' : next==='floors' ? 'Pavimentos · terminaciones sobre Arquitectura' : 'Cielos · lámina CIE sobre Arquitectura';
   markPlan(next);
  });
  main.prepend(bar);const panel=document.createElement('section');panel.id='disciplinePanel';panel.hidden=true;panel.addEventListener('input',markDirty);panel.addEventListener('change',markDirty);main.append(panel);const $=id=>panel.querySelector('#'+id),name=()=>mode==='waterproofing'?'Impermeabilización':mode==='ceilings'?'Cielos':'Pavimentos',docs=()=>bundle.documents.filter(d=>d.specialty===mode),observations=()=>mode==='waterproofing'?(imp?.catalog.rooms||[]):bundle.observations.filter(r=>r.specialty===mode),dims=()=>mode==='ceilings'?['structure','closure','finish','mep','inspection']:['floor','inspection'];

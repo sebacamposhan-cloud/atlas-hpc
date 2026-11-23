@@ -132,7 +132,10 @@ export function createNavegacion(ctx) {
   const indiceDe = id => Math.max(0, pista.tarjetas.findIndex(t => t.dataset.tarjeta === id));
   function abrirRueda() {
     if (ctx.ocupado?.()) return;
-    cerrarHoja(); ui.show('map'); document.body.classList.add('hideRight'); document.body.classList.remove('fichaMinima');
+    cerrarHoja(); ui.show('map');
+    // Terreno: Plano no tiene rueda (sus accesos están en «Más»); volver lleva al plano y nada más.
+    if (document.body.classList.contains('terreno') && !ctx.escritorio() && !portada()) { cerrarRueda(); return; }
+    document.body.classList.add('hideRight'); document.body.classList.remove('fichaMinima');
     rueda.hidden = false; document.body.classList.add('ruedaAbierta'); document.body.classList.toggle('ruedaPortada', portada()); $('bottomObra').setAttribute('aria-expanded', 'true');
     pista.acomodar(indiceDe(actual));
     pista.tarjetas[indiceDe(actual)]?.focus({preventScroll: true});
