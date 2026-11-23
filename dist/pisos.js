@@ -9,16 +9,19 @@
      recinto como capas sobre Arquitectura y en el rombo.
    - puertas: tiene el plano de puertas por recinto (<datos>puertas.json, puertas.mjs).
    - puertasPiloto: tiene el catálogo piloto de puertas como tipo de plano (doors/catalog.json; hoy el −1).
+   - pav: código del PDF original de Pavimentos (source/pav-<pav>.pdf) para la simbología. Sin él, la simbología lo avisa.
+   - cielosUnificado: Cielos como un solo plano con teselas (scripts/cielos/generar-mapa-s01.py el −1; generar-mapa-cie.py los demás): {mapa: módulo con la
+     malla, simbologia: imagen de las tablas, lamina: código de la lámina}. Sin él, Cielos usa sus láminas o la capa «cielos».
    Todo lo especial de un piso depende de estas marcas, nunca de que sea el −1.
    El explorador visual se monta en floor-explorer.mjs. */
 (function () {
   'use strict';
   var PISOS = [
-    {id: 'N-1', nombre: 'Nivel −1', corto: '−1', datos: '', especialidades: true, imp: 's01', puertasPiloto: true},
-    {id: 'N01', nombre: 'Nivel 1', corto: '1', datos: 'n01/', especialidades: false, cielos: true},
-    {id: 'N02', nombre: 'Nivel 2', corto: '2', datos: 'n02/', especialidades: false, cielos: true, puertas: true},
-    {id: 'N03', nombre: 'Nivel 3', corto: '3', datos: 'n03/', especialidades: false, cielos: true},
-    {id: 'N04', nombre: 'Nivel 4', corto: '4', datos: 'n04/', especialidades: false, cielos: true}
+    {id: 'N-1', nombre: 'Nivel −1', corto: '−1', datos: '', especialidades: true, imp: 's01', puertasPiloto: true, pav: 's01', cielosUnificado: {mapa: 'cie-s01-map.mjs', simbologia: 'cie-s01-simbologia.webp', lamina: 'CIE-A-501'}},
+    {id: 'N01', nombre: 'Nivel 1', corto: '1', datos: 'n01/', especialidades: false, cielos: true, cielosUnificado: {mapa: 'n01/cie-map.mjs', simbologia: 'n01/cie-simbologia.webp', lamina: 'CIE-A-501'}},
+    {id: 'N02', nombre: 'Nivel 2', corto: '2', datos: 'n02/', especialidades: false, cielos: true, puertas: true, cielosUnificado: {mapa: 'n02/cie-map.mjs', simbologia: 'n02/cie-simbologia.webp', lamina: 'CIE-A-501'}},
+    {id: 'N03', nombre: 'Nivel 3', corto: '3', datos: 'n03/', especialidades: false, cielos: true, cielosUnificado: {mapa: 'n03/cie-map.mjs', simbologia: 'n03/cie-simbologia.webp', lamina: 'CIE-A-502'}},
+    {id: 'N04', nombre: 'Nivel 4', corto: '4', datos: 'n04/', especialidades: false, cielos: true, cielosUnificado: {mapa: 'n04/cie-map.mjs', simbologia: 'n04/cie-simbologia.webp', lamina: 'CIE-A-501'}}
   ];
   var pedido = new URLSearchParams(location.search).get('nivel');
   var actual = PISOS.find(function (piso) { return piso.id === pedido; }) || PISOS[0];

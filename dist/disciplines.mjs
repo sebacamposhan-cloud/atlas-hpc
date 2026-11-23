@@ -22,7 +22,8 @@ export function createDisciplines(ctx){const main=document.querySelector('main')
   const next=button.dataset.planType;
   if(next==='doors'&&!nivel.puertasPiloto){ctx.abrirPuertas?.();return;}
   // En pisos superiores Cielos es una capa de consulta sobre Arquitectura.
-  const layer=next==='walls'?'walls':next==='ceilings'&&!nivel.especialidades?'cielosLamina':null;
+  // Con plano unificado de Cielos (pisos.js, «cielosUnificado») Cielos abre ese plano; si no, en pisos superiores es una capa.
+  const layer=next==='walls'?'walls':next==='ceilings'&&!nivel.especialidades&&!nivel.cielosUnificado?'cielosLamina':null;
   const request=modeRequest+1;
   await switchMode(layer?'architecture':next);
   if(request!==modeRequest)return;
@@ -42,7 +43,7 @@ export function createDisciplines(ctx){const main=document.querySelector('main')
   if(ctx.editing()){document.getElementById('discipline').value=mode;return ctx.toast('Guarda o cancela el contorno antes de cambiar.');}
   markPlan(next);
   const request=++modeRequest;
-  if(next==='ceilings'&&nivel.id==='N-1'&&!originalSheets){
+  if(next==='ceilings'&&nivel.cielosUnificado&&!originalSheets){
    if(chosen)remembered.set(mode,chosen.id);
    chosen=null;draw=null;pointers.clear();gesture={};
    mode='architecture';unified=true;
@@ -51,7 +52,8 @@ export function createDisciplines(ctx){const main=document.querySelector('main')
    document.getElementById('disciplineStatus').textContent='Cielos · plano unificado';
    ctx.enterSpecialty();
    ctx.showLayer?.(null);
-   ctx.setUnifiedCeilings(true,()=>switchMode('ceilings',undefined,true));
+   // Láminas originales una por una: solo donde están sus fichas (disciplines.json, hoy el −1).
+   ctx.setUnifiedCeilings(true,nivel.especialidades?()=>switchMode('ceilings',undefined,true):null);
    return;
   }
   const fromUnified=unified;
@@ -83,7 +85,7 @@ export function createDisciplines(ctx){const main=document.querySelector('main')
    const q=document.getElementById('globalSearch').value;if(q){$('specialtySearch').value=q;search(q);}
   }catch(e){if(request!==modeRequest)return;panel.innerHTML='<p role="alert"></p><button id="retrySpecialty">Reintentar carga</button>';panel.querySelector('p').textContent=e.message;$('retrySpecialty').onclick=()=>switchMode(next,architectureId,originalSheets);}
  }
- function shell(){panel.innerHTML=`<div class="disciplineTools">${mode==='ceilings'&&nivel.id==='N-1'?'<button type="button" data-ceilings-unified>Volver a plano unificado</button>':''}<select id="specialtySheet" aria-label="Lámina de especialidad">${docs().map(d=>`<option value="${d.id}" ${d.id===doc.id?'selected':''}>${esc(d.id.toUpperCase())} · ${esc(d.revision)}</option>`).join('')}</select><input id="specialtySearch" aria-label="Buscar en especialidad" placeholder="Código o nombre de recinto"><button id="specialtyFit" title="Ajustar lámina">⌖</button><button id="specialtyIn" aria-label="Acercar">＋</button><button id="specialtyOut" aria-label="Alejar">−</button><button id="specialtyFicha">Ficha</button><select id="progressLayer" aria-label="Colorear avance">${dims().map(k=>`<option value="${k}">${dimensionNames[k]}</option>`).join('')}</select></div><div id="specialtyResults" hidden></div><div class="specialtyCanvas"><svg id="specialtySVG" role="img" aria-label="Plano de ${name()}"><g id="specialtyImages"></g><g id="specialtyZones"></g><g id="specialtyMarks"></g></svg><span id="specialtyLegend"></span></div><aside id="specialtyDetail"></aside>`;
+ function shell(){panel.innerHTML=`<div class="disciplineTools">${mode==='ceilings'&&nivel.cielosUnificado?'<button type="button" data-ceilings-unified>Volver a plano unificado</button>':''}<select id="specialtySheet" aria-label="Lámina de especialidad">${docs().map(d=>`<option value="${d.id}" ${d.id===doc.id?'selected':''}>${esc(d.id.toUpperCase())} · ${esc(d.revision)}</option>`).join('')}</select><input id="specialtySearch" aria-label="Buscar en especialidad" placeholder="Código o nombre de recinto"><button id="specialtyFit" title="Ajustar lámina">⌖</button><button id="specialtyIn" aria-label="Acercar">＋</button><button id="specialtyOut" aria-label="Alejar">−</button><button id="specialtyFicha">Ficha</button><select id="progressLayer" aria-label="Colorear avance">${dims().map(k=>`<option value="${k}">${dimensionNames[k]}</option>`).join('')}</select></div><div id="specialtyResults" hidden></div><div class="specialtyCanvas"><svg id="specialtySVG" role="img" aria-label="Plano de ${name()}"><g id="specialtyImages"></g><g id="specialtyZones"></g><g id="specialtyMarks"></g></svg><span id="specialtyLegend"></span></div><aside id="specialtyDetail"></aside>`;
  panel.querySelector('[data-ceilings-unified]')?.addEventListener('click',()=>switchMode('ceilings'));
  $('specialtySheet').onchange=e=>{doc=docs().find(d=>d.id===e.target.value);const matches=observations().filter(r=>r.code===selectedCode&&r.sheetId===doc.id);chosen=null;draw=null;pointers.clear();gesture={};if(matches.length===1)choose(matches[0]);else{fit();detail();}};$('specialtyFit').onclick=fit;$('specialtyIn').onclick=()=>zoom(.7);$('specialtyOut').onclick=()=>zoom(1.4);$('specialtyFicha').onclick=()=>{panel.classList.toggle('fichaClosed');render();};$('progressLayer').onchange=e=>{colorDimension=e.target.value;render();};$('specialtySearch').oninput=e=>search(e.target.value);$('specialtyResults').onclick=e=>{const b=e.target.closest('[data-code]');if(!b)return;const r=observations().find(r=>r.id===b.dataset.observation);if(r)choose(r);else{selectedCode=b.dataset.code;chosen=null;ctx.syncCode(selectedCode);detail();}$('specialtyResults').hidden=true;};
  if(mode==='waterproofing'){panel.querySelector('.disciplineTools').dataset.sinFlujo='';imp.mountTools(panel.querySelector('.disciplineTools'));}

@@ -10,6 +10,7 @@ import {leerAvanceParaNube, guardarAvanceDesdeNube} from './avance-store.mjs';
 import {refrescarContornosNube} from './contornos-nube.mjs';
 import {refrescarPlanillasNube} from './planilla-avance-nube.mjs';
 import {refrescarProgramaNube} from './programa-obra-nube.mjs';
+import {refrescarRMPNube} from './rmp-nube.mjs';
 
 const SESION = 'atlas-nube-sesion';
 const leerSesion = () => { try { return JSON.parse(localStorage.getItem(SESION)); } catch { return null; } };
@@ -106,6 +107,10 @@ export function iniciarNube({toast = aviso} = {}) {
         await renovar();
         // Primero el perfil (pisos y funciones de la cuenta); si falla, la sincronización sigue igual.
         await bajarPerfil(api).catch(() => {});
+        // Lo compartido que se carga desde el escritorio (programa de obra, planillas, contornos) baja antes y aunque el resto
+        // de la sincronización falle: antes llegaba solo al final de una vuelta completa, y con un conflicto de Last Planner
+        // el programa nunca bajaba y parecía que había que importarlo de nuevo en cada sesión.
+        await Promise.all([refrescarProgramaNube(), refrescarRMPNube(), refrescarPlanillasNube(), refrescarContornosNube()].map(p => p.catch(() => {})));
         const sincronizar = async () => {const resultado=await motor(leerSesion().user.role),lp=await syncLastPlanner(api,leerSesion().user.role);if(lp.conflictos)throw error('Last Planner tiene conflictos con otro equipo. Los datos locales se conservan; descarga un respaldo antes de resolverlos.',409);if(lp.avisos?.length)toast('Mis tareas: '+lp.avisos.at(-1));return {...resultado,lastPlanner:lp};};
         try { return await sincronizar(); }
         catch (e) { if (e.status !== 401) throw e; await renovar(true); return sincronizar(); }

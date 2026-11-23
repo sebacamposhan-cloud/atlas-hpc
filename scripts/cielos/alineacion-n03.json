@@ -1,0 +1,111 @@
+{
+ "piso": "N03",
+ "metodo": "códigos de recinto + correlación con el plano de arquitectura (alinear-cie.py)",
+ "hojas": {
+  "cie-502": {
+   "archivo": "cie-502.pdf",
+   "sha256": "b00764c98eb9f1171c68bf92d3a8097ac5438ac9fa540f2bde175605668b83dc",
+   "desplazamiento": [
+    -809.82,
+    1844.359
+   ],
+   "codigos": 35,
+   "codigosAjustan": 22,
+   "correccionMuros": [
+    12.0,
+    -10.0
+   ],
+   "nitidez": 4.2
+  },
+  "cie-503": {
+   "archivo": "cie-503.pdf",
+   "sha256": "2c45b0fcf11ca7c1d57364dc55e0da10a655279d38499eb180cb70516b5d0384",
+   "desplazamiento": [
+    -832.565,
+    3751.805
+   ],
+   "codigos": 40,
+   "codigosAjustan": 17,
+   "correccionMuros": [
+    10.0,
+    0.0
+   ],
+   "nitidez": 4.4
+  },
+  "cie-504": {
+   "archivo": "cie-504.pdf",
+   "sha256": "8a0dd5006a0e46424a1d83742bc6045f5730e62c8b79da43845f2e087fce9bd0",
+   "desplazamiento": [
+    -824.292,
+    5689.623
+   ],
+   "codigos": 41,
+   "codigosAjustan": 18,
+   "correccionMuros": [
+    10.0,
+    -2.0
+   ],
+   "nitidez": 4.14
+  },
+  "cie-505": {
+   "archivo": "cie-505.pdf",
+   "sha256": "3cf5b8c5a6ec2f939f91687adc0ad4ff912de4388ce9bdd4d5475160cb75d55f",
+   "desplazamiento": [
+    2340.333,
+    -36.492
+   ],
+   "codigos": 62,
+   "codigosAjustan": 32,
+   "correccionMuros": [
+    10.0,
+    -14.0
+   ],
+   "nitidez": 3.78
+  },
+  "cie-506": {
+   "archivo": "cie-506.pdf",
+   "sha256": "480dafad102298a51a33d399cb0ab0882a38dbe45d59da83036b15099b4519ac",
+   "desplazamiento": [
+    2347.4,
+    1834.312
+   ],
+   "codigos": 53,
+   "codigosAjustan": 25,
+   "correccionMuros": [
+    6.0,
+    -8.0
+   ],
+   "nitidez": 3.7
+  },
+  "cie-507": {
+   "archivo": "cie-507.pdf",
+   "sha256": "636c95df91af81c2849e5ed31b7ed4fe228c02521f0d74cfc512eb3fab1b4a58",
+   "desplazamiento": [
+    2415.167,
+    3761.081
+   ],
+   "codigos": 58,
+   "codigosAjustan": 29,
+   "correccionMuros": [
+    10.0,
+    -14.0
+   ],
+   "nitidez": 3.88
+  },
+  "cie-508": {
+   "archivo": "cie-508.pdf",
+   "sha256": "3e039ccc4fb8965528bef704d3057df85a9e0b0a88c430b23d8f031ef103181a",
+   "desplazamiento": [
+    2343.663,
+    5686.596
+   ],
+   "codigos": 51,
+   "codigosAjustan": 25,
+   "correccionMuros": [
+    10.0,
+    -6.0
+   ],
+   "nitidez": 3.59
+  }
+ }
+}

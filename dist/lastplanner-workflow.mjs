@@ -26,7 +26,7 @@ export function createWorkflowUI(ctx){
  const esc=ctx.esc,state={view:'resumen',week:semanaDe(today()),level:nivel.id,responsable:'',especialidad:'',contratista:'',team:'',status:'',restricted:false,planningMode:null,pickMode:['tarjetas','kanban','cronograma'].includes(localStorage.getItem('atlas-planning-view'))?localStorage.getItem('atlas-planning-view'):'tarjetas',day:today(),registerOpen:false,undo:null,selected:null,tab:'checklist'};
  let root=null,options={},data=null,cloudStatus=null,serial=0,dialogDirty=false,saving=false,activeDialog=null,formDownload=null,pendingLogin=null;
  // Programa de obra cargado o ventanas guardadas (aquí o en otro equipo): se redibuja la vista si está abierta.
- window.addEventListener('atlas-programa-obra',()=>{if(state.view==='programa'&&data)render();});
+ window.addEventListener('atlas-programa-obra',()=>{if(state.view==='programa'&&data)render();});window.addEventListener('atlas-rmp-pesos',()=>{if(state.view==='programa'&&data)render();});
  const dialog=document.createElement('dialog');dialog.className='lpCycleDialog';dialog.setAttribute('aria-label','Last Planner');document.body.append(dialog);
  const openLogin=(detail={})=>{window.dispatchEvent(new CustomEvent('atlas-nube-open',{detail,cancelable:true}));};
  const actorLabel=()=>sessionActor()?.email||'Sesión Nube requerida';

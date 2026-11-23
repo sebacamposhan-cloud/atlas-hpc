@@ -1,0 +1,126 @@
+{
+ "piso": "N02",
+ "metodo": "códigos de recinto + correlación con el plano de arquitectura (alinear-cie.py)",
+ "hojas": {
+  "cie-501": {
+   "archivo": "cie-501.pdf",
+   "sha256": "e334d0a8cbadb6de5f1dcb4e51bfe50a783f8ee3422a2260fba4e8e6882c5b84",
+   "desplazamiento": [
+    -743.035,
+    23.16
+   ],
+   "codigos": 62,
+   "codigosAjustan": 19,
+   "correccionMuros": [
+    12.0,
+    -30.0
+   ],
+   "nitidez": 3.23
+  },
+  "cie-502": {
+   "archivo": "cie-502.pdf",
+   "sha256": "be7f10f2a15f9c3db0699d5c6e80dba182f76b8d533632cc5b10293ae19ff0f4",
+   "desplazamiento": [
+    -738.363,
+    1902.064
+   ],
+   "codigos": 72,
+   "codigosAjustan": 32,
+   "correccionMuros": [
+    10.0,
+    -22.0
+   ],
+   "nitidez": 3.01
+  },
+  "cie-503": {
+   "archivo": "cie-503.pdf",
+   "sha256": "dbdebc1bb007d3e2562fc49f20aaa944876e36244a618c5fe701d2d72d68abdc",
+   "desplazamiento": [
+    -749.534,
+    3833.682
+   ],
+   "codigos": 52,
+   "codigosAjustan": 15,
+   "correccionMuros": [
+    12.0,
+    -4.0
+   ],
+   "nitidez": 2.99
+  },
+  "cie-504": {
+   "archivo": "cie-504.pdf",
+   "sha256": "5f83a97c0b7e7ac25940cde8b498da3a03fd1c575b5f19095f728970b9e94bd1",
+   "desplazamiento": [
+    -747.295,
+    5757.82
+   ],
+   "codigos": 36,
+   "codigosAjustan": 15,
+   "correccionMuros": [
+    -4.0,
+    -8.0
+   ],
+   "nitidez": 2.95
+  },
+  "cie-505": {
+   "archivo": "cie-505.pdf",
+   "sha256": "67d8ed88ee3d38004ee096053fd2aa775cce249cf1bfe012ef0c47c1d678e722",
+   "desplazamiento": [
+    2478.767,
+    -2.54
+   ],
+   "codigos": 71,
+   "codigosAjustan": 23,
+   "correccionMuros": [
+    12.0,
+    -6.0
+   ],
+   "nitidez": 3.75
+  },
+  "cie-506": {
+   "archivo": "cie-506.pdf",
+   "sha256": "d0cc5bd443aed8e4f362d1cd9301740d9e78a1cb2a91f90e5fbdd88c0433d014",
+   "desplazamiento": [
+    2461.065,
+    1903.901
+   ],
+   "codigos": 36,
+   "codigosAjustan": 17,
+   "correccionMuros": [
+    10.0,
+    -8.0
+   ],
+   "nitidez": 2.96
+  },
+  "cie-507": {
+   "archivo": "cie-507.pdf",
+   "sha256": "f3ec39bf2129c8c57e70438868fcd50f748cadb93d27c6d1e23a4bda93cdc1d1",
+   "desplazamiento": [
+    2443.475,
+    3838.309
+   ],
+   "codigos": 45,
+   "codigosAjustan": 22,
+   "correccionMuros": [
+    10.0,
+    -12.0
+   ],
+   "nitidez": 3.48
+  },
+  "cie-508": {
+   "archivo": "cie-508.pdf",
+   "sha256": "747918c7d5aca3c43b1e9aaab9003c31374b7c339daf8c802e13522601aafff4",
+   "desplazamiento": [
+    2469.996,
+    5759.951
+   ],
+   "codigos": 53,
+   "codigosAjustan": 18,
+   "correccionMuros": [
+    2.0,
+    -8.0
+   ],
+   "nitidez": 3.27
+  }
+ }
+}

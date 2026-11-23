@@ -8,7 +8,8 @@ import {markingItems} from './marking-model.mjs';
 import {iniciarCapaAvance} from './avance.mjs';
 import './cielos-lamina.mjs';
 import {loadCeilingSheets,renderCeilingRoom} from './cielos-unificados.mjs';
-import {ceilingS01Map} from './cie-s01-map.mjs';
+// Malla del plano unificado de Cielos del piso (pisos.js, «cielosUnificado»); los pisos sin ella usan sus láminas.
+let mapaCielos=null;if(nivel.cielosUnificado?.mapa)import('./'+nivel.cielosUnificado.mapa).then(m=>{mapaCielos=Object.values(m).find(v=>v&&v.tilePath)||null;}).catch(()=>{});
 import {renderPlanLegend} from './plan-legend.mjs';
 import {createObservaciones,iniciarCapaObservaciones,cargarObservaciones} from './observaciones.mjs';
 import {createRombo,romboSVG} from './rombo.mjs';
@@ -22,6 +23,7 @@ import {createNavegacion} from './navegacion.mjs';
 import {consultaPiso} from './navegacion-model.mjs';
 import {createTareas} from './jerarquia-ui.mjs';
 import {perfilActual} from './jerarquia-store.mjs';
+import {iniciarCadenaMetas} from './cadena-metas.mjs';
 import {matchesLayers,tonoOscuro,OPACIDAD_FILTRO} from './layers.mjs';
 import {prepareViewer,setDrawingMap,footprint,footprintPath,hitRoomCandidates,updateFootprint,mapView,flushView,updateTiles,exportMapURL,mapa,overlays,showOverlay,capasDibujo,mostrarCapa} from './viewer.mjs';
 import {roomAliases} from './geometry-authority.mjs';
@@ -157,18 +159,19 @@ function rotularEspecialidad(type, name){
 
 function openPlanLegend(type,name){
  const title=`<h2 id="planLegendTitle">Simbología general · ${esc(name)}</h2>`;
- if(type==='ceilings'&&nivel.id==='N-1'){
+ const cu=nivel.cielosUnificado;
+ if(type==='ceilings'&&cu){
   modal(`<section class="ceilingLegendContent">${title}
-    <p>Tablas de cielos e iluminación de la lámina CIE-A-501.</p>
+    <p>Tablas de cielos e iluminación de la lámina ${esc(cu.lamina||'CIE')}.</p>
     ${openCeilingOriginals?'<button id="ceilingOriginals" type="button">Láminas originales y registros</button>':''}
     <ul id="ceilingDocumentList" class="ceilingDocumentList" hidden></ul>
-    <img src="cie-s01-simbologia.webp" alt="Tablas de simbología de cielos y luminarias de la lámina CIE-A-501, página 1" decoding="async">
+    ${cu.simbologia?`<img src="${esc(cu.simbologia)}" alt="Tablas de simbología de cielos y luminarias de la lámina ${esc(cu.lamina||'CIE')}, página 1" decoding="async">`:`<p>Falta la imagen de simbología de Cielos de ${esc(nivel.nombre)}.</p>`}
    </section>`,'planLegendTitle');
   renderCeilingLegendLinks();
   if(openCeilingOriginals)$('ceilingOriginals').onclick=()=>{$('modal').close();openCeilingOriginals();};
   return;
  }
- const content=renderPlanLegend({type,pilotDoors:nivel.puertasPiloto,materials:data.materials,layerLegend:ui.resumenFiltro().leyenda,esc});
+ const content=renderPlanLegend({type,pilotDoors:nivel.puertasPiloto,imp:nivel.imp,pav:nivel.pav,piso:nivel.nombre,materials:data.materials,layerLegend:ui.resumenFiltro().leyenda,esc});
  modal(`<section class="planLegendContent">${title}${content}</section>`,'planLegendTitle');
 }
 
@@ -182,8 +185,9 @@ function setUnifiedCeilings(active,originals){
  ceilingView=active;
  openCeilingOriginals=originals;
  document.body.classList.toggle('cielosUnificados',active);
- setDrawingMap(active?ceilingS01Map:null);
- $('svg').setAttribute('aria-label',active?'Plano interactivo de Cielos del nivel −1':'Plano arquitectónico interactivo');
+ if(active&&!mapaCielos){toast('El plano unificado de Cielos aún no carga. Intenta de nuevo en unos segundos.');active=false;ceilingView=false;document.body.classList.remove('cielosUnificados');}
+ setDrawingMap(active?mapaCielos:null);
+ $('svg').setAttribute('aria-label',active?'Plano interactivo de Cielos del '+nivel.nombre.toLowerCase():'Plano arquitectónico interactivo');
  $('fichaBarra').setAttribute('aria-label',active?'Abrir ficha de Cielos':'Abrir el rombo del recinto');
  $('fichaBarra').querySelector('.fichaBarraAbrir').textContent=active?'Ficha Cielos ▲':'Abrir rombo ▲';
  if(active){
@@ -338,6 +342,8 @@ async function initialize(){
   puertas ||= createPuertas({esc,toast,setView,resize:updateTiles,level:nivel.id,levelName:nivel.nombre,download:downloadBlob,enter:()=>{marking?.close();protocolPlan?.cerrar();ui.closeFilters();ui.show('map');selected=null;isolation=false;document.body.classList.add('hideRight');render();}});
   nav ||= createNavegacion({esc,toast,ui,rotularEspecialidad,rooms:()=>uniqueRooms(data.rooms),verProtocolos:datos=>protocolPlan.mostrar(datos),prepararCambioPlano:()=>{puertas?.cerrar();protocolPlan?.cerrar();marking?.close();},cerrarModos:()=>{disciplines?.switchMode('architecture');marking?.close();protocolPlan?.cerrar();puertas?.cerrar();ui?.closeFilters();},// Puertas: el plano de puertas del piso (puertas.json) o, en el −1, el catálogo piloto como tipo de plano.
 abrirPuertas:()=>nivel.puertas?puertas?.abrir():(ui.show('map'),disciplines?.switchMode('doors')),abrirImpermeabilizacion:()=>{ui.show('map');disciplines?.switchMode('waterproofing');},escritorio:()=>matchMedia('(min-width:1024px) and (pointer:fine)').matches,ocupado:()=>{if(disciplines?.canLeave()===false){toast('Guarda o descarta los cambios del plano antes de continuar.');return true;}if(!edit&&!spatial?.active())return false;toast('Termina la edición en el plano antes de abrir las tarjetas.');return true;},perfil:()=>tareas?.perfil()||perfilActual(),tareas,lastplanner});
+  // El avance marcado en terreno llega a las metas de Last Planner de quien las recibió (cadena-metas.mjs).
+  if(!tareasEscucha)iniciarCadenaMetas({toast});
   if(!tareasEscucha){tareasEscucha=true;const actualizar=()=>tareas.recargar().then(()=>nav.alCambiarTareas()).catch(()=>{});window.addEventListener('atlas-jerarquia-changed',actualizar);window.addEventListener('atlas-session-changed',actualizar);actualizar();
    // «Asignar a mi equipo» en la ficha de una actividad de Last Planner abre la asignación con esa actividad y su frente.
    document.addEventListener('click',e=>{const b=e.target.closest?.('[data-jer-asignar-actividad]');if(!b)return;e.preventDefault();tareas.prepararAsignacion(b.dataset.jerAsignarActividad).then(()=>{ui.show('map');if(!nav.abrirTareas('asignar'))toast('Tu cargo no asigna tareas.');}).catch(error=>toast(error.message));});}

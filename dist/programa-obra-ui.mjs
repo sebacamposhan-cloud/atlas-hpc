@@ -4,7 +4,7 @@
 // ligadas a su partida del programa. La carga del XML de Project es de escritorio (oficina técnica).
 import {nivel, pisos} from './level.mjs';
 import * as P from './programa-obra-model.mjs';
-import {programaDe, guardarProgramaNube, guardarVentanasNube} from './programa-obra-nube.mjs';
+import {programaDe, guardarProgramaNube, guardarVentanasNube, refrescarProgramaNube} from './programa-obra-nube.mjs';
 import {firmante, exigirFirma} from './firma.mjs';
 import {nombreSector} from './sectores-model.mjs';
 
@@ -14,8 +14,11 @@ const fechaHora = iso => { try { return new Date(iso).toLocaleString('es-CL', {d
 const pct = v => v == null ? '—' : Math.round(v) + ' %';
 const numero = v => new Intl.NumberFormat('es-CL', {maximumFractionDigits: 1}).format(v || 0);
 const nombrePiso = id => pisos.find(p => p.id === id)?.nombre || (id === 'N-1' ? 'Nivel −1' : 'Nivel ' + Number(id.slice(1)));
+// Curvas RMP de la obra (rmp-ui.mjs): solo en el escritorio, sobre el programa del piso.
+const RMP = '<section class="lpCycleCard" data-oficina data-rmp></section>';
+const montarCurvasRMP = (el, ctx) => { const z = el.querySelector('[data-rmp]'); if (z && document.body.classList.contains('escritorio')) import('./rmp-ui.mjs').then(m => m.montarRMP(z, {esc: ctx.esc, toast: ctx.toast})).catch(() => {}); };
 const ORDENES = [['1', '2', '3'], ['1', '3', '2'], ['2', '1', '3'], ['2', '3', '1'], ['3', '1', '2'], ['3', '2', '1']];
-const estado = {abierta: null, borradores: {}, lectura: null, creando: null, soloAtlas: false};
+const estado = {abierta: null, borradores: {}, lectura: null, creando: null, soloAtlas: false, buscado: false};
 
 // Lee el XML elegido por partes (puede pesar varios GB: las tareas van al principio) y lo pasa a pisos de Atlas.
 export async function leerArchivoPrograma(archivo, alAvanzar) {
@@ -44,10 +47,12 @@ export async function montarPrograma(el, ctx) {
 
   const cabecera = `<div class="lpProgramaCabecera"><div><h3>Programa de obra · ${esc(nombrePiso(nivelId))}</h3><p class="lpCycleNote">${programa
     ? `Revisión «${esc(programa.revision?.archivo || programa.revision?.titulo || 'sin nombre')}»${programa.revision?.estado ? ' · fecha de estado ' + corta(programa.revision.estado) : ''} · cargada el ${esc(fechaHora(programa.cargada))} por ${esc(programa.por)}. Es el programa general de Sacyr: llega hasta el piso, sin sectores ni recintos.`
-    : 'Aún no se ha cargado el programa de obra de este piso.'}</p></div><label class="progressImportLabel" data-oficina>Cargar programa (XML de Project)<input type="file" accept=".xml,application/xml,text/xml" data-programa-xml></label></div><div data-programa-lectura ${estado.lectura ? '' : 'hidden'}></div><p class="lpCycleFeedback" role="status" data-programa-mensaje></p>`;
+    : !estado.buscado && navigator.onLine ? 'Buscando el programa de obra en la Nube…' : 'Aún no se ha cargado el programa de obra de este piso.'}</p></div><label class="progressImportLabel" data-oficina>Cargar programa (XML de Project)<input type="file" accept=".xml,application/xml,text/xml" data-programa-xml></label></div><div data-programa-lectura ${estado.lectura ? '' : 'hidden'}></div><p class="lpCycleFeedback" role="status" data-programa-mensaje></p>`;
   if (!programa) {
-    el.innerHTML = cabecera + `<section class="lpCycleCard"><p>Oficina técnica guarda el programa desde Project con <b>Archivo › Guardar como › XML</b> y lo carga aquí desde el escritorio. Atlas toma las tareas del Módulo A de cada piso (código de partida en Texto1), sin recursos ni montos, y las comparte por Nube.</p></section>`;
-    conectarCarga(el, ctx); return;
+    // El programa vive en la Nube: si este equipo aún no lo tiene, se pide ahora (la vista se redibuja cuando llega).
+    if (!estado.buscado && navigator.onLine) { estado.buscado = true; refrescarProgramaNube().catch(() => {}).finally(() => { if (el.isConnected && !programaDe(nivelId)) montarPrograma(el, ctx); }); }
+    el.innerHTML = cabecera + RMP + `<section class="lpCycleCard"><p>Oficina técnica guarda el programa desde Project con <b>Archivo › Guardar como › XML</b> y lo carga aquí desde el escritorio. Atlas toma las tareas del Módulo A de cada piso (código de partida en Texto1), sin recursos ni montos, y las comparte por Nube.</p></section>`;
+    conectarCarga(el, ctx); montarCurvasRMP(el, ctx); return;
   }
 
   const {enCurso, proximas, vencidas, limite} = P.tareasProximas(programa, hoy);
@@ -79,12 +84,12 @@ export async function montarPrograma(el, ctx) {
       <td data-label="Actividades">${n.length ? n.length + (n.some(x => P.avisoActividad(x, programa)) ? ' ⚠' : '') : '—'}</td></tr>`;
   };
   const tabla = (lista, vacio) => lista.length ? `<div class="lpCycleTableWrap"><table class="lpCycleTable lpProgramaTabla"><thead><tr><th>Partida</th><th>Programa</th><th>Real</th><th>Programado hoy</th><th>Brecha</th><th>Término proyectado</th><th>Actividades</th></tr></thead><tbody>${lista.map(fila).join('')}</tbody></table></div>` : `<p>${vacio}</p>`;
-  el.innerHTML = cabecera + `<div class="lpCycleMetrics">${metric('Partidas del programa', programa.tareas.length, 'Módulo A · ' + esc(nombrePiso(nivelId)))}${metric('En curso', enCurso.length)}${metric('Empiezan antes del ' + corta(limite), proximas.length, P.SEMANAS_ADELANTE + ' semanas')}${metric('Vencidas con pendiente', conAvance ? vencidasPend.length : '—', conAvance ? '' : 'Abre este piso para ver su avance')}${metric('Atrasadas o en riesgo', atrasadas.length, 'Según el ritmo real')}${metric('Actividades fuera de plazo', conAviso.length, 'Terminan después de su partida')}</div>
+  el.innerHTML = cabecera + RMP + `<div class="lpCycleMetrics">${metric('Partidas del programa', programa.tareas.length, 'Módulo A · ' + esc(nombrePiso(nivelId)))}${metric('En curso', enCurso.length)}${metric('Empiezan antes del ' + corta(limite), proximas.length, P.SEMANAS_ADELANTE + ' semanas')}${metric('Vencidas con pendiente', conAvance ? vencidasPend.length : '—', conAvance ? '' : 'Abre este piso para ver su avance')}${metric('Atrasadas o en riesgo', atrasadas.length, 'Según el ritmo real')}${metric('Actividades fuera de plazo', conAviso.length, 'Terminan después de su partida')}</div>
     <section class="lpCycleCard"><div class="chartHeading"><h3>Plan intermedio · próximas ${P.SEMANAS_ADELANTE} semanas</h3>${conAvance ? `<label class="lpProgramaFiltro"><input type="checkbox" data-programa-solo-atlas ${estado.soloAtlas ? 'checked' : ''}> Solo partidas que Atlas mide (${programa.tareas.filter(medida).length})</label>` : ''}</div><p class="lpCycleNote">Partidas en curso, vencidas con pendiente y las que empiezan hasta el ${corta(limite)}. Real = avance del piso en Atlas (planillas y terreno), en m² cuando la partida los tiene. Programado hoy = avance lineal entre inicio y término del programa. Toca una partida para repartirla por sector y crear sus actividades.</p>${tabla(filas, 'Nada en curso ni por empezar en las próximas semanas.')}</section>
     <section class="lpCycleCard lpProgramaDetalle" data-programa-detalle hidden></section>
     <details class="lpCycleCard"><summary>Todo el programa del piso · ${filtro(programa.tareas).length} partidas</summary>${tabla(filtro(programa.tareas), 'Sin partidas.')}</details>
     ${programa.resumen?.anterior ? `<p class="lpCycleNote">Respecto de la revisión anterior («${esc(programa.resumen.anterior.archivo || '')}»): ${programa.resumen.cambios} ${programa.resumen.cambios === 1 ? 'cambio' : 'cambios'} en este piso.</p>` : ''}`;
-  conectarCarga(el, ctx);
+  conectarCarga(el, ctx); montarCurvasRMP(el, ctx);
   el.querySelector('[data-programa-solo-atlas]')?.addEventListener('change', e => { estado.soloAtlas = e.target.checked; montarPrograma(el, ctx); });
   el.querySelectorAll('[data-programa-tarea]').forEach(b => b.onclick = () => { estado.abierta = estado.abierta === b.dataset.programaTarea ? null : b.dataset.programaTarea; estado.creando = null; montarPrograma(el, ctx); });
   if (estado.abierta) detalle(el.querySelector('[data-programa-detalle]'), programa.tareas.find(t => t.codigo === estado.abierta));

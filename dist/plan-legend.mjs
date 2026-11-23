@@ -1,11 +1,12 @@
 import {IMP_STATES, IMP_ARTIFACT_COLORS} from './impermeabilizacion-model.mjs';
 import {ESTADOS, ORDEN} from './puertas-model.mjs';
 
-export function renderPlanLegend({type, pilotDoors, materials, layerLegend, esc}) {
+// imp y pav: códigos de las láminas del piso (pisos.js). Si faltan, la simbología lo dice en vez de abrir la de otro piso.
+export function renderPlanLegend({type, pilotDoors, materials, layerLegend, esc, imp = null, pav = null, piso = 'este piso'}) {
   const swatches = entries => `<ul class="planLegendItems">${entries.map(({name, color}) =>
     `<li><i style="background:${esc(color)}" aria-hidden="true"></i>${esc(name)}</li>`).join('')}</ul>`;
   if (type === 'waterproofing') {
-    return `<p>Consulta el alcance marcado en el <a href="source/imp-s01.pdf#page=1" target="_blank" rel="noopener">PDF original IMP ↗</a>.</p>
+    return `${imp ? `<p>Consulta el alcance marcado en el <a href="source/imp-${esc(imp)}.pdf#page=1" target="_blank" rel="noopener">PDF original IMP ↗</a>.</p>` : `<p>Falta el PDF original IMP de ${esc(piso)}.</p>`}
       <h3>Avance registrado en ATLAS</h3>${swatches(Object.values(IMP_STATES))}
       <h3>Instalación de artefactos por recinto</h3>${swatches(Object.values(IMP_ARTIFACT_COLORS))}`;
   }
@@ -15,7 +16,7 @@ export function renderPlanLegend({type, pilotDoors, materials, layerLegend, esc}
       : swatches(ORDEN.map(key => ({name: ESTADOS[key].nombre, color: ESTADOS[key].color})));
   }
   if (type === 'floors') {
-    return `<h3>Códigos de pavimentos de Arquitectura</h3><p><a href="source/pav-s01.pdf#page=1" target="_blank" rel="noopener">Abrir PDF original de Pavimentos ↗</a></p>
+    return `<h3>Códigos de pavimentos de Arquitectura</h3>${pav ? `<p><a href="source/pav-${esc(pav)}.pdf#page=1" target="_blank" rel="noopener">Abrir PDF original de Pavimentos ↗</a></p>` : `<p>Falta el PDF original de Pavimentos de ${esc(piso)}.</p>`}
       <dl class="planLegendCodes">${materials.filter(m => m.category === 'Pavimentos').map(m =>
         `<dt>${esc(m.code)}</dt><dd>${esc(m.description)}</dd>`).join('')}</dl>`;
   }

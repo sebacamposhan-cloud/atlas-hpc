@@ -223,7 +223,7 @@ assert.deepEqual(N.pisosConPrograma().sort(), ['N-1', 'N02']);
 assert.equal(await N.refrescarProgramaNube(), false, 'sin cambios no avisa');
 
 // ---------- Servidor y SQL ----------
-assert.match(fs.readFileSync(new URL('./server/campo.mjs', import.meta.url), 'utf8'), /const TIPOS = \[[^\]]*'programa'\]/);
+assert.match(fs.readFileSync(new URL('./server/campo.mjs', import.meta.url), 'utf8'), /const TIPOS = \[[^\]]*'programa'[^\]]*\]/);
 assert.match(fs.readFileSync(new URL('./dist/nube.mjs', import.meta.url), 'utf8'), /refrescarProgramaNube\(\)/);
 const sql = fs.readFileSync(new URL('./supabase/programa-obra.sql', import.meta.url), 'utf8');
 assert.match(sql, /check \(tipo in \('proyecto','observacion','contorno','planilla','avance','programa'\)\)/);
