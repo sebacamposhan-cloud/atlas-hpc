@@ -43,6 +43,22 @@ Archivos:
 - `dist/rmp-nube.mjs`.
 - `dist/rmp-ui.mjs`.
 
+## Avance por recinto: curva de la obra y curva del piso (23-11-2026)
+
+Antes había una sola curva por piso. Contaba partidas sin ponderar, usaba las fechas vigentes del programa y fechaba lo ejecutado el día en que se marcó en ATLAS, así que nunca coincidía con el RMP. Ahora hay dos:
+
+- **Avance de la obra · RMP** (`montarCurvaObra` en `dist/rmp-ui.mjs`): la curva S de Curvas RMP, con los mismos valores. Es igual en todos los pisos.
+- **Avance del piso** (`dist/curva-piso.mjs`, prueba `curva-piso-test.mjs`): las terminaciones del piso (pavimento, cielo y muros, o la del filtro) con el criterio del RMP.
+  - **Peso:** cada tarea del programa pesa su costo de línea base 1. Dentro de la tarea, cada partida pesa sus m² del PMA.
+  - **Plan:** la línea base 1, lineal entre su inicio y su fin.
+  - **Real medido:** cada partida cuenta desde la fecha de lo que la dejó así: la carga de la planilla de medición de la oficina o la marca en terreno.
+  - **Real estimado** (punteado): el % de Terminaciones del RMP de cada mes, escalado al piso.
+    - Con planilla de medición, se ancla en la fecha de la planilla y cubre lo anterior.
+    - Sin planilla, se ancla en lo marcado hoy y llega hasta hoy, por sobre lo marcado, porque lo marcado en terreno se va poniendo al día de a poco.
+  - **Referencia** (gris): el % de Terminaciones de la obra según el RMP.
+
+**Hay que volver a importar el programa de cada piso** (Last Planner › Programa de obra) con el XML que trae las líneas base (`Programa obra.xml`). El importador ahora guarda, por partida del piso, el inicio y el fin de la línea base 1 y su peso: el costo de línea base ÷ el costo de todas las tareas finales, en % de la obra, sin montos. Mientras no se reimporte, la curva del piso usa las fechas vigentes y pesos por m², y lo dice.
+
 ## Programa de obra sin reimportar
 
 El programa ya vivía en la Nube, pero bajaba al equipo solo al final de una sincronización completa. Si esa vuelta fallaba, por ejemplo por un conflicto de Last Planner, el programa nunca llegaba y parecía que había que importarlo de nuevo.

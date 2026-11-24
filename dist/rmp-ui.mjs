@@ -62,6 +62,30 @@ export async function montarRMP(el, {esc, toast = () => {}}) {
   conectar(el, {esc, toast});
 }
 
+// Curva S de la obra sola (Avance › Avance por recinto, junto a la del piso): plan, real y proyección del RMP, los mismos
+// valores de Curvas RMP. Sin planilla del RMP, el motivo.
+export async function montarCurvaObra(el, {esc}) {
+  if (!el) return;
+  const titulo = '<div class="chartHeading"><h3>Avance de la obra · RMP</h3><span>% de la obra, ponderado por costo</span></div>';
+  let rmp = pesosRMP();
+  if (!rmp && navigator.onLine) { try { await refrescarRMPNube(); rmp = pesosRMP(); } catch {} }
+  if (!el.isConnected) return;
+  if (!rmp) { el.innerHTML = titulo + '<p class="chartEmpty">Falta la planilla de pesos del RMP. Se carga en Last Planner › Programa de obra › Curvas RMP (escritorio).</p>'; return; }
+  el.innerHTML = titulo + '<p role="status">Calculando la curva de la obra…</p>';
+  let atlas = new Map();
+  try { atlas = await avanceDeAtlas(rmp.partidas.filter(p => p.mideAtlas).map(p => p.codigo)); } catch {}
+  if (!el.isConnected) return;
+  const c = R.curvasRMP(rmp, {hoy: hoyISO(), atlas}), actual = c.actual;
+  el.innerHTML = titulo + `<div class="curvaResumen">${actual ? `<span><b>${pct(actual.real)}</b> real</span><span><b>${pct(actual.plan)}</b> plan</span><span><b>${actual.plan == null ? '—' : Math.abs(actual.real - actual.plan).toLocaleString('es-CL', {maximumFractionDigits: 1})} pts</b> ${actual.real >= (actual.plan ?? 0) ? 'sobre' : 'bajo'} el plan · ${esc(mesCorto(actual.mes))}</span>` : '<span>Sin real informado aún</span>'}</div>
+    <div class="curvaLeyenda"><span><i class="programado"></i>Plan (línea base)</span><span><i class="real"></i>Real</span>${c.proyeccion.length ? `<span><i class="proyeccion"></i>${c.fuenteProyeccion === 'reprogramacion' ? `Proyección con la reprogramación (término ${esc(mesCorto(c.proyeccion.at(-1).mes))})` : 'Proyección con el ritmo de los últimos 3 meses'}</span>` : ''}</div>
+    <div class="curvaGrafico" data-rmp-curva><div class="curvaDato" hidden></div></div>
+    <p class="chartSubtitle">Mismos valores que el Reporte Mensual de Progreso: pesos de «${esc(rmp.archivo || 'planilla del RMP')}».</p>`;
+  lineas(el.querySelector('[data-rmp-curva]'), c.puntos.map(p => p.mes), [
+    {nombre: 'Plan', color: PLAN, guion: '6 4', valores: c.puntos.map(p => p.plan)},
+    {nombre: 'Real', color: REAL, valores: c.puntos.map(p => p.real)},
+    ...(c.proyeccion.length ? [{nombre: 'Proyección', color: REAL, guion: '2 4', valores: null, puntos: c.proyeccion}] : [])], {max: 100, formato: v => pct(v), marcas: [0, 25, 50, 75, 100]});
+}
+
 function conectar(el, ctx) {
   el.querySelector('[data-rmp-plantilla]')?.addEventListener('click', async () => {
     try {

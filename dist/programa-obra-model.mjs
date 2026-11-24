@@ -48,13 +48,22 @@ export function leerCabecera(xml) {
   return {nombre: campo(sinCal, 'Name'), titulo: campo(sinCal, 'Title'), estado: fecha(campo(sinCal, 'StatusDate')), guardado: campo(sinCal, 'LastSaved') || null, texto1};
 }
 // Una tarea del XML: <Task>…</Task>.
+// Línea base 1 (la original del contrato, la que usa el plan del RMP): inicio, fin y costo de la tarea. El costo solo sirve
+// para el peso relativo de cada partida (programaPorPiso): no se guarda ningún monto.
+export const LINEA_BASE = '1';
 export function leerTarea(bloque, texto1 = TEXTO1) {
   const propio = bloque.replace(ANIDADOS, ''), extra = {};
   for (const [, ea] of bloque.matchAll(/<ExtendedAttribute>([\s\S]*?)<\/ExtendedAttribute>/g)) extra[campo(ea, 'FieldID')] = campo(ea, 'Value');
-  const nivel = Number(campo(propio, 'OutlineLevel'));
+  let base = null;
+  for (const [, b] of bloque.matchAll(/<Baseline>([\s\S]*?)<\/Baseline>/g)) {
+    if (campo(b, 'Number') !== LINEA_BASE) continue;
+    const inicio = fecha(campo(b, 'Start')), fin = fecha(campo(b, 'Finish')), costo = Number(campo(b, 'Cost'));
+    base = {inicio, fin, costo: Number.isFinite(costo) ? costo : 0};
+  }
+  const nivel = Number(campo(propio, 'OutlineLevel')), costo = Number(campo(propio, 'Cost'));
   return {uid: Number(campo(propio, 'UID')), nombre: campo(propio, 'Name'), esquema: campo(propio, 'OutlineNumber'), nivel: Number.isFinite(nivel) ? nivel : 0,
     inicio: fecha(campo(propio, 'Start')), fin: fecha(campo(propio, 'Finish')), resumen: campo(propio, 'Summary') === '1', hito: campo(propio, 'Milestone') === '1',
-    texto1: String(extra[texto1] ?? '').trim()};
+    texto1: String(extra[texto1] ?? '').trim(), base, costo: base ? base.costo : Number.isFinite(costo) ? costo : 0};
 }
 // XML completo en memoria (pruebas, archivos chicos).
 export function leerXML(xml) {
@@ -92,7 +101,9 @@ export async function leerXMLPorPartes(fuente, {alAvanzar} = {}) {
 export function programaPorPiso({cabecera, tareas}, {archivo = '', modulos = MODULOS} = {}) {
   const porEsquema = new Map(tareas.filter(t => t.esquema).map(t => [t.esquema, t]));
   const hijos = new Set(tareas.map(t => t.esquema.split('.').slice(0, -1).join('.')));
-  const pisos = {}, fuera = {sinPiso: 0, otroModulo: 0, sinCodigo: 0};
+  const pisos = {}, fuera = {sinPiso: 0, otroModulo: 0, sinCodigo: 0}, costos = new Map();
+  // Peso de cada partida del piso: su costo de línea base ÷ el costo de todas las tareas finales del programa (% de la obra).
+  const finales = tareas.filter(t => t.esquema && !hijos.has(t.esquema) && !t.resumen), costoObra = finales.reduce((a, t) => a + Math.max(0, t.costo || 0), 0);
   for (const t of tareas) {
     if (!t.esquema || hijos.has(t.esquema) || t.resumen || !t.inicio || !t.fin) continue;
     const partes = t.esquema.split('.'), cadena = partes.map((_, i) => porEsquema.get(partes.slice(0, i + 1).join('.'))).filter(Boolean);
@@ -111,9 +122,16 @@ export function programaPorPiso({cabecera, tareas}, {archivo = '', modulos = MOD
     const previa = lista.get(codigo) || {codigo, partida: nombre || cod.nombre.trim(), inicio: t.inicio, fin: t.fin, uids: [], tramos: []};
     previa.inicio = previa.inicio < t.inicio ? previa.inicio : t.inicio; previa.fin = previa.fin > t.fin ? previa.fin : t.fin;
     previa.uids.push(t.uid); previa.tramos.push([t.inicio, t.fin]);
+    // Línea base 1: solo si todas las tareas de la partida la traen.
+    const conBase = t.base?.inicio && t.base?.fin && (previa.uids.length === 1 || previa.inicioBase);
+    if (conBase) { previa.inicioBase = previa.uids.length === 1 || t.base.inicio < previa.inicioBase ? t.base.inicio : previa.inicioBase; previa.finBase = previa.uids.length === 1 || t.base.fin > previa.finBase ? t.base.fin : previa.finBase; }
+    else { delete previa.inicioBase; delete previa.finBase; }
+    costos.set(previa, (costos.get(previa) || 0) + Math.max(0, t.costo || 0));
     lista.set(codigo, previa);
   }
-  const revision = {archivo: String(archivo).slice(0, 200), titulo: (cabecera.titulo || cabecera.nombre || '').slice(0, 200), estado: cabecera.estado || null};
+  if (costoObra > 0) for (const [t, c] of costos) t.peso = Math.round(1e6 * 100 * c / costoObra) / 1e6;
+  const revision = {archivo: String(archivo).slice(0, 200), titulo: (cabecera.titulo || cabecera.nombre || '').slice(0, 200), estado: cabecera.estado || null,
+    lineaBase: tareas.some(t => t.base?.inicio) ? Number(LINEA_BASE) : null};
   const orden = (a, b) => a.codigo.split('.').map(Number).reduce((r, n, i) => r || n - (Number(b.codigo.split('.')[i]) || 0), 0) || a.codigo.length - b.codigo.length;
   return {revision, fuera, pisos: Object.fromEntries(Object.entries(pisos).map(([nivel, m]) => [nivel, {nivel, revision, tareas: [...m.values()].sort(orden)}]))};
 }
@@ -123,7 +141,9 @@ export const idPrograma = nivel => 'programa-' + nivel;
 export function validarPrograma(p) {
   if (!p || !/^(N-1|N0[1-9])$/.test(p.nivel || '')) throw Error('Programa sin piso válido.');
   if (!Array.isArray(p.tareas) || p.tareas.length > 2000) throw Error('Programa sin tareas.');
-  for (const t of p.tareas) if (!esCodigo(t.codigo) || typeof t.partida !== 'string' || !esFecha(t.inicio) || !esFecha(t.fin) || t.fin < t.inicio) throw Error('Tarea del programa inválida: ' + (t?.codigo || '?'));
+  for (const t of p.tareas) if (!esCodigo(t.codigo) || typeof t.partida !== 'string' || !esFecha(t.inicio) || !esFecha(t.fin) || t.fin < t.inicio
+    || (t.inicioBase != null || t.finBase != null) && !(esFecha(t.inicioBase) && esFecha(t.finBase) && t.finBase >= t.inicioBase)
+    || t.peso != null && !(Number.isFinite(t.peso) && t.peso >= 0 && t.peso <= 100)) throw Error('Tarea del programa inválida: ' + (t?.codigo || '?'));
   if (new Set(p.tareas.map(t => t.codigo)).size !== p.tareas.length) throw Error('Partida repetida en el programa del piso.');
   if (p.ventanas != null && (typeof p.ventanas !== 'object' || Array.isArray(p.ventanas))) throw Error('Ventanas por sector inválidas.');
   for (const [codigo, v] of Object.entries(p.ventanas || {})) validarVentanas(v, codigo);
@@ -150,7 +170,9 @@ export function conVentanasPrevias(nuevo, anterior) {
 // ---------- Partidas de Atlas → tareas del programa ----------
 // Partidas genéricas del PMA (sin ítem del itemizado) → familia del programa.
 const GENERICAS = [[/^T-CIE-PINTURA/, '6.4.2'], [/^T-PAV-/, '6.1'], [/^T-CIE-/, '6.3'], [/^T-MURO-/, '6.2']];
-const juntar = (codigo, ts) => ts.length === 1 ? ts[0] : {codigo, partida: ts.map(t => t.partida).join(' · '), inicio: ts.reduce((m, t) => t.inicio < m ? t.inicio : m, ts[0].inicio), fin: ts.reduce((m, t) => t.fin > m ? t.fin : m, ts[0].fin), compuesta: true};
+const juntar = (codigo, ts) => ts.length === 1 ? ts[0] : {codigo, partida: ts.map(t => t.partida).join(' · '), inicio: ts.reduce((m, t) => t.inicio < m ? t.inicio : m, ts[0].inicio), fin: ts.reduce((m, t) => t.fin > m ? t.fin : m, ts[0].fin), compuesta: true,
+  ...(ts.every(t => t.inicioBase) ? {inicioBase: ts.reduce((m, t) => t.inicioBase < m ? t.inicioBase : m, ts[0].inicioBase), finBase: ts.reduce((m, t) => t.finBase > m ? t.finBase : m, ts[0].finBase)} : {}),
+  ...(ts.every(t => t.peso != null) ? {peso: ts.reduce((a, t) => a + t.peso, 0)} : {})};
 // Tarea del programa para una partida de Atlas (id «6.4.1.2», «2.6», «T-PAV-109»): la de código más largo que la contiene;
 // si el programa la abre en partes («2.6» → 2.6.1, 2.6.2…), todas juntas. null si el programa no la trae.
 export function tareaDeItem(programa, id) {
