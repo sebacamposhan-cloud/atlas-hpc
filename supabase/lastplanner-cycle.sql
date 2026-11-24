@@ -125,7 +125,7 @@ begin
     if p_accion='execution' and not exists(select 1 from jsonb_array_elements(coalesce(old->'ejecuciones','[]'::jsonb)) e where e->>'id'=entry->>'id') then
      if (entry->>'finReal')::date>(now() at time zone 'America/Santiago')::date or (entry->>'finReal')::date<(entry->>'inicioReal')::date then raise exception 'Invalid actual dates';end if;
      if entry->'validacion'->>'estado'<>'Pendiente' then raise exception 'Execution must wait for verification';end if;
-     if (entry->>'cantidad')::numeric>0 and jsonb_array_length(entry->'asistenciaIds')=0 then raise exception 'Attendance required';end if;
+     -- La asistencia es opcional (avance marcado en el plano, 2026-11-23); si se vincula, se valida abajo.
      for s in select value from jsonb_array_elements(entry->'asistenciaIds') loop
       if not exists(select 1 from public.atlas_lp_records a where a.tipo='asistencias' and a.id=s#>>'{}' and a.data->>'estado'='Presente' and a.data->'activityIds' ? clave and a.data->>'fecha' between entry->>'inicioReal' and entry->>'finReal') then raise exception 'Attendance does not belong to this activity and date';end if;
      end loop;

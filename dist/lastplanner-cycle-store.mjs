@@ -75,6 +75,12 @@ export async function saveExecution(activityId,values,expected){
  const actor=authenticatedActor('execution'),data=await readWorkflow(),a=find(data,activityId);if(a.version!==expected)throw Error('La actividad cambió. Conserva el registro y recarga antes de guardarlo.');
  const next=C.recordExecution(a,values,data.asistencias,data.restricciones,actor);await commitWorkflow([op('actividades',next)],{action:'execution',actor});return next;
 }
+// Avance de un recinto marcado en el plano (0–100 %), sin formulario ni asistencia obligatoria.
+export async function recordRoomProgress(activityId,roomId,percent,date){
+ const actor=authenticatedActor('execution'),data=await readWorkflow(),a=find(data,activityId),values=C.planProgressValues(a,roomId,percent/100,date);
+ const previous=values.sustituye&&a.ejecuciones.find(e=>e.id===values.sustituye);if(!values.cantidad&&!percent&&!previous)return a;
+ const next=C.recordExecution(a,values,data.asistencias,data.restricciones,actor);await commitWorkflow([op('actividades',next)],{action:'execution',actor});return next;
+}
 export async function verifyExecution(activityId,entryId,values){const actor=authenticatedActor('verify'),data=await readWorkflow(),next=C.validateExecution(find(data,activityId),entryId,values,actor);await commitWorkflow([op('actividades',next)],{action:'verify',actor});return next;}
 export async function review(activityId,result,values){const actor=authenticatedActor('verify'),data=await readWorkflow(),next=C.reviewActivity(find(data,activityId),result,values,data,actor);await commitWorkflow([op('actividades',next)],{action:'verify',actor});return next;}
 export async function reprogram(activityId,dates){
