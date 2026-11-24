@@ -1,4 +1,4 @@
-import {enterPlanning} from './test-support/planning-browser.mjs';
+import {enterPlanning,openLastPlanner} from './test-support/planning-browser.mjs';
 import assert from 'node:assert/strict';
 import {createAtlasServer} from './server/groq-server.mjs';
 import {cloudFixture,QA_ACTOR,tokenFor} from './test-support/lastplanner-cloud.mjs';
@@ -25,10 +25,10 @@ const base='http://127.0.0.1:'+server.address().port;
 const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',args:['--no-sandbox']});
 try{
  for(const width of [1440,390]){
-  const context=await browser.newContext({viewport:{width,height:844},isMobile:width===390,hasTouch:width===390,serviceWorkers:'block',httpCredentials:{username:'atlas',password:cloud.env.ATLAS_ACCESS_PASSWORD}}),page=await context.newPage(),errors=[];
+  const context=await browser.newContext({viewport:{width,height:844},isMobile:width===390,hasTouch:width===390,serviceWorkers:'block'}),page=await context.newPage(),errors=[];
   page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(15000);
   await page.goto(base+'/?nivel=N-1');await page.locator('#assistantOpen').waitFor();
-  await page.locator('[data-module=work]:visible').first().click();await page.locator('[data-work-tab=lastplanner]').first().click();await page.locator('.lpCycleNav').waitFor();
+  await openLastPlanner(page);await page.locator('.lpCycleNav').waitFor();
   await page.locator('[data-cycle=view][data-id=planificacion]').click();await enterPlanning(page);
   const create=()=>page.locator('.lpCycleActions [data-cycle=new]'),account=()=>page.locator('#nubeDialog'),activity=()=>page.locator('.lpCycleDialog');
   assert.equal(await page.evaluate(()=>localStorage.getItem('atlas-nube-sesion')),null);
@@ -41,7 +41,7 @@ try{
   await page.waitForFunction(()=>document.querySelector('#nubeError')?.textContent.includes('incorrectos'));assert.equal(await activity().evaluate(e=>e.open),false);
   await page.locator('#nubeLogin [name=password]').fill(accounts['editor@example.test'].password);await page.locator('#nubeLogin .primary').click();
   await page.locator('.lpCycleDialog[open] [name=actividad]').waitFor();assert.equal(await account().evaluate(e=>e.open),false);assert.match(await activity().locator('footer').innerText(),/editor@example.test/);
-  await activity().locator('[name=actividad]').fill('Borrador tras iniciar sesión QA '+width);await activity().locator('[name=responsable]').selectOption({label:'Quijote · Pintura'});await activity().locator('[data-go="2"]').click();await activity().locator('[name=cantidad]').fill('10');await activity().locator('[type=submit]').click();
+  await activity().locator('[name=actividad]').fill('Borrador tras iniciar sesión QA '+width);await activity().locator('[name=responsable]').fill('Quijote · Pintura');await activity().locator('[data-go="2"]').click();await activity().locator('[name=cantidad]').fill('10');await activity().locator('[type=submit]').click();
   await page.waitForFunction(()=>!document.querySelector('.lpCycleDialog').open);
   const saved=await page.evaluate(async width=>{const {readWorkflow}=await import('./lastplanner-cycle-store.mjs');return (await readWorkflow()).actividades.find(a=>a.actividad==='Borrador tras iniciar sesión QA '+width);},width);
   assert.ok(saved);assert.equal(saved.autor,'editor@example.test');assert.equal(saved.historial[0].actor,QA_ACTOR.id);

@@ -116,7 +116,8 @@ export const GRUPOS = [
   // verticales, una opción por fila, en celular y escritorio: como tarjetas horizontales se cortaban.
 ];
 // Listas desplegables que quedan fuera: las del panel lateral antiguo, que ya no se muestra.
-export const SIN_FLUJO = '.left, [data-sin-flujo]';
+// Los formularios de Last Planner y el selector del plano van con controles normales: como rueda se cortaban y escondían la lista.
+export const SIN_FLUJO = '.left, [data-sin-flujo], .lpCycleDialog, .lpSpatialControls';
 export const claveDe = b => b.dataset.id ?? b.dataset.vista ?? '';
 // Posición de la tarjeta activa, o -1 si ninguna lo está.
 export const indiceActivo = botones => botones.findIndex(b => ['aria-pressed', 'aria-selected', 'aria-checked'].some(a => b.getAttribute(a) === 'true'));
@@ -207,7 +208,7 @@ function armarSelect(select) {
   select.addEventListener('change', () => { if (select.isConnected) marcarOpcion(select, caja); });
 }
 function revisar() {
-  for (const grupo of GRUPOS) document.querySelectorAll(grupo.selector).forEach(c => armar(c, grupo));
+  for (const grupo of GRUPOS) document.querySelectorAll(grupo.selector).forEach(c => { if (!c.closest(SIN_FLUJO)) armar(c, grupo); });
   document.querySelectorAll('select').forEach(armarSelect);
 }
 // Mira la página y arma cada grupo apenas aparece, sin que cada pantalla tenga que pedirlo. El plano (SVG) no cuenta.
