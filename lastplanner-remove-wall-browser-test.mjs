@@ -44,6 +44,8 @@ async function open(context) {
   await enterPlanning(page);
   return page;
 }
+// En Windows el Chrome de escritorio informa pantalla táctil aunque el contexto no la tenga: si no se puede tocar, se hace clic.
+async function tocar(page, x, y) { try { await page.touchscreen.tap(x, y).catch(()=>page.mouse.click(x, y)); } catch { await page.mouse.click(x, y); } }
 async function context(width) {
   const c = await browser.newContext({
     viewport: { width, height: width < 700 ? 844 : 950 },
@@ -95,7 +97,7 @@ async function mark(page, code) {
     throw Error('No hit in ' + code);
   }, code);
   if (await page.evaluate(() => navigator.maxTouchPoints > 0))
-    await page.touchscreen.tap(p.x, p.y);
+    await tocar(page, p.x, p.y);
   else await page.mouse.click(p.x, p.y);
 }
 try {
@@ -108,7 +110,7 @@ try {
       await form.locator('[name=actividad]').fill('Corrección de selección QA');
       await form
         .locator('[name=responsable]')
-        .selectOption({ label: 'Quijote · Pintura' });
+        .fill('Quijote · Pintura');
       await form.locator('[data-wizard-next]').click();
       await form.locator('[data-select-plan]').click();
       await page.waitForFunction(() =>
@@ -127,7 +129,7 @@ try {
           const hit = new DOMPoint(x, y).matrixTransform(document.getElementById('svg').getScreenCTM());
           return {x: hit.x, y: hit.y};
         });
-        await page.touchscreen.tap(screen.x, screen.y);
+        await tocar(page, screen.x, screen.y);
         const chooser = page.getByRole('dialog', {name: 'Elige un recinto'});
         await chooser.waitFor();
         await page.keyboard.press('Escape');

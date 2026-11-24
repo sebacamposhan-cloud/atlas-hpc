@@ -101,3 +101,12 @@ body.lpPicking #viewport{inset:var(--lp-picker-top,180px) 12px var(--lp-picker-b
  .lpSpatialControls[data-selection-expanded=false] .lpSpatialCards{display:none}
  .lpSpatialBottom>footer{flex:0 1 auto;gap:10px;padding:6px 0 calc(6px + env(safe-area-inset-bottom))}.lpSpatialBottom>footer small{display:none}
 }
+
+/* Escritorio: el plano del selector se ubica respecto de la ventana (no del área principal, que empieza después del menú)
+   y un fondo tapa la pantalla de atrás, para que no asomen el menú de Last Planner ni sus barras. */
+@media(min-width:701px){
+ body.lpPicking #viewport#viewport{position:fixed!important;inset:var(--lp-picker-top,180px) 12px var(--lp-picker-bottom,180px) 318px!important;z-index:105}
+ body.lpPicking::before{content:'';position:fixed;inset:0;background:#f5f8fc;z-index:104}
+}
+.lpDaily .lpDays button.lpDayAfter{border-style:dashed}
+.lpTeamContractor{margin:4px 0 8px;font-weight:700}

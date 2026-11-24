@@ -177,7 +177,7 @@ function fluido(opciones = {}) {
   assert(!GRUPOS.some(g => g.selector.includes('hojaLista')), 'las listas de la hoja quedan verticales');
   // El rombo y las palancas quedan como están.
   assert.ok(!GRUPOS.some(g => /rombo|palanca/i.test(g.selector)));
-  assert.equal(SIN_FLUJO, '.left, [data-sin-flujo]');
+  assert.equal(SIN_FLUJO, '.left, [data-sin-flujo], .lpCycleDialog, .lpSpatialControls', 'los formularios de Last Planner y el selector del plano van sin rueda');
   const uno = firmaDeSelect({disabled: false, options: [{value: 'a', text: 'A', disabled: false}]}), otro = firmaDeSelect({disabled: false, options: [{value: 'a', text: 'A', disabled: true}]});
   assert.notEqual(uno, otro, 'un bloqueo nuevo vuelve a armar las tarjetas');
   for (const selector of ['.lpCycleNav', '.lpCycleSubnav', '.subVistas']) {
