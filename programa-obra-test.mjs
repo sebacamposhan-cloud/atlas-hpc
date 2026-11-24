@@ -58,7 +58,7 @@ const leido = P.leerXML(xml);
 assert.deepEqual(leido.cabecera, {nombre: 'prueba.xml', titulo: 'OBRA DE PRUEBA', estado: '2026-10-31', guardado: null, texto1: '188743731'});
 assert.equal(leido.tareas.length, tareas.length);
 const t6 = leido.tareas.find(t => t.uid === 6);
-assert.deepEqual(t6, {uid: 6, nombre: '2°Piso', esquema: '1.1.1.1.2', nivel: 5, inicio: '2026-09-01', fin: '2026-12-30', resumen: false, hito: false, texto1: ''}, 'la línea base y las predecesoras no pisan las fechas propias');
+assert.deepEqual(t6, {uid: 6, nombre: '2°Piso', esquema: '1.1.1.1.2', nivel: 5, inicio: '2026-09-01', fin: '2026-12-30', resumen: false, hito: false, texto1: '', base: null, costo: 123456789}, 'la línea base y las predecesoras no pisan las fechas propias');
 assert.equal(leido.tareas.find(t => t.uid === 17).nombre, 'Sobrelosas & afinados');
 assert.equal(leido.tareas.find(t => t.uid === 3).texto1, '6.4.1');
 assert.throws(() => P.leerXML('<?xml version="1.0"?><Workbook></Workbook>'), /no es un XML de Project/);
@@ -79,12 +79,14 @@ await assert.rejects(P.leerXMLPorPartes(new Blob(['<html><body>' + 'x'.repeat(50
 // ---------- Programa por piso ----------
 const pp = P.programaPorPiso(leido, {archivo: 'prueba.xml'});
 assert.deepEqual(Object.keys(pp.pisos).sort(), ['N-1', 'N02']);
-assert.deepEqual(pp.revision, {archivo: 'prueba.xml', titulo: 'OBRA DE PRUEBA', estado: '2026-10-31'});
+assert.deepEqual(pp.revision, {archivo: 'prueba.xml', titulo: 'OBRA DE PRUEBA', estado: '2026-10-31', lineaBase: null});
 assert.deepEqual(pp.fuera, {sinPiso: 3, otroModulo: 1, sinCodigo: 0}, 'hito, 3°Subterráneo y cubierta sin piso; Módulo B fuera');
 const n02 = pp.pisos.N02;
 assert.deepEqual(n02.tareas.map(t => t.codigo), ['2.4.1.1', '2.6.2', '2.6.3', '6.1.4', '6.4.1', '6.4.2']);
 assert.equal(n02.tareas[0].partida, 'ESTRUCTURA', 'código en la tarea del piso: la partida es la de arriba, no «2°Piso»');
-assert.deepEqual(n02.tareas.find(t => t.codigo === '6.4.2'), {codigo: '6.4.2', partida: 'Pinturas en cielos', inicio: '2026-07-01', fin: '2027-04-03', uids: [13, 14], tramos: [['2026-07-01', '2027-03-30'], ['2027-03-31', '2027-04-03']]}, 'dos tareas de una partida en el piso: una con sus tramos');
+const {peso: peso642, ...t642} = n02.tareas.find(t => t.codigo === '6.4.2');
+assert.ok(peso642 > 0, 'peso relativo de la partida, sin montos');
+assert.deepEqual(t642, {codigo: '6.4.2', partida: 'Pinturas en cielos', inicio: '2026-07-01', fin: '2027-04-03', uids: [13, 14], tramos: [['2026-07-01', '2027-03-30'], ['2027-03-31', '2027-04-03']]}, 'dos tareas de una partida en el piso: una con sus tramos');
 assert.deepEqual(pp.pisos['N-1'].tareas.map(t => [t.codigo, t.inicio, t.fin]), [['6.4.1', '2026-03-02', '2026-05-29']]);
 assert.ok(!JSON.stringify(pp).includes('462.107') && !JSON.stringify(pp).includes('123456789'), 'sin recursos ni montos');
 const registro = {...n02, cargada: '2026-11-16T10:00:00.000Z', por: 'Planificación'};
@@ -93,6 +95,28 @@ assert.throws(() => P.validarPrograma({...registro, nivel: 'N10'}), /piso/);
 assert.throws(() => P.validarPrograma({...registro, tareas: [...registro.tareas, registro.tareas[0]]}), /repetida/);
 assert.throws(() => P.validarPrograma({...registro, tareas: [{...registro.tareas[0], fin: '2020-01-01'}]}), /inválida/);
 assert.equal(P.idPrograma('N-1'), 'programa-N-1');
+
+// Línea base 1 y peso por costo (23-11-2026): el plan del RMP. La línea base 0 no se usa; el peso es el costo de la línea
+// base 1 de la partida del piso ÷ el de todas las tareas finales (% de la obra) y no se guarda ningún monto.
+{
+  const lb = (inicio, fin, costo) => `<Baseline><Number>1</Number><Start>${inicio}T08:00:00</Start><Finish>${fin}T18:00:00</Finish><Cost>${costo}</Cost></Baseline>`;
+  const xmlBase = xml.replace(/<Task><UID>(\d+)<\/UID>[\s\S]*?<\/Task>/g, (bloque, uid) => {
+    const extra = {6: lb('2026-05-04', '2026-08-28', 3000), 13: lb('2026-04-01', '2026-06-30', 1000), 14: lb('2026-07-01', '2026-07-10', 1000)}[uid];
+    return extra ? bloque.replace('</Task>', extra + '</Task>') : bloque.replace(/<Cost>\d+<\/Cost>/, '<Cost>0</Cost>').replace('</Task>', lb('2026-01-01', '2026-01-02', uid === '5' ? 5000 : 0) + '</Task>');
+  });
+  const ppb = P.programaPorPiso(P.leerXML(xmlBase), {archivo: 'prueba.xml'});
+  assert.equal(ppb.revision.lineaBase, 1);
+  const t641 = ppb.pisos.N02.tareas.find(t => t.codigo === '6.4.1'), t642b = ppb.pisos.N02.tareas.find(t => t.codigo === '6.4.2');
+  assert.deepEqual([t641.inicioBase, t641.finBase, t641.peso], ['2026-05-04', '2026-08-28', 30], 'línea base 1 y 3.000 de 10.000');
+  assert.deepEqual([t642b.inicioBase, t642b.finBase, t642b.peso], ['2026-04-01', '2026-07-10', 20], 'dos tareas: base de la primera al fin de la segunda, costos sumados');
+  assert.equal(ppb.pisos['N-1'].tareas[0].peso, 50);
+  assert.ok(!JSON.stringify(ppb).includes('3000') && !JSON.stringify(ppb).includes('5000'), 'sin montos');
+  assert.equal(P.validarPrograma({...ppb.pisos.N02, cargada: 'x', por: 'y'}).nivel, 'N02');
+  assert.throws(() => P.validarPrograma({...ppb.pisos.N02, tareas: [{...t641, finBase: '2026-01-01'}]}), /inválida/);
+  assert.throws(() => P.validarPrograma({...ppb.pisos.N02, tareas: [{...t641, peso: 140}]}), /inválida/);
+  const juntas = P.tareaDeItem({tareas: [{...t641, codigo: '6.4.1.1'}, {...t641, codigo: '6.4.1.2', peso: 5, finBase: '2026-09-30'}]}, '6.4.1');
+  assert.deepEqual([juntas.inicioBase, juntas.finBase, juntas.peso], ['2026-05-04', '2026-09-30', 35], 'partes juntas: base y peso sumado');
+}
 
 // Revisiones: cambios y ventanas conservadas.
 const rev2 = {...n02, tareas: n02.tareas.filter(t => t.codigo !== '2.6.3').map(t => t.codigo === '6.4.1' ? {...t, fin: '2027-01-15'} : t).concat([{codigo: '6.10.2', partida: 'Guardapolvos', inicio: '2027-01-04', fin: '2027-02-26', uids: [99], tramos: [['2027-01-04', '2027-02-26']]}])};
@@ -107,7 +131,7 @@ assert.equal(P.conVentanasPrevias(rev2, null).ventanas, undefined);
 // ---------- Partidas de Atlas → tareas ----------
 assert.equal(P.tareaDeItem(n02, '6.4.1.2').codigo, '6.4.1');
 assert.equal(P.tareaDeItem(n02, '6.4.1').codigo, '6.4.1');
-assert.deepEqual(P.tareaDeItem(n02, '2.6'), {codigo: '2.6', partida: 'Sobrelosas & afinados · Sobrerradier', inicio: '2025-06-02', fin: '2025-10-31', compuesta: true}, 'el programa abre 2.6 en partes');
+assert.deepEqual((({peso, ...t}) => t)(P.tareaDeItem(n02, '2.6')), {codigo: '2.6', partida: 'Sobrelosas & afinados · Sobrerradier', inicio: '2025-06-02', fin: '2025-10-31', compuesta: true}, 'el programa abre 2.6 en partes');
 assert.equal(P.tareaDeItem(n02, 'T-CIE-PINTURA-ALTA').codigo, '6.4.2');
 assert.equal(P.tareaDeItem(n02, 'T-PAV-109').codigo, '6.1.4', 'genérica de pavimento: la familia 6.1 del programa');
 assert.equal(P.tareaDeItem(n02, '6.3.2'), null);
