@@ -2,14 +2,16 @@
 // de vano (Sacyr y los subcontratos ubican los vanos por ese número). Tocar una puerta abre su ficha: modelo, llave, vano,
 // ancho, código de partida, contratista (Teisa, Protego, Grupsa o Retec) y estado.
 // Siempre se marca en terreno (rework 2026-11-23): una barra corta con el pincel y el buscador; el proyecto de puertas del
-// piso se abre solo y se crea al marcar la primera puerta. Estados y contratistas van en «Simbología»; el Excel, en Proyectos.
+// piso se abre solo y se crea al marcar la primera puerta. Estados y contratistas van en «Simbología», con «Exportar»: PDF
+// del plano con las puertas filtradas y su listado, y Excel con el mismo formato (2026-11-24). El Excel de todas, en Proyectos.
 // Datos: dist/<piso>/puertas.json (scripts/puertas/importar-dwg.mjs). Modelo: puertas-model.mjs.
 import {datos} from './level.mjs';
 import * as P from './puertas-model.mjs';
 import {FUENTE, NOTAS, modeloDe, vanoDe} from './puertas-modelos.mjs';
 import {readMarkings, saveMarking} from './marking-store.mjs';
 import {firmante, pedirSesion} from './firma.mjs';
-import {loadVendor} from './web-store.mjs';
+import {libroInforme, MIME_XLSX, nombreXlsx} from './excel-informe.mjs';
+import {codigoPiso} from './marking-overlay.mjs';
 
 export function createPuertas(ctx) {
   const {esc} = ctx, svg = document.getElementById('svg');
@@ -121,10 +123,12 @@ export function createPuertas(ctx) {
     simbologia.innerHTML = `<div class="puertasSimbCabeza"><b>Puertas · ${esc(ctx.levelName)}</b><button type="button" data-simb-cerrar aria-label="Cerrar simbología">×</button></div>
       <div class="puertaLeyenda">${P.ORDEN.filter(e => n[e]).map(e => `<label><input type="checkbox" data-puertas-estado="${e}" ${ocultos.has(e) ? '' : 'checked'}><i style="background:${P.ESTADOS[e].color}"></i>${esc(P.ESTADOS[e].nombre)} <b>${n[e]}</b></label>`).join('')}</div>
       <div class="puertaContratistas" role="group" aria-label="Contratista">${[['', 'Todas'], ...Object.keys(P.CONTRATISTAS).map(c => [c, c]), [P.SIN_CONTRATISTA, 'Sin contratista']].map(([v, t]) => `<button type="button" data-puertas-contratista="${v}" aria-pressed="${contratista === v}">${t}</button>`).join('')}</div>
-      <p class="puertaNota">${proyecto ? `Proyecto «${esc(proyecto.name)}» · se sincroniza con tu sesión.` : 'Estados del plano de avance; al marcar la primera puerta se crea el proyecto del piso.'} Excel: en Proyectos.</p>`;
+      <p class="puertaNota">${proyecto ? `Proyecto «${esc(proyecto.name)}» · se sincroniza con tu sesión.` : 'Estados del plano de avance; al marcar la primera puerta se crea el proyecto del piso.'}</p>
+      <div class="puertasExportar" role="group" aria-label="Exportar las puertas filtradas"><span>Exportar <b>${visibles().length}</b> ${visibles().length === 1 ? 'puerta' : 'puertas'} del filtro</span><button type="button" data-puertas-exportar="pdf">PDF con plano</button><button type="button" data-puertas-exportar="excel">Excel</button></div>`;
     simbologia.querySelector('[data-simb-cerrar]').onclick = () => { simbologia.hidden = true; };
-    simbologia.querySelectorAll('[data-puertas-estado]').forEach(i => i.onchange = () => { if (i.checked) ocultos.delete(i.dataset.puertasEstado); else ocultos.add(i.dataset.puertasEstado); pintar(); dibujar(); });
+    simbologia.querySelectorAll('[data-puertas-estado]').forEach(i => i.onchange = () => { if (i.checked) ocultos.delete(i.dataset.puertasEstado); else ocultos.add(i.dataset.puertasEstado); pintar(); dibujar(); pintarSimbologia(); });
     simbologia.querySelectorAll('[data-puertas-contratista]').forEach(b => b.onclick = () => { contratista = b.dataset.puertasContratista; pintar(); dibujar(); pintarSimbologia(); });
+    simbologia.querySelectorAll('[data-puertas-exportar]').forEach(b => b.onclick = () => exportar(b.dataset.puertasExportar, b));
   }
   function alternarSimbologia() { if (!activo) return; simbologia.hidden = !simbologia.hidden; pintarSimbologia(); }
   // ---------- Pincel ----------
@@ -196,14 +200,30 @@ export function createPuertas(ctx) {
     if (!(await asegurarProyecto())) return;
     guardar(doc => P.marcarPuerta(doc, p, estado, {autor: firmante()}));
   }
-  // Excel del proyecto de puertas: se pide desde Proyectos (marking.mjs, «atlas-puertas-excel»).
+  // ---------- Exportar ----------
+  // Informe con lo que muestra el plano (filtro de la Simbología) o, sin filtro, todas las puertas del piso.
+  const informe = (doc, lista, filtro = {}) => P.informePuertas(catalogo, doc, lista, {piso: codigoPiso(ctx.level), nivelNombre: ctx.levelName, filtro, autor: firmante() || ''});
+  const nota = 'Estados del plano de avance de puertas y lo marcado en terreno en ATLAS.';
+  const bajarExcel = (datos, archivo) => ctx.download(new Blob([libroInforme(datos, {hoja: 'Puertas', alcance: ctx.levelName, nota})], {type: MIME_XLSX}), nombreXlsx(archivo));
+  // Botones «PDF con plano» y «Excel» de la Simbología: solo las puertas que se ven en el plano.
+  async function exportar(formato, boton) {
+    if (!catalogo) return;
+    const lista = visibles();
+    if (!lista.length) { ctx.toast('Ninguna puerta cumple el filtro.'); return; }
+    const datos = informe(proyecto, lista, {estados: new Set(P.ORDEN.filter(e => !ocultos.has(e))), contratista, texto: busqueda});
+    if (formato === 'excel') { bajarExcel(datos.excel, datos.archivo); ctx.toast(`Excel exportado: ${lista.length} ${lista.length === 1 ? 'puerta' : 'puertas'}.`); return; }
+    if (boton) boton.disabled = true;
+    try {
+      const puntos = lista.filter(p => !p.fuera).map(p => ({x: p.x, y: p.y, vano: p.vano || '', llave: p.llave || p.modelo || '', color: P.ESTADOS[P.estadoDe(p, proyecto)].color}));
+      await ctx.exportarPlano(datos.pdf, puntos, datos.archivo, `${lista.length} ${lista.length === 1 ? 'puerta' : 'puertas'}`);
+    } finally { if (boton) boton.disabled = false; }
+  }
+  // Excel del proyecto de puertas con todas las puertas del piso: se pide desde Proyectos (marking.mjs, «atlas-puertas-excel»).
   async function excel(doc) {
     try {
       await cargar(); if (!catalogo) throw Error('Este piso aún no tiene plano de avance de puertas.');
-      await loadVendor('xlsx'); const X = window.XLSX;
-      const ws = X.utils.aoa_to_sheet([P.ENCABEZADOS, ...P.filasExcel(catalogo, doc)]), wb = X.utils.book_new();
-      X.utils.book_append_sheet(wb, ws, 'Puertas');
-      ctx.download(new Blob([X.write(wb, {bookType: 'xlsx', type: 'array'})], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), (doc?.name || 'Puertas ' + ctx.levelName).replace(/[\\/:*?"<>|]+/g, '-') + '.xlsx');
+      const datos = informe(doc, catalogo.puertas);
+      bajarExcel({...datos.excel, titulo: doc?.name || datos.excel.titulo}, doc?.name || datos.archivo);
     } catch (e) { ctx.toast(e.message); }
   }
   // Si la nube trae otra versión del proyecto abierto, se muestra esa.

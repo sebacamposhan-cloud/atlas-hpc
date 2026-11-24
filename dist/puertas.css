@@ -87,3 +87,9 @@ body.puertasOpen #viewport { right: 0; }
 .puertaPincelActivo button:disabled { opacity: .45; }
 .puertaContratistas { flex-wrap: wrap; }
 .puertaContratistas button { flex: 1 1 auto; padding: 4px 10px; }
+/* Exportar lo filtrado (2026-11-24): PDF del plano con las puertas del filtro y Excel con formato de informe. */
+.puertasExportar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 0 4px; padding-top: 8px; border-top: 1px solid #8c8c8c; }
+.puertasExportar span { flex: 1 0 100%; font-size: 13px; }
+.puertasExportar button { flex: 1; min-height: 40px; border: 1px solid var(--g-marca, #1b2a56); background: #fff; color: #000; font-weight: 700; }
+.puertasExportar button:first-of-type { background: var(--g-marca, #1b2a56); color: #fff; }
+.puertasExportar button:disabled { opacity: .5; }

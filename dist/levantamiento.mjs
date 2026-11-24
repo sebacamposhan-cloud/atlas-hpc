@@ -5,6 +5,8 @@
 import * as L from './levantamiento-model.mjs';
 import {crearFiltrosColumna} from './column-filters.mjs';
 import {loadVendor} from './web-store.mjs';
+import {libroInforme, MIME_XLSX, nombreXlsx} from './excel-informe.mjs';
+import {codigoPiso} from './marking-overlay.mjs';
 import {loadPma} from './pma.mjs';
 import {leerAvance} from './avance-store.mjs';
 import {planillaDe} from './planilla-avance-nube.mjs';
@@ -310,17 +312,24 @@ export function createLevantamiento(ctx) {
   }
 
   // ---------- Exportar a Excel (todos los pisos del levantamiento) ----------
+  // Con el formato del informe PDF (excel-informe.mjs): encabezado del proyecto, simbología de la vista con cantidades y la
+  // tabla con el color de cada estado. La tabla conserva sus columnas: el mismo archivo se puede volver a importar.
   async function exportarExcel(doc) {
     try {
       const docs = doc.grupo ? (await readMarkings()).filter(d => d.grupo === doc.grupo && d.tipo === 'levantamiento' && !d.eliminado) : [doc];
       const enlazados = Object.fromEntries(await Promise.all(docs.map(async d => [d.level, await enlacePiso(d.level)])));
       const alineado = d => enlazados[d.level]?.partida ? L.alinearPartidas(d, enlazados[d.level].partida) : d;
-      const aoa = L.exportar(docs.map(d => alineado(d.id === doc.id ? doc : d)), enlazados);
-      await loadVendor('xlsx'); const X = window.XLSX, ws = X.utils.aoa_to_sheet(aoa), wb = X.utils.book_new();
-      ws['!cols'] = aoa[0].map((h, i) => ({wch: Math.min(40, Math.max(String(h).length, ...aoa.slice(1, 200).map(r => String(r[i] ?? '').length)) + 2)}));
-      ws['!autofilter'] = {ref: X.utils.encode_range({s: {r: 0, c: 0}, e: {r: aoa.length - 1, c: aoa[0].length - 1}})};
-      X.utils.book_append_sheet(wb, ws, 'Levantamiento');
-      ctx.download(new Blob([X.write(wb, {bookType: 'xlsx', type: 'array'})], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}), doc.name.replace(/[\\/:*?"<>|]+/g, '-') + '.xlsx');
+      const [columnas, ...filas] = L.exportar(docs.map(d => alineado(d.id === doc.id ? doc : d)), enlazados, {color: true});
+      // Simbología: la columna con que se pinta el plano (la vista del proyecto).
+      const listoVista = doc.vista === L.VISTA_LISTO, vista = listoVista ? null : doc.columnas.find(c => c.id === doc.vista);
+      const i = columnas.indexOf(vista ? vista.nombre : 'Listo para instalar'), texto = v => String(v && typeof v === 'object' ? v.texto : v ?? '');
+      const opciones = listoVista || !vista ? [['Sí', L.LISTO.listo], ['No', L.LISTO.pendiente]] : (vista.opciones || []).map(o => [o.nombre, o]);
+      const leyenda = i < 0 ? [] : [...opciones.map(([valor, o]) => ({nombre: o.nombre, color: o.color, n: filas.filter(f => texto(f[i]) === valor).length})),
+        {nombre: 'Sin dato', color: '#ffffff', n: filas.filter(f => !texto(f[i])).length}];
+      const pisos = [...new Set(docs.map(d => d.level))], at = docs.map(d => d.updatedAt).sort().at(-1);
+      const info = {piso: pisos.length === 1 ? codigoPiso(pisos[0]) : `${pisos.length} pisos`, titulo: doc.name, tipo: 'Levantamiento', autor: doc.author, proposito: doc.purpose, actualizado: at,
+        detalle: `${filas.length} recintos${pisos.length > 1 ? ' · ' + pisos.map(codigoPiso).join(', ') : ''} · Plano coloreado por: ${vista ? vista.nombre : 'Listo para instalar'}`, leyenda, columnas, filas};
+      ctx.download(new Blob([libroInforme(info, {hoja: 'Levantamiento', nota: 'Levantamiento de ATLAS. La tabla se puede volver a importar.'})], {type: MIME_XLSX}), nombreXlsx(doc.name));
     } catch (failure) { ctx.toast('No se pudo exportar: ' + failure.message); }
   }
 
