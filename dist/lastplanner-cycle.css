@@ -88,3 +88,16 @@ body.lpPicking #viewport{inset:var(--lp-picker-top,180px) 12px var(--lp-picker-b
 .lpProgramaFiltro{display:flex;gap:6px;align-items:center;font-size:13px;font-weight:600}
 
 .lpSpatialSelectionHead>[data-pick-remove-wall]{min-width:44px;min-height:44px;flex-shrink:0}
+
+/* Escritorio y tableta: encabezado en una barra delgada y selección plegada en una línea, para que el plano tenga más alto. */
+@media(min-width:701px){
+ .lpSpatialControls>.lpSpatialTop{display:flex;flex-wrap:wrap;align-items:center;background:white;border-bottom:1px solid #e1e8f1}
+ .lpSpatialTop .lpSpatialBrand{height:48px;padding:0 18px;gap:14px;box-sizing:border-box}.lpSpatialTop .lpSpatialBrand b{font-size:17px}.lpSpatialTop .lpSpatialBrand span{font-size:13px}
+ .lpSpatialTop nav{height:48px;gap:14px;padding:0 14px;border:0;font-size:13px}.lpSpatialTop nav strong{padding:5px 14px}
+ .lpSpatialTop .lpSpatialHeading{padding:4px 14px}.lpSpatialTop .lpSpatialHeading h2{font-size:17px}.lpSpatialTop .lpSpatialHeading small,.lpSpatialTop .lpSpatialHeading p{display:none}
+ .lpSpatialControls>.lpSpatialBottom{display:flex;flex-wrap:wrap;align-items:center;gap:0 16px;padding:6px 20px 0}
+ .lpSpatialBottom>.lpSpatialSelection{flex:1 1 320px;min-width:0;padding:4px 12px}
+ .lpSpatialControls[data-selection-expanded=true] .lpSpatialBottom>.lpSpatialSelection{flex-basis:100%}
+ .lpSpatialControls[data-selection-expanded=false] .lpSpatialCards{display:none}
+ .lpSpatialBottom>footer{flex:0 1 auto;gap:10px;padding:6px 0 calc(6px + env(safe-area-inset-bottom))}.lpSpatialBottom>footer small{display:none}
+}
