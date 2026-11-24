@@ -46,7 +46,12 @@ export async function saveDraftsBatch(items){
 }
 export async function redistribute(groupId,quantities){const actor=authenticatedActor('draft'),data=await readWorkflow(),rows=data.actividades.filter(a=>a.grupo?.id===groupId).sort((a,b)=>a.grupo.indice-b.grupo.indice),next=C.redistributeGroup(rows,quantities,actor);await commitWorkflow(next.map(a=>op('actividades',a)),{action:'draft',actor});return next;}
 export async function publishPlan(week,level){
- const actor=authenticatedActor('publish'),data=await readWorkflow(),plan=data.semanas.find(s=>s.id===level+'_'+week),next=C.publishWeek(data.actividades,week,level,actor,plan);
+ const actor=authenticatedActor('publish');let data=await readWorkflow();
+ // Los recintos elegidos sin superficies pasan a «Recinto completo» en un guardado de borrador previo: el servidor exige
+ // que la publicación congele el borrador tal como está guardado.
+ const pending=data.actividades.filter(a=>!a.archivada&&!a.id.startsWith('demo-')&&a.semana===week&&a.level===level&&a.fase==='borrador'&&a.alcances.some(s=>s.locationOnly));
+ if(pending.length){const draftActor=authenticatedActor('draft');await commitWorkflow(pending.map(a=>op('actividades',C.editDraft(a,{...C.planFields(a),alcances:a.alcances.map(C.wholeRoom)},draftActor))),{action:'draft',actor:draftActor});data=await readWorkflow();}
+ const plan=data.semanas.find(s=>s.id===level+'_'+week),next=C.publishWeek(data.actividades,week,level,actor,plan);
  await commitWorkflow([...next.activities.map(a=>op('actividades',a)),op('semanas',next.plan)],{action:'publish',actor});return next;
 }
 export async function revisePlan(activityId,values,reason,expected){

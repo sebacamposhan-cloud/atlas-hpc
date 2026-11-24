@@ -102,10 +102,12 @@ export function redistributeGroup(activities,quantities,actor,{at=now()}={}){
 }
 export const pendingRestriction=r=>!['Liberada','Cerrada'].includes(r.estado);
 export const blockers=(a,restrictions)=>restrictions.filter(r=>a.restrictionIds.includes(r.id)&&pendingRestriction(r));
+// Un recinto elegido sin superficies se publica como «Recinto completo» (decisión de Mauro, 2026-11-23).
+export const wholeRoom=s=>{if(!s?.locationOnly)return s;const {locationOnly,...rest}=s;return {...rest,tipo:'recinto',label:'Recinto completo',geometry:s.roomBoundary||s.geometry||null};};
 export function publishWeek(activities,week,level,actor,previous=null,{at=now()}={}){
  requirePermission(actor,'publish');if(!esSemana(week))fail('Período de publicación no válido.');if(previous?.cerrada)fail('La semana está cerrada.');
- const drafts=activities.filter(a=>!a.archivada&&!a.id.startsWith('demo-')&&a.semana===week&&a.level===level&&a.fase==='borrador');if(!drafts.length)fail('No hay borradores para publicar en ese piso y período.');
- const next=drafts.map(a=>{validateActivity(a);if(a.legacyIncomplete||!a.alcances.length||a.alcances.some(s=>s.locationOnly))fail('Completa fechas y selección espacial antes de publicar.');return validateActivity(changed(a,{...a,fase:'publicada',compromisoOriginal:{...planFields(a),publicada:at,autor:actor.email,actor:actor.id},publicada:at},actor,'Publicar compromiso',{},at));});
+ const drafts=activities.filter(a=>!a.archivada&&!a.id.startsWith('demo-')&&a.semana===week&&a.level===level&&a.fase==='borrador');if(!drafts.length)fail('No hay borradores del '+level+' en la semana '+week+'. Revisa el piso y la semana elegidos arriba.');
+ const next=drafts.map(a=>{try{validateActivity(a);}catch(e){fail('«'+a.actividad+'»: '+e.message);}if(a.legacyIncomplete||!a.alcances.length)fail('«'+a.actividad+'»: elige al menos un recinto en Ubicación antes de publicar.');if(a.alcances.some(s=>s.locationOnly))fail('«'+a.actividad+'»: tiene recintos sin superficie; vuelve a publicar.');return validateActivity(changed(a,{...a,fase:'publicada',compromisoOriginal:{...planFields(a),publicada:at,autor:actor.email,actor:actor.id},publicada:at},actor,'Publicar compromiso',{},at));});
  const plan=changed(previous,{...(previous||{}),id:level+'_'+week,semana:week,level,cerrada:false,activityIds:[...new Set([...(previous?.activityIds||[]),...next.map(a=>a.id)])],publicaciones:[...(previous?.publicaciones||[]),{id:id(),at,actor:actor.id,autor:actor.email,compromisos:next.map(a=>({id:a.id,version:a.version,plan:copy(a.compromisoOriginal)}))}]},actor,'Emitir planificación semanal',{},at);
  return {activities:next,plan};
 }
