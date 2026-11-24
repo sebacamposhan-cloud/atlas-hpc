@@ -6,7 +6,7 @@ export const SUBCONTRATOS = [
   ['CS Energy', 'Clima'], ['DAC-Controls', 'CDE'], ['ECIM', 'Electricidad'], ['Eleva Group', 'Ascensores'], ['EMT', 'Andamios'],
   ['Falcold', 'Clima'], ['Forpec', 'Fachada'], ['Heavy Duty', 'Andamios'], ['Huennebeck', 'Andamios'], ['JMIE', 'Electricidad'],
   ['Linde', 'Gases clínicos'], ['Loginteg', 'Bodegas'], ['Lza Ingeniería', 'Data Center'], ['Metalcar', 'Montaje greating'],
-  ['Optiva', ''], ['Pavitec', 'Sanitario'], ['Pestkiller', 'Control de plagas'], ['Pua Diseño', ''], ['QCLASS', 'Biolimpias'],
+  ['Optiva', ''], ['Pavitec', 'Sanitario'], ['Pavitec', 'Tabiquería'], ['Pestkiller', 'Control de plagas'], ['Pua Diseño', ''], ['QCLASS', 'Biolimpias'],
   ['Quijote', 'Pintura'], ['Rafcon', 'Fachadas'], ['Rentokil', 'Control de plagas'], ['RMF Miccono', 'Sanitario'], ['STI', 'Clima'],
   ['Valcompany', '']
 ].map(([nombre, especialidad]) => ({nombre, especialidad, etiqueta: nombre + (especialidad ? ' · ' + especialidad : '')}));
