@@ -164,9 +164,10 @@ export function recordExecution(a,values,allAttendance,restrictions,actor,{at=no
  for(const scope of values.alcances){const planned=a.alcances.find(s=>s.id===scope.scopeId);if((scope.geometry||[]).some(g=>!withinGeometry(planned.geometry,g)))fail('La intervención real debe quedar dentro de la superficie planificada.');}
  if(Math.abs(values.alcances.reduce((n,s)=>n+s.cantidad,0)-values.cantidad)>EPS)fail('Las cantidades por superficie deben sumar la cantidad ejecutada del registro.');
  const selected=allAttendance.filter(r=>(values.asistenciaIds||[]).includes(r.id));
- if(values.cantidad>0&&(!selected.length||selected.length!==(values.asistenciaIds||[]).length||selected.some(r=>r.estado!=='Presente'||r.fecha<values.inicioReal||r.fecha>values.finReal||!r.activityIds.includes(a.id))))fail('Vincula asistencia presente, de las fechas ejecutadas y asignada a esta actividad.');
+ // La asistencia es opcional: si se vincula, debe ser presente, de esas fechas y asignada a la actividad.
+ if(values.cantidad>0&&(values.asistenciaIds||[]).length&&(selected.length!==(values.asistenciaIds||[]).length||selected.some(r=>r.estado!=='Presente'||r.fecha<values.inicioReal||r.fecha>values.finReal||!r.activityIds.includes(a.id))))fail('Vincula asistencia presente, de las fechas ejecutadas y asignada a esta actividad.');
  if(values.sustituye&&!activeExecutions(a).some(e=>e.id===values.sustituye))fail('El registro a corregir ya cambió.');if(values.sustituye&&!text(values.motivo,2000))fail('Una corrección de medición requiere motivo.');
- const e={...copy(values),id:values.id||id(),autor:actor.email,actor:actor.id,at,validacion:{estado:'Pendiente'}};
+ const e={...copy(values),id:values.id||id(),autor:actor.email,actor:actor.id,at,validacion:{estado:'Pendiente'},...(values.cantidad>0&&!(values.asistenciaIds||[]).length?{sinAsistencia:true}:{})};
  if(a.ejecuciones.some(v=>v.id===e.id))fail('Ese registro de ejecución ya fue guardado.');
  const next={...a,estado:'En ejecución',ejecuciones:[...a.ejecuciones,e],inicioReal:a.inicioReal||values.inicioReal};next.cantidadEjecutada=executed(next);next.finReal=activeExecutions(next).map(e=>e.finReal).sort().at(-1)||null;
  return validateActivity(changed(a,next,actor,'Registrar avance físico',{registro:e.id,sustituye:e.sustituye||null,motivo:e.motivo||null},at));
@@ -177,6 +178,21 @@ export function validateExecution(a,entryId,values,actor,{at=now()}={}){
  if(!values.ubicacion||!values.cantidad||!values.restricciones||!text(values.nota,2000))fail('Comprueba ubicación, cantidad y restricciones e indica la verificación realizada.');
  const entries=a.ejecuciones.map(e=>e.id===entryId?{...e,validacion:{estado:'Validada',at,actor:actor.id,autor:actor.email,nota:values.nota,ubicacion:true,cantidad:true,restricciones:true}}:e);
  return changed(a,{...a,ejecuciones:entries},actor,'Verificar medición y superficies',{registro:entryId,nota:values.nota},at);
+}
+// Avance marcado en el plano (Last Planner): la cantidad comprometida se reparte por igual entre los recintos de la
+// actividad y, dentro de cada recinto, entre sus superficies. El % del recinto es el menor de sus superficies.
+export function roomShare(a,roomId){const rooms=[...new Set(a.alcances.map(s=>s.roomId))];return rooms.includes(roomId)?a.cantidad/rooms.length:0;}
+export function roomProgress(a,roomId,options={}){const scopes=a.alcances.filter(s=>s.roomId===roomId);return scopes.length?Math.min(...scopes.map(s=>scopeProgress(a,s.id,options).avance)):0;}
+// Registro de avance de un recinto marcado en el plano. Un nuevo % de ese recinto reemplaza al marcado antes desde el
+// plano (sustituye), así el avance también puede bajar; los registros del formulario se conservan.
+export function planProgressValues(a,roomId,avance,date){
+ const scopes=a.alcances.filter(s=>s.roomId===roomId);if(!scopes.length)fail('El recinto no es parte de esta actividad.');
+ if(!(avance>=0&&avance<=1))fail('El avance va de 0 a 100 %.');if(!esFecha(date))fail('Fecha de avance no válida.');
+ const previous=activeExecutions(a).filter(e=>e.origen==='plano'&&e.validacion?.estado!=='Validada'&&e.alcances.length&&e.alcances.every(x=>scopes.some(s=>s.id===x.scopeId))).at(-1);
+ const others=activeExecutions(a).filter(e=>e!==previous),per=roomShare(a,roomId)/scopes.length,round=v=>Math.round(v*1e6)/1e6;
+ const alcances=scopes.map(s=>{const done=others.flatMap(e=>e.alcances.filter(x=>x.scopeId===s.id)).reduce((n,x)=>n+x.cantidad,0);return {scopeId:s.id,avance,cantidad:round(Math.max(0,avance*per-done))};});
+ const cantidad=round(alcances.reduce((n,x)=>n+x.cantidad,0));alcances[0].cantidad=round(alcances[0].cantidad+cantidad-alcances.reduce((n,x)=>n+x.cantidad,0));
+ return {inicioReal:previous&&previous.inicioReal<date?previous.inicioReal:date,finReal:date,cantidad,unidad:a.unidad,alcances,asistenciaIds:[],observaciones:'Avance marcado en el plano',origen:'plano',...(previous?{sustituye:previous.id,motivo:'Avance corregido desde el plano'}:{})};
 }
 export function scopeProgress(a,scopeId,{verified=false}={}){
  const scopes=activeExecutions(a).filter(e=>!verified||e.validacion?.estado==='Validada').flatMap(e=>e.alcances.filter(s=>s.scopeId===scopeId));

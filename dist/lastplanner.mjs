@@ -5,14 +5,16 @@ import {PLAN_COLORS,geometryPath,scopeDrawing} from './lastplanner-map.mjs';
 import {nivel} from './level.mjs';
 import {registerLayer,layerNames} from './layers.mjs';
 import {readWorkflow} from './lastplanner-cycle-store.mjs';
-import {isoToday,semanaDe,scopeProgress,blockers,executed} from './lastplanner-cycle-model.mjs';
+import {isoToday,semanaDe,scopeProgress,blockers,executed,roomProgress} from './lastplanner-cycle-model.mjs';
+import {recordRoomProgress} from './lastplanner-cycle-store.mjs';
+import {abrirHojaAvance} from './lastplanner-avance-plano.mjs';
 import {createWorkflowUI} from './lastplanner-workflow.mjs';
 export const COLOR_ESTADO={'Planificada':'#1b2a56','En ejecución':'#0f5499','Cumplida':'#1a7f37','No cumplida':'#c21f1f'};
 export const COLORES_RECINTO=PLAN_COLORS;
 let cache=null,pending=null,week=semanaDe(isoToday()),focusId=null;
 function index(){cache.porCodigo=new Map();for(const a of cache.actividades.filter(a=>!a.archivada&&!a.id.startsWith('demo-')&&a.level===nivel.id&&a.semana===week&&(!focusId||a.id===focusId)))for(const r of a.recintos){if(!cache.porCodigo.has(r.code))cache.porCodigo.set(r.code,[]);cache.porCodigo.get(r.code).push(a);}layerNames.lastplanner='Last Planner · '+week;}
 export function cargarPlan(force=false){if(force)pending=null;if(!pending)pending=readWorkflow().then(data=>{cache=data;index();return data;}).catch(error=>{pending=null;throw error;});return pending;}
-function state(room){const activities=cache?.porCodigo?.get(room.code)||[];if(!activities.length)return 'Sin actividades';if(activities.some(a=>blockers(a,cache.restricciones).some(r=>r.critica||r.estado==='Bloqueando ejecución')))return 'Bloqueada';if(activities.every(a=>a.alcances.filter(s=>s.roomId===room.id).every(s=>scopeProgress(a,s.id,{verified:true}).avance>=1)))return 'Verificada';if(activities.some(a=>executed(a)>0))return 'En ejecución';return 'Pendiente';}
+function state(room){const activities=cache?.porCodigo?.get(room.code)||[];if(!activities.length)return 'Sin actividades';if(activities.some(a=>blockers(a,cache.restricciones).some(r=>r.critica||r.estado==='Bloqueando ejecución')))return 'Bloqueada';if(activities.every(a=>a.alcances.filter(s=>s.roomId===room.id).every(s=>scopeProgress(a,s.id,{verified:true}).avance>=1)))return 'Verificada';if(activities.every(a=>roomProgress(a,room.id)>=1))return 'Por verificar';if(activities.some(a=>roomProgress(a,room.id)>0||executed(a)>0))return 'En ejecución';return 'Pendiente';}
 registerLayer('lastplanner',{nombre:'Last Planner · ejecución',categories:r=>[state(r)],color:key=>COLORES_RECINTO[key]||'#ffffff',opacity:.5});
 export function iniciarCapaLastPlanner(change){const reload=()=>cargarPlan(true).then(change).catch(()=>{});reload();window.addEventListener('atlas-lastplanner-changed',reload);}
 export function createLastPlanner(ctx){
@@ -29,5 +31,16 @@ export function createLastPlanner(ctx){
  function referenceAxes(activity){const scopes=activity?.alcances||[],current=scopes.every(scope=>{const room=ctx.rooms().find(r=>r.id===scope.roomId);return room&&scope.source?.sha256&&ctx.source(room)?.sha256===scope.source.sha256;});return current?selectionAxes(scopes):null;}
  const showOnPlan=async activity=>{week=activity?.semana||ui.period();focusId=activity?.id||null;onMap=true;await cargarPlan(true);const frame=referenceAxes(activity)?.marco;await ctx.onPlan(activity,frame?.poligono||frame?.linea||(frame?.punto?[frame.punto]:[]));renderOverlay();};
  const ui=createWorkflowUI({...ctx,onPlan:showOnPlan,currentData:()=>cache,renderOverlay});
- return {...ui,renderOverlay,showActivityOnPlan:async id=>{const data=await cargarPlan(true),activity=data.actividades.find(a=>a.id===id);if(!activity)throw Error('La actividad aún no está en este equipo. Sincroniza Nube.');return showOnPlan(activity);}};
+ // Con la capa de Last Planner a la vista, tocar un recinto con actividades publicadas de la semana abre la hoja de
+ // avance en vez de la ficha del recinto (el rombo sigue a un toque desde la hoja).
+ function tocarAvance(roomId){
+  if(!ctx.plannerVisible?.()||!cache||document.body.classList.contains('lpPicking'))return false;
+  const room=ctx.rooms().find(r=>r.id===roomId);if(!room)return false;
+  const abiertas=()=>(cache.porCodigo?.get(room.code)||[]).filter(a=>a.fase==='publicada'&&a.verificacion?.resultado==='Pendiente de verificación'&&a.alcances.some(s=>s.roomId===room.id));
+  if(!abiertas().length)return false;
+  abrirHojaAvance({room,esc:ctx.esc,actividades:abiertas,avance:a=>roomProgress(a,room.id),abrirFicha:()=>ctx.abrirFicha?.(room.id),
+   guardar:async(a,percent,date)=>{await recordRoomProgress(a.id,room.id,percent,date);await cargarPlan(true);renderOverlay();ctx.redraw?.();}});
+  return true;
+ }
+ return {...ui,renderOverlay,tocarAvance,showActivityOnPlan:async id=>{const data=await cargarPlan(true),activity=data.actividades.find(a=>a.id===id);if(!activity)throw Error('La actividad aún no está en este equipo. Sincroniza Nube.');return showOnPlan(activity);}};
 }

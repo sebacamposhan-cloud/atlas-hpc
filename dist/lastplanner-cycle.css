@@ -110,3 +110,17 @@ body.lpPicking #viewport{inset:var(--lp-picker-top,180px) 12px var(--lp-picker-b
 }
 .lpDaily .lpDays button.lpDayAfter{border-style:dashed}
 .lpTeamContractor{margin:4px 0 8px;font-weight:700}
+
+/* Hoja de avance sobre el plano: un toque por recinto (lastplanner-avance-plano.mjs). */
+.lpAvanceHoja{width:min(460px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto;border:1px solid #d4dfeb;padding:16px 18px;background:#fff;color:#000}
+.lpAvanceHoja::backdrop{background:rgba(0,0,0,.25)}
+.lpAvanceHoja header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.lpAvanceHoja h2{margin:0;font-size:20px}.lpAvanceHoja header p{margin:2px 0 0;font-size:13px}
+.lpAvanceHoja header button{min-width:44px;min-height:44px;font-size:22px;border:0;background:none}
+.lpAvanceFecha{display:grid;gap:4px;margin:10px 0;font-size:13px;font-weight:600}.lpAvanceFecha input{min-height:44px;font-size:16px}
+.lpAvanceActividad{border-top:1px solid #e1e8f1;padding:10px 0}.lpAvanceActividad h3{margin:0;font-size:16px}.lpAvanceActividad p{margin:4px 0 8px;font-size:13px}
+.lpAvancePasos{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.lpAvancePasos button{min-height:48px;font-size:15px;font-weight:700;border:1px solid #1b2a56;background:#fff;color:#000}
+.lpAvancePasos button[aria-pressed=true]{background:#f2c200;border-color:#9a7a00}
+.lpAvancePasos button.lpPasoListo[aria-pressed=true]{background:#1a7f37;border-color:#1a7f37;color:#fff}
+.lpAvanceMensaje{min-height:1.2em;font-size:13px;margin:8px 0}
+.lpAvanceHoja footer{display:flex;justify-content:space-between;gap:8px}.lpAvanceHoja footer button{min-height:44px;padding:8px 14px}
