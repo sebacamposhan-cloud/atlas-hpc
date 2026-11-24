@@ -248,14 +248,17 @@ export function construir(propuesta, {name, author, purpose, pisoActual, grupo, 
 
 // ---------- Exportación ----------
 // Filas para Excel con los encabezados del levantamiento: Nivel, Código de recinto y cada columna con su valor vigente
-// (los enlazados, desde el rombo de su piso). enlazados: {piso: enlazado}.
-export function exportar(docs, enlazados = {}) {
+// (los enlazados, desde el rombo de su piso). enlazados: {piso: enlazado}. color: las celdas de lista y «Listo para
+// instalar» salen como {texto, color} (Excel con formato de informe, excel-informe.mjs); sin color, texto.
+export function exportar(docs, enlazados = {}, {color = false} = {}) {
   const base = docs[0]; if (!base) throw Error('No hay levantamiento que exportar.');
   const orden = Object.keys(PISOS), ds = [...docs].sort((a, b) => orden.indexOf(a.level) - orden.indexOf(b.level));
   const encabezado = ['Nivel', 'Código de Recinto', ...base.columnas.map(c => c.nombre), 'Listo para instalar'];
+  const celda = (texto, c) => color && texto && c ? {texto, color: c} : texto;
   const filas = ds.flatMap(d => d.filas.map(f => [d.etiquetaNivel || d.level, f.code, ...base.columnas.map(c0 => {
     const c = d.columnas.find(x => x.id === c0.id) || c0; if (c.tipo === 'texto') return f.valores[c.id] || '';
-    return opcion(c, valor(c, f, enlazados[d.level] || null).id)?.nombre || '';
-  }), {listo: 'Sí', pendiente: 'No'}[listo(d, f, enlazados[d.level] || null)] || '']));
+    const o = opcion(c, valor(c, f, enlazados[d.level] || null).id);
+    return celda(o?.nombre || '', o?.color);
+  }), (k => celda({listo: 'Sí', pendiente: 'No'}[k] || '', LISTO[k]?.color))(listo(d, f, enlazados[d.level] || null))]));
   return [encabezado, ...filas];
 }

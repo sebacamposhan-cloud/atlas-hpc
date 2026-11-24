@@ -103,3 +103,34 @@ export function filasExcel(catalogo, doc = null) {
     return [p.vano || '', p.llave || '', p.modelo || '', descripcionDe(p.modelo), p.ancho || '', p.partida || '', contratistaDe(p) || '', ESTADOS[estadoDe(p, doc)].nombre, ESTADOS[estadoVigente(p.estado)].nombre, c ? c.at.slice(0, 10).split('-').reverse().join('-') : '', c?.autor || '', (p.revisar || []).join('; ')];
   });
 }
+
+// ---------- Informe de puertas (PDF con plano y Excel) ----------
+// Lo que muestra el plano con la Simbología: estados con casilla marcada, contratista y búsqueda. El informe lleva esas
+// puertas (lista) con el mismo formato de la exportación de proyectos (marking-overlay.mjs, paginasProyecto; y
+// excel-informe.mjs). filtro: {estados: Set visible o null, contratista, texto}. piso: «N02». Devuelve {pdf, excel, archivo}.
+const numero = v => /^\d+$/.test(String(v ?? '').trim()) ? Number(v) : v || '';
+const celdaEstado = e => ({texto: ESTADOS[e].nombre, color: ESTADOS[e].color});
+export function textoFiltroPuertas({estados = null, contratista = '', texto = ''} = {}) {
+  const partes = [];
+  if (estados && ORDEN.some(e => !estados.has(e))) partes.push('Estado: ' + (ORDEN.filter(e => estados.has(e)).map(e => ESTADOS[e].nombre).join(', ') || 'ninguno'));
+  if (contratista) partes.push('Contratista: ' + (contratista === SIN_CONTRATISTA ? 'sin contratista' : contratista));
+  if (String(texto).trim()) partes.push(`Búsqueda: «${String(texto).trim()}»`);
+  return partes.join(' · ');
+}
+export function informePuertas(catalogo, doc, lista, {piso, nivelNombre = '', filtro = {}, autor = '', at = new Date().toISOString()} = {}) {
+  const puertas = [...lista].sort(ordenLista), n = contar(puertas, doc), filtroTexto = textoFiltroPuertas(filtro);
+  const estados = filtro.estados && ORDEN.some(e => !filtro.estados.has(e)) ? ORDEN.filter(e => filtro.estados.has(e)) : [];
+  const contratista = filtro.contratista ? (filtro.contratista === SIN_CONTRATISTA ? 'Sin contratista' : filtro.contratista) : '';
+  const titulo = ['Puertas', estados.length ? estados.map(e => ESTADOS[e].nombre).join(', ') : 'Avance de instalación', contratista].filter(Boolean).join(' · ');
+  const base = {piso, titulo, tipo: 'Puertas', autor: autor || doc?.author || '', actualizado: doc?.updatedAt || at,
+    proposito: doc?.purpose || `Avance de instalación de puertas sobre el plano «${catalogo.fuente?.archivo || ''}».`,
+    detalle: `${puertas.length} de ${catalogo.puertas.length} puertas${nivelNombre ? ' de ' + nivelNombre : ''}${filtroTexto ? ' · Filtro: ' + filtroTexto : ''}`,
+    leyenda: ORDEN.filter(e => n[e]).map(e => ({nombre: ESTADOS[e].nombre, color: ESTADOS[e].color, n: n[e]}))};
+  const pdf = {...base, columnas: ['Vano', 'Llave', 'Modelo', 'Contratista', 'Estado'], anchos: [1.1, 2.7, 1.6, 2, 2.6],
+    filas: puertas.map(p => [String(p.vano || '—'), p.llave || '—', p.modelo || '—', contratistaDe(p) || 'Sin contratista', celdaEstado(estadoDe(p, doc))])};
+  const excel = {...base, columnas: ENCABEZADOS, filas: puertas.map(p => {
+    const c = cambioDe(p, doc);
+    return [numero(p.vano), p.llave || '', p.modelo || '', descripcionDe(p.modelo), numero(p.ancho), p.partida || '', contratistaDe(p) || '', celdaEstado(estadoDe(p, doc)), celdaEstado(estadoVigente(p.estado)), c ? c.at.slice(0, 10).split('-').reverse().join('-') : '', c?.autor || '', (p.revisar || []).join('; ')];
+  })};
+  return {pdf, excel, archivo: [`Puertas ${piso}`, ...(estados.length ? [estados.map(e => ESTADOS[e].nombre).join(', ')] : []), contratista].filter(Boolean).join(' - ')};
+}
